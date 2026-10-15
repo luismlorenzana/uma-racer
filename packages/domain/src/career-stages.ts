@@ -1,7 +1,7 @@
-// A career's stages and the Uma Level each holds (docs/design/scenario-goals.md, D137). A leaf module, so the save's
-// v13 migration can re-level through a career's holds without importing the whole careers module (D241).
+// A career's stages and the Uma Level each holds (docs/design/scenario-goals.md, D137). A leaf module, so the career
+// shapes can name the stages without importing the whole careers module (D241).
 
-import type { ScenarioJourney } from './save'
+import type { ScenarioJourney } from './career-shapes'
 import { LEVELS_PER_SCENARIO, tierOfLevel } from './scenarios'
 
 /** Goal plan v3+: a career's stages, in order (D137). */

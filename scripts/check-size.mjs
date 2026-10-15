@@ -1,18 +1,22 @@
 // The startup JS budget (docs/research/game-web-tech.md, D337), from uma-rpg's D56/H16 check: measure the real HTML
 // entry and every chunk it statically imports, not the largest asset (PixiJS, Phaser and Firebase are deliberately lazy).
+// `node check-size.mjs [dist]`. A build must also hold no dev-only module (`src/dev/`: the synthetic seeds and the dev
+// proofs, which `src/main.tsx` loads only in dev builds; T143).
 import { readFile } from 'node:fs/promises'
 import { resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { gzipSync } from 'node:zlib'
 
 export const MAIN_JS_BUDGET = 180_000
+const DEV_SOURCES = 'src/dev/'
+
 export function entrySrc(html) {
   const scripts = [...html.matchAll(/<script\b[^>]*>/gi)].filter(([tag]) => /\btype\s*=\s*["']module["']/i.test(tag))
   const sources = scripts.flatMap(([tag]) => {
     const src = /\bsrc\s*=\s*["']([^"']+)["']/i.exec(tag)?.[1]
     return src ? [src] : []
   })
-  if (sources.length !== 1) throw new Error('Expected one module entry in dist/index.html')
+  if (sources.length !== 1) throw new Error('Expected one module entry in index.html')
   return sources[0]
 }
 function assetPath(distDir, source) {
@@ -21,11 +25,12 @@ function assetPath(distDir, source) {
   if (!file.startsWith(root + sep)) throw new Error('JS asset leaves dist')
   return file
 }
-
 export async function checkSize(distDir, budget = MAIN_JS_BUDGET) {
   const html = await readFile(resolve(distDir, 'index.html'), 'utf8')
   const src = entrySrc(html), entry = src.replace(/^\//, '')
   const manifest = JSON.parse(await readFile(resolve(distDir, '.vite/manifest.json'), 'utf8'))
+  const dev = Object.entries(manifest).filter(([key, node]) => key.startsWith(DEV_SOURCES) || node.src?.startsWith(DEV_SOURCES))
+  if (dev.length > 0) throw new Error(`The build holds dev-only modules: ${dev.map(([key]) => key).join(', ')}`)
   const main = Object.entries(manifest).find(([, node]) => node.isEntry && node.file === entry)
   if (!main) throw new Error('HTML entry is missing from the build manifest')
   const seen = new Set(), files = []

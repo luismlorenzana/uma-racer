@@ -1,10 +1,11 @@
-import { AnimatePresence, m, useReducedMotion } from 'motion/react'
+import { AnimatePresence, m } from 'motion/react'
 import { useEffect } from 'react'
 import { createPortal } from 'react-dom'
+import { useReducedMotionSetting } from '../app/motion'
 import { CloseIcon } from './icons'
 
 /**
- * One piece of art at full size over a dark stage (docs/design/collection.md#art-tiers). Detail surfaces open it from
+ * One piece of art at full size over a dark stage (docs/design/ux.md#art-tiers). Detail surfaces open it from
  * their art; lists never do. A tap anywhere, the close button or Escape closes it. It renders into the body, because
  * the surfaces that open it sit inside stacking contexts (an album's detail area, sticky filter bars) it must cover.
  * Portraits are cut-outs, so the art sits on its own stage rather than letting the page show through.
@@ -21,7 +22,8 @@ export function ArtViewer({
   subtitle?: string
   onClose: () => void
 }) {
-  const reducedMotion = useReducedMotion()
+  // The app's rule (`app/motion.tsx`): the system setting or Account's switch.
+  const reducedMotion = useReducedMotionSetting()
 
   useEffect(() => {
     if (!src) return

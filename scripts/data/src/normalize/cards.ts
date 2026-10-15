@@ -1,4 +1,4 @@
-// Pure SSR support-card normalization (docs/design/support-cards.md).
+// Pure SSR support-card normalization (docs/game/06-cards-and-bonds.md).
 
 import {
   eraOf,

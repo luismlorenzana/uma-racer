@@ -2,7 +2,7 @@ import type { RaceCourseLayout, RaceSkillEffectKind } from '@racer/domain'
 import { sampleTimeline, type RaceEvent, type RaceTimeline } from '@racer/race'
 
 // Pure renderer choreography derived from immutable race output
-// (docs/design/racing.md#presentation-straight-line-real-time-view).
+// (docs/design/racing.md#presentation-the-race-on-its-own-course).
 
 export const PRE_ROLL_SECONDS = 2.4
 export const REDUCED_PRE_ROLL_SECONDS = 0.6
@@ -62,6 +62,13 @@ export interface RacePlaybackSnapshot {
 
 /** Turn races (engine v6+) play two turns a second at 1×. */
 export const TURN_RACE_RATE = 2
+
+/**
+ * The HUD's turn in a turn race, 1-based, at `seconds` played. The course's count (`raceTurns`) is its turns at base
+ * speed, the phases' clock; the engine runs on until the last runner finishes, often a few turns past it, so the HUD
+ * holds at the course's count rather than reading "Turn 106 / 100".
+ */
+export const hudTurn = (seconds: number, total: number): number => Math.min(total, Math.max(1, Math.ceil(seconds)))
 /** The race feed shows at most this many toasts at once, newest on top; rival activity shares one of them. */
 export const RACE_FEED_SLOTS = 3
 /** How long a toast stays, in seconds at 1×: a skill carries two names, so it stays a little longer. */

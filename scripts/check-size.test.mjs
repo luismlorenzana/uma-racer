@@ -43,6 +43,10 @@ test('counts static imports so a small entry cannot hide oversized initial vendo
   await fixture(async (root) => { await assert.rejects(checkSize(root), /exceeds/) },
     { imports: ['vendor'], extra: { vendor: { file: 'assets/vendor.js' } } })
 })
+test('refuses a build that holds a dev-only module (src/dev/: the seeds and the dev proofs; T143)', async () => {
+  await fixture(async (root) => { await assert.rejects(checkSize(root), /dev-only modules: src\/dev\/main.tsx/) },
+    { extra: { 'src/dev/main.tsx': { file: 'assets/seeds.js', src: 'src/dev/main.tsx' } } })
+})
 test('refuses traversal and missing static manifest nodes', async () => {
   await fixture(async (root) => { await assert.rejects(checkSize(root), /Unsafe JS/) }, { entry: '../escape.js' })
   await fixture(async (root) => { await assert.rejects(checkSize(root), /Missing static chunk/) }, { imports: ['missing'] })

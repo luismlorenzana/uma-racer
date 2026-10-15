@@ -2,26 +2,17 @@
 // private or original-game content.
 import {
   CARD_EFFECTS,
-  CARD_SET_SIZE,
   INSPIRATION_SLOTS,
-  MAX_STARS,
   SCENARIO_BUFFS,
   STATS,
-  constellationTemplate,
-  deriveStats,
-  extraStatsFromProduce,
   parseRaceCondition,
   rollRivalField,
   rollRivalSkills,
-  shapeDef,
-  unlockedNodeCount,
   type Aptitudes,
   type CardEffect,
-  type CardNodeState,
   type CompiledRaceSkill,
   type DistanceCategory,
   type InspirationSlot,
-  type NodeAssignment,
   type RaceGrade,
   type RaceSkillEffectKind,
   type StatKey,
@@ -30,10 +21,11 @@ import {
   type SupportCardTemplate,
   type UmaTemplate,
 } from '../../packages/domain/src/index'
-import { cardNodeId, fairShare as treeFairShare, perCardCap, treeCardNodesAt } from '../../packages/domain/src/rework/constellation/index'
-import type { TypicalRow } from '../../packages/domain/src/rework/builds/types'
-import { EXTRA_NODE_VALUES_TIER_1, REWORK_BUFF_TYPICAL, rollRivalFieldAt, tierAndScenario, type Preset, type ScenarioOfTier, type UmaBuild } from '../../packages/domain/src/rework/tiers/index'
-import { EXTRA_NODES, LAYERS, deriveBuild, extraCapacity, layerUnlocks, reworkBuff, type DerivedBuild, type TrainingContent } from '../../packages/domain/src/rework/training/index'
+import { cardNodeId, fairShare as treeFairShare, perCardCap, treeCardNodesAt } from '../../packages/domain/src/training/trees/index'
+import type { TypicalRow } from '../../packages/domain/src/builds/types'
+import type { Preset, ScenarioOfTier, UmaBuild } from '../../packages/domain/src/state/index'
+import { EXTRA_NODE_VALUES_TIER_1, REWORK_BUFF_TYPICAL, rollRivalFieldAt, tierAndScenario } from '../../packages/domain/src/tiers/index'
+import { EXTRA_NODES, LAYERS, deriveBuild, extraCapacity, layerUnlocks, reworkBuff, type DerivedBuild, type TrainingContent } from '../../packages/domain/src/training/index'
 import { V8_TUNING, createRng } from '../../packages/race/src/index'
 
 // Every sim can try an engine v8 tuning change without editing the engine: V8='{"railDrift":0.5}' pnpm sim:…
@@ -66,12 +58,12 @@ export const NPC_KIT = [
   skill('npc-acceleration', 'phase_random==2', 'acceleration', 0.2, 3),
 ]
 /** A Lv5 unique of the common shape (D158): late-race speed for 5 s, guaranteed, as the original's uniques are. */
-export const unique = (id: string) => skill(id, 'phase_random==2', 'target-speed', 0.35 * 1.1, 5, 'guaranteed')
+const unique = (id: string) => skill(id, 'phase_random==2', 'target-speed', 0.35 * 1.1, 5, 'guaranteed')
 /**
  * The rival white pool (D163), shaped like the real one (about 480 whites): mostly speed, then passives, acceleration,
  * heals and straight-line speed, at the originals' typical white values, some tied to a running style.
  */
-export const RIVAL_POOL: CompiledRaceSkill[] = [
+const RIVAL_POOL: CompiledRaceSkill[] = [
   ...['phase_random==0', 'phase_random==1', 'phase_random==1', 'phase_random==2', 'phase_random==2', 'phase_random==3',
     'is_finalcorner==1', 'is_last_straight==1', 'corner_random==1', 'straight_random==1', 'phase==1&order_rate<=50',
     'phase_random==2&order_rate>50'].map((condition, index) => skill(`w-speed-${index}`, condition, 'target-speed', 0.15, 2.4)),
@@ -86,7 +78,7 @@ export const RIVAL_POOL: CompiledRaceSkill[] = [
 ]
 
 /** A rival's kit: her own unique and her rolled whites (D163), from a stream of her own. */
-export function rivalKit(strategy: Strategy, distance: number, seed: number): CompiledRaceSkill[] {
+function rivalKit(strategy: Strategy, distance: number, seed: number): CompiledRaceSkill[] {
   const rng = createRng((seed ^ 0x2545f491) >>> 0)
   return [unique('npc-unique'), ...rollRivalSkills(RIVAL_POOL, { strategy, course: { distance, surface: 'turf' }, rng })]
 }
@@ -103,36 +95,21 @@ export const PLAYER_KIT = [
 export type CardType = 'speed' | 'stamina' | 'power' | 'guts' | 'wit' | 'friend'
 /** Median base stats of the imported roster, zero growth: the typical Uma, not a favourable one. */
 const BASE: Stats = { speed: 110, stamina: Number(process.env.BASE_STAMINA ?? 105), power: 110, guts: Number(process.env.BASE_GUTS ?? 110), wit: 110 }
-const umaTemplate = { baseStats: BASE, growthRates: { speed: 0, stamina: 0, power: 0, guts: 0, wit: 0 } }
-const flatProfile = { trainingBonus: 1, friendshipBonus: 1, statBonus: 1, skillPointBonus: 1, specialtyPriority: 1, hintFrequency: 1, raceBonus: 1, initialStats: 1 }
-
-export const fairShare = (tier: number) => Math.ceil(shapeDef(tier).cardNodes / CARD_SET_SIZE)
-export const cardCap = (tier: number) => fairShare(tier) + 1
 
 export const SPRINT_GUTS: CardType[] = ['speed', 'speed', 'guts', 'wit', 'wit', 'friend']
-export const SPRINT_POWER: CardType[] = ['speed', 'speed', 'power', 'wit', 'wit', 'friend']
 export const STAYER: CardType[] = ['speed', 'speed', 'stamina', 'wit', 'wit', 'friend']
 export const STAYER_POWER: CardType[] = ['speed', 'speed', 'stamina', 'power', 'wit', 'friend']
 export const LONG: CardType[] = ['speed', 'speed', 'stamina', 'stamina', 'wit', 'friend']
 
 export interface BuildOptions {
-  /** Defaults to 10. Only the nodes open at this Training Level are filled, lowest order first. */
-  trainingLevel?: number
   /** Nodes go to the Friend card first (its fair share, for SP) or last, when stats matter more than skills. */
   friend?: 'first' | 'last'
-  /** Every card's stars in this scenario. Defaults to max, a fully bonded set. */
-  stars?: number
   /** Cards (by deck index) filled to their cap right after the lean, before Speed and Wit. */
   first?: number[]
 }
 
-/**
- * The six Extra stats a build turns on (D235): four of the stat it leans on, the most a stat holds, and two of the stat
- * that best backs it up (Guts behind Stamina, which spends less HP on the spurt; Power behind Speed).
- */
+/** The stat that best backs up a lean (D235): Guts behind Stamina, which spends less HP on the spurt; Power behind Speed. */
 const EXTRA_BACKUP: Record<StatKey, StatKey> = { speed: 'power', stamina: 'guts', power: 'speed', guts: 'stamina', wit: 'speed' }
-export const buildExtraStats = (stat: StatKey) =>
-  extraStatsFromProduce([stat, stat, stat, stat, EXTRA_BACKUP[stat], EXTRA_BACKUP[stat]])
 
 /**
  * How many of `cardNodes` each deck card fills: the Friend card its fair share first (unless last), the card at
@@ -172,30 +149,6 @@ export function dealNodes(ids: string[], want: number[], deck: CardType[], optio
 }
 
 /**
- * Race stats for a six-card set, current era, maxed unless `stars` says otherwise. The card at `leanIndex` takes `lean`
- * nodes, any `first` cards fill to their cap, Speed then Wit fill what is left up to the per-card cap, and the Friend
- * card takes its fair share first or last. Six Extra stats lean on `statNodesTo` at any Training Level.
- */
-export function buildStats(tier: number, deck: CardType[], leanIndex: number, lean: number, statNodesTo: StatKey, options: BuildOptions = {}): Stats {
-  const trainingLevel = options.trainingLevel ?? 10
-  const template = constellationTemplate(tier)
-  const ids = deck.map((type, index) => `${type}-${index}`)
-  const cards = new Map<string, CardNodeState>(ids.map((id, index) => [id, {
-    template: { id, type: deck[index]!, era: tier, effectProfile: flatProfile, hintSkillIds: [] },
-    stars: options.stars ?? MAX_STARS,
-  }]))
-  const queue = dealNodes(ids, allocateNodes(shapeDef(tier).cardNodes, fairShare(tier), cardCap(tier), deck, leanIndex, lean, options), deck, options)
-  const open = unlockedNodeCount(tier, trainingLevel)
-  const assignments: Record<string, NodeAssignment> = {}
-  for (const node of [...template.nodes].sort((a, b) => a.order - b.order)) {
-    if (node.order >= open) continue
-    if (node.kind === 'card' && queue.length > 0) assignments[node.id] = { kind: 'card', cardId: queue.shift()! }
-  }
-  return deriveStats({ tier, trainingLevel, template, assignments, cardSetIds: ids, umaTemplate, cards,
-    extraStats: buildExtraStats(statNodesTo) }).stats
-}
-
-/**
  * A generated rival field (D153) for a race of `size` runners with the player at `playerGate`: the rivals' runners, in
  * gate order around her, with the rival kit. Seeded per race, as the game seeds it from the attempt.
  */
@@ -208,7 +161,7 @@ export function rivalRunners(tier: number, grade: RaceGrade, distance: number, s
   })
 }
 
-// --- The rework's builds (docs/rework/03-uma-progression.md §8–§9, 04 §7–§8, 05 §4 and §6; T133) ---------------------
+// --- The rework's builds (docs/game/03-uma-progression.md §8–§9, 04 §7–§8, 05 §4 and §6; T133) ---------------------
 // A full-layer build at the game's scenario T on T128's `deriveBuild`: the re-authored tree of N card nodes all open,
 // every card of the current era at 100% (no stars), the Inspiration slots her layers open filled, and the scenario's
 // Extra Stats capacity active. Rivals are T125's `rollRivalFieldAt`. Every Uma, parent and card here is invented.
@@ -264,7 +217,7 @@ export interface ReworkBuildOptions extends Pick<BuildOptions, 'friend' | 'first
 }
 
 /**
- * One preset of a full-layer build at scenario T: today's `buildStats` allocation on the re-authored tree (the lean,
+ * One preset of a full-layer build at scenario T: the sims' card allocation on the re-authored tree (the lean,
  * `first` cards to the cap, Speed then Wit, the Friend card first or last), every Inspiration slot her layers open
  * filled, and Extra Stats leaning on `statNodesTo` at the scenario's capacity. Derived by T128's `deriveBuild`.
  */
@@ -318,7 +271,7 @@ export function rivalRunnersAt(T: number, grade: RaceGrade, distance: number, si
  * full layer, every card current-era at 100%, Extra Stats at capacity, the Friend card on its fair share, her open
  * Inspiration slots filled and two career goals won.
  */
-export const REWORK_TYPICAL_SETS: readonly { distance: DistanceCategory; build: (T: number, options?: ReworkBuildOptions) => DerivedBuild }[] = [
+const REWORK_TYPICAL_SETS: readonly { distance: DistanceCategory; build: (T: number, options?: ReworkBuildOptions) => DerivedBuild }[] = [
   { distance: 'sprint', build: (T, options) => reworkBuild(T, STAYER, 2, reworkFairShare(T), 'speed', options) },
   { distance: 'mile', build: (T, options) => reworkBuild(T, STAYER, 2, reworkFairShare(T), 'stamina', options) },
   { distance: 'medium', build: (T, options) => reworkBuild(T, STAYER_POWER, 2, reworkFairShare(T) + 1, 'stamina', { ...options, first: [3] }) },
@@ -332,7 +285,7 @@ const treePoints = (build: DerivedBuild) => build.cardRawTotal + STATS.reduce((s
  * What scenario T's buff adds to the rework's typical build, as a share of her tree (today's measure, D165): each
  * distance's set with the buff over the same set without it, averaged over the four sets.
  */
-export function reworkBuffTypical(T: number): { typical: number; bySet: Record<DistanceCategory, number> } {
+function reworkBuffTypical(T: number): { typical: number; bySet: Record<DistanceCategory, number> } {
   const bySet = Object.fromEntries(REWORK_TYPICAL_SETS.map(({ distance, build }) =>
     [distance, treePoints(build(T)) / treePoints(build(T, { buffs: false })) - 1])) as Record<DistanceCategory, number>
   const values = Object.values(bySet)
@@ -368,7 +321,7 @@ export function typicalLines(rows: readonly TypicalRow[]): string[] {
   ]
 }
 
-export const categoryOf = (distance: number): DistanceCategory =>
+const categoryOf = (distance: number): DistanceCategory =>
   distance <= 1400 ? 'sprint' : distance <= 1800 ? 'mile' : distance <= 2400 ? 'medium' : 'long'
 export const FIELD_STRATEGIES: Strategy[] = ['front', 'pace', 'late', 'end']
 

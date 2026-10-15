@@ -1,19 +1,35 @@
 // @vitest-environment jsdom
 // The Paddock primitives as rendered DOM (T031): every button face and its disabled state, the chip's and segmented
-// control's selection, the art tile's fallbacks, and the placeholder's accessible name.
+// control's selection, the art tile's fallbacks, the placeholder's accessible name, and the sheet and art viewer
+// opening at rest under Account's reduced motion.
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { LazyMotion, domAnimation } from 'motion/react'
 import type { ReactNode } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { setDeviceReducedMotion } from '../app/motion'
 import { ArtTile } from './ArtTile'
+import { ArtViewer } from './ArtViewer'
+import { BottomSheet } from './BottomSheet'
 import { Button, type ButtonVariant } from './Button'
 import { Chip } from './Chip'
 import { Placeholder } from './Placeholder'
-import { SegmentedControl } from './SegmentedControl'
 
 const withMotion = (node: ReactNode) => render(<LazyMotion features={domAnimation} strict>{node}</LazyMotion>)
 
-afterEach(cleanup)
+afterEach(() => {
+  cleanup()
+  vi.unstubAllGlobals()
+})
+
+/** This phone's storage for one test: Account's switch is a device key. */
+function stubDevice(): void {
+  const values = new Map<string, string>()
+  vi.stubGlobal('localStorage', {
+    getItem: (key: string) => values.get(key) ?? null,
+    setItem: (key: string, value: string) => void values.set(key, String(value)),
+    removeItem: (key: string) => void values.delete(key),
+  })
+}
 
 describe('Button', () => {
   it('renders every variant as a real button with its face', () => {
@@ -44,16 +60,6 @@ describe('Chip', () => {
   })
 })
 
-describe('SegmentedControl', () => {
-  it('marks the chosen option and reports a new one', () => {
-    const onChange = vi.fn()
-    withMotion(<SegmentedControl label="View" value="icons" onChange={onChange} options={[{ value: 'icons', label: 'Icons' }, { value: 'list', label: 'List' }]} />)
-    expect(screen.getByRole('tab', { name: 'Icons' }).getAttribute('aria-selected')).toBe('true')
-    fireEvent.click(screen.getByRole('tab', { name: 'List' }))
-    expect(onChange).toHaveBeenCalledWith('list')
-  })
-})
-
 describe('ArtTile and Placeholder', () => {
   it('shows a labelled placeholder when there is no art, never an empty box', () => {
     render(<ArtTile asset={null} alt="Special Week portrait" />)
@@ -69,5 +75,32 @@ describe('ArtTile and Placeholder', () => {
   it('gives the placeholder its accessible name', () => {
     render(<Placeholder label="No card art" />)
     expect(screen.getByRole('img', { name: 'No card art' }).textContent).toContain('No card art')
+  })
+})
+
+describe('reduced motion in the sheet and the art viewer', () => {
+  // No MotionConfig here: what's checked is each component's own reading of the app's rule (`app/motion.tsx`).
+  const open = () => {
+    withMotion(<>
+      <BottomSheet open onClose={() => undefined} label="A sheet"><p>Inside</p></BottomSheet>
+      <ArtViewer src="blob:art" title="Full art" onClose={() => undefined} />
+    </>)
+    return { sheet: screen.getByRole('dialog', { name: 'A sheet' }), art: screen.getByRole('img', { name: 'Full art' }) }
+  }
+
+  it('slides the sheet up and grows the art in by default', () => {
+    stubDevice()
+    const { sheet, art } = open()
+    expect(sheet.style.transform).toContain('100%')
+    expect(art.style.transform).toContain('scale')
+  })
+
+  it("opens both at rest under Account's switch, which the system setting alone doesn't show", () => {
+    stubDevice()
+    setDeviceReducedMotion(true)
+    const { sheet, art } = open()
+    expect(sheet.style.transform).not.toContain('100%')
+    expect(art.style.transform).not.toContain('scale')
+    expect(art.style.opacity).not.toBe('0')
   })
 })

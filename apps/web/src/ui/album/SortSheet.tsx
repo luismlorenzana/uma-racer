@@ -1,4 +1,4 @@
-import type { AlbumQuery, FacetOption, SortDef, SortDirection } from '../../game/album/query'
+import type { AlbumQuery, FacetOption, SortDef, SortDirection } from './query'
 import { BottomSheet } from '../BottomSheet'
 import { Chip } from '../Chip'
 import { ArrowDownIcon, ArrowUpIcon } from '../icons'

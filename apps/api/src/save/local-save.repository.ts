@@ -1,29 +1,47 @@
+// Local dev persistence for generation 2 (docs/rework/13-removals-and-plan-changes.md §6; docs/rearchitecture/07-data-
+// reset.md §2–§3; T135): one JSON file, `.data/save-g2.json`, shaped `{ [uid]: { rows: { 'kind/id': row }, purge? } }`,
+// written atomically (a temporary file, then a rename) with calls serialized in-process, on the same `resolve.ts` as
+// Firestore. Its purge clears the uid's entry from the old dev file, at a fixed path and never an env var.
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
-import { dirname } from 'node:path'
-import type { SaveRepository } from './save.repository'
-import { BANK_KEY, freezeAdvance, advanceOutfit, bankData } from './inspiration-advance'
-import type { EntityRecord, LogRecord, SaveSnapshot, SyncRequest, SyncResponse } from './save.types'
-import { resolveRpgCommand, type RpgCommandRequest, type RpgCommandResponse } from './rpg-command'
-import { puzzleSyncReadSet, resolveSyncWithPuzzles, resolveTakeover } from './puzzle-sync'
-import { protectFarmSync } from './farm-sync'
-import { FARM_KITCHEN_RELEASE_ENABLED } from './farms'
-import { PUZZLES_RELEASE_ENABLED, type PuzzleTakeoverRequest, type PuzzleTakeoverResponse } from './puzzles'
-import { type PuzzlePreservationRequest, type PuzzlePreservationResponse, type VerifiedPuzzlePreservationContent } from './puzzles'
-import { disabledPreservation, unavailablePreservation, resolvePreservation } from './puzzle-preservation'
-import { preservationHeader, resolveLegacySpark, type LegacySparkRequest, type LegacySparkResponse } from './puzzles'
-import { farmCutoverDisabled, farmCutoverUnavailable, type FarmCutoverRequest, type FarmCutoverResponse } from './farms'
-import { resolveProtectedFarm } from './farm-cutover'
+import { dirname, resolve } from 'node:path'
+import { rowKey, SAVE_GENERATION, type PurgeResponse, type SaveSnapshotV2, type SyncRequestV2, type SyncResponseV2 } from '@racer/domain/save'
+import { needsOperationEnv, NO_SAVE, resolveSync, selectReadSet, snapshotPage, syncReadSet, type NoSave, type SaveRow } from './resolve'
+import { parsePurgeMarker, purgeResponse, type OperationEnvLoader, type PurgeMarker, type SaveRepository } from './save.repository'
 
-interface FileShape {
-  [uid: string]: { entities: Record<string, EntityRecord>; logs: Record<string, LogRecord> }
+/** The old dev store (07 §2), relative to the API's working directory. */
+export const LEGACY_LOCAL_SAVE_FILE = '.data/save.json'
+
+interface UserFile {
+  rows: Record<string, SaveRow>
+  purge?: PurgeMarker
+}
+type FileShape = Record<string, UserFile>
+
+/** Today's dev file: `{ [uid]: { entities: { 'kind/id': row }, logs: { 'kind/id': row } } }`. */
+type LegacyFileShape = Record<string, { entities?: Record<string, unknown>; logs?: Record<string, unknown> }>
+
+async function readJson<T>(file: string, empty: T): Promise<T> {
+  try {
+    return JSON.parse(await readFile(file, 'utf8')) as T
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return empty
+    throw err
+  }
 }
 
-// Local dev persistence: one JSON file, written atomically (tmp + rename), with calls serialized in-process.
+async function writeJson(file: string, data: unknown): Promise<void> {
+  await mkdir(dirname(file), { recursive: true })
+  const tmp = `${file}.tmp`
+  await writeFile(tmp, JSON.stringify(data, null, 2))
+  await rename(tmp, file)
+}
+
 export class LocalSaveRepository implements SaveRepository {
   private queue: Promise<unknown> = Promise.resolve()
 
-  constructor(private readonly file: string, private readonly puzzlesEnabled: boolean = PUZZLES_RELEASE_ENABLED,
-    private readonly preservationContent?: (frozenHash?: string) => Promise<VerifiedPuzzlePreservationContent>, private readonly farmEnabled: boolean = FARM_KITCHEN_RELEASE_ENABLED) {}
+  /** `legacyFile` is `LEGACY_LOCAL_SAVE_FILE` under the working directory; tests pass a temporary one. */
+  constructor(private readonly file: string, private readonly legacyFile: string = resolve(process.cwd(), LEGACY_LOCAL_SAVE_FILE),
+    private readonly clock: () => number = Date.now) {}
 
   private serialize<T>(fn: () => Promise<T>): Promise<T> {
     const run = this.queue.then(fn, fn)
@@ -31,132 +49,51 @@ export class LocalSaveRepository implements SaveRepository {
     return run
   }
 
-  private async read(): Promise<FileShape> {
-    try {
-      return JSON.parse(await readFile(this.file, 'utf8')) as FileShape
-    } catch (err) {
-      if ((err as NodeJS.ErrnoException).code === 'ENOENT') return {}
-      throw err
-    }
+  private read(): Promise<FileShape> {
+    return readJson<FileShape>(this.file, {})
   }
 
-  private async write(data: FileShape): Promise<void> {
-    await mkdir(dirname(this.file), { recursive: true })
-    const tmp = `${this.file}.tmp`
-    await writeFile(tmp, JSON.stringify(data, null, 2))
-    await rename(tmp, this.file)
+  snapshot(uid: string, since: number, cursor: string | null): Promise<SaveSnapshotV2> {
+    return this.serialize(async () => snapshotPage(Object.values((await this.read())[uid]?.rows ?? {}), since, cursor, this.clock()))
   }
 
-  load(uid: string): Promise<SaveSnapshot> {
-    return this.serialize(async () => {
-      const user = (await this.read())[uid]
-      return {
-        entities: Object.values(user?.entities ?? {}),
-        logs: Object.values(user?.logs ?? {}),
-        serverTime: Date.now(),
-      }
-    })
-  }
-
-  advanceInspiration(uid: string): Promise<SaveSnapshot> {
-    return this.serialize(async () => {
-      const all = await this.read(), user = all[uid] ??= { entities: {}, logs: {} }, now = Date.now()
-      const bank = user.entities[BANK_KEY] ?? freezeAdvance(Object.values(user.entities), now)
-      if (!bank) return { entities: [], logs: [], serverTime: now }
-      user.entities[BANK_KEY] = bank
-      for (const id of Object.keys(bankData(bank).cohort)) {
-        for (const row of advanceOutfit(user.entities[BANK_KEY]!, user.entities[`umas/${id}`], id, now)) {
-          user.entities[`${row.kind}/${row.id}`] = row
-        }
-      }
-      await this.write(all)
-      const ids = Object.keys(bankData(user.entities[BANK_KEY]!).cohort)
-      return { entities: [user.entities[BANK_KEY]!, ...ids.map(id => user.entities[`umas/${id}`]!)], logs: [], serverTime: now }
-    })
-  }
-
-  sync(uid: string, request: SyncRequest): Promise<SyncResponse> {
-    puzzleSyncReadSet(request)
+  async sync(uid: string, request: SyncRequestV2, env: OperationEnvLoader): Promise<SyncResponseV2 | NoSave> {
+    // Content loads first: a missing pack throws here, and nothing is written.
+    const operationEnv = needsOperationEnv(request) ? await env() : undefined
     return this.serialize(async () => {
       const all = await this.read()
-      const user = (all[uid] ??= { entities: {}, logs: {} })
-      const now = Date.now()
-      const resolved = resolveSyncWithPuzzles(uid, request, new Map(Object.entries(user.entities)), new Map(Object.entries(user.logs)), now, this.puzzlesEnabled, this.farmEnabled)
-      for (const record of resolved.writes) user.entities[`${record.kind}/${record.id}`] = record
-      for (const record of resolved.appends) user.logs[`${record.kind}/${record.id}`] = record
-      await this.write(all)
+      const readSet = syncReadSet(request)
+      const resolved = resolveSync(selectReadSet(Object.values(all[uid]?.rows ?? {}), readSet), request, this.clock(), operationEnv)
+      if (resolved === NO_SAVE) return NO_SAVE
+      if (resolved.entities.length + resolved.logs.length > 0) {
+        const user = (all[uid] ??= { rows: {} })
+        for (const row of [...resolved.entities, ...resolved.logs]) user.rows[rowKey(row)] = row
+        await writeJson(this.file, all)
+      }
       return resolved.response
     })
   }
 
-  puzzleTakeover(uid: string, request: PuzzleTakeoverRequest): Promise<PuzzleTakeoverResponse> {
+  purge(uid: string): Promise<PurgeResponse> {
     return this.serialize(async () => {
-      const all = await this.read(), user = all[uid] ??= { entities: {}, logs: {} }
-      const resolved = resolveTakeover(uid, request, new Map(Object.entries(user.entities)), new Map(Object.entries(user.logs)), Date.now(), this.puzzlesEnabled)
-      for (const row of resolved.writes) user.entities[`${row.kind}/${row.id}`] = row
-      if (resolved.writes.length) await this.write(all)
-      return resolved.response
-    })
-  }
-
-  preparePuzzles(uid: string, request: PuzzlePreservationRequest): Promise<PuzzlePreservationResponse> {
-    if (!this.puzzlesEnabled) return Promise.resolve(disabledPreservation())
-    return this.serialize(async () => {
-      try {
-        if (!this.preservationContent) return unavailablePreservation('Compatible replacement content is unavailable; no progression was changed')
-        const all = await this.read(), user = all[uid] ??= { entities: {}, logs: {} }
-        const content = await this.preservationContent(preservationHeader(new Map(Object.entries(user.entities)))?.contentHash)
-        const result = resolvePreservation(new Map(Object.entries(user.entities)), new Map(Object.entries(user.logs)), content, request, Date.now())
-        for (const row of result.writes) user.entities[`${row.kind}/${row.id}`] = row
-        for (const row of result.appends) user.logs[`${row.kind}/${row.id}`] = row
-        if (result.writes.length) await this.write(all)
-        return result.response
-      } catch (error) { return unavailablePreservation(error instanceof Error ? error.message : 'Preparation failed; retry with preserved receipts') }
-    })
-  }
-
-  retireSpark(uid: string, request: LegacySparkRequest): Promise<LegacySparkResponse> {
-    if (!this.puzzlesEnabled) return Promise.resolve({ status: 'disabled', message: null, entities: [], logs: [] })
-    return this.serialize(async () => {
-      try {
-        const all = await this.read(), user = all[uid] ??= { entities: {}, logs: {} }
-        if (!this.preservationContent) throw new Error('Compatible replacement content is unavailable; keep the journal')
-        await this.preservationContent(preservationHeader(new Map(Object.entries(user.entities)))?.contentHash)
-        const result = resolveLegacySpark(request, new Map(Object.entries(user.entities)), new Map(Object.entries(user.logs)), Date.now())
-        for (const row of result.writes as EntityRecord[]) user.entities[`${row.kind}/${row.id}`] = row
-        for (const row of result.appends as LogRecord[]) user.logs[`${row.kind}/${row.id}`] = row
-        if (result.writes.length) await this.write(all)
-        return result.response
-      } catch (error) { return { status: 'recoverable-error', message: error instanceof Error ? error.message : 'Keep the journal and retry retirement', entities: [], logs: [] } }
-    })
-  }
-
-  prepareFarm(uid: string, request: FarmCutoverRequest): Promise<FarmCutoverResponse> {
-    if (!this.farmEnabled) return Promise.resolve(farmCutoverDisabled())
-    return this.serialize(async () => {
-      try {
-        const all = await this.read(), user = all[uid] ??= { entities: {}, logs: {} }
-        const result = resolveProtectedFarm(uid, new Map(Object.entries(user.entities)), new Map(Object.entries(user.logs)), request, Date.now())
-        for (const row of result.writes) user.entities[`${row.kind}/${row.id}`] = row
-        for (const row of result.appends) user.logs[`${row.kind}/${row.id}`] = row
-        if (result.writes.length || result.appends.length) await this.write(all)
-        return result.response
-      } catch (error) { return farmCutoverUnavailable(error instanceof Error ? error.message : 'Farm reset failed; keep archive and Retry/Export') }
-    })
-  }
-
-  rpgCommand(uid: string, request: RpgCommandRequest): Promise<RpgCommandResponse> {
-    return this.serialize(async () => {
+      if (resolve(this.legacyFile) === resolve(this.file)) throw new Error('The old dev save cannot be the generation-2 file')
       const all = await this.read()
-      const user = (all[uid] ??= { entities: {}, logs: {} })
-      const resolved = resolveRpgCommand(uid, request, new Map(Object.entries(user.entities)),
-        new Map(Object.entries(user.logs)), Date.now())
-      if (resolved.response.status !== 'applied') return resolved.response
-      protectFarmSync({ upserts: resolved.writes.map(row => ({ ...row, baseVersion: row.version - 1 })), appends: [], farmProtocolVersion: 1 }, new Map(Object.entries(user.entities)), new Map(Object.entries(user.logs)))
-      for (const row of resolved.writes) user.entities[`${row.kind}/${row.id}`] = row
-      for (const row of resolved.appends) user.logs[`${row.kind}/${row.id}`] = row
-      await this.write(all)
-      return resolved.response
+      const done = all[uid]?.purge
+      if (done !== undefined) return purgeResponse('already', parsePurgeMarker(done))
+
+      const legacy = await readJson<LegacyFileShape>(this.legacyFile, {})
+      const old = Object.hasOwn(legacy, uid) ? legacy[uid] : undefined
+      const keys = [...Object.keys(old?.entities ?? {}), ...Object.keys(old?.logs ?? {})]
+      if (old !== undefined) {
+        delete legacy[uid]
+        await writeJson(this.legacyFile, legacy)
+      }
+      const marker: PurgeMarker = {
+        generation: SAVE_GENERATION, at: this.clock(), collections: new Set(keys.map((key) => key.split('/')[0])).size, documents: keys.length,
+      }
+      ;(all[uid] ??= { rows: {} }).purge = marker
+      await writeJson(this.file, all)
+      return purgeResponse('purged', marker)
     })
   }
 }

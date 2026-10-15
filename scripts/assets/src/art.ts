@@ -1,5 +1,5 @@
 // High-resolution private art: one WebP per entry, fetched on demand rather than atlased
-// (docs/design/collection.md#detail-panel). Atlases stay for the dense icon grids.
+// (docs/design/ux.md#albums). Atlases stay for the dense icon grids.
 
 import sharp from 'sharp'
 import { downloadImages, type DownloadFailure, type DownloadedImage, type ImageSource } from './download'
@@ -22,7 +22,7 @@ export interface ArtFamilyConfig {
 export const ART_FAMILIES: Record<ArtFamily, ArtFamilyConfig> = {
   'uma-portrait': { family: 'uma-portrait', dir: 'art/uma', maxSize: 512, quality: 82, alpha: true, source: 'uma-portrait' },
   'card-art': { family: 'card-art', dir: 'art/card', maxSize: 600, quality: 80, alpha: false, source: 'card-art' },
-  // Head-and-shoulders tiles for Uma lists, like the original's Trainee Select (docs/design/collection.md#art-tiers).
+  // Head-and-shoulders tiles for Uma lists, like the original's Trainee Select (docs/design/ux.md#art-tiers).
   'uma-bust': { family: 'uma-bust', dir: 'art/bust', maxSize: 256, quality: 82, alpha: true, source: 'uma-portrait' },
 }
 

@@ -8,24 +8,15 @@ import {
   careerOpenAtGate,
   careerProfile,
   careerStage,
-  createPlayerProfile,
   createScenarioTraining,
   createUmaSave,
   expToNextUmaLevel,
-  legacyExpToNextUmaLevel,
-  migrateUmaSaveWithSurplus,
-  parseLegacyUmaSaveV12,
-  scenarioView,
   flairSeriesLegId,
-  generateScenarioJourney,
   goalRaceIds,
-  parseUmaSave,
+  parseScenarioJourney,
   planScenarioCareer,
   recommendedRacePreferences,
-  SCENARIO_GOAL_VERSION,
-  scenarioAdvanceReadiness,
   scenarioJourneySummary,
-  upgradeGoalPlan,
   type Aptitudes,
   type DistanceCategory,
   type FlairSeriesTag,
@@ -183,7 +174,7 @@ describe('career generation', () => {
     expect(journey.goals[3]).toMatchObject({ kind: 'win-series', series: { tag: 'triple-crown' } })
     expect(racesOf(journey.goals.filter((goal) => goal.slot === 'main')).map((entry) => entry.id))
       .toEqual(['satsuki-sho', 'tokyo-yushun', 'kikuka-sho'])
-    expect(parseUmaSave({ ...createUmaSave(COLT), scenarios: [{ ...createUmaSave(COLT).scenarios[0]!, started: true, journey }] })).not.toBeNull()
+    expect(parseScenarioJourney(journey)).toEqual(journey)
   })
 
   it('rotates the main set by scenario and tops a two-leg set up from her own G1s', () => {
@@ -289,129 +280,22 @@ describe('career stages', () => {
   })
 
   it('keeps an unfinished career racing at the gate and gates the advance on it', () => {
-    const profile = { ...createPlayerProfile('abc123def456', 1), tickets: 500 }
     const gate = withJourney({ ...atTier(COLT, 2), level: 20, exp: 0 }, complete(fresh, ['maiden', 'trials']))
     expect(careerOpenAtGate(activeJourney(gate))).toBe(true)
     expect(awaitingAdvance(gate)).toBe(false)
-    expect(scenarioAdvanceReadiness(profile, gate)).toMatchObject({ ready: false, reason: 'Win her main goals to unlock the next scenario' })
     const done = withJourney(gate, complete(fresh, ['maiden', 'trials', 'main']))
     expect(awaitingAdvance(done)).toBe(true)
-    expect(scenarioAdvanceReadiness(profile, done)).toMatchObject({ ready: true })
-  })
-})
-
-describe('save v13: every scenario costs the same EXP (D241)', () => {
-  const fresh = career(COLT, 2).journey
-  // A v12 save: one build per scenario (D252) and no Inspiration state.
-  const v12 = (uma: UmaSave) => {
-    const { activePreset, ...head } = uma
-    return { ...head, schemaVersion: 12, scenarios: uma.scenarios.map((unit) => {
-      const { inspiration: _inspiration, preset: _preset, ...run } = scenarioView(unit, activePreset)
-      return run
-    }) }
-  }
-  const at = (level: number, exp: number, stages: readonly ScenarioGoal['slot'][]) =>
-    v12(withJourney({ ...atTier(COLT, 2), level, exp }, complete(fresh, stages)))
-
-  it('costs 100 to 300 EXP a level in every scenario, 1,800 for its nine', () => {
-    expect([1, 9, 10, 11, 19, 131, 139].map(expToNextUmaLevel)).toEqual([100, 300, 325, 100, 300, 100, 300])
-    const scenario = (tier: number) => Array.from({ length: 9 }, (_, step) => expToNextUmaLevel((tier - 1) * 10 + 1 + step))
-      .reduce((sum, value) => sum + value, 0)
-    expect([1, 2, 7, 14].map(scenario)).toEqual([1_800, 1_800, 1_800, 1_800])
-    // The rising curve it replaces: scenario 2 cost 4,050 and scenario 14 31,050.
-    expect([15, 131].map(legacyExpToNextUmaLevel)).toEqual([450, 3_350])
-  })
-
-  it('re-levels a v12 Uma through the EXP she earned this scenario, and reports the levels to pay', () => {
-    // Lv15 with 136 of 450: 1,686 earned since Lv11, which is Lv19 with 186 of 300 on the flat curve.
-    const migrated = migrateUmaSaveWithSurplus(at(15, 136, ['maiden', 'trials']))!
-    expect(migrated.uma).toMatchObject({ schemaVersion: 15, level: 19, exp: 186 })
-    expect(migrated).toMatchObject({ levelsGained: [16, 17, 18, 19], gateReached: null, surplusExp: 0 })
-    // Enough to pass the gate stops there with one level banked, and the gate is reported for its shard.
-    const toGate = migrateUmaSaveWithSurplus(at(19, 500, ['maiden', 'trials']))!
-    expect(toGate.uma).toMatchObject({ level: 20, exp: 100 })
-    expect(toGate).toMatchObject({ levelsGained: [20], gateReached: 20 })
-    // Already at the gate: her bank becomes one flat level.
-    expect(migrateUmaSaveWithSurplus(at(20, 600, ['maiden', 'trials']))).toMatchObject({ uma: { level: 20, exp: 100 }, levelsGained: [] })
-    // Scenario 1's levels cost what they did, so a scenario-1 Uma does not move.
-    const first = v12({ ...atTier(COLT, 1), level: 5, exp: 150 })
-    expect(migrateUmaSaveWithSurplus(first)).toMatchObject({ uma: { level: 5, exp: 150 }, levelsGained: [] })
-  })
-
-  it('stops at her career hold, banked just short, as a race would', () => {
-    // Trials unwon holds level 15: she keeps the hold and banks 199 of 200.
-    const held = migrateUmaSaveWithSurplus(at(15, 449, ['maiden']))!
-    expect(held.uma).toMatchObject({ level: 15, exp: expToNextUmaLevel(15) - 1 })
-    expect(held.levelsGained).toEqual([])
-  })
-
-  it('reads v12 on the rising curve and v13 on the flat one', () => {
-    expect(parseLegacyUmaSaveV12(at(15, 449, ['maiden']))).not.toBeNull()
-    expect(migrateUmaSaveWithSurplus({ ...at(15, 449, ['maiden']), schemaVersion: 13 })).toBeNull()
-    expect(migrateUmaSaveWithSurplus({ ...at(15, 199, ['maiden']), schemaVersion: 13 })).not.toBeNull()
   })
 })
 
 const activeJourney = (uma: UmaSave) => uma.scenarios.find((run) => run.tier === uma.unlockedTier)?.journey ?? null
 
-describe('career saves', () => {
-  const journey = career(COLT, 1).journey
-  const base = createUmaSave(COLT)
-  const save = (goals: unknown[]) => ({ ...base, scenarios: [{ ...base.scenarios[0]!, started: true, journey: { ...journey, goals } }] })
-
-  it('accepts only ordered stages with their counts and numbered ids', () => {
-    expect(base.goalPlanVersion).toBe(SCENARIO_GOAL_VERSION)
-    expect(parseUmaSave(save(journey.goals))).not.toBeNull()
-    expect(parseUmaSave({ ...base, goalPlanVersion: SCENARIO_GOAL_VERSION + 1 })).toBeNull()
-    const [maiden, trialA, trialB, main] = journey.goals
-    expect(parseUmaSave(save([trialA, maiden, trialB, main]))).toBeNull()
-    expect(parseUmaSave(save([maiden, trialA, main]))).toBeNull()
-    expect(parseUmaSave(save([maiden, trialA, trialB]))).toBeNull()
-    expect(parseUmaSave(save([maiden, { ...trialA, id: 'goal:1:trials:2' }, trialB, main]))).toBeNull()
-    expect(parseUmaSave(save([{ ...maiden, id: 'goal:1:maiden:1' }, trialA, trialB, main]))).toBeNull()
-    expect(parseUmaSave(save([maiden, trialA, trialB, main, { ...main, id: 'goal:1:main:2' }]))).toBeNull()
-    expect(parseUmaSave(save([maiden, trialA, { ...trialB, kind: 'win-by-margin', minimumMarginLengths: 5 }, main]))).toBeNull()
-    // A career never mixes with the legacy slots.
-    expect(parseUmaSave(save([maiden, trialA, trialB, { ...main, slot: 'identity', id: 'goal:1:identity' }]))).toBeNull()
-  })
-
-  it('upgrades an untouched journey to a career and keeps one with progress', () => {
-    const legacyGoal = (slot: 'aptitude' | 'identity' | 'challenge', raceId: string, status: 'active' | 'completed' = 'active'): ScenarioGoal => ({
-      id: `goal:1:${slot}`, slot, raceId, kind: slot === 'challenge' ? 'win-by-margin' : 'win', series: null,
-      minimumMarginLengths: slot === 'challenge' ? 5 : 0, status,
-      completedRaceResultId: status === 'completed' ? 'race:colt:0' : null, completedAt: status === 'completed' ? 10 : null,
-    })
-    const legacy = (status: 'active' | 'completed'): UmaSave => ({
-      ...withJourney({ ...base, goalPlanVersion: 2 }, {
-        tier: 1, tracking: 'tracked', state: 'active', completedAt: null,
-        goals: [legacyGoal('aptitude', 'satsuki-sho', status), legacyGoal('identity', 'tokyo-yushun'), legacyGoal('challenge', 'kikuka-sho')],
-      }),
-    })
-    const input = (uma: UmaSave) => ({ uma, umaTemplate: COLT, aptitudes: COLT.aptitudes, races: RACES })
-    const upgraded = upgradeGoalPlan(input(legacy('active')))
-    expect(upgraded.goalPlanVersion).toBe(SCENARIO_GOAL_VERSION)
-    expect(activeJourney(upgraded)).toEqual(generateScenarioJourney(input(legacy('active'))))
-    const kept = upgradeGoalPlan(input(legacy('completed')))
-    expect(kept.goalPlanVersion).toBe(SCENARIO_GOAL_VERSION)
-    expect(activeJourney(kept)).toEqual(activeJourney(legacy('completed')))
-    expect(careerStage(activeJourney(kept))).toBeNull()
-    expect(upgradeGoalPlan(input(upgraded))).toBe(upgraded)
-  })
-
-  it('repairs an untouched v3 career that names a retired race and preserves one with progress', () => {
-    const retiredRaceId = goalRaceIds(journey.goals[1]!)[0]!
-    const availableRaces = RACES.filter((race) => race.id !== retiredRaceId)
-    const v3 = withJourney({ ...base, goalPlanVersion: 3 }, journey)
-    const input = (uma: UmaSave) => ({ uma, umaTemplate: COLT, aptitudes: COLT.aptitudes, races: availableRaces })
-
-    const repaired = upgradeGoalPlan(input(v3))
-    expect(repaired.goalPlanVersion).toBe(4)
-    expect(activeJourney(repaired)).not.toEqual(journey)
-    expect(activeJourney(repaired)?.goals.flatMap(goalRaceIds)).not.toContain(retiredRaceId)
-
-    const progressed = withJourney({ ...base, goalPlanVersion: 3 }, complete(journey, ['maiden']))
-    const preserved = upgradeGoalPlan(input(progressed))
-    expect(preserved.goalPlanVersion).toBe(4)
-    expect(activeJourney(preserved)).toEqual(activeJourney(progressed))
+describe('every scenario costs the same EXP (D241)', () => {
+  it('costs 100 to 300 EXP a level in every scenario, 1,800 for its nine', () => {
+    expect([1, 9, 10, 11, 19, 131, 139].map(expToNextUmaLevel)).toEqual([100, 300, 325, 100, 300, 100, 300])
+    const scenario = (tier: number) => Array.from({ length: 9 }, (_, step) => expToNextUmaLevel((tier - 1) * 10 + 1 + step))
+      .reduce((sum, value) => sum + value, 0)
+    expect([1, 2, 7, 14].map(scenario)).toEqual([1_800, 1_800, 1_800, 1_800])
   })
 })
+

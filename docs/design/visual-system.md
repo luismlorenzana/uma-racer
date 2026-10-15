@@ -1,7 +1,7 @@
 # Visual System — "Paddock"
 
 The skin the game wears. This supersedes the "Racecourse Pop" table in [UX](ux.md#visual-direction) (D111); ux.md keeps
-navigation, the screen inventory, and the feedback catalogue.
+the shell and navigation, the screens, plain words and the albums.
 
 **The brief:** it should feel like the real *Umamusume* — bright, warm, art-forward, one-handed — with the restraint of a
 modern HoYoverse menu. The research and the diagnosis of what is wrong today live in
@@ -23,7 +23,7 @@ modern HoYoverse menu. The research and the diagnosis of what is wrong today liv
 | `--surface-panel` | `#FFFFFF` · hairline border `rgb(16 26 36 / 0.08)` | Ordinary content panels |
 | `--surface-raised` | `#FFFFFF` · shadow-2 | Sheets, menus, anything floating |
 | `--surface-sunken` | `#E4EAF2` | Wells: inputs, meters, empty slots |
-| `--surface-inverse` | `#101A24 → #16222E` vertical, light text | Immersive scenes: race, training, reveals, results |
+| `--surface-inverse` | `#101A24 → #16222E` vertical, light text | Immersive scenes: race, reveals, results |
 | `--surface-scrim` | `transparent → rgb(16 26 36 / 0.72)` | Over portrait art, always, so text stays legible |
 
 Three levels is the whole system. A panel inside a panel drops to a hairline divider instead of stacking another card.
@@ -80,21 +80,21 @@ Two faces, both OFL and self-hosted, latin subset only:
 | Primary button | Accent fill, ink text, `--r-sm`, 48 pt tall, press = scale 0.98 and drop to shadow-1. Loading state keeps the label |
 | Secondary | Panel fill with hairline border. Tertiary is text plus icon. Destructive is a danger outline |
 | Chip / filter | 32 pt pill, hairline border, selected = accent 12% fill with accent border and a check |
-| Segmented control | Sunken track, raised thumb, 2–4 segments, for ownership and density |
+| Tab row (`ui/Tabs`) | Sunken track, raised thumb, 2–4 tabs at 44 pt |
 | Panel | Panel surface, `--r-md`, hairline, 16 px padding, optional `micro` section label above |
 | Row | 56 pt, art or icon left, primary 15 / secondary 13, value right in display numerals |
 | Meter | Sunken track, 6 pt tall, stat colour fill, soft cap marked by a 1 px tick at 1200 |
-| Tab bar | Translucent inverse bar with blur, 5 illustrated icons, active tint accent with a chamfered underline; Race stays raised but becomes a flat accent disc with a hairline ring, not a candy dome |
-| Top bar | Transparent over art or panel elsewhere. Currencies are icon + display numeral, tappable |
+| Bottom bar | A floating translucent panel with blur and a hairline border: four page tabs and the ☰ menu. The active tab is two-tone with a chamfered accent underline; RACE is raised as a flat accent disc with a hairline ring, not a candy dome |
+| Account bar | Translucent panel with blur and a hairline under it. The trainer's initial on an accent disc, then the currencies as icon + display numeral chips, each a 44 pt link |
 | Bottom sheet | Raised surface, `--r-lg` top corners, grab handle, drag from the handle only (unchanged) |
-| Uma tile | **Art first:** portrait fills the tile, scrim at the bottom, name + level over the art, state chips top-left, tier crest top-right |
-| Card tile | Card art fills, type dot + LB pips on the scrim, level bottom-right, unowned = desaturated art at 35% with a lock, never a grey box |
+| Uma tile | **Art first:** her bust (her icon until it arrives) fills the square tile, name and level under it, tier crest and NEW top-left, Ready dot and planner crosshair top-right; locked = art dimmed to 45% at half saturation behind a lock, never a grey box ([UX](ux.md#icon-overlays)) |
+| Card tile | Card icon fills the tile; distance top-left, running style top-right, type bottom-left, bond pill bottom-right (D238); a card past her scenario is dimmed the same way behind a lock |
 
 ## Iconography
 
 - One original set: 24 px grid, 1.75 px strokes, **curve-led silhouettes** (the Umamusume rule), rounded joins, optical
   alignment over mathematical.
-- Line by default, solid for active states, and **illustrated two-tone versions for the five tab icons and the three
+- Line by default, solid for active states, and **illustrated two-tone versions for the four page tabs and the three
   currencies** — those are the ones that carry personality.
 - Every icon ships with an accessible name. **No emoji in the product** once the set lands.
 - **Stats and card types have one icon each** (D183), `ui/TypeIcon`: our own drawings in the original's style, a
@@ -109,18 +109,16 @@ Two faces, both OFL and self-hosted, latin subset only:
 - Tabs: line at rest, two-tone when active. Currencies are always two-tone. The race controls and the album's chosen
   view use solid. Tier metals colour the flair medal; the stage label still names the tier.
 - Every definition is `/* @__PURE__ */`, so a screen ships only the icons it draws; the shell's icons add about 2 KB
-  gzip to startup. Tests pin the drawings and fail on any emoji, or on any symbol-font glyph standing in for an icon
-  (Spark Match is exempt until its rework). Typography stays: `·`, `—`, `…`, `→` in copy, `×` in counts,
-  `★` in ratings.
+  gzip to startup. Tests pin the drawings and fail on any emoji, or on any symbol-font glyph standing in for an icon.
+  Typography stays: `·`, `—`, `…`, `→` in copy, `×` in counts, `★` in ratings.
 - The mark is a gold horseshoe, open to the sky, holding a spark, on the stage. `apps/web/scripts/generate-icons.mjs`
-  draws the Home Screen PNGs and `icon.svg` (the favicon and the top bar logo) from the same numbers, inside the
-  maskable safe zone.
+  draws the Home Screen PNGs and `icon.svg` (the favicon) from the same numbers, inside the maskable safe zone.
 
 ## Art treatment
 
 - Portraits are cover-cropped and **top-anchored** so faces never get cut, over `--surface-scrim`, with a 1 px inner
   light border.
-- **Four art tiers** (see [Collection](collection.md#art-tiers)): 128 px atlased icons for card grids, 256 px
+- **Four art tiers** (see [UX](ux.md#art-tiers)): 128 px atlased icons for card grids, 256 px
   head-and-shoulders busts for every list of Umas, 512 px transparent portraits for Umas, and 450×600 illustrations for
   cards. Busts sit on a panel-to-sunken gradient, since the portrait's transparency carries through. Everything but
   the icon is a per-entry file fetched on demand, so a list never waits on it and a screen shows the icon until the
@@ -135,13 +133,15 @@ Two faces, both OFL and self-hosted, latin subset only:
 - Lists stagger at 24 ms per item, capped at 8 items.
 - **Second layer:** on a major transition, one small element (a dot row, a rule, a chip) follows the main shape ~80 ms
   later. This is most of why HoYoverse menus feel expensive.
-- Springs are reserved for reward moments: level-ups, stars earned, coupon reveals, badge tiers.
+- Springs are reserved for reward moments: the placement stamp, level-ups, goal ribbons and a new Uma's reveal. (Sheets
+  and the art viewer also open on a spring, and a meter fills on one unless it tracks a live value.)
 - Reduced motion keeps every state change, drops movement, and never changes timing of a commit.
 
 ## Density
 
-Albums carry a **Comfortable / Compact** toggle: 2-up art tiles versus 3-up tiles with a shorter scrim, and 56 pt versus
-44 pt rows. The choice is remembered per device. Everything else stays comfortable.
+Albums carry a **view switch** rather than a density toggle: Icons (3-up tiles), Cards (2-up, larger art) and List
+(full-width rows). The choice is remembered per album on the device ([UX](ux.md#view-modes)). Everything else stays
+comfortable.
 
 ## Working rules
 
@@ -151,17 +151,3 @@ Albums carry a **Comfortable / Compact** toggle: 2-up art tiles versus 3-up tile
   180 KB gzip. The two font families ship as latin-only woff2 with `font-display: swap`, precached, at no more than
   96 KB together (D167).
 - Every screen is designed at 390×844 first, with 44 pt targets and safe-area padding.
-
-## Uma Puzzles battle (D276, release gated)
-
-The immersive stage fits 390×844 and 375×667 without fight-page scroll: compact three-monster intent strip, shared
-HP, six-by-five Pixi board, five portrait actives and thumb controls. Decorative enemy height yields first on short
-screens. Safe areas are applied once; non-board actions are at least 44 pt. Intent/active/guide sheets isolate focus
-and cancel unaccepted drags. Colour is paired with original glyphs: Fire orange-red, Water blue, Wood the sole green,
-Light ivory-gold, Dark violet and Heart pink. Held Uma chibis sit inside an element ring; plain orbs are a device-only
-alternative. Verified private monster art is mandatory outside explicitly isolated proofs.
-
-Pixi pools board tokens/effects and animates authoritative engine events with elapsed-time transform/opacity changes;
-DOM never rerenders per pointer sample. Reduced motion keeps state changes and reward timing. Results use the shared
-dark shell, exact five-outfit progression and a gross/repaid/Items table. The illustrated contextual guide and free
-synthetic touch lesson reuse the real stage, but do not claim keyboard dragging or physical-iPhone performance.

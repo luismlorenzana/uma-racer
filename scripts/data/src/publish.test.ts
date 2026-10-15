@@ -13,29 +13,9 @@ async function fixture(): Promise<{ contentDir: string; manifest: ContentManifes
   temporaryDirectories.push(contentDir)
   await mkdir(resolve(contentDir, 'data'))
   await mkdir(resolve(contentDir, 'art/uma'), { recursive: true })
-  const sparkPack = JSON.stringify({
-    version: '1',
-    items: Array.from({ length: 14 }, (_, index) => ({
-      id: `tier:${index + 1}`,
-      tier: index + 1,
-      ordinary: ['front', 'pace', 'late', 'end'].map((strategy, candidate) => ({
-        templateId: `synthetic-uma-${index + 1}-${candidate + 1}`,
-        charaId: `synthetic-character-${candidate + 1}`,
-        strategy,
-        recipe: ['rush-pressure', 'tracker-guard', 'surge-convert', 'finisher-delay'][candidate],
-      })),
-      bosses: [0, 1].map((candidate) => ({
-        templateId: `synthetic-boss-${index + 1}-${candidate + 1}`,
-        charaId: `synthetic-character-${candidate + 5}`,
-        strategy: candidate === 0 ? 'front' : 'pace',
-        recipe: 'circuit-boss',
-      })),
-    })),
-  })
   const entries = [
     ['data/alpha.1234abcd.json', '{"synthetic":1}'],
     ['data/beta.5678abcd.json', '{"synthetic":2}'],
-    ['data/spark-rivals.abcdef12.json', sparkPack],
     // Per-entry art publishes through the same path as packs and atlases.
     ['art/uma/synthetic-1.9abcdef0.webp', 'synthetic-art'],
   ] as const
@@ -79,29 +59,6 @@ afterEach(async () => {
 })
 
 describe('content publishing', () => {
-  it('refuses an uncatalogued RPG pack before any remote access', async () => {
-    const { contentDir, manifest } = await fixture(), value='{}', path='data/rpg-chapters.12345678.json'
-    await writeFile(resolve(contentDir,path),value)
-    manifest.files.push({path,bytes:2,sha256:createHash('sha256').update(value).digest('hex')})
-    manifest.version=createHash('sha256').update(manifest.files.map(f=>f.sha256).sort().join('')).digest('hex').slice(0,12)
-    await writeFile(resolve(contentDir,'manifest.json'),JSON.stringify(manifest))
-    const storage=new FakeStorage();storage.readManifest=async()=>{throw new Error('Remote access must not happen')}
-    await expect(publishContent({contentDir,storage})).rejects.toThrow(/exactly one catalog/)
-    expect(storage.calls).toEqual([])
-  })
-  it('refuses publication without one complete Spark rival pack', async () => {
-    const { contentDir } = await fixture()
-    const manifestPath = resolve(contentDir, 'manifest.json')
-    const manifest = JSON.parse(await readFile(manifestPath, 'utf8')) as ContentManifest
-    manifest.files = manifest.files.filter((file) => !file.path.startsWith('data/spark-rivals.'))
-    manifest.version = createHash('sha256').update(manifest.files.map((file) => file.sha256).sort().join('')).digest('hex').slice(0, 12)
-    await writeFile(manifestPath, JSON.stringify(manifest))
-    const storage = new FakeStorage()
-
-    await expect(publishContent({ contentDir, storage, dryRun: true })).rejects.toThrow(/exactly one Spark rival pack/)
-    expect(storage.calls).toEqual([])
-  })
-
   it('verifies bytes and hashes before contacting storage', async () => {
     const { contentDir, manifest } = await fixture()
     await writeFile(resolve(contentDir, manifest.files[0]!.path), 'tampered')

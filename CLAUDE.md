@@ -8,12 +8,14 @@ A personal, never-distributed Uma Musume–inspired racing RPG, played on the ow
 - `docs/tasks/README.md` is the current plan. A task spec is deleted once its work merges (D104), so that folder only ever
   holds work that is still ahead.
 
-- `README.md` → documentation map. **The design docs are the source of truth.** Read the relevant doc before changing a system.
-- `docs/design/minigame-kit.md` is the shared contract for minigames: read it before designing or reviewing one.
+- `README.md` → documentation map. **The docs are the source of truth:** [the manual](docs/game/README.md) (`docs/game/`)
+  describes the game as it runs, generation 2. Read the relevant page before changing a system, and rewrite it in the
+  same commit as the code. A later phase's part sits under "Not built yet (phase N)".
 - `docs/decisions.md` is append-only: to reverse a decision, add a new entry that supersedes it.
 - `docs/open-questions.md` holds anything that needs the owner. The owner prefers **no open questions**: decide with a
   recommendation when a sensible default exists, and log it.
-- Numbers in the design docs are tuning drafts. `packages/domain/src/domain.test.ts` pins them. Change doc and test together.
+- The manual's numbers are the rules' own: its live blocks are rendered from the code (`pnpm docs:update`), and
+  `packages/domain/src/domain.test.ts` and each area's tests pin them. Change page, test and decision together.
 
 ## Ground rules
 
@@ -27,23 +29,23 @@ A personal, never-distributed Uma Musume–inspired racing RPG, played on the ow
 
 | Path | What |
 |---|---|
-| `packages/domain` | Pure game rules (caps, economy, cards, opponents). Vitest |
+| `packages/domain` | Pure game rules, one subpath export per area (`@racer/domain/save`, `/state`, `/tiers`, `/items`, `/work`, `/farm`, `/training`, `/economy`, `/check-in`, `/planner`, `/sim`, `/builds`, `/hub`) beside the core. Vitest |
 | `packages/race` | Deterministic race engine (seeded, 15 Hz ticks, timeline + playback sampling). Vitest |
-| `apps/api` | NestJS 11: `AuthGuard` (Firebase token + `ALLOWED_EMAIL`), `/api/save`, `/api/sync`, `/api/content/*` |
-| `apps/web` | React 19 + Vite 7 + Tailwind 4 + Motion (`m.*` under `LazyMotion strict`) + PixiJS 8 scenes + PWA |
-| `scripts/sim` | Headless balance runs (`pnpm sim:balance`) |
+| `apps/api` | NestJS 11: `AuthGuard` (Firebase token + `ALLOWED_EMAIL`), `/api/save`, `/api/sync` (generation 2, protocol 2), `/api/legacy/purge` (one release), `/api/content/*` |
+| `apps/web` | React 19 + Vite 7 + Tailwind 4 + Motion (`m.*` under `LazyMotion strict`) + PWA: `src/app` (routes, session), `hub` (shell), `places`, `save` (Dexie `uma-racer-g2`, one sync lane), `ui`; PixiJS 8 only for the race scene (`scenes/race`) until phase 8; dev-only seeds at `/dev/seeds/*` (`src/dev`) |
+| `scripts/sim` | Headless balance runs (`pnpm sim:balance`, `sim:turns`, `sim:builds`, `sim:careers`, `sim:loop`) |
 | `scripts/data`, `scripts/assets` | Content pipeline (GameTora → private data packs and WebP icon atlases) |
 
 ## Commands
 
 ```bash
 NODE_AUTH_TOKEN=$(gh auth token) pnpm install   # @luismlorenzana/* (uma-platform) come from GitHub Packages
-pnpm dev            # web :5173 (proxies /api) + api :8080, auth disabled, local JSON save
+pnpm dev            # web :5173 (proxies /api) + api :8080, auth disabled, local save .data/save-g2.json, DEV_OPERATIONS=true
 pnpm lint           # type-check every package
-pnpm test           # domain + race + api tests
+pnpm test           # domain + race + api + web tests (test:ci: one suite at a time, as CI runs them)
 pnpm build          # production builds (web includes the PWA service worker and the 180 KB startup check)
 pnpm docs:update    # regenerate the live blocks in docs/game/ (the manual generated from code)
-pnpm sim:balance    # race balance table
+pnpm sim:balance    # race balance table; sim:builds, sim:careers and sim:loop check the rework's builds and pacing
 pnpm data:import    # GameTora datasets → private, gitignored content packs
 pnpm assets:import  # T001 image sources → private WebP atlases; run after data:import
                     # T059 chibis/stands/race faces: add `-- --source dir:~/Documents/uma-content` (owner's copy)
@@ -68,8 +70,8 @@ pnpm assets:import  # T001 image sources → private WebP atlases; run after dat
   Never run `gcloud config set …`.
 - Watch deploys with `gh run watch <id> -R luismlorenzana/uma-racer --exit-status`. Then verify: `/api/health` returns 200,
   `/api/save` returns 401 without a token, and the Hosting shell is `no-cache`.
-- The installed PWA prompts **Update ready — Restart** and defers restart across gameplay commits. Settings shows the
-  deployed app build and private content ("App build" and "Content" since generation 2); follow the complete
+- The installed PWA prompts **Update ready — Restart** and defers restart across gameplay commits. Account (Town Hall,
+  or the trainer button) shows the deployed **App build** and private **Content**; follow the complete
   [release runbook](docs/technical/infrastructure.md#release-runbook).
 - **`content/overrides/flair.json` is Claude's to author and keep current** (D107): it maps race-series legs and the ten
   main venues, and without it every race-set title and Grand Tour is unearnable. It is private and gitignored; re-run the
@@ -91,9 +93,12 @@ pnpm assets:import  # T001 image sources → private WebP atlases; run after dat
 
 - **Mobile first** (390×844 portrait). Thumb-zone actions, 44 pt targets, safe-area padding (`pt-safe`/`pb-safe`), `h-dvh`.
 - **Performance budgets** (`docs/research/game-web-tech.md`): main JS ≤ 180 KB gzip, so keep PixiJS and Firebase lazy.
-  Animate only transform/opacity. Use delta-time for every animation.
+  PixiJS is for the race scene only; nothing else imports it. Animate only transform/opacity. Use delta-time for every
+  animation.
 - Use Motion's `m.*` components, never `motion.*`: `LazyMotion strict` throws on `motion.*`. Continuous HUD values use CSS transitions, not springs.
-- Game state goes in Zustand with selectors, persisted to Dexie. TanStack Query is only for network data.
+- Game state is the one Zustand store (`useSave`, with selectors) over Dexie, changed only by operations through the game
+  port. TanStack Query is only for network data.
 - The race engine never uses `Math.random`: everything goes through the seeded RNG in the input.
-- Verify UI changes in the browser preview at mobile size (`uma-racer-dev` in `.claude/launch.json`). Dev builds expose
-  `window.__raceScene` (`seek`, `skipToEnd`), since the preview pane throttles animation frames.
+- Verify UI changes in the browser preview at mobile size (`uma-racer-dev` in `.claude/launch.json`); `/dev/seeds/`
+  serves the game on synthetic accounts (`?seed=`, `?at=`). Dev builds expose `window.__raceScene` (`seek`,
+  `skipToEnd`), since the preview pane throttles animation frames.

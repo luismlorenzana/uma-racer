@@ -1,4 +1,4 @@
-// A card's running-style and distance focus, beside its stat type (docs/design/support-cards.md#card-focus, D201).
+// A card's running-style and distance focus, beside its stat type (docs/game/06-cards-and-bonds.md §5, D201).
 // Derived from its skills, corrected by hand in a private override where the rule misreads a card.
 
 import type { SkillTemplate, SupportCardTemplate } from './content'

@@ -46,7 +46,7 @@ describe('icon set', () => {
   })
 
   it('draws the tab and currency icons in two tones', () => {
-    const twoTone = ['home', 'stable', 'race', 'cards', 'badges', 'ticket', 'card-coupon', 'uma-coupon']
+    const twoTone = ['home', 'stable', 'race', 'cards', 'badges', 'ticket', 'uma-coupon']
     for (const Icon of icons.filter((icon) => twoTone.includes(icon.iconName))) {
       expect(renderToStaticMarkup(<Icon variant="duotone" />), Icon.iconName).toContain('var(--icon-tone, var(--color-accent))')
     }
@@ -55,9 +55,9 @@ describe('icon set', () => {
   it('is decorative unless it is given a name', () => {
     const Icon = icons[0]!
     expect(renderToStaticMarkup(<Icon />)).toContain('aria-hidden="true"')
-    const named = renderToStaticMarkup(<Icon title="Training Tickets" size={16} />)
+    const named = renderToStaticMarkup(<Icon title="Uma Tickets" size={16} />)
     expect(named).toContain('role="img"')
-    expect(named).toContain('aria-label="Training Tickets"')
+    expect(named).toContain('aria-label="Uma Tickets"')
     expect(named).toContain('width="16"')
     expect(renderToStaticMarkup(<Icon variant="duotone" accent="var(--color-panel)" />)).toContain('--icon-tone:var(--color-panel)')
   })

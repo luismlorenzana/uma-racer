@@ -1,45 +1,52 @@
+// The app's entry (T143; docs/rework/13-removals-and-plan-changes.md §6): the game on the private content and the
+// owner's account. From the outside in:
+// - TanStack Query for the content, the auth provider (Firebase loaded lazily) and the content provider;
+// - the motion root (`LazyMotion strict`, so only `m.*` draws, and the reduced-motion setting);
+// - the session (`app/session.tsx`): the device save opened on the content with the first-boot wipe and the purge call,
+//   its requests on the owner's token, sync following the auth state;
+// - the live router (`app/router.tsx`, with the old app's redirects), and the update prompt, registered as before.
+// Dev builds mount the synthetic seeds instead at `/dev/seeds/*` (`dev/main.tsx`); a production build holds none of it.
 import './index.css'
+import './app/g2.css'
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { LazyMotion } from 'motion/react'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { RouterProvider } from 'react-router'
-import { router } from './app/router'
 import { registerAppUpdates } from './app/register-updates'
 import { UpdateNotice } from './app/UpdateNotice'
 import { AuthProvider } from './auth/AuthProvider'
 import { ContentProvider } from './content/ContentProvider'
-import { GameProvider } from './game/GameProvider'
-import { isDevPuzzleProofPath } from './app/puzzle-proof-routes'
-import { isDevFarmKitchenProofPath } from './app/farm-proof-routes'
+import { MotionRoot } from './app/motion'
+import { createG2Router, SEEDS_PATH } from './app/router'
+import { SessionProvider } from './app/session'
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: { staleTime: Infinity, retry: 1, refetchOnWindowFocus: false },
-  },
-})
+const root = createRoot(document.getElementById('root')!)
 
-// Animation features load in a separate chunk; `strict` forbids the heavier `motion.*` components.
-const loadMotionFeatures = () => import('./ui/motionFeatures').then((mod) => mod.default)
-
-// Synthetic practice and DEV proofs never boot account/auth/content or register the account service worker.
-// Practice still checks the release capability in its own entry component.
-const isolatedPuzzleProof = location.pathname === '/puzzles/practice' || import.meta.env.DEV &&
-  (isDevPuzzleProofPath(location.pathname) || isDevFarmKitchenProofPath(location.pathname))
-if (!isolatedPuzzleProof) registerAppUpdates()
-const app = <LazyMotion features={loadMotionFeatures} strict><RouterProvider router={router} />{!isolatedPuzzleProof && <UpdateNotice />}</LazyMotion>
-
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    {isolatedPuzzleProof ? app : <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <ContentProvider>
-          <GameProvider>
-            {app}
-          </GameProvider>
-        </ContentProvider>
-      </AuthProvider>
-    </QueryClientProvider>}
-  </StrictMode>,
-)
+if (import.meta.env.DEV && (location.pathname === SEEDS_PATH || location.pathname.startsWith(`${SEEDS_PATH}/`))) {
+  void import('./dev/main').then(({ mountSeeds }) => mountSeeds(root))
+} else {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { staleTime: Infinity, retry: 1, refetchOnWindowFocus: false },
+    },
+  })
+  const router = createG2Router()
+  registerAppUpdates()
+  root.render(
+    <StrictMode>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <ContentProvider>
+            <MotionRoot>
+              <SessionProvider>
+                <RouterProvider router={router} />
+              </SessionProvider>
+              <UpdateNotice />
+            </MotionRoot>
+          </ContentProvider>
+        </AuthProvider>
+      </QueryClientProvider>
+    </StrictMode>,
+  )
+}

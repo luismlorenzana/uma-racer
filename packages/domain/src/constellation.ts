@@ -1,18 +1,12 @@
-// Per-scenario skill trees: budgets, node values, and derived stats (docs/design/constellations.md).
+// Per-scenario trees: caps, budgets, node values and the drawn silhouettes (docs/game/04-tiers-and-promotion.md §7,
+// docs/game/05-training-hub.md §4). The rework's
+// re-authored trees (`training/trees`) and rivals build on these.
 
-import { MAX_STARS } from './cards'
-import { BUFF_VALUES, scenarioBuff } from './scenario-buffs'
 import { SHAPE_ART, cellKey, parseShapeArt, type ShapeCell } from './constellation-shapes'
-import type { SupportCardTemplate, UmaTemplate } from './content'
-import { MAX_SCENARIO_TIER, SCENARIOS, baselineSkillPoints, skillPointCap } from './scenarios'
-import { STATS, type StatKey, type Stats, zeroStats } from './types'
-import { farmCropById } from './farm/catalog'
-import type { FarmCropId } from './farm/types'
-import { EXTRA_STAT_NODE_VALUE, EXTRA_STAT_SLOTS, extraStatCounts, type ExtraStats } from './extra-stats'
+import type { SupportCardTemplate } from './content'
+import { MAX_SCENARIO_TIER, SCENARIOS } from './scenarios'
+import { STATS, type StatKey, type Stats } from './types'
 
-export const MAX_TRAINING_LEVEL = 10
-/** Training Levels 1–8 open card nodes; 9 and 10 open lineage (docs/design/constellations.md, D235). */
-export const NODE_UNLOCK_LEVELS = 8
 export const CARD_SET_SIZE = 6
 /**
  * Raw points the six active Extra stat nodes pay between them (D134, D235). Small on purpose: they are for tweaks — the
@@ -58,7 +52,7 @@ export interface ShapeDef {
  */
 export const DRAWN_TIPS = 6
 
-/** Slot counts and silhouettes per scenario (docs/design/scenarios.md#constellation-shapes). */
+/** Slot counts and silhouettes per scenario; the re-authored trees keep the silhouettes (docs/game/05-training-hub.md §4). */
 export const CONSTELLATION_SHAPES: readonly ShapeDef[] = [
   { shape: 'single-trunk', cardNodes: 18 },
   { shape: 'three-branch', cardNodes: 20 },
@@ -88,10 +82,6 @@ export const averageCap = (tier: number): number => capBudget(tier) / STATS.leng
 
 export const shapeDef = (tier: number): ShapeDef => CONSTELLATION_SHAPES[clampTier(tier) - 1]!
 
-
-/** The tree's nodes that Training Levels 1–8 open: its card nodes (D235). */
-export const slotCount = (tier: number): number => shapeDef(tier).cardNodes
-
 /**
  * Raw points one **card** node pays at max stars and current era: what is left of the tree's share of the cap budget
  * once the Extra stat pool is set aside, over the card nodes (D134). Rounded to an integer so the invariance rule can
@@ -112,9 +102,6 @@ export const cardFairShare = (tier: number): number => Math.ceil(shapeDef(tier).
  */
 export const cardNodeCap = (tier: number): number => cardFairShare(tier) + 1
 
-/** SP one node of a max-bonded, current-era Friend or Group card pays (D133). An integer at every tier. */
-export const spNodeValue = (tier: number): number => Math.round((SP_CARD_SHARE * skillPointCap(tier)) / cardFairShare(tier))
-
 // --- Cards -------------------------------------------------------------------------------------
 
 export type CardNodeType = StatKey | 'friend' | 'group'
@@ -134,11 +121,14 @@ export const CARD_TYPE_SHARES: Record<CardNodeType, Partial<Record<StatKey, numb
   group: { speed: 20, stamina: 20, power: 20, guts: 20, wit: 20 },
 }
 
-/** Percentage of a node's value a card pays at 0★–3★ (D200): the old 0★ · 1★ · 3★ · 5★ of D147's curve. */
+/**
+ * Percentage of a node's value a card paid at 0★–3★ (D200): the old 0★ · 1★ · 3★ · 5★ of D147's curve. Cards have no
+ * stars now (D329); the rivals' typical build keeps its 84% card factor from here (`TYPICAL_CARD_STARS`).
+ */
 export const STAR_NODE_PCT = [60, 68, 84, 100] as const
 
 export const starNodePct = (stars: number): number =>
-  STAR_NODE_PCT[Math.min(MAX_STARS, Math.max(0, Math.trunc(stars)))]!
+  STAR_NODE_PCT[Math.min(STAR_NODE_PCT.length - 1, Math.max(0, Math.trunc(stars)))]!
 
 /** Percentage points a card loses for each scenario it predates. */
 export const ERA_PENALTY_PER_STEP = 5
@@ -173,7 +163,7 @@ export interface ConstellationNode {
   /** Layout position in a 0–100 square. Authored, never simulated. */
   x: number
   y: number
-  /** Unlock order among card nodes; lineage nodes use their fixed Training Level instead. */
+  /** Unlock order among card nodes; -1 for the root and lineage nodes. */
   order: number
 }
 
@@ -261,10 +251,6 @@ export function buildTemplate(tier: number): ConstellationTemplate {
   }
 }
 
-/** The ids the drawn tips had: a v11 unit's Produce nodes, which the v12 migration turns into Extra stats (D235). */
-export const legacyProduceNodeIds = (tier: number): string[] =>
-  Array.from({ length: DRAWN_TIPS }, (_, index) => `n${shapeDef(tier).cardNodes + index}`)
-
 /** Drawable edges: card nodes to their parent, and each grandparent to its parent node. */
 export function constellationEdges(
   template: ConstellationTemplate,
@@ -334,106 +320,11 @@ export function validateTemplate(template: ConstellationTemplate): string | null
   return null
 }
 
-// --- Unlocking ---------------------------------------------------------------------------------
-
-export const clampTrainingLevel = (level: number): number =>
-  Math.min(MAX_TRAINING_LEVEL, Math.max(1, Math.trunc(level)))
-
-/** Card nodes open on a straight line from Training Level 1 to 8 (D235). */
-export function unlockedNodeCount(tier: number, trainingLevel: number): number {
-  const n = slotCount(tier)
-  const tl = clampTrainingLevel(trainingLevel)
-  if (tl >= NODE_UNLOCK_LEVELS) return n
-  return Math.ceil((n * tl) / NODE_UNLOCK_LEVELS)
-}
-
-/** Historical TL gates, retained only as a migration reference. Live Inspiration never reads them (D250). */
-export function lineageUnlockLevel(template: ConstellationTemplate, nodeId: string): number | null {
-  const node = template.nodes.find((entry) => entry.id === nodeId)
-  if (!node) return null
-  if (node.kind === 'parent') return node.id === 'parent0' ? 9 : 10
-  if (node.kind === 'grandparent') return node.parentId === 'parent0' ? 9 : 10
-  return null
-}
-
-/** Live Training Level gate: 1–8 for cards; lineage has no TL gate and requires explicit tokens. */
-export function nodeUnlockLevel(template: ConstellationTemplate, node: ConstellationNode): number {
-  if (node.kind === 'root') return 1
-  if (node.kind === 'parent' || node.kind === 'grandparent') return Infinity
-  for (let level = 1; level < NODE_UNLOCK_LEVELS; level += 1) {
-    if (node.order < unlockedNodeCount(template.tier, level)) return level
-  }
-  return NODE_UNLOCK_LEVELS
-}
-
-export function isNodeUnlocked(
-  template: ConstellationTemplate,
-  node: ConstellationNode,
-  trainingLevel: number,
-  inspiration?: { slots: readonly string[] },
-): boolean {
-  const tl = clampTrainingLevel(trainingLevel)
-  if (node.kind === 'root') return true
-  if (node.kind === 'card') return node.order < unlockedNodeCount(template.tier, tl)
-  return inspiration?.slots.includes(node.id) ?? false
-}
-
-export function unlockedNodes(
-  template: ConstellationTemplate,
-  trainingLevel: number,
-  inspiration?: { slots: readonly string[] },
-): ConstellationNode[] {
-  return template.nodes.filter((node) => isNodeUnlocked(template, node, trainingLevel, inspiration))
-}
-
-/** Which nodes a Training Level gain opens. Drives the Spark Match post-run summary. */
-export function nodesUnlockedBetween(
-  template: ConstellationTemplate,
-  fromLevel: number,
-  toLevel: number,
-): ConstellationNode[] {
-  const before = new Set(unlockedNodes(template, fromLevel).map((node) => node.id))
-  return unlockedNodes(template, toLevel).filter((node) => !before.has(node.id))
-}
-
-// --- Derivation --------------------------------------------------------------------------------
+// --- Assignments -------------------------------------------------------------------------------
 
 export type NodeAssignment =
   | { kind: 'card'; cardId: string }
   | { kind: 'lineage'; templateId: string }
-
-/** A v9–v11 Produce node filled from inventory. Only the v12 migration reads it (D205, D235). */
-export interface ProduceAssignment {
-  kind: 'produce'
-  itemId: FarmCropId
-  /** Monotonic per-node replacement revision. The first stocked fill is revision 1. */
-  revision: number
-}
-
-/** A v9–v11 Produce node carried over from a pre-v9 Stat node. Only the v12 migration reads it. */
-export interface LegacyProduceAssignment {
-  kind: 'legacy-produce'
-  stat: StatKey
-}
-
-/** What a v11 unit's nodes could hold, Produce included. */
-export type LegacyNodeAssignment = NodeAssignment | ProduceAssignment | LegacyProduceAssignment
-
-/** The stat a v11 Produce assignment paid in this scenario; malformed/stale assignments paid nothing. */
-export function produceAssignmentStat(assignment: LegacyNodeAssignment | undefined, tier: number): StatKey | null {
-  if (assignment?.kind === 'legacy-produce') return assignment.stat
-  if (assignment?.kind !== 'produce') return null
-  const crop = farmCropById(assignment.itemId)
-  return crop?.scenarioTier === tier ? crop.stat : null
-}
-
-/** What one node filled with this card pays, before the stat split. The Cards album shows this. */
-export function cardNodeValue(
-  tier: number,
-  card: { template: Pick<SupportCardTemplate, 'era'>; stars: number },
-): number {
-  return (nodeValue(tier) * starNodePct(card.stars) * eraPct(card.template.era, tier)) / 10_000
-}
 
 /**
  * Friend and Group cards — the non-trainee staff and teams the original game ties to its scenarios — pay skill
@@ -441,208 +332,3 @@ export function cardNodeValue(
  */
 export const paysSkillPoints = (template: Pick<SupportCardTemplate, 'type'>): boolean =>
   template.type === 'friend' || template.type === 'group'
-
-/** What one node filled with a skill-point card pays, in SP. */
-export function cardSpPerNode(
-  tier: number,
-  card: { template: Pick<SupportCardTemplate, 'era'>; stars: number },
-): number {
-  return (spNodeValue(tier) * starNodePct(card.stars) * eraPct(card.template.era, tier)) / 10_000
-}
-
-export interface CardNodeState {
-  template: Pick<SupportCardTemplate, 'id' | 'type' | 'era' | 'effectProfile' | 'hintSkillIds'>
-  stars: number
-  /** Its gold skills (`cardGoldSkillIds`); each node pays the next one as well as the next white (D182). */
-  goldSkillIds?: readonly string[]
-}
-
-export interface DeriveInput {
-  tier: number
-  trainingLevel: number
-  template: ConstellationTemplate
-  assignments: Readonly<Record<string, NodeAssignment>>
-  cardSetIds: readonly string[]
-  umaTemplate: Pick<UmaTemplate, 'baseStats' | 'growthRates'>
-  cards: ReadonlyMap<string, CardNodeState>
-  /** The unit's Extra stats grid; its active nodes pay (D235). None when omitted. */
-  extraStats?: ExtraStats
-  /** Acknowledged active-generation Farm vector. Even zero selects the new path, disabling retired Extra. */
-  farmStats?: Stats
-  inspiration?: { slots: readonly string[] }
-  /** Career goals won in this scenario, for Trackblazer's Climax (D165). */
-  goalsWon?: number
-  /** The scenario's buff (D165); off only where a test checks the tree's own arithmetic. */
-  buffs?: boolean
-}
-
-export interface DerivedStats {
-  /** Post-growth, capped. What races read. */
-  stats: Stats
-  /** Pre-growth, pre-cap raw points. The invariance rule is about this. */
-  raw: Stats
-  rawTotal: number
-  skillPoints: number
-  /** Skill ids paid by card nodes, in assignment order, deduplicated. */
-  cardSkillIds: string[]
-  assignedNodes: number
-  filledNodes: number
-  /** Present only on the new path; raw/rawTotal remain card-only, never a Farm invariance claim. */
-  farmSources?: FarmStatSources
-}
-
-export interface FarmStatSources {
-  baseAndCards: Stats
-  farm: Stats
-  beforeCap: Stats
-  marginal: Stats
-  waste: Stats
-}
-
-/** Values accumulate as integers in units of 1/SCALE: four percentages (star, era, share, buff), so 100⁴. */
-const SCALE = 100_000_000
-
-/**
- * Stats, SP and card skills from one configuration. Pure and total: an assignment naming a card that is not
- * in the set, or a node that is not unlocked, contributes nothing rather than throwing.
- */
-export function deriveStats(input: DeriveInput): DerivedStats {
-  const { template, assignments, cards, umaTemplate } = input
-  const value = nodeValue(input.tier)
-  const spValue = spNodeValue(input.tier)
-  const perCardCap = cardNodeCap(input.tier)
-  const inSet = new Set(input.cardSetIds)
-  const buff = input.buffs === false ? null : scenarioBuff(input.tier).id
-
-  // First pass: which nodes pay, and how many live nodes each card fills. Past its cap a card pays nothing (D134);
-  // nodes count in template order, so the earliest ones stay live. Cooking and Construction read the final counts.
-  const live: { node: ConstellationNode; assignment: NodeAssignment }[] = []
-  const cardNodesUsed = new Map<string, number>()
-  let lineageFilled = 0
-  let filled = 0
-  for (const node of template.nodes) {
-    if (node.kind === 'root' || !isNodeUnlocked(template, node, input.trainingLevel, input.inspiration)) continue
-    if (node.kind === 'card') filled += 1
-    const assignment = assignments[node.id]
-    if (!assignment) continue
-    if ((node.kind === 'parent' || node.kind === 'grandparent') && assignment.kind === 'lineage') lineageFilled += 1
-    if (node.kind === 'card' && assignment.kind === 'card' && inSet.has(assignment.cardId) && cards.has(assignment.cardId)) {
-      const used = cardNodesUsed.get(assignment.cardId) ?? 0
-      if (used >= perCardCap) continue
-      cardNodesUsed.set(assignment.cardId, used + 1)
-      live.push({ node, assignment })
-    }
-  }
-
-  // The scenario's buff on one card's nodes, in whole percent (D165).
-  const setTypes = input.cardSetIds.map((id) => cards.get(id)?.template.type).filter((type) => type !== undefined)
-  const setBonus = buff === 'team-spirit' ? lineageFilled * BUFF_VALUES.teamSpiritPerLineage
-    : buff === 'climax' ? Math.min(BUFF_VALUES.climaxGoals, input.goalsWon ?? 0) * BUFF_VALUES.climaxPerGoal
-      : buff === 'performance' && STATS.every((stat) => setTypes.includes(stat)) ? BUFF_VALUES.performance
-        : 0
-  const cardBuffPct = (cardId: string, card: CardNodeState): number => {
-    const type = card.template.type
-    const nodes = cardNodesUsed.get(cardId) ?? 0
-    let bonus = setBonus
-    if (buff === 'fragments' && card.stars >= BUFF_VALUES.fragmentsStars) bonus += BUFF_VALUES.fragments
-    if (buff === 'expedition' && card.template.era >= BUFF_VALUES.expeditionEra) bonus += BUFF_VALUES.expedition
-    if (buff === 'genres' && setTypes.filter((other) => other === type).length >= 2) bonus += BUFF_VALUES.genres
-    if (buff === 'cooking' && nodes === perCardCap) bonus += BUFF_VALUES.cooking
-    if (buff === 'research' && (type === 'speed' || type === 'power')) bonus += BUFF_VALUES.research
-    if (buff === 'construction' && nodes === cardFairShare(input.tier)) bonus += BUFF_VALUES.construction
-    if (buff === 'soak' && (type === 'stamina' || type === 'guts')) bonus += BUFF_VALUES.soak
-    return 100 + bonus
-  }
-
-  // Accumulate in integer units of 1/SCALE so a full tree of max-broken cards lands on treeBudget exactly.
-  const scaled: Record<StatKey, number> = { speed: 0, stamina: 0, power: 0, guts: 0, wit: 0 }
-  let scaledSp = 0
-  const cardSkillIds: string[] = []
-  const skillCursor = new Map<string, number>()
-  const statPct = buff === 'foundation' ? BUFF_VALUES.foundationStatPct : 100
-
-  // The active Extra stat nodes, whatever the Training Level (D235).
-  const extraCounts = input.farmStats === undefined && input.extraStats ? extraStatCounts(input.extraStats) : null
-  let extraActive = 0
-  for (const stat of STATS) {
-    const count = extraCounts?.[stat] ?? 0
-    extraActive += count
-    scaled[stat] += count * EXTRA_STAT_NODE_VALUE * 100 * 100 * 100 * statPct
-  }
-
-  for (const { assignment } of live) {
-    if (assignment.kind !== 'card') continue
-    const card = cards.get(assignment.cardId)!
-    const quality = starNodePct(card.stars) * eraPct(card.template.era, input.tier) * cardBuffPct(assignment.cardId, card)
-
-    if (paysSkillPoints(card.template)) {
-      scaledSp += spValue * quality
-      // Orders (tier 14): a Friend or Group card also pays half a node as stats, split as its type splits them.
-      if (buff === 'orders') {
-        const shares = cardShares(card.template)
-        for (const stat of STATS) scaled[stat] += (value * quality * (shares[stat] ?? 0) * BUFF_VALUES.ordersStatPct) / 100
-      }
-    } else {
-      const shares = cardShares(card.template)
-      for (const stat of STATS) scaled[stat] += value * quality * (shares[stat] ?? 0)
-    }
-
-    // Each node a card occupies pays the next of its golds while it has any (D182), and the next skill from its hints.
-    const cursor = skillCursor.get(assignment.cardId) ?? 0
-    skillCursor.set(assignment.cardId, cursor + 1)
-    for (const skillId of [card.goldSkillIds?.[cursor], card.template.hintSkillIds[cursor]]) {
-      if (skillId && !cardSkillIds.includes(skillId)) cardSkillIds.push(skillId)
-    }
-  }
-
-  // Shared Light (tier 13): the two lowest stats the tree pays each gain +8%.
-  if (buff === 'shared-light') {
-    for (const stat of [...STATS].sort((left, right) => scaled[left] - scaled[right]).slice(0, 2)) {
-      scaled[stat] = (scaled[stat] * (100 + BUFF_VALUES.sharedLight)) / 100
-    }
-  }
-  const assigned = live.length + extraActive
-
-  // Sum the integers, then divide once. Dividing per stat and adding the results loses the exactness at
-  // tiers whose node value is not a dyadic fraction (tier 4's 168, for one).
-  const raw = zeroStats()
-  let scaledTotal = 0
-  for (const stat of STATS) {
-    raw[stat] = scaled[stat] / SCALE
-    scaledTotal += scaled[stat]
-  }
-  const rawTotal = scaledTotal / SCALE
-
-  // Her base stats plus the tree's gains, grown by her growth rates: the number shown is the number raced (D152).
-  const caps = capProfile(input.tier)
-  const stats = zeroStats()
-  const farmSources: FarmStatSources | undefined = input.farmStats === undefined ? undefined : {
-    baseAndCards: zeroStats(), farm: { ...input.farmStats }, beforeCap: zeroStats(), marginal: zeroStats(), waste: zeroStats(),
-  }
-  for (const stat of STATS) {
-    const grown = umaTemplate.baseStats[stat] + raw[stat] * (1 + (umaTemplate.growthRates[stat] ?? 0))
-    const farm = input.farmStats?.[stat] ?? 0
-    if (!Number.isFinite(farm) || farm < 0) throw new RangeError('Invalid Farm stat vector')
-    stats[stat] = Math.min(caps[stat], Math.round(grown + farm))
-    if (farmSources) {
-      farmSources.baseAndCards[stat] = grown
-      farmSources.beforeCap[stat] = grown + farm
-      farmSources.marginal[stat] = stats[stat] - Math.min(caps[stat], Math.round(grown))
-      farmSources.waste[stat] = farm - farmSources.marginal[stat]
-    }
-  }
-
-  return {
-    stats,
-    raw,
-    rawTotal,
-    skillPoints: Math.min(
-      skillPointCap(input.tier),
-      baselineSkillPoints(input.tier, input.trainingLevel) + Math.round(scaledSp / 1_000_000),
-    ),
-    cardSkillIds,
-    assignedNodes: assigned,
-    filledNodes: filled,
-    ...(farmSources ? { farmSources } : {}),
-  }
-}

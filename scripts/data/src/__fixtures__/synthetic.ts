@@ -42,7 +42,7 @@ export const syntheticSupportCards = [
     support_id: 9101,
     char_id: 911,
     char_name: 'Synthetic Coach A',
-    title_en: 'Measured Friendship',
+    title_en: 'Measured Pace',
     rarity: 3,
     type: 'speed',
     release: '2021-02-24',

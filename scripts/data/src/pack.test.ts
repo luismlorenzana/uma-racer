@@ -13,7 +13,7 @@ afterEach(async () => {
 })
 
 describe('writeContentPacks', () => {
-  it('sorts compact JSON, hashes exact bytes, removes stale packs, and writes the manifest', async () => {
+  it('sorts compact JSON, hashes exact bytes, removes stale packs, keeps only the asset families, and writes the manifest', async () => {
     const contentDir = await mkdtemp(join(tmpdir(), 'uma-racer-pack-'))
     tempDirs.push(contentDir)
     await import('node:fs/promises').then(({ mkdir }) => mkdir(resolve(contentDir, 'data')))
@@ -24,7 +24,14 @@ describe('writeContentPacks', () => {
         version: 'old',
         generatedAt: '2000-01-01T00:00:00.000Z',
         source: {},
-        files: [{ path: 'atlases/uma-icons.abcd1234.json', bytes: 2, sha256: 'a'.repeat(64) }],
+        files: [
+          { path: 'atlases/uma-icons.abcd1234.json', bytes: 2, sha256: 'a'.repeat(64) },
+          { path: 'art/bust/uma-1.abcd1234.webp', bytes: 3, sha256: 'b'.repeat(64) },
+          // A family no pipeline builds any more, and an old pack: neither stays in the manifest (T143).
+          { path: 'atlases/retired-icons-0.abcd1234.webp', bytes: 4, sha256: 'c'.repeat(64) },
+          { path: 'art/retired/x.abcd1234.webp', bytes: 5, sha256: 'd'.repeat(64) },
+          { path: 'data/retired.abcd1234.json', bytes: 6, sha256: 'e'.repeat(64) },
+        ],
       }),
       'utf8',
     )
@@ -64,6 +71,8 @@ describe('writeContentPacks', () => {
       bytes: 2,
       sha256: 'a'.repeat(64),
     })
+    expect(manifest.files.map((file) => file.path).filter((path) => !path.startsWith('data/umas.') && !path.startsWith('data/cards.')))
+      .toEqual(['art/bust/uma-1.abcd1234.webp', 'atlases/uma-icons.abcd1234.json'])
     expect(JSON.parse(await readFile(resolve(contentDir, 'manifest.json'), 'utf8')) as ContentManifest).toEqual(manifest)
   })
 })

@@ -1,7 +1,7 @@
 // Firestore cannot hold an array directly inside another array: it rejects the write with INVALID_ARGUMENT, "invalid
 // nested entity". A compiled skill's condition is exactly that shape (alternatives, each a list of clauses), and race
-// records carry every runner's skills. So a record whose data has a nested array is stored with its data as JSON text;
-// every other record is stored as it always was, and documents written before this read unchanged (D151).
+// records carry every runner's skills. So a row whose data has a nested array is stored with its data as JSON text,
+// and every other row as it is (D151).
 
 /** True if any array anywhere in `value` directly contains another array. */
 export function hasNestedArray(value: unknown): boolean {

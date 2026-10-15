@@ -8,7 +8,6 @@ import {
   applyRaceBadgeFacts,
   applyScenarioCompletionFact,
   MAX_COMPLETION_GOALS,
-  applyTrainingBadgeFacts,
   badgeStateId,
   createTrainerBadgeState,
   createUmaBadgeState,
@@ -18,7 +17,7 @@ import {
   type RaceResultRecord,
   type UmaTemplate,
 } from './index'
-import { createUmaSave } from './save'
+import { createUmaSave } from './career-shapes'
 
 const template: UmaTemplate = {
   id: 'synthetic-uma',
@@ -76,7 +75,6 @@ function result(sequence = 0, placement = 1): RaceResultRecord {
     playerPlacement: placement,
     expGained: 0,
     levelsGained: [],
-    ticketReward: 0,
     shardReward: 0,
     completedGoalIds: sequence === 0 ? ['synthetic-goal'] : [],
     accomplishmentFacts: facts,
@@ -98,12 +96,18 @@ function result(sequence = 0, placement = 1): RaceResultRecord {
 describe('badge state v1', () => {
   it('constructs strict Uma and Trainer states and rejects unknown versions or corrupt counters', () => {
     const uma = { ...createUmaSave(template), level: 12 }
-    const state = createUmaBadgeState(uma, subject({ tier: 2, trainingLevel: 10 }), 100)
+    const state = createUmaBadgeState(uma, subject({ tier: 2 }), 100)
     expect(badgeStateId(template.id)).toBe('uma:synthetic-uma')
     expect(parseBadgeState(state)).toEqual(state)
     expect(parseBadgeState(createTrainerBadgeState(100))).toEqual(createTrainerBadgeState(100))
     expect(parseBadgeState({ ...state, version: 2 })).toBeNull()
     expect(parseBadgeState({ ...state, facts: { ...state.facts, wins: 2, starts: 1 } })).toBeNull()
+  })
+
+  it('takes a Full House', () => {
+    const state = createUmaBadgeState(createUmaSave(template), subject(), 100)
+    const fullHouse = { ...state, facts: { ...state.facts, fullHouseCount: 1 } }
+    expect(parseBadgeState(fullHouse)).toEqual(fullHouse)
   })
 
   it('aggregates ordered race facts once and resets a streak on a loss', () => {
@@ -135,20 +139,16 @@ describe('badge state v1', () => {
     expect(degraded.history).toMatchObject({ race: 'exact', diagnostics: ['race-facts-unavailable:race:synthetic-uma:0'] })
   })
 
-  it('reads stats, skills and full training from the derived constellation', () => {
+  it('reads stats and skills from the derived build', () => {
     const uma = createUmaSave(template)
     const derived = subject({
-      trainingLevel: 10,
       stats: { speed: 700, stamina: 100, power: 100, guts: 100, wit: 100 },
       library: [{ skillId: 'synthetic-skill' }],
     })
     const state = createUmaBadgeState(uma, derived, 100)
-    // Training turns no longer exist, so their history is explicitly untracked rather than a lower bound.
-    // Spark Match runs are ledgered from the first, so training history is exact (T056).
     expect(state.history.training).toBe('exact')
-    expect(state.facts.lifetimeTrainingTurns).toBe(0)
     expect(state.facts.statPeaks.speed).toBe(700)
-    expect(state.facts.fullyTrainedTiers).toEqual([1])
+    expect(state.facts.fullyTrainedTiers).toEqual([])
     expect(state.facts.distinctSkillIds).toEqual(['synthetic-skill'])
     expect(parseBadgeState(state)).toEqual(state)
   })
@@ -164,12 +164,9 @@ describe('badge state v1', () => {
     const completed = applyScenarioCompletionFact(state, {
       tier: 1,
       completedAt: 200,
-      trainingLevel: 10,
       stats: { speed: 700, stamina: 700, power: 700, guts: 700, wit: 700 },
       deckCardIds: ['synthetic-card'],
       deckEras: [1],
-      trainingTurns: 20,
-      friendshipTrainings: 4,
       raceStarts: 3,
       completedGoalIds: ['synthetic-goal'],
       honors: false,
@@ -187,8 +184,8 @@ describe('badge state v1', () => {
     expect(MAX_COMPLETION_GOALS).toBe(1 + 2 + CAREER_MAIN_RACES)
     const base = createUmaBadgeState(createUmaSave(template), subject(), 100)
     const complete = (goals: number) => applyScenarioCompletionFact(base, {
-      tier: 1, completedAt: 200, trainingLevel: 10, stats: { speed: 700, stamina: 700, power: 700, guts: 700, wit: 700 },
-      deckCardIds: ['synthetic-card'], deckEras: [1], trainingTurns: 0, friendshipTrainings: 0, raceStarts: 17,
+      tier: 1, completedAt: 200, stats: { speed: 700, stamina: 700, power: 700, guts: 700, wit: 700 },
+      deckCardIds: ['synthetic-card'], deckEras: [1], raceStarts: 17,
       completedGoalIds: Array.from({ length: goals }, (_, index) => `goal:1:${index}`), honors: true,
       parentUmaIds: [], grandparentUmaIds: [],
     })
@@ -212,33 +209,5 @@ describe('badge state v1', () => {
     expect(parseFlairEvent(event)).toEqual(event)
     expect(parseFlairEvent({ ...event, surprise: true })).toBeNull()
     expect(parseFlairEvent({ ...event, scope: 'trainer', umaId: template.id })).toBeNull()
-  })
-})
-
-describe('training facts of the minigame era (T056, D164)', () => {
-  const base = () => createUmaBadgeState(createUmaSave(template), subject(), 100)
-
-  it('counts Spark Match runs per scenario, marks TL10s and full trees, and makes the history exact', () => {
-    const next = applyTrainingBadgeFacts(base(), { runsByTier: new Map([[2, 4], [1, 9]]), fullyTrainedTiers: [1], fullTreeTiers: [1] })
-    expect(next.history.training).toBe('exact')
-    expect(next.facts.lifetimeTrainingTurns).toBe(13)
-    expect(next.facts.trainingByTier.map((entry) => [entry.tier, entry.turns, entry.fullHouseCount, entry.reachedTl10]))
-      .toEqual([[1, 9, 1, true], [2, 4, 0, false]])
-    expect(next.facts.fullyTrainedTiers).toEqual([1])
-    expect(next.facts.fullHouseCount).toBe(1)
-    expect(parseBadgeState(next)).not.toBeNull()
-  })
-
-  it('never takes back what it counted, and returns an unchanged state as it came', () => {
-    const once = applyTrainingBadgeFacts(base(), { runsByTier: new Map([[1, 9]]), fullyTrainedTiers: [1], fullTreeTiers: [] })
-    expect(applyTrainingBadgeFacts(once, { runsByTier: new Map([[1, 9]]), fullyTrainedTiers: [1], fullTreeTiers: [] })).toBe(once)
-    const fewer = applyTrainingBadgeFacts(once, { runsByTier: new Map([[1, 3]]), fullyTrainedTiers: [], fullTreeTiers: [] })
-    expect(fewer.facts.lifetimeTrainingTurns).toBe(9)
-    expect(fewer.facts.fullyTrainedTiers).toEqual([1])
-  })
-
-  it('never counts a full tree without a run behind it', () => {
-    const next = applyTrainingBadgeFacts(base(), { runsByTier: new Map(), fullyTrainedTiers: [], fullTreeTiers: [1] })
-    expect(next.facts.fullHouseCount).toBe(0)
   })
 })

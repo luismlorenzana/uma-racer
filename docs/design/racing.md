@@ -1,18 +1,31 @@
 # Racing
 
-Racing is the **first system to be built** and the heart of the game. Races grant Uma EXP, win
-[career goals](scenario-goals.md), feed badges, and are where stats, skills, and cards finally pay off. **Races can be lost.**
+Racing is the heart of the game. A race pays **Racing EXP** to the Uma who ran and **Prize Money** to the account, wins
+[career goals](scenario-goals.md), feeds badges, and is where her build's stats, skills and cards pay off. **Races can be
+lost.**
+
+> **Status: built (generation 2, T141, D359).** Races run on engine v9 (`packages/race`) at the Racecourse,
+> `/racing/racecourse` ([11](../game/11-hub-and-places.md) §3.3). What a race pays, the Daily Purse and the featured
+> races are [09](../game/09-racing-rewards-and-exchange.md)'s; Racing Level, holds and the gate are
+> [03](../game/03-uma-progression.md)'s. This page owns the race itself: the catalogue, the rivals and the engine.
 
 ## Race loop (player's view)
 
-0. **Opening training first:** a scenario's races unlock after 1 training turn in that scenario (see [Training](training.md#opening-training)). Races cost no tickets.
-1. **Pick a race** from the calendar or catalog. It shows grade, venue, surface, distance, rewards, and any career goal it counts toward.
-2. **Pick the Uma, strategy, and skill loadout.** The strategy starts at that outfit's saved default (or its strongest
-   baseline style until edited), and can still be changed for this race. Aptitudes are shown for the race's surface,
-   distance, and each strategy.
-3. **Watch the race** turn by turn on its own course ([engine v9](#engine-v9-a-speed-skill-always-speeds-her-up)): 1×
-   plays two one-second turns a second, and Slow, 2×, pause, step one turn and skip are always at hand.
-4. **Results:** finishing order, margins, time, EXP gained, goal and badge progress, and new badges or titles with fanfare.
+Racing is never blocked and costs nothing (D328): no ticket, no lock, and no training needed first.
+
+1. **Pick the Uma and the race** at the Racecourse: the Uma strip, the Daily Purse bar, **Today's featured**, **Next
+   up** and every race ([09](../game/09-racing-rewards-and-exchange.md) §3.5, §4). A race card shows grade, venue,
+   surface and distance, and marks a career goal, a set leg or a first G1 win.
+2. **The pre-race sheet.** She races as her current scenario, on **the preset of the race's distance** (D254): its
+   stats, aptitudes and skill loadout ([03](../game/03-uma-progression.md) §6). The running style starts at her saved
+   default (or the recommended style until she sets one) and can be changed for this race. The sheet shows her
+   surface, distance and style aptitudes, the goals at stake and the skills she carries.
+3. **Start race commits the race** before it plays
+   ([the race on `finish-race`](#generation-2-the-race-on-finish-race-t141-d359)).
+4. **Watch the race** turn by turn on its own course ([engine v9](#engine-v9-a-speed-skill-always-speeds-her-up)): 1×
+   plays two one-second turns a second, and Slow, 2×, pause, step one turn and Skip are always at hand.
+5. **The result** ([09](../game/09-racing-rewards-and-exchange.md) §7): finishing order and margins, Racing EXP and
+   level-ups, Prize Money, goal ribbons, and new badges or titles with fanfare.
 
 ## Race catalog
 
@@ -24,11 +37,10 @@ uses another variant, and hides foreign scenario/story rows. Every exact active 
 registry is added to that Uma's catalog even when ordinarily hidden. If two of her targets use distinct ids with the
 same display name, both rows remain available because only the exact id can settle each goal.
 Longchamp races — including every Prix de l'Arc de Triomphe variant — and Copa República Argentina are not regular races.
-The private registry keeps those rows for historical records, progressed frozen goals, and future World Expeditions.
-Goal plan v4 regenerates an entirely untouched active career when one of its frozen targets leaves the regular catalog;
-a progressed career stays frozen and each active special goal remains directly reachable until completed. New scenario careers
-use every non-retired source variant so their private family ids still match the Uma's career data; presentation then
-collapses those variants to one row per name (D194, D195).
+The private registry keeps those rows for the World Expeditions ([rework/10](../rework/10-expeditions.md), phase 9).
+A career is frozen when she arrives in a scenario and is never regenerated ([Scenario Careers](scenario-goals.md#lifecycle)).
+New careers use every non-retired source variant (`careerRaceCatalog`) so their private family ids still match the Uma's
+career data; presentation then collapses those variants to one row per name (D194, D195).
 
 | Field | Example |
 |---|---|
@@ -38,23 +50,23 @@ collapses those variants to one row per name (D194, D195).
 | `surface` | Turf / Dirt |
 | `distance` | 2400 m. Category derived: Sprint ≤1400, Mile 1401–1800, Medium 1801–2400, Long ≥2401 |
 | `series` | For example `triple-crown`, `triple-tiara`, `autumn-triple-crown`, used by goals and titles |
-| `course` | Course layout data: sections, straights, corners, slopes. Later milestone |
+| `course` | Course layout from the private pack: corners, straights and slopes, snapshotted into each result |
 | `fieldSize` | 8–18 |
 
 ### All races open from scenario 1 ✅
 
-Every grade, **G1 included**, can be entered from scenario 1. Higher grades are harder because their fields are stronger
-(the grade handicap below), not because they are locked.
+Every grade, **G1 included**, can be entered from an Uma's first scenario. Higher grades are harder because their
+fields are stronger (the grade handicap below), not because they are locked.
 
 ## Difficulty: the grade handicap
 
-**Goal:** a trained Uma is favoured in the grades below G1, and G1 is a real contest that her skills and her build
-for the distance decide (D152, D159).
+**Goal:** a fully trained Uma is favoured in the grades below G1, and G1 is a real contest that her skills and her
+build for the distance decide (D152, D159, D336).
 
-Your Uma races with **the stats on her profile**: her base stats plus what her constellation pays. Nothing is added
-or multiplied at the gate. Rivals are built as **a typical trained Uma of your tier** (six 3★ cards, one of them a
-Friend card, D159), then handicapped by the race's grade. The tier is the scenario she races as: her current one, or
-an earlier trained unit's, whose rivals come from that scenario (D190):
+Your Uma races with **the stats of the preset of the race's distance**, derived from her build
+([03](../game/03-uma-progression.md) §8). Nothing is added or multiplied at the gate. Rivals are built as **a typical
+trained Uma of her scenario** (D159), then handicapped by the race's grade. The scenario is always her current one:
+trained units are retired ([03](../game/03-uma-progression.md) §6).
 
 | Grade | Handicap | Rivals race at |
 |---|---|---|
@@ -64,17 +76,16 @@ an earlier trained unit's, whose rivals come from that scenario (D190):
 | G2 | 15% | 85% |
 | G1 | 5% | 95% |
 
-**A percentage, not a fixed amount.** Trained stats grow from about 712 a stat in scenario 1 to about 905 in
-scenario 14, so a fixed cut of, say, 300 would take a third of a scenario-1 rival and a quarter of a scenario-14 one,
-and the same grade would get harder as you climbed. A rival's stats are also uneven by distance, and a fixed cut
-bites hardest on her weakest stat (a sprinter's stamina), changing how she runs rather than how strong she is. The
-race formulas read stats in proportion, so a percentage is the same gap on the track at every tier.
+**A percentage, not a fixed amount.** The typical trained Uma grows from about 642 a stat in scenario 1 to about 969
+in scenario 14, so a fixed cut of, say, 300 would take almost half of a scenario-1 rival and under a third of a
+scenario-14 one, and the same grade would get harder as you climbed. A rival's stats are also uneven by distance, and a
+fixed cut bites hardest on her weakest stat (a sprinter's stamina), changing how she runs rather than how strong she
+is. The race formulas read stats in proportion, so a percentage is the same gap on the track in every scenario.
 
-**No Race Form.** Training Level is not a race modifier: it opens constellation nodes, and those are what make your
-Uma stronger. An under-trained Uma is weaker because her tree is, not because of a multiplier. This replaces the
-Race Form of D24–D25.
+**No Race Form.** Nothing scales her at the gate. An Uma short of her unlocks is weaker because her build is, not
+because of a multiplier (D24–D25's Race Form is gone).
 
-## Opponents: generated rivals ✅
+## Opponents: generated rivals
 
 Every race rolls a **fresh field** (D153): how many rivals run each style, which Umas run them, and every rival's
 stats. No two rivals share a build, so the field spreads out, and a race is never a rerun of the last one. **Every Uma
@@ -107,37 +118,39 @@ The roll uses the race's seed, so a replay shows the same field, and the race re
 
 ### Presets
 
-A preset is a rival's 100%: a trained Uma of your tier, handicapped by the grade. She carries **the Stamina the race's
-distance needs**, and spreads the rest by the distance, her running style and the scenario's caps (D159). There is one
-for every scenario, race distance and style.
+A preset is a rival's 100%: the typical trained Uma of the scenario, handicapped by the grade. She carries **the
+Stamina the race's distance needs**, and spreads the rest by the distance, her running style and the scenario's caps
+(D159). There is one for every scenario, race distance and style (`rivalPresetAt`, `tiers/rivals.ts`).
 
 ```
 total       = 5 × fieldStat(T) × (1 − handicap[grade])
-fieldStat   = min(trainedStat(t) for t = T … 14)
+fieldStat   = min(trainedStat(t) for t = T … the catalogue's last scenario)
 stamina     = min(cap, 0.4 × total, fullSpurtStamina(distance, style, speed, guts) / 0.9)
 preset[s]   = min(cap[s], (total − stamina) × shape[s] / Σ shape)         for Speed, Power, Guts, Wit
 shape[s]    = distance[s] × style[s] × √(cap[s] / averageCap(T))
-trainedStat = 110 + ((cardNodes − fairShare) × nodeValue × 84% + 240) / 5
+trainedStat = 110 + ((N − fairShare(N)) × nodeValue(T) × 84% + E(T)) × (1 + typicalBuff(T)) / 5
 handicap    = Debut/Maiden 0.35 · Pre-OP/OP 0.30 · G3 0.25 · G2 0.15 · G1 0.05
 ```
 
-**`trainedStat`** is a realistic set rather than a perfect one: six current-era cards at **84% of a node** (2★ of 3 since D200, the old 3★ of 5), one of
-them a **Friend card** whose fair share of the nodes pays skill points instead of stats, plus six Extra stats, on the
-median base stat, with the scenario's typical buff (D165). Under D244's cap ladder it is about 650 in scenario 1
-and 925 in scenario 14. It follows the current card-node budget rather than historical original-game caps.
+**`trainedStat`** is a realistic build on the scenario's tree rather than a perfect one (D336): its *N* card nodes
+(12–28) at the scenario's node value ([04](../game/04-tiers-and-promotion.md) §7), with six current-era cards at **84%
+of a node** (`TYPICAL_CARD_STARS = 2`, kept as the rivals' build, not a star), one of them a **Friend card** whose fair
+share `ceil(N / 6)` pays skill points instead of stats; plus the scenario's full active Extra Stats *E*; on the median
+base stat; with the scenario buff's typical value (D165, re-measured in D349). It runs 642 in scenario 1 and 969 in
+scenario 14.
 
 **A field is never stronger than a later scenario's** (`fieldStat`, D191). Each scenario's field takes the lowest
-typical build from it onwards, smoothing card-count, Friend-share rounding and scenario-buff differences. With
-D244's rising cap budgets, rounded fields are 650, 650, 684, 688 and 689 in scenarios 1–5, 811 in 9 and 10,
-869 in 12 and 13. Rivals of an earlier scenario are therefore never tougher than a later one's.
+typical build from it to the catalogue's last scenario, smoothing card-count, Friend-share rounding and scenario-buff
+differences. Rounded fields are 642, 665, 684, 708 and 729 in scenarios 1–5; today only scenario 9 is lowered, to
+scenario 10's 840. Rivals of an earlier scenario are therefore never tougher than a later one's.
 
 **Stamina follows the distance.** `fullSpurtStamina` is engine v7's HP model: the opening and middle legs at her
 style's pace, with a margin for the field's pushes, then the final third at full spurt, which Speed makes dearer and
 Guts cheaper. A runner with exactly that Stamina holds a full spurt in about half her races ([Race Engine v7
 Findings](../research/race-engine-v7-findings.md#realistic-rivals-d159)). The preset carries it from a **90% roll**
 up, so about half the field holds a full spurt and the rest can come up short; no rival puts more than 40% of her
-build into Stamina, so marathon rivals at low tiers run short more often. It asks about 300 Stamina at 1,200 m, 700
-at 2,000 m, 1,000 at 2,400 m and 1,400 at 3,000 m, close to the original's usual guidance.
+build into Stamina, so marathon rivals in early scenarios run short more often. It asks about 300 Stamina at 1,200 m,
+700 at 2,000 m, 1,000 at 2,400 m and 1,400 at 3,000 m, close to the original's usual guidance.
 
 The scenario term makes rivals lean the way its caps lean (Grand Masters' rivals carry more Wit, Run! Mecha
 Umamusume's more Speed and Power), at the square root so no stat runs away. Each row averages 1.
@@ -160,8 +173,8 @@ Each style's Stamina comes from its HP coefficient: an End Closer gets the most 
 Chaser the least.
 
 > *Example:* scenario 1, a G1 at 2,000 m. Presets (Speed / Stamina / Power / Guts / Wit): Pace Chaser
-> 943 / 783 / 650 / 455 / 553, End Closer 941 / 767 / 747 / 432 / 497; at 2,400 m the Pace Chaser is
-> 824 / 1,110 / 568 / 398 / 483; a G3 Pace Chaser at 2,000 m is 679 / 800 / 468 / 328 / 398. A rolled rival lands
+> 821 / 787 / 566 / 396 / 481, End Closer 820 / 774 / 650 / 376 / 432; at 2,400 m the Pace Chaser is
+> 699 / 1,123 / 482 / 337 / 410; a G3 Pace Chaser at 2,000 m is 578 / 815 / 398 / 279 / 339. A rolled rival lands
 > anywhere from 80% of her preset to all of it, stat by stat.
 
 Supersedes the identical generic NPC of D24 and D136–D152, and D153's Stamina weights: rivals no longer share stats or
@@ -169,7 +182,7 @@ a strategy per gate, and their Stamina is what the race needs.
 
 ### Rival skills
 
-- Her **own unique skill, at Lv5** (a fully starred Uma's, as the player's own unique races, D158).
+- Her **own unique skill, at Lv5**, as the player's own unique races (D158).
 - **Three to seven whites, rolled per rival and per race** (D163), without repeats, from the pool of every learnable
   white the engine supports that aims at herself and is not a malus (about 480), narrowed to the ones that can fire for
   her running style on this course (300+). One rival brings three and her neighbour seven, so fields differ in how many
@@ -183,7 +196,8 @@ a strategy per gate, and their Stamina is what the race needs.
 
 ### Basic race skills (R2.5)
 
-- Source values, durations, and cooldown metadata use a fixed-point scale of 10,000. Inherited unique magnitudes are ×0.5.
+- Source values, durations, and cooldown metadata use a fixed-point scale of 10,000. An inherited unique is its own
+  source record with its own, weaker values, and the engine does not halve it again (D174).
 - Conditions are compiled into bounded OR-of-AND numeric comparisons; raw source expressions are never evaluated at runtime.
 - `phase_random`, `phase_firsthalf_random`, and `phase_laterhalf_random` choose one seeded distance point in the requested
   whole/first-half/later-half phase. Other conditions in that group are checked at that point.
@@ -198,11 +212,10 @@ a strategy per gate, and their Stamina is what the race needs.
 - Unsupported variables or effects stay visible in the library but cannot be equipped into a race loadout. T007 adds the
   pack and course variables required by the remaining launch uniques.
 
-### Pack racing (R3, engines v3–v5)
+### Pack racing (R3)
 
-Engine v6 replaces this section's position keeping and blocking with [style bands and per-turn passing](#engine-v6-turns-m021);
-v3–v5 records still replay under it.
-
+Engines v3–v5. Engine v6 replaces this section's position keeping and blocking with
+[style bands and per-turn passing](#engine-v6-turns-m021); v3–v5 records still replay under it.
 
 Engine v3 uses continuous lateral position measured from the inner rail. The standard course width is **11.25 m** and one
 horse lane is `11.25 / 18 = 0.625 m`; lane values are clamped to `[0, 11.25]`. Imported corner and straight ranges are
@@ -243,52 +256,25 @@ signed placement delta for the current tick, and `change_order_up_end_after` is 
 the nearby footprint above. `is_finalcorner` stays true from the final corner's start through the finish; its later-half flag
 is true only within the second half of that corner. `temptation_count` is zero until R4 adds rushed behavior.
 
-The mixed-strategy balance target is **15–35% aggregate win share per strategy** over the standard tier/distance/grade matrix,
+The mixed-strategy balance target is **15–35% aggregate win share per strategy** over the standard scenario/distance/grade matrix,
 with no strategy above 60% in a row and every strategy recording representative wins. This is a harness target, not a hidden
 per-strategy stat bonus; the G1 player targets below remain the player-facing acceptance criteria.
 
 ### Difficulty target
 
-An under-trained Uma, or one racing off-aptitude, loses to the field. At Training Level 10 a trained Uma should win
-the grades below G1; G1 is a real contest, which a fully bonded set is favoured to win and a typical one wins on its
-skills and on carrying the Stamina the distance needs (D152, D159). `pnpm sim:careers` measures it on engine v9 at
-TL10 with each distance's decks (the [stamina ladder](constellations.md#balance-targets-the-stamina-ladder)'s, plus a
-Power card for sprints and miles) against generated fields, best of four strategies, 12 runners. Measured 2026-10-01
-(20 races a cell), sprint / mile / medium / long:
+An Uma short of her unlocks, or racing off-aptitude, loses to the field. A **fully trained** Uma, her scenario's whole
+layer open ([05](../game/05-training-hub.md)), wins the grades below G1, and G1 is a real contest she is favoured in
+(D152, D159, D336). The game is tuned for that Uma, not for a timetable: the owner trains first and then races
+([03](../game/03-uma-progression.md) §9).
 
-| Tier | Set | G3 | G2 | G1 |
-|---|---|---|---|---|
-| 1 | 0★ | 90 · 100 · 100 · 100% | 75 · 75 · 95 · 90% | 55 · 55 · 75 · 80% |
-| 1 | 3★ | 100 · 100 · 100 · 100% | 100 · 100 · 100 · 100% | 100 · 90 · 100 · 100% |
-| 7 | 0★ | 80 · 90 · 100 · 100% | 70 · 65 · 75 · 90% | 50 · 45 · 45 · 60% |
-| 7 | 3★ | 95 · 100 · 100 · 100% | 95 · 95 · 100 · 100% | 80 · 90 · 100 · 100% |
-| 14 | 0★ | 75 · 70 · 85 · 95% | 55 · 55 · 70 · 70% | 40 · 40 · 40 · 45% |
-| 14 | 3★ | 100 · 100 · 100 · 100% | 100 · 100 · 100 · 100% | 80 · 80 · 100 · 100% |
+`pnpm sim:careers` measures it on engine v9: every career stage at every scenario T = 1–14, raced by full-layer builds
+(every card node open on current-era cards at 100%, Extra Stats at capacity, the open Inspiration slots filled) against
+generated 12-runner fields, best case of the distance's sets and the four running styles. Its targets are every Maiden
+G3 won, the Trials G2s at 90% or more and the Main G1s at 60–100%; the measured rates are
+[03](../game/03-uma-progression.md) §9's live table, and every T meets them. `pnpm sim:builds` races the stamina
+ladder's sets in G1s at every T (the same section's second table).
 
-Against engine v7 (2026-09-26) sprint and mile G1s ease to 80–90% for a fully bonded set in later scenarios: v8's start
-makes Power count, and those decks carry little of it.
-
-D191 (2026-09-28, 40 races a cell) evened out the first scenarios' fields. A 0★ set's G1s, before → after:
-
-| Tier | G1 before | G1 after |
-|---|---|---|
-| 1 URA Finale | 45 · 35 · 48 · 30% | 65 · 45 · 53 · 40% |
-| 2 Unity Cup | 58 · 55 · 43 · 43% | 63 · 58 · 38 · 43% (unchanged within noise) |
-| 3 Trackblazer | 55 · 53 · 40 · 40% | 55 · 55 · 55 · 50% |
-
-Rivals are now a typical set of 3★ cards (D159), so a new 0★ set, a little below them, wins about half its G1s when it
-picks its best strategy and deck, which is easier than D152's aim that it should not. The grade handicaps are the
-owner's to set, and set this way on purpose ("the handicaps apply on top"); a harder G1 is a one-line change to its
-handicap. A real build shows the other side: a TL10 build like the owner's Special Week (617 Stamina) wins G3s and
-G2s at a mile and 2,000 m, but at 2,400 m it is short of the Stamina the distance needs, as it would be in the
-original, and loses unless its skills heal. `pnpm sim:turns` measures that build, with her unique and a few golds,
-against scenario-1 fields (best of four styles):
-
-| Distance | G3 | G2 | G1 |
-|---|---|---|---|
-| 1,600 m | 93% | 80% | 65% |
-| 2,000 m | 98% | 85% | 65% |
-| 2,400 m | 60% | 15% | 0% |
+The grade handicaps are the owner's to set (D159, D336): a harder G1 is a one-line change to its handicap.
 
 ### Stamina contest (engine v4)
 
@@ -305,27 +291,51 @@ stamina cards a use past the requirement. Races recorded under engine v3 replay 
 
 ## Rewards
 
-| Outcome | Uma EXP |
+A race pays **Racing EXP** to the Uma who ran and **Prize Money** to the account. Prize Money, the Daily Purse and the
+featured bonus are [09](../game/09-racing-rewards-and-exchange.md) §2–§4's. Racing EXP is `raceExp`
+(`progression.ts`), unchanged by the rework:
+
+| Outcome | Racing EXP |
 |---|---|
-| 1st | `winExp[grade] × (1 + Σ raceBonus of equipped cards)` |
-| 2nd–3rd | 25% of win EXP |
+| 1st | `winExp[grade] × (1 + Σ Race Bonus of the cards in the race's preset)`, rounded |
+| 2nd–3rd | 25% of that, rounded |
 | Other | 0 |
 
-See [Uma Progression](uma-progression.md#uma-level-and-exp) for `winExp`. Every result goes into the typed append-only
-`raceResults` collection and will be checked by the later goal, badge, and achievement engines.
+Every card pays its full Race Bonus (D329, [06](../game/06-cards-and-bonds.md) §4). `winExp`, the level curve, the
+holds and the gate's bank are [03](../game/03-uma-progression.md) §2's. Every result is a row in the append-only
+`raceResults` log, which the goal, badge and achievement rules read.
 
-### Milestone 6 accomplishment facts
+### Accomplishment facts
 
-New results (badge-state v1) include bounded award facts derived inside authoritative completion: normalized family/grade/venue/
-course/surface/distance/series metadata, player start delay, first-final-spurt placement, strict section-checkpoint lead,
-and inherited-unique activation. These facts are private-id metadata, not renderer state, and do not change engine v1/v2/v3
-simulation or replay. Legacy results remain valid and use their frozen replay path when detailed retroactive facts are
-needed; missing content/replay dependencies are labeled untracked rather than guessed.
+Each result row carries bounded accomplishment facts (badge-state v1), derived from the race's timeline when it is
+prepared: normalized family/grade/venue/course/surface/distance/series metadata, player start delay,
+first-final-spurt placement, strict section-checkpoint lead, and inherited-unique activation. They are private-id
+metadata, not renderer state, and never change the simulation or its replay.
 
-T016 evaluates facts only after the race result/ordinary rewards/T014 goals are determined, then commits the badge entity,
-append-only flair events, and exact new event ids in that same transaction. This is implemented for persistent and
-memory-only play. The first finish on a course establishes its baseline; only a strictly lower later time earns Course
-Record, so ties and slower finishes do not. Race retries validate and return stored ids without reevaluation or fanfare.
+The race's flair is evaluated after its EXP, goals and prize are settled, and rides in the same commit
+([Badges](badges.md#award-and-event-semantics)). The first finish on a course establishes its baseline; only a strictly
+lower later time earns Course Record, so ties and slower finishes do not. A retried commit returns its first receipt
+without re-evaluating or replaying fanfare.
+
+## Generation 2: the race on `finish-race` (T141, D359)
+
+The game races with engine v9 and its scene, on generation 2's rules ([09](../game/09-racing-rewards-and-exchange.md)
+§7–§9):
+
+- **Prepare.** Her session's finished unlocks are collected on a copy first, so she races with every unlock she has
+  earned. Stats, aptitudes and loadout come from `deriveUmaPreset` on the preset of the race's distance, rivals from
+  `rollRivalFieldAt` at her scenario T and the race's grade, and the seed from `raceAttemptSeed(createdAt, content
+  version, outfit, race, style, n)`, *n* her results so far. The same state, race, style and *n* give the same race.
+  She races as her current scenario: no picker.
+- **Commit at Start race.** The timeline is simulated and `finish-race` applied locally with the placement, the device's
+  date and the featured board the screen showed; its flair rides in the same transaction. Racing is never blocked and
+  costs nothing. A commit that fails starts nothing.
+- **Play the committed row.** `/racing/racecourse/run?result=:id` rebuilds the race from the row's run alone and plays
+  it, with the HUD, feed, speeds, step, pause, Skip, wake lock and `window.__raceScene`; PixiJS loads only then.
+- **The result** reads the row's receipt: the stamp, the order and margins, Racing EXP with Race Bonus named, level-ups,
+  the hold and the gate's Shard, Prize Money with only the lines that applied, goal ribbons, flair, and **Next Uma**,
+  **Race again**, **Races** and, at a gate with her career complete, **Advance**. The first showing plays the fanfare;
+  a reload shows it quietly.
 
 ## Presentation: the race on its own course
 
@@ -365,8 +375,11 @@ Record, so ties and slower finishes do not. Race retries validate and return sto
   The feed and banner sit inside the course view, so they never cover the header.
 - **Finish:** Nose/Head margins (runner-up gap greater than zero and below 0.15 lengths) slow the final 0.8 timeline seconds
   to 0.4× and hold the finish frame for 0.65 seconds. Skip and reduced motion go directly to the same computed result.
-- Results show the full field, rewards, EXP/levels, and player activation effects. Save
-  errors keep navigation locked behind Retry; after commit the actions are Races, Train, and Race again (disabled at a gate).
+- The result shows the full field, what she earned, her goals and her flair
+  ([09](../game/09-racing-rewards-and-exchange.md) §7). The race is committed before it plays, so there is no save to
+  retry afterwards. Its actions are **Races**, **Race again** and **Next Uma**, with **Advance** first at a gate with her
+  career complete. Race again stays enabled at a gate: waiting there is allowed and keeps paying Prize Money
+  ([03](../game/03-uma-progression.md) §10).
 - Presentation state is never saved and never changes a simulation result. Replay derives it again from the immutable
   timeline; legacy results without skills, lanes, or layout retain readable fallbacks.
 
@@ -456,7 +469,7 @@ Great, equally likely, moving every stat by 2% a level. Skill conditions read it
 | Section roll | 0.65% of base speed | The original's |
 | Mood | 2% a level | The original's |
 
-Measured with `pnpm sim:turns` in generated 12-runner G1 fields at tier 1, 2026-09-25:
+Measured with `pnpm sim:turns` in generated 12-runner G1 fields in scenario 1, 2026-09-25:
 
 | Distance | Turns | Winner → last | Spread, 60% in | Overtakes | Blocked a runner | Short of stamina | Wins F / P / L / E |
 |---|---|---|---|---|---|---|---|
@@ -521,7 +534,7 @@ Measured with `pnpm sim:turns`, 2026-09-26:
   acceleration decides them. In v6 only Speed moved her.
 - **Stats still decide.** At 2,000 m a runner at twice the field's average wins every race by about 1 s, at +20% she
   wins 50–73%, at +10% 15–40%.
-- **The field**, in generated 12-runner G1 fields at tier 1:
+- **The field**, in generated 12-runner G1 fields in scenario 1:
 
 | Distance | Turns | Winner → last | Overtakes | Blocked a runner | Short of stamina | Wins F / P / L / E |
 |---|---|---|---|---|---|---|
@@ -614,5 +627,4 @@ Measured on the owner's 44 recorded Professor of Curvature races, each against t
 zeroed (same random draws): a mid-acceleration activation now gains 1.8 m (0.6 on v8) and one at cruise 2.3 m (1.9);
 her finish improves 0.11 s on average (0.05) and her place in 10 races (6). `pnpm sim:turns` (2026-10-02, `ENGINE=8`
 for v8): the field's spreads and style wins are unchanged within noise; a skilled 1,000-Speed runner beats 1,400 Speed
-without skills in 80–90% of races (78–90% on v8); the owner's TL10 Special Week wins 1,600 m G1s against tier-1 fields
-40% of the time (33%). `pnpm sim:careers` keeps every fully bonded stage at 75–100%.
+without skills in 80–90% of races (78–90% on v8).

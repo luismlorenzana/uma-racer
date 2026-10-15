@@ -11,7 +11,6 @@ import { applyFlairOverride } from './normalize/flair'
 import { normalizeObjectiveFamilies } from './normalize/objectives'
 import { normalizeRaces } from './normalize/races'
 import { normalizeSkills } from './normalize/skills'
-import { normalizeSparkRivals } from './normalize/spark-rivals'
 import { normalizeUmas } from './normalize/umas'
 import { DEFAULT_CONTENT_DIR, writeContentPacks } from './pack'
 import { scenarioCoverageWarning } from './scenario-coverage'
@@ -37,10 +36,6 @@ async function main(): Promise<void> {
   const races = { items: flair.items, warnings: [...normalizedRaces.warnings, ...flair.warnings] }
   const objectives = normalizeObjectiveFamilies(datasets['ura-objectives'], datasets.races, races.items)
   const umas = normalizeUmas(datasets['character-cards'], datasets.characters, objectives.byCharacterId)
-  const sparkRivals = normalizeSparkRivals(
-    umas.items,
-    await readOptionalJson(resolve(DEFAULT_CONTENT_DIR, 'overrides/spark-rivals.json')),
-  )
   const normalizedCards = normalizeCards(datasets['support-cards'])
   const skills = normalizeSkills(datasets.skills)
   // Each card's running-style and distance focus (D201): the rule, plus Claude's private corrections.
@@ -75,15 +70,10 @@ async function main(): Promise<void> {
   console.log(`Flair coverage: ${flair.coverage.taggedFamilies} families · ${flair.coverage.taggedSeries} series · ${flair.coverage.mainVenues} main venues`)
   console.log(`Objectives: ${objectives.counts.rows} rows · ${objectives.counts.characters} characters · ${objectiveOutfits} outfits · ${objectives.counts.resolvedReferences} resolved · ${objectives.counts.unresolvedReferences} unresolved`)
   console.log(`Courses: ${courses.items.length}`)
-  console.log(
-    `Spark rivals: ${sparkRivals.coverage.scenarios}/14 scenarios · ${sparkRivals.coverage.ordinaryCandidates} ordinary · ` +
-    `${sparkRivals.coverage.bossCandidates} bosses · ${sparkRivals.coverage.distinctCharacters} characters · ` +
-    `${sparkRivals.coverage.failures} failures`,
-  )
 
   const warnings = [
     ...umas.warnings, ...objectives.warnings, ...cards.warnings, ...skills.warnings,
-    ...races.warnings, ...courses.warnings, ...sparkRivals.warnings,
+    ...races.warnings, ...courses.warnings,
   ]
   if (scenarioWarning) warnings.unshift(scenarioWarning)
   if (umaStarters !== 25) warnings.unshift(`Expected exactly 25 launch Umas, found ${umaStarters}`)
@@ -98,9 +88,6 @@ async function main(): Promise<void> {
       { name: 'skills', version: source.skills!, items: skills.items },
       { name: 'races', version: source.races!, items: races.items },
       { name: 'courses', version: source.racetracks!, items: courses.items },
-      ...(sparkRivals.items.length > 0
-        ? [{ name: 'spark-rivals', version: '1', items: sparkRivals.items }]
-        : []),
     ],
   })
   console.log(`Manifest: ${contentManifest.version} (${contentManifest.files.length} files)`)

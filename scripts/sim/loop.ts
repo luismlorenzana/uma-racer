@@ -1,4 +1,4 @@
-// `pnpm sim:loop` (D348, docs/rework/12-economy-and-pacing.md §12): the whole economy from a
+// `pnpm sim:loop` (D348, docs/game/12-economy-and-pacing.md §12): the whole economy from a
 // fresh account on the rework's rules, its report, and 12 §12's checks.
 //
 //   pnpm sim:loop                         the baseline (three tiers), the heavy variant and the probes; the report
@@ -8,12 +8,12 @@
 //   pnpm sim:loop -- --refresh-wins       regenerate the committed win table (about 12 minutes; build the domain first)
 //
 // Exit code 1 when a check fails, except a check the loop test marks as a known miss (D348). Synthetic only, seeded with
-// the race engine's createRng, never Math.random. Run as `sim:farm` is, with tsx under the data pipeline.
+// the race engine's createRng, never Math.random. Runs with tsx under the data pipeline.
 import { createRng } from '../../packages/race/src/rng'
 import {
   BASELINE, LOOP_VARIANTS, evaluateChecks, farmLevelProbes, firstUnlockProbe, formatChecks, formatMatrix, formatReport, loopRng,
   matrixRow, simulateLoop, type LoopConfig, type LoopResult,
-} from '../../packages/domain/src/rework/sim/index'
+} from '../../packages/domain/src/sim/index'
 
 const args = process.argv.slice(2)
 const flag = (name: string) => args.includes(`--${name}`)
@@ -32,7 +32,7 @@ async function main(): Promise<number> {
     const { generateWinTable, writeWinTable } = await import('./loop-wins')
     const races = Number(option('races') ?? 200)
     writeWinTable(generateWinTable(races, 132, (line) => console.log(line)))
-    console.log('Wrote packages/domain/src/rework/sim/win-table.ts. Run `pnpm docs:update` next.')
+    console.log('Wrote packages/domain/src/sim/win-table.ts. Run `pnpm docs:update` next.')
     return 0
   }
   if (flag('matrix')) {

@@ -1,7 +1,5 @@
-// Fetch client with a pluggable token provider (same pattern as uma-planner's api/client.ts).
-
-import type { RpgCommandRequest, SyncRequest, PuzzleTakeoverRequest, PuzzlePrepareRequest, PuzzlePreservationRequest, LegacySparkRequest } from '@racer/domain'
-import type { FarmCutoverRequest } from '@racer/domain/farm/kitchen'
+// Fetch client for the private content, with a pluggable token provider (same pattern as uma-planner's api/client.ts).
+// The save has its own small client (`save/api.ts`), on the same token.
 
 // Base URL: empty in dev (relative /api, proxied by Vite) or the Cloud Run URL in prod.
 const BASE = import.meta.env.VITE_API_BASE_URL ?? ''
@@ -47,15 +45,4 @@ export const contentApi = {
     const response = await requestResponse(`/api/content/files/${encodedPath}`)
     return { bytes: await response.arrayBuffer(), contentType: response.headers.get('content-type') ?? '' }
   },
-}
-
-export const saveApi = {
-  load: () => request<unknown>('/api/save'),
-  advanceInspiration: () => request<unknown>('/api/inspiration/advance', { method: 'POST', body: '{}' }),
-  sync: (body: SyncRequest) => request<unknown>('/api/sync', { method: 'POST', body: JSON.stringify(body) }),
-  rpgCommand: (body: RpgCommandRequest) => request<unknown>('/api/rpg/command', { method: 'POST', body: JSON.stringify(body) }),
-  puzzlePrepare: (body: PuzzlePrepareRequest | PuzzlePreservationRequest) => request<unknown>('/api/puzzles/prepare', { method: 'POST', body: JSON.stringify(body) }),
-  retireSpark: (body: LegacySparkRequest) => request<unknown>('/api/puzzles/legacy-spark', { method: 'POST', body: JSON.stringify(body) }),
-  puzzleTakeover: (body: PuzzleTakeoverRequest) => request<unknown>('/api/puzzles/takeover', { method: 'POST', body: JSON.stringify(body) }),
-  farmPrepare: (body: FarmCutoverRequest) => request<unknown>('/api/farm/prepare', { method: 'POST', body: JSON.stringify(body) }),
 }

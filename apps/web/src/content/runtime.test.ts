@@ -45,7 +45,7 @@ function syntheticWebp(width: number, height: number): Uint8Array {
   return output
 }
 
-function fixture(versionCharacter = 'a', includeSparkRivals = false, extraCardArt = 0): Fixture {
+function fixture(versionCharacter = 'a', extraCardArt = 0): Fixture {
   const responses = new Map<string, { bytes: ArrayBuffer; contentType: string }>()
   const files: ContentManifestFile[] = []
   const add = (path: string, value: string | Uint8Array, contentType: string) => {
@@ -53,41 +53,10 @@ function fixture(versionCharacter = 'a', includeSparkRivals = false, extraCardAr
     responses.set(path, { bytes: encoded, contentType })
     files.push({ path, bytes: encoded.byteLength, sha256: hash(encoded) })
   }
-  const styles = ['front', 'pace', 'late', 'end', 'front', 'pace'] as const
-  const umaItems = includeSparkRivals
-    ? styles.map((best, index) => ({
-        id: index === 0 ? 'uma-x' : `synthetic-uma-${index + 1}`,
-        charaId: `synthetic-character-${index + 1}`,
-        aptitudes: {
-          strategy: Object.fromEntries(['front', 'pace', 'late', 'end'].map((strategy) => [strategy, strategy === best ? 'A' : 'C'])),
-        },
-      }))
-    : [{ id: 'uma-x' }]
+  const umaItems = [{ id: 'uma-x' }]
   add(`data/umas.${versionCharacter.repeat(8)}.json`, JSON.stringify({ version: 'synthetic', items: umaItems }), 'application/json')
   for (const [name, id] of [['cards', 'card-x'], ['skills', 'skill-x'], ['races', 'race-x'], ['courses', 'course-x']] as const) {
     add(`data/${name}.${versionCharacter.repeat(8)}.json`, JSON.stringify({ version: 'synthetic', items: [{ id }] }), 'application/json')
-  }
-  if (includeSparkRivals) {
-    const sparkRivals = {
-      version: '1',
-      items: Array.from({ length: 14 }, (_, index) => ({
-        id: `tier:${index + 1}`,
-        tier: index + 1,
-        ordinary: ['front', 'pace', 'late', 'end'].map((strategy, candidate) => ({
-          templateId: umaItems[candidate]!.id,
-          charaId: `synthetic-character-${candidate + 1}`,
-          strategy,
-          recipe: ['rush-pressure', 'tracker-guard', 'surge-convert', 'finisher-delay'][candidate],
-        })),
-        bosses: [0, 1].map((candidate) => ({
-          templateId: umaItems[candidate + 4]!.id,
-          charaId: `synthetic-character-${candidate + 5}`,
-          strategy: candidate === 0 ? 'front' : 'pace',
-          recipe: 'circuit-boss',
-        })),
-      })),
-    }
-    add(`data/spark-rivals.${versionCharacter.repeat(8)}.json`, JSON.stringify(sparkRivals), 'application/json')
   }
   const atlas = (kind: ContentAtlas['kind'], ids: readonly string[]): ContentAtlas => ({
     schemaVersion: 1,
@@ -161,25 +130,6 @@ function transport(current: () => Fixture): ContentTransport {
 }
 
 describe('private art loader', () => {
-  it('keeps RPG portraits lazy and hash-specific when two retained packs share an art key',async()=>{
-    const current=fixture(), versions=[bytes(syntheticWebp(256,256)),bytes(syntheticWebp(256,256))]
-    new Uint8Array(versions[1]!)[20]=16
-    const ids=versions.map(value=>{
-      const sha256=hash(value),path=`art/priconne/example.${sha256.slice(0,8)}.webp`
-      current.manifest.files.push({path,sha256,bytes:value.byteLength});current.responses.set(path,{bytes:value,contentType:'image/webp'})
-      return `example-${sha256.slice(0,8)}`
-    })
-    current.manifest.version=createHash('sha256').update(current.manifest.files.map(f=>f.sha256).sort().join('')).digest('hex').slice(0,12)
-    const {urls}=urlFactory(), fetcher=transport(()=>current), file=vi.spyOn(fetcher,'file')
-    const runtime=new ContentRuntime(fetcher,new MemoryStore(),urls), loaded=await runtime.load()
-    if(loaded.status!=='ready')throw new Error('Fixture unavailable')
-    expect(file.mock.calls.some(([path])=>path.startsWith('art/priconne'))).toBe(false)
-    expect(loaded.content.art.has('priconne','example')).toBe(false)
-    expect(loaded.content.art.has('priconne',ids[0]!)).toBe(true)
-    const release=loaded.content.art.hold!('priconne',ids[0]!)
-    expect(await loaded.content.art.load('priconne',ids[0]!)).not.toBe(await loaded.content.art.load('priconne',ids[1]!))
-    release()
-  })
   it('serves art on demand, caches it, and reports what the manifest has', async () => {
     const current = fixture()
     const { urls } = urlFactory()
@@ -199,7 +149,7 @@ describe('private art loader', () => {
   })
 
   it('never revokes art a screen still holds, however many others load after it (D183)', async () => {
-    const current = fixture('a', false, 30)
+    const current = fixture('a', 30)
     const { urls, revoke } = urlFactory()
     const content = await new ContentRuntime(transport(() => current), new MemoryStore(), urls).load()
     if (content.status !== 'ready') throw new Error('expected ready content')
@@ -258,7 +208,6 @@ describe('ContentRuntime', () => {
     expect(result.status).toBe('ready')
     if (result.status !== 'ready') return
     expect(result.content.umas.byId.has('uma-x')).toBe(true)
-    expect(result.content.sparkRivals).toBeNull()
     expect(result.content.races.items[0]?.seriesLegs).toEqual([])
     expect(result.content.origin).toBe('network')
     expect(getContentAsset(result.content, 'uma-icons', 'uma-x')).toMatchObject({
@@ -270,32 +219,30 @@ describe('ContentRuntime', () => {
     expect(JSON.parse(store.value!)).toMatchObject({ version: data.manifest.version })
   })
 
-  it('loads the optional Spark rival pack while keeping old manifests compatible', async () => {
-    const data = fixture('a', true)
-    const runtime = new ContentRuntime(transport(() => data), new MemoryStore(), urlFactory().urls)
-
-    const result = await runtime.load()
-
-    expect(result.status).toBe('ready')
-    if (result.status !== 'ready') return
-    expect(result.content.sparkRivals).toHaveLength(14)
-    expect(result.content.sparkRivals?.[13]).toMatchObject({ id: 'tier:14', tier: 14 })
-  })
-
-  it('rejects a malformed present Spark rival pack instead of silently falling back', async () => {
-    const data = fixture('a', true)
-    const file = data.manifest.files.find((entry) => entry.path.startsWith('data/spark-rivals.'))!
-    const malformed = bytes(JSON.stringify({ version: '1', items: [] }))
-    data.responses.set(file.path, { bytes: malformed, contentType: 'application/json' })
-    file.bytes = malformed.byteLength
-    file.sha256 = hash(malformed)
+  it('reads only the kinds it knows: a manifest that also lists other packs, atlases and art stays loadable (T143)', async () => {
+    const data = fixture()
+    const retired = { 'data/retired-pack.cccccccc.json': '{"version":"1","items":"not a pack"}', 'atlases/retired-icons.cccccccc.json': '{}' }
+    for (const [path, value] of Object.entries(retired)) {
+      const encoded = bytes(value)
+      data.responses.set(path, { bytes: encoded, contentType: 'application/json' })
+      data.manifest.files.push({ path, bytes: encoded.byteLength, sha256: hash(encoded) })
+    }
+    const art = bytes(syntheticWebp(256, 256))
+    data.manifest.files.push({ path: 'art/retired/portrait.dddddddd.webp', bytes: art.byteLength, sha256: hash(art) })
     data.manifest.version = createHash('sha256')
       .update(data.manifest.files.map((entry) => entry.sha256).sort().join(''))
       .digest('hex')
       .slice(0, 12)
+    const fetcher = transport(() => data)
+    const file = vi.spyOn(fetcher, 'file')
 
-    await expect(new ContentRuntime(transport(() => data), new MemoryStore(), urlFactory().urls).load())
-      .rejects.toThrow(/Spark rival content pack header/)
+    const result = await new ContentRuntime(fetcher, new MemoryStore(), urlFactory().urls).load()
+
+    expect(result.status).toBe('ready')
+    if (result.status !== 'ready') return
+    expect(file.mock.calls.map(([path]) => path).filter((path) => path.includes('retired'))).toEqual([])
+    expect(Object.keys(result.content)).not.toContain('retired')
+    expect(result.content.art.has('uma', 'portrait')).toBe(false)
   })
 
   it('rejects an integrity mismatch without persisting it', async () => {

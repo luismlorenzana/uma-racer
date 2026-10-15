@@ -48,6 +48,34 @@ The server-side delete runs **inside the new API, for the signed-in owner only**
 The endpoint and its client call are deleted in the release after the owner confirms the purge ran. The marker
 document stays as a record.
 
+> **As built (T135, [rework/13](../rework/13-removals-and-plan-changes.md) §6).** The request is exactly
+> `{ protocol: 2, generation: 2 }`, and the answer is `{ status: 'purged' | 'already', at, counts: { collections,
+> documents } }`. The API counts `players/{uid}`'s subcollections with `listCollections`, and counts each deleted
+> document through the bulk writer that `recursiveDelete` runs on. The parent document counts only if it existed. It
+> then writes the marker `{ generation: 2, at, collections, documents }` with `create()`, so two devices racing write
+> one marker, and the loser answers `already` with the stored record. In dev, the local repository clears the uid's
+> entry from `.data/save.json`. That path is fixed, never an env var, and is refused if it resolves to the
+> generation-2 file.
+
+> **As built on the device (T136, [game/02](../game/02-check-ins-and-notifications.md) §11).** The app's boot runs
+> in this order:
+> 1. **The wipe**, unless `uma-racer:g2:wiped` is set: `Dexie.delete('uma-racer')`; in dev builds every
+>    `farm-kitchen-proof-*` and `puzzle-proof-*` database; every localStorage key that starts with `uma-racer:` and not
+>    `uma-racer:g2:`; and `caches.delete('racer-content')`, which the service worker refills. Each step tolerates
+>    absence and never reads old data. The marker is set only when every step succeeded, so a failed step is tried
+>    again at the next boot. Firebase's databases and the Workbox precache are left alone (§2).
+> 2. **The purge**, unless `uma-racer:g2:purged` is set: in the background once signed in, so it never blocks play.
+>    Its request goes out before the save's first one (§3's order). `purged` or `already` sets the marker; a failure is
+>    tried again back online or at the next boot.
+> 3. **Open, local first:** a device holding a save opens at once, then flushes and pulls. An empty device pulls from 0
+>    and opens once the rule kinds are in; with an empty server, no answer, or no sign-in, it queues `initialSave(now)`
+>    as the create and opens on it. A later `exists` adopts the server's save and pulls it from 0.
+>
+> Then **one lane** carries the outbox in order, 100 rows a batch, with the create always first. A 426 stops it until
+> the app restarts, and a 409 drops the device's save and outbox so it boots as a new device. Only the new game's own
+> boot wipes and purges. The dev mount (`/dev/g2/`) opens the seeds by default, the device save with `?save=device`, and
+> wipes and purges only with `&wipe` too, so a developer's own data is never touched by opening it.
+
 For checking: Claude can list `players/` before and after with the scoped gcloud configuration
 (`CLOUDSDK_ACTIVE_CONFIG_NAME=default CLOUDSDK_CORE_PROJECT=uma-racer`). Nothing in this plan changes the active
 gcloud account.
@@ -65,6 +93,11 @@ A second device, or the installed app on the same phone, can still run old code 
   is a conflict ([01](01-target-architecture.md) §4.3).
 - **The update reaches the device.** The service worker update is prompted as today ("Update ready — Restart"). On a
   426 the old app shows its sync error until the owner restarts it, which loads generation 2.
+
+> **As built (T135, [rework/13](../rework/13-removals-and-plan-changes.md) §6).** `GET /api/save` carries the stamp
+> as query parameters (`protocol=2&generation=2`), and the POSTs carry it in their bodies. Every route runs the auth
+> guard first, so a request without a token is 401 whatever its stamp. The stamp is checked next, and the parser
+> after it. The 426 body is `{ code: 'upgrade-required', protocol: 2, generation: 2 }`.
 
 ## 5. The new account
 

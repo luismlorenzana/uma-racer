@@ -1,9 +1,8 @@
 // Badge facts and independently versioned save state (docs/design/badges.md).
 
-import { MAX_TRAINING_LEVEL } from './constellation'
 import { raceScenarioTier, type RaceAccomplishmentFactsV1, type RaceResultRecord } from './progression-race'
 import { SCENARIOS, tierOfLevel } from './scenarios'
-import type { ScenarioJourney, UmaSave } from './save'
+import type { ScenarioJourney, UmaSave } from './career-shapes'
 import {
   DISTANCE_CATEGORIES,
   RACE_GRADES,
@@ -33,6 +32,8 @@ export const BADGE_FILTER_CATEGORIES = [
 
 export const BADGE_TIER_POINTS = [1, 2, 4, 8, 16] as const
 export const BADGE_ONE_OFF_POINTS = 4
+/** The Hall of Fame badge, a one-off worth four ordinary one-offs (docs/game/04-tiers-and-promotion.md §9). */
+export const HALL_OF_FAME_POINTS = 16
 export const GOAL_RIBBON_POINTS = 1
 export const HONORS_POINTS = 4
 export const TITLE_POINTS = 10
@@ -53,8 +54,6 @@ export const BADGE_THRESHOLDS = {
   // the last needs an even, fully bonded tree in a late scenario.
   balanced: [400, 600, 800, 1_000, 1_200],
   level: [10, 25, 50, 75, 100],
-  // Spark Match runs (D164, D214): about six take a scenario to TL10 (D211), so the last stage is all fourteen trained.
-  diligent: [6, 15, 30, 60, 84],
   lifetimeSkills: [5, 15, 30, 60, 100],
   scenarioSkills: [5, 10, 15, 20, 25],
   destiny: [3, 10, 25, 50, 100],
@@ -158,25 +157,14 @@ export interface GoalFact {
 export interface ScenarioCompletionFact {
   tier: number
   completedAt: number
-  trainingLevel: number
   stats: Stats
   deckCardIds: string[]
   deckEras: number[]
-  trainingTurns: number
-  friendshipTrainings: number
   raceStarts: number
   completedGoalIds: string[]
   honors: boolean
   parentUmaIds: string[]
   grandparentUmaIds: string[]
-}
-
-export interface TrainingTierFact {
-  tier: number
-  turns: number
-  friendshipTrainings: number
-  fullHouseCount: number
-  reachedTl10: boolean
 }
 
 export interface LineageEvidence {
@@ -207,10 +195,7 @@ export interface UmaBadgeFacts {
   balancedPeak: number
   levelPeak: number
   distinctSkillIds: string[]
-  lifetimeTrainingTurns: number
-  friendshipTrainings: number
   fullHouseCount: number
-  trainingByTier: TrainingTierFact[]
   fullyTrainedTiers: number[]
   maxSkillsByTier: CountFact[]
   goals: GoalFact[]
@@ -293,7 +278,7 @@ export interface UmaBadgeStateV1 {
   catalogVersion: number
   evaluatorVersion: number
   trackingStartedAt: number
-  sourceWatermarks: { raceSequence: number; trainingTurns: number; scenarioCompletions: number; lineageEvidence: number }
+  sourceWatermarks: { raceSequence: number; scenarioCompletions: number; lineageEvidence: number }
   history: BadgeHistoryAvailability
   facts: UmaBadgeFacts
   awards: { badges: EarnedBadgeStage[]; titles: EarnedTitle[]; trophies: EarnedTrophy[] }
@@ -320,7 +305,7 @@ export interface TrainerBadgeStateV1 {
   catalogVersion: number
   evaluatorVersion: number
   trackingStartedAt: number
-  sourceWatermarks: { contributors: number; ledgerEntries: number; contentVersion: string | null }
+  sourceWatermarks: { contributors: number; contentVersion: string | null }
   aggregates: CountFact[]
   records: TrainerRecord[]
   awards: { achievements: EarnedBadgeStage[] }
@@ -428,13 +413,9 @@ const emptyPreferences = (): BadgePreferences => ({
   savedViews: [],
 })
 
-/**
- * The derived facts badges need. Declared structurally rather than imported, because `save` already imports
- * this module and `derived` imports `save`.
- */
+/** The derived facts badges need, declared structurally: her scenario, her stats and her skill library. */
 export interface BadgeSubject {
   tier: number
-  trainingLevel: number
   stats: Stats
   library: readonly { skillId: string }[]
 }
@@ -471,13 +452,12 @@ export function createUmaBadgeState(uma: UmaSave, subject: BadgeSubject, now: nu
     trackingStartedAt: now,
     sourceWatermarks: {
       raceSequence: -1,
-      trainingTurns: 0,
       scenarioCompletions: completedJourneys.length,
       lineageEvidence: 0,
     },
     history: {
       race: 'exact',
-      // Spark Match runs are in the synced ledger from the first one, so training history is complete (T056).
+      // Her build is on the device from her first unlock, so training history is complete.
       training: 'exact',
       'scenario-completion': hasLegacyJourneys ? 'untracked' : completedJourneys.length > 0 ? 'exact' : 'since-tracking',
       lineage: 'since-tracking',
@@ -504,17 +484,8 @@ export function createUmaBadgeState(uma: UmaSave, subject: BadgeSubject, now: nu
       balancedPeak,
       levelPeak: uma.level,
       distinctSkillIds,
-      lifetimeTrainingTurns: 0,
-      friendshipTrainings: 0,
       fullHouseCount: 0,
-      trainingByTier: [{
-        tier: activeTier,
-        turns: 0,
-        friendshipTrainings: 0,
-        fullHouseCount: 0,
-        reachedTl10: subject.trainingLevel === MAX_TRAINING_LEVEL,
-      }],
-      fullyTrainedTiers: subject.trainingLevel === MAX_TRAINING_LEVEL ? [activeTier] : [],
+      fullyTrainedTiers: [],
       maxSkillsByTier: [...maxSkillsByTier].map(([key, count]) => ({ key: String(key), count })).sort((a, b) => a.key.localeCompare(b.key)),
       goals,
       honorsTiers,
@@ -538,7 +509,7 @@ export function createTrainerBadgeState(now: number): TrainerBadgeStateV1 {
     catalogVersion: BADGE_CATALOG_VERSION,
     evaluatorVersion: 0,
     trackingStartedAt: now,
-    sourceWatermarks: { contributors: 0, ledgerEntries: 0, contentVersion: null },
+    sourceWatermarks: { contributors: 0, contentVersion: null },
     aggregates: [],
     records: [],
     awards: { achievements: [] },
@@ -695,58 +666,6 @@ export function applyDynastyFact(state: UmaBadgeStateV1, descendantUmaId: string
     sourceWatermarks: { ...state.sourceWatermarks, lineageEvidence: state.sourceWatermarks.lineageEvidence + 1 },
     facts: { ...state.facts, dynastyEvidence: [...state.facts.dynastyEvidence, evidence].sort((left, right) => left.key.localeCompare(right.key)) },
   }
-}
-
-/** What the minigame era can say about an Uma's training (T056): each scenario's runs, TL10s and full trees. */
-export interface TrainingBadgeSnapshot {
-  /** Spark Match runs per scenario tier, from the synced ledger. */
-  runsByTier: ReadonlyMap<number, number>
-  /** Scenario tiers she has taken to Training Level 10. */
-  fullyTrainedTiers: readonly number[]
-  /** Scenario tiers whose constellation has every card and stat node filled. */
-  fullTreeTiers: readonly number[]
-}
-
-/**
- * The training facts of the minigame era (T056, D164). Spark Match runs stand where training turns stood, counted from
- * the ledger, so the history is exact; Training Level 10 comes from the save; Full House is a scenario whose every card
- * and stat node is filled. Friendship trainings stay as they were: the card minigame belongs to a card, not an Uma.
- * Nothing already counted is taken back, and an unchanged state is returned as it came.
- */
-export function applyTrainingBadgeFacts(state: UmaBadgeStateV1, snapshot: TrainingBadgeSnapshot): UmaBadgeStateV1 {
-  const tiers = [...new Set([
-    ...state.facts.trainingByTier.map((entry) => entry.tier),
-    ...snapshot.runsByTier.keys(),
-    ...snapshot.fullyTrainedTiers,
-    ...snapshot.fullTreeTiers,
-  ])].filter((tier) => tier >= 1 && tier <= SCENARIOS.length).sort((a, b) => a - b)
-  const trainingByTier = tiers.map((tier) => {
-    const before = state.facts.trainingByTier.find((entry) => entry.tier === tier)
-    const turns = Math.max(before?.turns ?? 0, snapshot.runsByTier.get(tier) ?? 0)
-    return {
-      tier,
-      turns,
-      friendshipTrainings: Math.min(turns, before?.friendshipTrainings ?? 0),
-      fullHouseCount: Math.min(turns, Math.max(before?.fullHouseCount ?? 0, snapshot.fullTreeTiers.includes(tier) ? 1 : 0)),
-      reachedTl10: (before?.reachedTl10 ?? false) || snapshot.fullyTrainedTiers.includes(tier),
-    }
-  })
-  const lifetimeTrainingTurns = Math.max(state.facts.lifetimeTrainingTurns, trainingByTier.reduce((sum, entry) => sum + entry.turns, 0))
-  const next: UmaBadgeStateV1 = {
-    ...state,
-    sourceWatermarks: { ...state.sourceWatermarks, trainingTurns: lifetimeTrainingTurns },
-    history: { ...state.history, training: 'exact' },
-    facts: {
-      ...state.facts,
-      lifetimeTrainingTurns,
-      friendshipTrainings: Math.min(lifetimeTrainingTurns, state.facts.friendshipTrainings),
-      fullHouseCount: Math.min(lifetimeTrainingTurns, Math.max(state.facts.fullHouseCount,
-        trainingByTier.reduce((sum, entry) => sum + entry.fullHouseCount, 0))),
-      trainingByTier,
-      fullyTrainedTiers: [...new Set([...state.facts.fullyTrainedTiers, ...snapshot.fullyTrainedTiers])].sort((a, b) => a - b),
-    },
-  }
-  return JSON.stringify(next) === JSON.stringify(state) ? state : next
 }
 
 /**
@@ -908,30 +827,23 @@ function validateUmaBadgeState(value: UmaBadgeStateV1): boolean {
   ]) || !isId(value.umaId) || !isPositiveInt(value.catalogVersion) || !isNonNegativeInt(value.evaluatorVersion) ||
     !isNonNegativeInt(value.trackingStartedAt) || !validHistory(value.history) || !validPreferences(value.preferences)) return false
   const watermarks = value.sourceWatermarks
-  if (!isRecord(watermarks) || !exactKeys(watermarks, ['raceSequence', 'trainingTurns', 'scenarioCompletions', 'lineageEvidence']) ||
+  if (!isRecord(watermarks) || !exactKeys(watermarks, ['raceSequence', 'scenarioCompletions', 'lineageEvidence']) ||
     !Number.isSafeInteger(watermarks.raceSequence) || watermarks.raceSequence < -1 ||
-    !isNonNegativeInt(watermarks.trainingTurns) || !isNonNegativeInt(watermarks.scenarioCompletions) || !isNonNegativeInt(watermarks.lineageEvidence)) return false
+    !isNonNegativeInt(watermarks.scenarioCompletions) || !isNonNegativeInt(watermarks.lineageEvidence)) return false
   const facts = value.facts
   if (!isRecord(facts) || !exactKeys(facts, [
     'starts', 'wins', 'seconds', 'thirds', 'currentWinStreak', 'longestWinStreak', 'gradeWins', 'surfaceWins',
     'distanceWins', 'strategyWins', 'venueWins', 'familyWins', 'lowAptitudeSurfaceWins', 'lowAptitudeDistanceWins',
-    'courseBests', 'raceFeats', 'statPeaks', 'balancedPeak', 'levelPeak', 'distinctSkillIds', 'lifetimeTrainingTurns',
-    'friendshipTrainings', 'fullHouseCount', 'trainingByTier', 'fullyTrainedTiers', 'maxSkillsByTier', 'goals', 'honorsTiers',
+    'courseBests', 'raceFeats', 'statPeaks', 'balancedPeak', 'levelPeak', 'distinctSkillIds',
+    'fullHouseCount', 'fullyTrainedTiers', 'maxSkillsByTier', 'goals', 'honorsTiers',
     'completedScenarioTiers', 'raceStartsByTier', 'completions',
     'parentedScenarioStarts', 'legacyEvidence', 'dynastyEvidence',
   ])) return false
   if (![facts.starts, facts.wins, facts.seconds, facts.thirds, facts.currentWinStreak, facts.longestWinStreak,
-    facts.balancedPeak, facts.levelPeak, facts.lifetimeTrainingTurns, facts.friendshipTrainings, facts.fullHouseCount].every(isNonNegativeInt) ||
+    facts.balancedPeak, facts.levelPeak, facts.fullHouseCount].every(isNonNegativeInt) ||
     facts.wins > facts.starts || facts.seconds + facts.thirds > facts.starts || facts.currentWinStreak > facts.longestWinStreak ||
-    facts.friendshipTrainings > facts.lifetimeTrainingTurns || facts.fullHouseCount > facts.lifetimeTrainingTurns ||
     !parseStats(facts.statPeaks) || !parseSortedIds(facts.distinctSkillIds) || !parseTierList(facts.fullyTrainedTiers) ||
     !parseTierList(facts.honorsTiers) || !parseTierList(facts.completedScenarioTiers) || !validRaceFeats(facts.raceFeats)) return false
-  if (!Array.isArray(facts.trainingByTier) || facts.trainingByTier.length > SCENARIOS.length || facts.trainingByTier.some((entry) =>
-    !isRecord(entry) || !exactKeys(entry, ['tier', 'turns', 'friendshipTrainings', 'fullHouseCount', 'reachedTl10']) ||
-    !isPositiveInt(entry.tier) || entry.tier > SCENARIOS.length || !isNonNegativeInt(entry.turns) ||
-    !isNonNegativeInt(entry.friendshipTrainings) || entry.friendshipTrainings > entry.turns ||
-    !isNonNegativeInt(entry.fullHouseCount) || entry.fullHouseCount > entry.turns || typeof entry.reachedTl10 !== 'boolean') ||
-    facts.trainingByTier.some((entry, index) => index > 0 && facts.trainingByTier[index - 1]!.tier >= entry.tier)) return false
   const keyedCounts = [facts.gradeWins, facts.surfaceWins, facts.distanceWins, facts.strategyWins, facts.venueWins,
     facts.lowAptitudeSurfaceWins, facts.lowAptitudeDistanceWins, facts.maxSkillsByTier, facts.raceStartsByTier]
   if (keyedCounts.some((rows) => !parseCounts(rows))) return false
@@ -961,15 +873,15 @@ function validateUmaBadgeState(value: UmaBadgeStateV1): boolean {
     !isPositiveInt(entry.tier) || entry.tier > SCENARIOS.length || !isNonNegativeInt(entry.completedAt)) ||
     facts.goals.some((entry, index) => index > 0 && facts.goals[index - 1]!.goalId.localeCompare(entry.goalId) >= 0)) return false
   if (!Array.isArray(facts.completions) || facts.completions.length > SCENARIOS.length || facts.completions.some((entry) => !isRecord(entry) ||
-    !exactKeys(entry, ['tier', 'completedAt', 'trainingLevel', 'stats', 'deckCardIds', 'deckEras', 'trainingTurns', 'friendshipTrainings',
+    !exactKeys(entry, ['tier', 'completedAt', 'stats', 'deckCardIds', 'deckEras',
       'raceStarts', 'completedGoalIds', 'honors', 'parentUmaIds', 'grandparentUmaIds']) || !isPositiveInt(entry.tier) ||
-    entry.tier > SCENARIOS.length || !isNonNegativeInt(entry.completedAt) || !isPositiveInt(entry.trainingLevel) || entry.trainingLevel > 10 ||
+    entry.tier > SCENARIOS.length || !isNonNegativeInt(entry.completedAt) ||
     !parseStats(entry.stats) || !parseIds(entry.deckCardIds, 6) || !Array.isArray(entry.deckEras) ||
     entry.deckEras.length !== entry.deckCardIds.length || entry.deckEras.some((era) => !isPositiveInt(era)) ||
-    !isNonNegativeInt(entry.trainingTurns) || !isNonNegativeInt(entry.friendshipTrainings) || !isNonNegativeInt(entry.raceStarts) ||
+    !isNonNegativeInt(entry.raceStarts) ||
     !parseIds(entry.completedGoalIds, MAX_COMPLETION_GOALS) || typeof entry.honors !== 'boolean' || !parseIds(entry.parentUmaIds, 2) || !parseIds(entry.grandparentUmaIds, 4)) ||
     facts.completions.some((entry, index) => index > 0 && facts.completions[index - 1]!.tier >= entry.tier)) return false
-  if (watermarks.raceSequence + 1 !== facts.starts || watermarks.trainingTurns !== facts.lifetimeTrainingTurns ||
+  if (watermarks.raceSequence + 1 !== facts.starts ||
     watermarks.scenarioCompletions !== facts.completedScenarioTiers.length ||
     watermarks.lineageEvidence !== evidenceLists.reduce((sum, rows) => sum + rows.length, 0)) return false
   const awards = value.awards
@@ -995,8 +907,8 @@ function validateTrainerBadgeState(value: TrainerBadgeStateV1): boolean {
     'records', 'awards', 'preferences',
   ]) || !isPositiveInt(value.catalogVersion) || !isNonNegativeInt(value.evaluatorVersion) || !isNonNegativeInt(value.trackingStartedAt) ||
     !parseCounts(value.aggregates) || !validTrainerRecords(value.records) || !validPreferences(value.preferences, true)) return false
-  if (!isRecord(value.sourceWatermarks) || !exactKeys(value.sourceWatermarks, ['contributors', 'ledgerEntries', 'contentVersion']) ||
-    !isNonNegativeInt(value.sourceWatermarks.contributors) || !isNonNegativeInt(value.sourceWatermarks.ledgerEntries) ||
+  if (!isRecord(value.sourceWatermarks) || !exactKeys(value.sourceWatermarks, ['contributors', 'contentVersion']) ||
+    !isNonNegativeInt(value.sourceWatermarks.contributors) ||
     (value.sourceWatermarks.contentVersion !== null && !isId(value.sourceWatermarks.contentVersion))) return false
   if (!isRecord(value.awards) || !exactKeys(value.awards, ['achievements']) || !Array.isArray(value.awards.achievements) ||
     !value.awards.achievements.every((entry) => validStage(entry))) return false

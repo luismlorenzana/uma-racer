@@ -9,7 +9,6 @@ const EMOJI = /[\p{Extended_Pictographic}\u{FE0F}]/u
 // Symbol-font glyphs standing in for icons: technical, geometric, miscellaneous symbols, dingbats, and the single
 // guillemets once used as chevrons. The star stays as text in ratings like "3★".
 const GLYPH = /[\u2300-\u23ff\u25a0-\u25ff\u2600-\u2604\u2606-\u27bf\u2b00-\u2bff\u219d\u21e5\u2039\u203a]/u
-const GLYPH_EXEMPT = ['ui/minigames/']
 
 function sources(dir: string): string[] {
   return readdirSync(dir).flatMap((entry) => {
@@ -19,11 +18,10 @@ function sources(dir: string): string[] {
   })
 }
 
-function offenders(pattern: RegExp, exempt: readonly string[] = []) {
+function offenders(pattern: RegExp) {
   const found: string[] = []
   for (const file of sources(SRC)) {
     const name = relative(SRC, file)
-    if (exempt.some((prefix) => name.startsWith(prefix))) continue
     readFileSync(file, 'utf8').split('\n').forEach((line, index) => {
       const match = line.match(pattern)
       if (match) found.push(`${name}:${index + 1} ${match[0]}`)
@@ -38,6 +36,6 @@ describe('no emoji', () => {
   })
 
   it('finds no symbol-font glyph standing in for an icon', () => {
-    expect(offenders(GLYPH, GLYPH_EXEMPT)).toEqual([])
+    expect(offenders(GLYPH)).toEqual([])
   })
 })

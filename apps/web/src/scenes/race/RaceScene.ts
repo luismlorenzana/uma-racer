@@ -6,13 +6,14 @@ import {
   RacePlaybackClock,
   buildRaceCues,
   coursePositionLabel,
+  hudTurn,
   isPhotoFinish,
   liveRaceCues,
   type RaceCue,
   type RacePresentationStage,
 } from './presentation'
 
-// Plays a pre-simulated race timeline back at the display's refresh rate (docs/technical/architecture.md#2-deterministic-simulation-then-playback).
+// Plays a pre-simulated race timeline back at the display's refresh rate (docs/game/architecture.md#the-race).
 // The race runs on its own course (M018 part D): the snapshotted corners and straights laid out as a path, a follow
 // camera that turns with the pack so runners always travel left to right, and a minimap of the whole course.
 
@@ -348,9 +349,11 @@ export class RaceScene {
       token.root.alpha = frame.hp <= 0.001 && running ? 0.6 : 1
     })
 
-    // Last-spurt speed streaks. A turn race's phase is the race's, from the turn (M021).
-    const turn = this.turnRace ? Math.max(1, Math.ceil(this.elapsed)) : null
-    const phase = turn !== null ? turnPhase(turn, raceTurns(course)) : phaseAt(lead, course)
+    // Last-spurt speed streaks. A turn race's phase is the race's, from the turn (M021); the turn holds at the course's
+    // count while the last runners finish (`hudTurn`), still in the last spurt.
+    const turns = this.turnRace ? raceTurns(course) : null
+    const turn = turns !== null ? hudTurn(this.elapsed, turns) : null
+    const phase = turn !== null && turns !== null ? turnPhase(turn, turns) : phaseAt(lead, course)
     this.effects.clear()
     if (!this.reducedMotion && playback.stage === 'running' && phase >= 3 && this.elapsed < this.duration) {
       for (const [index, streak] of this.streaks.entries()) {
@@ -381,7 +384,7 @@ export class RaceScene {
         duration: this.duration,
         phase,
         turn,
-        turns: this.turnRace ? raceTurns(course) : null,
+        turns,
         playerDistance: player.distance,
         playerHp: player.hp,
         playerPosition: this.elapsed >= this.duration ? finalPlacement ?? position : position,

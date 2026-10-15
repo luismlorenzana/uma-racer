@@ -1,322 +1,424 @@
-# UX & Visual Design (mobile first)
+# UX: the shell, screens and words
 
-Uma Racer is played mostly **on the owner's iPhone, in portrait, as a Home Screen web app**. Every screen is designed
-at **390×844 pt** first. Larger screens get more breathing room, not a different app.
+> **As built: generation 2 (T137–T143).** How the game behaves in the hand: principles, the shell and its navigation,
+> the screens by place, sheets and lists, feedback and plain words, loading and errors, the albums, and accessibility.
+> What each place holds, and why, is the manual's [11 · Hub and places](../game/11-hub-and-places.md). This page is the
+> behaviour every place shares.
 
-Tech constraints and performance budgets are in [Game-like Web Tech](../research/game-web-tech.md).
+Uma Racer is played on the owner's iPhone, in portrait, as a Home Screen web app. Every screen is designed at
+**390×844 pt** first. Larger screens get more room, not a different app. Budgets and tech limits are in
+[Game-like Web Tech](../research/game-web-tech.md).
 
 ## Principles
 
-1. **Thumb first.** Primary actions sit in the bottom third. Nothing important needs a stretch to the top corners.
-2. **Visual before textual.** Icons, portraits, bars, colors, and motion carry the meaning, and numbers confirm it.
-3. **Every tap answers.** Instant press feedback, then a result animation. Waiting states are rare, because the game runs locally.
-4. **Big moments feel big.** Level-ups, promotions, stars earned, coupon reveals, goal completions, and new badges each get a crafted fanfare.
-5. **One-handed loops.** Training and racing can repeat with a thumb, without menus in between.
-6. **Offline is normal.** No spinners for game actions. Sync status stays a quiet indicator, except when it is
-   failing: a **⚠ Sync** chip in the top bar (red on an error, amber when changes have waited over a day) links to
-   Settings, which shows the error and when this device last synced (D157). A save that cannot open says why, offers
-   **Try again** and **Copy details**, and never offers to clear anything.
+1. **Thumb first.** The bottom bar, the floating pill, a Peek's **Enter**, every sheet and every primary button sit in
+   the bottom third. The account bar at the top holds counters and shortcuts, nothing a turn needs.
+2. **Visual before textual.** Buildings, faces, pips, crests and meters carry the meaning. Numbers confirm it.
+3. **Every tap answers, in place.** A press scales the control at once. The tap then answers beside its button: done, a
+   rule in one sentence, or one question with the new numbers ([Feedback and plain words](#feedback-and-plain-words)).
+4. **Big moments feel big.** A win's placement stamp, a level-up, a goal ribbon, new flair and a new Uma's reveal each
+   get a short fanfare.
+5. **One-handed loops.** A check-in is three taps (Collect all, Repeat all, Start suggestions). A race after the first
+   is four (11 §9).
+6. **Offline is normal.** Game actions never show a spinner: they commit on the phone and sync later
+   ([02](../game/02-check-ins-and-notifications.md) §8). Sync stays quiet unless something waits (the Sync chip, D157).
+   A save that can't open says why, offers **Try again** and **Copy details**, and never offers to clear anything.
+7. **Help sits behind (i).** Every Peek and Page has an (i) button with the place's blurb and its own lines. No banner
+   explains a rule (uma-rpg D95).
+8. **Every place is a link.** Back and the iPhone's edge swipe work everywhere.
+
+The build rules behind them (CLAUDE.md "Conventions"):
+- **Mobile first** at 390×844: 44 pt targets, safe-area padding (`pt-safe`, `pb-safe`) and `h-dvh` for the shell and
+  every full-screen flow.
+- **Motion** runs under `LazyMotion strict` (`app/motion.tsx`), so only `m.*` components draw. The DOM animates
+  transform and opacity only.
+- **Continuous values** (the account bar's numbers, HUD values) change by a CSS transition, never a spring
+  (`ui/AnimatedNumber.tsx`, `.g2-number` in `app/g2.css`).
+- **Timer labels** derive from saved timestamps and redraw on one 30-second clock that stops while the app is hidden.
+  Nothing outside the race animates per frame.
 
 ## Visual direction
 
-The skin is specified in **[Visual System — "Paddock"](visual-system.md)**: surfaces, colour, type, shape, components,
-iconography, art treatment, motion and density. It replaces the earlier "Racecourse Pop" direction (D111), which read as
-a children's web game rather than a modern mobile game. This page keeps navigation, the screen inventory and the
-feedback catalogue.
+The skin is **[Visual System "Paddock"](visual-system.md)** (D111): surfaces, colour, type, shape, components, icons,
+art treatment, motion and density. Its three rules decide most arguments: the art leads, one gold accent, and
+decoration is a motif, not a texture. This page doesn't restate them.
 
 ## Navigation
 
-```text
-┌──────────────────────────────┐
-│ ◀ Title        🎫 312  🎟️ 2 │  ← top bar: back (when nested), currencies (tap for details)
-│                              │
-│         screen content       │
-│                              │
-├──────────────────────────────┤
-│ 🏠   🐴   ( 🏁 )   🃏   🏅   │  ← bottom tab bar: Home · Stable · RACE (raised center) · Cards · Badges
-└──────────────────────────────┘
-```
-
-- **Bottom tab bar** with 5 destinations. Race is the raised center button.
-- **Bottom sheets** (drag to dismiss) for pickers: strategy, card slot, the Uma picker (D181), filters, confirmations.
-- **Full-screen scenes** hide the tab bar: Training, Race, Results, Scenario Start, and reveal fanfares.
-- **Swipe back** from the left edge on nested screens, consistent with iOS.
-- **Shared-element transitions**: an Uma tile morphs into the profile hero, and a card tile into its detail.
-
-## Screen inventory
-
-### Home (lobby)
-
-- **Featured Uma** portrait, large, with a gentle idle "breathing" motion. Level ring, Training Level bar, active title.
-- **Two big CTAs** in the thumb zone: **Train** and **Race**.
-- On open, the **daily ticket grant** flies "+15 🎫" into the counter.
-- **Career** card for the featured Uma (a pip per goal race, her stage, and her next goal race under the Race button), followed by the implemented **recent flair** card with the latest
-  three collapsed visible awards, Prestige, frame, and a Profile link, followed by the implemented compact Stable-wide
-  recent-flair feed.
-- A **Stable Farm** card shows Farm Level, ready/working/open plots, the nearest deadline and the next plot unlock. It
-  opens the saved Sections directly; Home has no separate Item shortcut.
-- A swipe on the portrait switches the featured Uma.
-
-The implemented goal tracker handles pending setup, active/completed/missed goals, legacy-untracked saves, final completion,
-and missing target content. Each available active target links directly into Race Select.
-
-### Stable Farm
-
-- A full-screen account activity outside the five-tab shell. Its header owns Back, Farm Level (one number), **How it
-  works**, and Field / Workers / Crops / Items navigation; `/farm` always opens the persistent Section list (D234).
-- Field lists every Section with an open plot, then the next one locked, up to the Farm's three. Each Section card previews its six slots
-  (worker chibi, crop, READY band, locks) and when its next crop is ready; tapping it opens that Section's two-by-three
-  field of locked, unassigned, idle, growing and ready plots. Assignment is per outfit, the crop picker opens on her
-  newest row and shows each crop's growth time (10h down to 7h 30m; older rows 7h 30m), and a crop keeps growing offline without withering.
-- Workers lists every owned outfit separately with Farm-only XP and level, her newest crop row and its growth time.
-  Crops exposes the seventy scenario/stat definitions with each row's Farming Level or growth time. Items opens with a Training panel (Level-Up Tickets owned and the Training EXP bank as a
-  meter, `850 / 1,250`), then joins the global synced stacks to the produce catalog, defaults to owned produce, remembers
-  owned/all, stat, scenario and density locally, and exposes source plus the constellation use that consumes it.
-- Harvest feedback appears only after the transaction commits, links to the exact Item stack, and names XP, outfit/Farm
-  levels and unlocks. Stale views reload; ambiguous harvests recover from authoritative cycle evidence.
-
-### Stable
-
-- A complete All/Owned/Unowned grid: owned tiles show portrait, levels, tier, and ready state; unowned outfits use labeled
-  silhouettes and open a Select Coupon review. Owned tiles navigate directly to Profile.
-- Completion, shard progress, coupon balance, and the explicit five-shard Exchange action sit above filter chips for tier,
-  distance, surface, strategy, and ready state. Sorting remains in a sheet.
-- Exchange uses a short Motion counter response, with an instant reduced-motion equivalent. Missing content and memory-only
-  persistence remain visible rather than silently changing counts.
-
-### Uma Profile
-
-Three zones, top to bottom, ordered by how often each is used (rebuilt 2026-09-21):
-
-1. **Identity** — portrait, name, outfit, her two levels as label-free chips (the race flag's **Uma Level** and the
-   carrot's **Farming Level**, D239), Prestige, active title, the featured star, and the three
-   highest-tier badges earned.
-2. **This scenario** — the scenario switch (D190), scenario status, Start/Unlock actions, then distinct **Racing**
-   and **Training** zones. Racing shows three compact defaults (style, distance, surface), an Edit sheet, then the
-   **distance presets** as one row of four shoe buttons with her grade at each distance in its corner (D252, D253), and one
-   full-width Races action. Training builds the selected preset and has four full-width destinations: **Constellation**
-   (card tree and the only Spark Match entry), **Inspiration** (parent/grandparent nodes and aptitude changes), **Extra
-   stats** (the crop-bought stat grid) and **Skills** (the equipped loadout within the preset's SP). These are separate
-   pages, not kinds of node mixed in one canvas; the Training scene and Skills page show the preset they build. Stats, card set, aptitudes and frozen career goals follow.
-   An earlier scenario still has no Start or Unlock. The Training scene, Skills page and Spark Match follow the chosen unit.
-3. **Archive** — collapsed rows for everything browsed rather than used: all badges, scenario history, lineage,
-   races run.
-
-Nothing is sticky: an element pinned inside the scrolling shell parks over the content instead of the viewport.
-
-### Scenario Start
-
-Superseded by D121 and D123: an Uma's scenario run starts with one confirmation, with no parent snapshots or
-inheritance picks. Lineage is set on the constellation's parent nodes instead.
-
-### Training scene
-
-A full-screen scene with one header — the Uma, scenario crest and TL — and a live stat strip whose deltas read
-against the moment the scene opened. Two tabs sit under it (M016):
-
-- **Constellation** — the card tree, the card node sheet, and **Raise Training Level** (Spark Match). A card node's sheet
-  shows each card's bond and what one node pays, with a **Bond** link beside it.
-- **Card set** — the chosen scenario/distance preset's six slots. Each shows the card, its type, its global stars,
-  what one node pays (SP per node for a Friend or Group card, marked **Skill points**), how many nodes it fills, and
-  a **Bond** button. Tapping a card offers Open card, **Replace** (the new card takes over its nodes), and Remove.
-  Edits save as they are made, like the constellation; empty slots open the album picker, and **Fill empty slots**
-  tops the set up without touching what is already there.
-
-Every card-minigame run launched here returns here.
-
-The separate **Inspiration** page shows only the two parent and four grandparent slots with their aptitude deltas and
-lineage picker. **Extra stats** (D235) is a grid, not a graph: a row per stat showing its scenario crop and stock and four
-node buttons (on in the stat's colour with `+40`, off, the next to buy with `×cost`, or locked), under a `Slots on · n / 6`
-meter. Tapping a bought node switches it on or off; tapping the next opens a sheet naming the crop, the cost, the stock
-before and after and the no-refund rule, with a Farm link when short. Every state is in the button's accessible name.
-The live stat strip above moves with every change. Neither page offers a training-minigame button.
-
-### Spark Match — Rival Circuit
-
-A no-scroll, portrait full-screen scene under `/minigames/spark-match/:umaId`. The tab bar is hidden. At 390 × 844 its
-zones are, top to bottom:
-
-1. **Run HUD:** Leave/pause, scenario, wave `1/3`, trainee Drive and Spark gauges. Leaving preserves the run for resume;
-   v1 has no manual forfeit or reroll.
-2. **Rival stage:** the encountered Uma's whole standing Chibi in a clear strategy-coloured ring, with icon/silhouette
-   fallback, name and strategy glyph, Resolve, countdown and a plain-language next-intent card. A phase or Guard status
-   stays beside the gauge instead of appearing only as a toast.
-3. **Puzzle board:** a square-celled 6 × 5 PixiJS board. Each kind keeps Spark Match's whole-Chibi tile face inside its
-   strong colour ring and faint tint, plus a glyph/mark; the held orb draws above the finger, its origin remains marked,
-   displaced orbs visibly slide, and a radial movement clock appears only after the first cell transition.
-4. **Thumb zone:** Spark Shift when charged, an always-available **Matchups** control for the text advantage legend, and
-   no critical control in an iOS gesture corner. The bottom uses `pb-safe`.
-
-Before the first charged run, a full illustrated guide opens once and never charges a ticket. It reuses Friendship
-Training's page-at-a-time/swipe model and teaches: the three-wave circuit; drag-through swapping and its seven-second
-movement clock; matches/cascades; the complete strategy ring; Spark/Recovery; visible enemy intent and turn bound; and
-saved Training EXP/node progress. The unpaid start screen retains **How to play**, and the live run's help control opens
-the page relevant to its current state. The paid start screen names the three-wave structure, current TL/EXP, possible
-opened-node count, and **Begin · 1 ticket**.
-
-During resolution the path is no longer editable. Matches outline before clearing; attack trails use both strategy colour
-and glyph; Recovery travels to Drive; Spark travels to its gauge; the rival reacts only after engine-produced damage.
-Cascades are labelled in one stable counter. Reduced motion shortens travel to fades and scale changes but keeps match,
-damage, recovery and intent order legible.
-
-The renderer uses fixed pools of 30 board sprites, 24 particle effects and 8 combat labels. The development overlay shows
-FPS/frame time, live/pool counts, action count, engine hash, content source and pause state without private ids. One polite
-DOM live region announces a whole resolved turn and the next intent; it never narrates the dragged path. A resize during a
-drag cancels that uncommitted gesture, landscape asks the player to rotate while preserving the saved turn boundary, and a
-journal restore failure keeps explicit **Retry run** and **Return** actions visible.
-
-Below the stake, the start screen offers **Level-Up Tickets** for this unit (D213): owned and the EXP bank, a stepper
-capped at the levels left to TL10, a preview of the levels and nodes it opens, and **Use N tickets**. It is hidden while a
-run is resuming and disabled, with how tickets are earned, when none are owned. Using them shows the same Training
-progress summary as a run's result, with the ticket line, and **Done** returns to the start screen.
-
-The result leads with **Circuit cleared**, **Drive depleted** or **Turn limit reached**. It then shows Training EXP, the
-before/after TL bar, every level crossed and every opened node by real name. A run that reaches TL10 adds a line for the
-EXP it banked and, when the bank completes one, **+N Training Level-Up Ticket** linking to Items (D212). Each node opens its matching
-Constellation, Inspiration or Extra stats view focused on it; **Done** returns to the caller and **Run again · 1 ticket** reserves a new attempt. A reload during a
-board returns to the exact wave, board, gauges and intent rather than to the start screen.
-
-### Race Select
-
-- A **racing Uma strip** under the title: a horizontal row of her busts, the featured Uma first, then by level. Tapping
-  one switches every section below to her; the picked bust is outlined and scrolled into view.
-- **Racing as**: the same scenario switch as her profile, when she has more than one scenario (D190). An earlier
-  scenario hides the career tracker and EXP, and says it races without Uma EXP.
-- A **career tracker**: her three stages with levels and progress, the current stage's goal races, and what the stage
-  is holding ([Scenario Careers](scenario-goals.md#presentation)).
-- **Next up**: 5–10 race cards worth running now — the unwon goals up to her current stage, then races graded for her
-  stage in her profile, one per race family. Cards carry line-icon marks: a career goal, a G1 set leg with progress,
-  a first G1 win.
-- **Won this scenario**, **All races** and **Recent results** are collapsed below; every race stays runnable.
-- Each race is judged by the preset of its distance (D254): whether she fits a Long race is read through her Long preset.
-- Tap → Pre-race.
-
-Multiple goals for one target share one race card with ordered ribbons. A direct Home/Journey goal link selects that exact
-race when available; missing/retired targets remain explicit instead of silently substituting another race.
-
-### Pre-race
-
-A bottom sheet, top to bottom, so starting never means scrolling past the skills and the field (D233):
-
-- The race, its marks, and every active goal at stake with its win rule; then her summary (scenario, Training Level,
-  Race Bonus, EXP) with the **distance preset** the race runs on, chosen by its distance (D254).
-- **Strategy**, one row of four running-style icons with aptitude letters (D251), and the big **Start race** button right
-  below it. The style stays the player's choice.
-- **Aptitudes** for this race's surface, distance and strategy.
-- **Her stats for this race**: each stat with **Good**, **Average** or **Bad**. Stamina is read against what a full
-  spurt needs at this distance and style (the same HP model rivals are built on): Good from 105% of the need, Average
-  from 95%, and where nothing turns it into speed (2,100 m and under) the spare is named. Speed, Power, Guts and Wit are
-  ranked against the field she will meet, from the prepared race: Good when she beats two-thirds of it, Average a
-  third, with the count beaten and the field's middle value. Stats above 1,200 count half, as in the race. Nothing is
-  authored per race; changing the strategy re-reads it. If the field cannot be built, Stamina still reads.
-- **Race skills** with SP and an Edit link, then the **Field** preview, a row of busts in gate order. Everything here,
-  stats, aptitudes, card set, Race Bonus and skills, is that preset's; the Edit link opens Skills on that preset.
-
-### Race (PixiJS scene)
-
-Portrait layout. The track runs horizontally, lanes are stacked vertically, and the camera follows the pack:
+The shell is `hub/Shell.tsx`: the account bar on top, the route between, the bottom bar in the thumb zone, and the host
+for global sheets. The rules and their reasons are [11](../game/11-hub-and-places.md) §1–§2 and §13.
 
 ```text
-┌──────────────────────────────┐
-│ Japan Cup · 2400m   ▶ 1× 2×⏭ │
-│ ━━ MIDDLE LEG ━━  812m left  │  ← phase banner and distance
-│░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░│
-│  ⑦→    ③→                    │
-│      ①→   ⑫→   (YOU ⑤)→      │  ← lanes; icons drift and overtake
-│   ⑨→      ⑭→                 │
-│░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░│
-│ ●●●●○●●●●●●◉●●●   progress   │  ← whole-field progress rail
-│ HP ▰▰▰▰▰▱▱  3rd   "Makes her move!" │
-└──────────────────────────────┘
+┌───────────────────────────────────────────────┐
+│ (L)     12,340   46   3 · 2/5          Sync   │  account bar
+│                                               │
+│    place tiles on a three-column grid         │  the page (DOM tiles until phase 6's canvas)
+│                          [ Collect all · 9 ]  │  floating pill
+├───────────────────────────────────────────────┤
+│  Town Hall   Training   ( RACE )   Farm   ☰   │  bottom bar
+└───────────────────────────────────────────────┘
 ```
 
-- **Parallax** rails and distance markers. Dust particles at speed.
-- **Start gate**: field card → staged gates → Ready → Go before simulation time begins. Reduced motion shows a short text-only equivalent.
-- **Skill activations**: one serialized name/effect card; player events win collisions and simultaneous rivals are grouped.
-- **Last spurt**: speed lines and a slight transform-only zoom. Music remains a later polish task.
-- **Finish**: Nose/Head margins get a brief renderer-only slowdown and photo-finish hold. Skip reveals the identical result.
-- Landscape is allowed on this screen only, for a wider view.
+| Part | What it does | Code |
+|---|---|---|
+| **Account bar** | The trainer's initial (opens Account). **Prize Money** and **Speed Tickets** (open the Exchange, the second at its Speed Tickets row). **Uma Tickets** with the Shards toward the next one, "3 · 2/5" (opens the Stable's Locked tab). The **Sync chip**, only when not synced: Offline, Sync paused (signed out), or **Sync** in amber (changes have waited over a day) or red (failing); it opens Account's sync row. Every chip is a 44 pt link | `hub/AccountBar.tsx` |
+| **Bottom bar** | **Town Hall · Training · ( RACE ) · Farm · ☰**. RACE is a raised accent disc and opens the Racing page. Farm and Training carry a badge with the Umas who have something to collect there, hidden at 0; Town Hall and RACE carry none. The active page shows by shape (two-tone icon, chamfered underline) as well as colour | `hub/BottomBar.tsx` |
+| **Menu (☰)** | A sheet of every drawn place by page, each with its counter, then Account and **Needs of every Uma** (the planner's roster view). It reaches everything, whatever the page shows | `hub/GlobalSheets.tsx` |
+| **Floating pill** | On every page, right thumb zone, above the bar: **Collect all · N ready**, else **Check-in · N free**, else nothing. It opens the check-in summary ([02](../game/02-check-ins-and-notifications.md) §4) | `hub/PageGrid.tsx` |
+| **Global sheets** | `?sheet=menu`, `?sheet=featured` (the featured Uma's quick sheet) and `?sheet=check-in`, over any shell route. A sheet is a route, so Back closes it. Collect all's intent rides in navigation state, so a reload never collects again | `hub/SheetHost.tsx`, `hub/nav.ts` |
+
+### Peek, Page and Back
+
+- **Tap a tile once for its Peek, again (or Enter) for its Page.** A Peek is `/:page?peek=:place`: a non-modal sheet
+  over the lower half of the page (40–52% of it) that leaves the tiles live. It has (i), a close button and a handle
+  (tap it, or drag it down); Escape closes it too. A Peek opens only over its own page. The Racecourse is `direct`:
+  its tile opens the Page at once.
+- **Every Page has one sticky header:** Back, the name and (i). Back returns to where the Page was opened. From a deep
+  link it goes up a level instead: a sub-route to its place, a place to its page.
+- **History follows the taps** (`useLeave` in `hub/nav.ts`). An entry pushed from inside the app carries `back`, and
+  leaving it pops history. A deep link replaces itself with its parent.
+- **A Page opened by a link starts at the top; Back returns to where the last one was** (D176, `app/scroll.ts`). The
+  place's own scroller is reset on a new path and restored on Back or Forward; a Peek, a sheet or a tab (a change of
+  search alone) leaves the page where it is.
+- **Full-screen flows** hide both bars and return where they came from: the race run and its result
+  (`/racing/racecourse/run`), the Scenario Gate's ceremony (`/racing/scenario-gate/:umaId/ceremony`), an Uma's
+  constellation tree and Extra Stats map (`/training/observatory/:umaId`, `/training/gym/:umaId`), and the collection
+  reveal (`/collection/reveal/uma/:umaId`, outside the shell).
+- **Pages don't swipe yet.** Swiping the map between pages is phase 6's canvas (11 §11); today the bottom bar moves
+  between them. An Uma's profile moves through the Stable's order with Previous, Next and a swipe.
+
+### Where the app opens
+
+`/` decides once, when the first snapshot is ready (`app/start.ts`, 11 §2.4):
+1. **No Umas yet:** the Stable's Locked tab, to pick the first ones with the starting Uma Tickets.
+2. **Anything needs a tap** (an Uma Ready or Free): the **Farm page**, where a check-in happens.
+3. **Otherwise the last page viewed** on this device (`uma-racer:g2:lastPage`), or Town Hall the first time.
+
+### Routes
+
+| Route | Opens |
+|---|---|
+| `/` | The start rule |
+| `/town`, `/training`, `/racing`, `/farm` | A page. `?peek=:place` adds a Peek, `?sheet=` a global sheet |
+| `/:page/:place/*` | A place's Page and its sub-pages: a profile at `/town/stable/outfit/:umaId`, a card at `/town/card-library/card/:cardId`, a build view at `/training/:facility/:umaId`, the run at `/racing/racecourse/run` |
+| `/collection/reveal/uma/:umaId` | The reveal, full screen |
+| The old app's routes | Redirected to their new places (`app/redirects.ts`, 11 §7.2) until the next phase that ships |
+| Anything else | `/`: deleted paths (the retired modes and minigames, `/training/:umaId`, the old `/dev/*` proofs) and unknown ones |
+
+The full table is 11 §7.1. **Dev builds only:** the synthetic seeds mount at `/dev/seeds/*` (`apps/web/src/dev/`), and
+proofs live under `/dev/` beside the places they prove (`/dev/check-in`). A production build holds neither.
+
+## Screens
+
+Every place has a Page, every drawn place but the Racecourse a Peek, and most a counter. What each one shows, its
+sub-routes and its decisions are 11 §3 and the manual page that owns its rules.
+
+| Page | Places | Rules |
+|---|---|---|
+| **Town Hall** (`/town`) | **Stable:** the roster album (Owned and Locked), each Uma's profile (Overview, Needs, Skills, Racing), Unlock and the reveal. **Warehouse:** every item by shelf, and the stock sheet with Make more and Sell. **Exchange:** Speed Tickets and raw ingredients. **Card Library:** every SSR, and each card's page with Bond. **Account** (hidden; reached from the trainer chip and the menu): check-in times, sync, this phone's reduced motion and race speed, App build and Content, sign-out. **The plaza:** the featured Uma and her quick sheet | 11 §3.1, §5; [03](../game/03-uma-progression.md), [04](../game/04-tiers-and-promotion.md) §6, [06](../game/06-cards-and-bonds.md) §6, [09](../game/09-racing-rewards-and-exchange.md) §5–§6 |
+| **Training** (`/training`) | **Observatory, Lineage Hall, Gym, Dojo:** a facility page each (level, slots by room, Needs here, Collect here, the session sheet), and each Uma's build view at `/:umaId` | 11 §3.2; [05](../game/05-training-hub.md) §8 |
+| **Racing** (`/racing`) | **Racecourse** (`direct`): race select, the pre-race sheet, the run and its result. **Scenario Gate:** every Uma's career, the Advance sheet and its ceremony. **Expedition Map:** each Uma's distance to entry until phase 9. **Trophy Hall:** badges by scope, titles, showcases, trophies, records and the trainer profile | 11 §3.3; [09](../game/09-racing-rewards-and-exchange.md), [03](../game/03-uma-progression.md) §4–§5, [10](../rework/10-expeditions.md), [Badges](badges.md) |
+| **Farm** (`/farm`) | **The eight family sites, the Pantry and the Kitchen:** a building page each, with its slots, its jobs and the job sheet | 11 §3.4; [07](../game/07-farm.md) §10 |
+| **Every page** | The menu, the featured Uma's quick sheet and the check-in summary. The planner's views live under the Stable (`/town/stable/needs`, each profile's `/needs`) | 11 §2; [02](../game/02-check-ins-and-notifications.md) §4–§6 |
+
+Places with slots share one set of work pieces (`ui/work/`): slot cards, size chips, queue chips, Recall, Speed up and
+Upgrade, all answering through the same tap (below).
+
+### Race select and the pre-race sheet
+
+Race select is the Racecourse's Page (`places/racing/RaceSelect.tsx`): the purse bar and featured races, the Uma strip,
+**Today's featured**, **Next up** and every race ([09](../game/09-racing-rewards-and-exchange.md) §3–§4). A race card
+opens the **pre-race sheet**, ordered so starting never means scrolling past the detail (D233):
+1. **The race:** grade, name, its line, and its prize at today's band.
+2. **What's at stake:** every goal the race can complete, with its win rule.
+3. **Her:** face, name, "T1 · Lv 7", the distance preset it runs on with its Race Bonus, and "Collects 2 finished
+   unlocks first" when her session has some.
+4. **Running style:** four icons with her aptitude letters, starting at her race defaults. The choice isn't saved.
+5. **Start race**, then her aptitudes for this surface, distance and style.
+6. **Her stats for this race:** each stat reads **Good**, **Average** or **Bad** (`places/racing/race-fit.ts`).
+   - **Stamina** is read against what a full spurt needs at this distance and style (the HP model rivals are built
+     on): Good from 105% of the need, Average from 95%. The row says "needs 1,234".
+   - **Speed, Power, Guts and Wit** are ranked against the field she will meet, from the prepared race: Good when she
+     beats two-thirds of it, Average a third. The row says "beats 9/17". Stats above 1,200 count half, as in the race.
+   - Nothing is authored per race, and changing the style reads it again.
+7. **Race skills** with their SP (her unique is free), then the **Field**: faces in gate order.
+
+If the race can't be prepared, the stats and the field are left out. **Start race** commits the race before it plays
+([09](../game/09-racing-rewards-and-exchange.md) §8), so a reload or a reopen lands on the same race.
+
+### The race
+
+The run is full screen (`places/racing/run/RunPage.tsx`) and always plays a committed result. The PixiJS scene draws
+the course with a numbered, colour-ringed token per runner. The HUD names the phase and the metres left (and the turn,
+in a turn race), and a feed of small toasts on the right calls out skills and moves. In the thumb zone: her HP meter,
+Pause, step back and on while paused, and 1× or 2× (plus Slow in a turn race). **Skip** sits top right. The last spurt
+adds a slight zoom. The screen stays awake while it plays.
+
+A run starts at this phone's default race speed from Account (`uma-racer:g2:raceSpeed`, 1× or 2×), or at the nearest
+speed the race offers if that one isn't. Dev builds expose `window.__raceScene` (`seek`, `skipToEnd`).
 
 ### Results
 
-1. The placement number **stamps** in ("1st!", with confetti if a win).
-2. The finishing order slides in, with margins.
-3. The Uma EXP bar fills. On a level-up: burst, and the ticket reward moves in.
-4. Activated player skills are grouped by id with counts and recovery/speed/acceleration labels; missing content falls back to the id.
-5. Committed goal ids unfurl as serialized Goal Ribbons, followed by updated pips and Honors. The implemented T016 flow then serializes persisted
-   flair in this order: goal-derived badge events, ordinary badge tiers/one-offs, first G1 trophy, race-set/repeat title,
-   and Trainer achievements. Multiple newly crossed tiers for one definition collapse visually to the highest one while
-   detail retains every stage. Skip/reduced motion reveals the same facts immediately; reload shows “Earned in this race”
-   summaries from stored event ids without replaying them as new.
-6. CTAs: **Races** · **Train** · **Race again**. Until the atomic save succeeds only Retry save is available; Race again
-   becomes Promote first at a scenario gate.
+The result slides up over the run, in [09](../game/09-racing-rewards-and-exchange.md) §7's order:
+1. The placement **stamps** in ("1st!", with confetti on a win).
+2. The finishing order, with margins.
+3. **Racing EXP**, with a chip for each level gained and a line for a hold or a new Uma Shard.
+4. **Prize Money** with its lines. The amount flies into the Prize Money chip, shown alone at the top.
+5. **Goal ribbons** with their pips, and Scenario Honors when the career is complete.
+6. **Flair earned**, then Trainer achievements.
+7. **Races**, **Race again** and **Next Uma**. **Advance** joins them when she's ready, opening the Scenario Gate's
+   Advance sheet.
 
-### Cards
+The fanfare plays only the first time this device shows the result. A reload shows the stored result, its flair
+headed "Earned in this race", without replaying it.
 
-- **Album**: a lens chip row — Collection, then all fourteen scenarios (D199) — over the shared album chrome
-  ([Collection](collection.md#card-album)). Both lenses carry global stars and the reserved detail area has a
-  **Bond** button, so a bond is one tap from the tab.
-- **Card page** (`/cards/:id`): the card's illustration full width, with its name, type and ownership over its foot (a
-  tap opens the whole illustration), then how to own it (a Card Select Coupon), **Global stars** with one Bond
-  action and a scenario-context picker (D255), followed by read-only **Scenario scaling**, then what it pays — its split,
-  a 0★–3★ per-node ladder (in SP for a Friend or Group card), Race
-  Bonus and its skills in node order — and every set it sits in.
-- **Unlock** hands to the full-screen collection reveal, which returns to the card's page.
-- A bond is raised only in Friendship Training, which always returns where it was launched: the album lens, the card page,
-  or the Training scene.
+## Sheets and lists
 
-### Badges
+| Surface | Behaviour | Code |
+|---|---|---|
+| **Bottom sheet** | Modal, over a scrim that closes it. A drag starts from the grab handle only, so taps inside are never swallowed; a drag past 90 px or a flick closes it. A close button sits by the handle. It never grows past 92% of the screen: the content scrolls under the fixed handle | `ui/BottomSheet.tsx` |
+| **Sheet over a sheet** | `ui/Sheet` and the Uma picker render through a portal, so a question or the picker opens over another sheet | `ui/Sheet.tsx`, `ui/UmaPicker.tsx` |
+| **Peek** | Non-modal: the page stays live behind it ([Peek, Page and Back](#peek-page-and-back)) | `hub/PageGrid.tsx` |
+| **Global sheets** | Focus moves to the sheet's heading and returns to what opened it. Escape, the close button, the handle and Back close it | `hub/GlobalSheets.tsx` |
+| **Tab rows** | Two to four tabs at 44 pt on a sunken track, the chosen one raised, moving by a CSS transition: the Stable's Owned and Locked, an Uma's profile, the Warehouse's shelves, the build views | `ui/Tabs.tsx` |
+| **Lists and grids** | Rows of at least 44 pt. Long lists stay cheap through `content-visibility`: off-screen rows skip layout and paint, and the scroll position restores because nothing unmounts | `ui/album/VirtualGrid.tsx` |
 
-The big Badge page (see [Badges — Badge page](badges.md#badge-page)), built mobile-first:
+**Confirm only what costs or sells, and say the amount.** The check-in summary's Buy and restart and Speed up all
+([02](../game/02-check-ins-and-notifications.md) §11), a sale that includes a dish, dips into needed stock or is worth
+1,000 or more, and an Exchange buy of 1,000 or more ([09](../game/09-racing-rewards-and-exchange.md) §6.1) each ask
+once. Everything else is one tap. Nothing has an undo.
 
-- A scope switch at the top (**Uma / Stable / Trainer**) and a search field. All three scopes are implemented.
-- Uma scope keeps the chosen owned Uma in the URL. Stable is a live per-Uma aggregation; Trainer is persisted account
-  achievements/records, never a duplicate copy of Stable awards.
-- **Filter sheet** with typed tag groups, removable chips, deterministic sorting, and up to 20 named saved views per scope.
-- A windowed grid of badge tiles. Hidden unearned definitions do not leak names/text; locked visible definitions are
-  silhouettes, and exact/since-tracking/untracked provenance is always explicit.
-- Tapping a tile opens a detail sheet with criterion, tier ladder, progress/provenance, dates, Prestige contribution, and
-  race/Journey/migration links. Uma scope also has a G1 trophy wall and paged flair timeline.
-- **Pin mode** enables multi-select and ordered showcase groups. Pointer drag is optional enhancement; ≥44 pt Move up/down
-  and group controls provide the complete accessible/iPhone fallback. The Profile flattens groups and shows the first 12.
-- Active-title selection lives here. The first earned title becomes active only when none is selected; later titles never
-  silently replace the player's choice.
-- Tiles use generated semantic glyphs plus tier shape, color, and text. Bespoke art, sound, and haptics stay in Milestone 7.
+## Feedback and plain words
 
-### Settings
+### A tap's answer
 
-- Sound effects and music volume, haptics (shown only if supported), reduced motion, default race speed.
-- Sync status and "sync now". Sign-out.
-- **Dev mode** (hidden behind a long-press on the version): fps overlay, grant resources, set levels, skip day, WebGPU toggle.
+Every tap is one operation, with its id chosen before it's written ([02](../game/02-check-ins-and-notifications.md) §9).
+While it runs, its button is disabled, so a double tap does nothing. Its answer shows beside the button
+(`ui/work/useTap.ts`, `TapNoteLine`):
 
-## Feedback catalog
+| Answer | On screen |
+|---|---|
+| **Done** | The screen moves on. No toast |
+| **A rule** (`say`) | One plain sentence: "Kitasan Black is busy until 18:30." · "Needs Farm Lv 16." |
+| **A question** (`ask`) | One sentence with the new numbers, then **Yes** or **Not now**: "Only 3 left now. Start ×3?" |
+| **Unexpected** | "That didn't work. Try again." The outbox also retries by itself |
 
-| Moment | Motion | Sound | Particles | Haptic (if available) |
-|---|---|---|---|---|
-| Any button press | Squash and spring | Soft tick | — | Light |
-| Spark drag enters a cell | Displaced orb slides home | Soft bead tick, rate-limited | — | — |
-| Spark match / cascade | Outline, clear, fall; combo counter settles | Rising match tones | Strategy glyph burst | Light on resolved turn |
-| Rival Pressure / wave clear | Gauge response / rival break | Hit / short victory sting | Bounded impact / sparkle | Medium |
-| Spark Shift | Spark orbs turn in one sweep | Charge release | Gold trail | Medium |
-| Friendship training | Rainbow sweep | Chord | Rainbow sparkles | Medium |
-| Training Level up | Badge burst, opened-node list reveals | Jingle | Star burst | Medium |
-| Race start | Gate snap, camera push | Gate clank, crowd | Dust | Medium |
-| Win | Placement stamp | Fanfare | Confetti | Success pattern |
-| Uma Level up | Ring fill and burst | Level jingle | Stars | Medium |
-| Goal completed | Ribbon unfurl | Big fanfare | Gold confetti | Success pattern |
-| Badge or title earned | Shine sweep and flip-in | Sparkle | Tier-colored sparkles | Light |
-| Star earned / promotion | Lift, glow, ignite | Power-up | Glow burst | Heavy |
-| Coupon reveal | Flip with anticipation shake | Drumroll → reveal | Burst | Heavy |
+The words are the rule's own refusal, run through the same `recheck` on the phone and the server, so the two agree.
+**A stale screen never fails.** The tap is checked against the latest state, and it runs, shows the earlier result
+("Already collected."), or asks again with the new numbers. It never tells the owner to reload, review or retry by hand
+(D320).
 
-Haptics are progressive enhancement only (see research). Motion plus sound must stand on their own.
-The sound and haptic rows are the shared semantic cue catalog; their device service and licensed/local assets remain
-M011/T036 work. Rival Circuit's checked-in implementation is visually complete and announcement-complete when that service
-is unavailable, and does not download or embed original-game audio.
+### Plain words
+
+The full table of situations is [02](../game/02-check-ins-and-notifications.md) §9. The rules:
+- **Say what happened, in the owner's words.** Offline: "Saved on this phone. It'll sync when you're back online." Done
+  on the other device: "Already collected." Anything unexpected: "That didn't work. Try again."
+- **Banned in player-facing text:** operation, receipt, revision, generation, version, stale, conflict, payload, id,
+  sync error codes and HTTP numbers. `hasBannedWord` (`packages/domain/src/check-in/words.ts`) holds the shell's, the
+  places' and the work pieces' word tables to it in tests.
+- **Names, not ids.** Templates take `{uma}`, `{item}`, `{place}` and `{time}`, and the screen fills in names and clock
+  times (`ui/work/words.ts`). Account says **App build** and **Content**.
+- **Times on screen are real** ("4 h 48 m"), and clock times are cut to the minute.
+
+### Notices and sync
+
+- **The only sync signal is the Sync chip** in the account bar ([Navigation](#navigation)). Account's sync row says the
+  state in a sentence, with **Sync now**.
+- **A tap the server refused** after the phone accepted it rolls back and becomes a **notice** in plain words, kept
+  until dismissed. Notices show in the check-in summary's footer with **OK**, beside the offline line, which links to
+  Account's sync row ([02](../game/02-check-ins-and-notifications.md) §11).
+- **A new build** shows one banner at the top: **Update ready** with **Restart**. It waits for the current action to
+  finish and save first, and never reloads across a gameplay commit (`app/UpdateNotice.tsx`,
+  `app/update-lifecycle.ts`).
+
+### Moments
+
+| Moment | What moves | With reduced motion |
+|---|---|---|
+| A press | The control scales down a touch (buttons 0.98, bar tabs 0.94) | No movement |
+| A number changes | It slides in by a CSS transition | It swaps at once |
+| A slot is Ready | Its pip's ring fills gold and bounces gently every 2.4 s | No bounce |
+| A Peek opens | It rises 24 px and fades in, 180 ms | It appears |
+| A sheet opens | It slides up from the bottom | It appears |
+| A race result | The placement stamps in, confetti on a win, the finishing order slides in | Shown at once |
+| Level-up, goal, flair | A level chip pops, each goal ribbon unfurls in turn, flair cards rise in sequence | Shown at once |
+| Prize Money | The amount flies into the chip | The number swaps |
+| A new Uma | The reveal card flips in over a gold glow | No flip |
+
+There is no sound and no haptics: every moment stands on its own visually.
+
+## Loading and errors
+
+| State | What shows | Code |
+|---|---|---|
+| **Content loading, or the save booting** | The shell's quiet frame: both bars, blank pills where the numbers go, nothing between. Screens arrive as lazy chunks with no spinner | `hub/Shell.tsx`, `app/GameProvider.tsx` |
+| **Signed out, or content that can't load** (before the save opens) | One full-screen panel: a title, a sentence and one way on: **Sign in**, **Sign in again**, **Switch account** (an account not on the allowlist), **Try again**, **Download again** or **Check again**. The save on the phone is never touched | `app/session.tsx`, `content/diagnostics.ts` |
+| **The save can't open** | One panel: **Save needs attention**, the reason, "Your progress is kept as it is. Nothing is cleared.", then **Try again** (reloads) and **Copy details** (the app build, the time and the reason, for a report) | `app/Root.tsx` |
+| **Signed out after the save opened** | Play goes on. The Sync chip says **Sync paused** until the owner signs in | `app/session.tsx` |
+| **A link to something that isn't there** | An unknown path, or a place not on its page, goes to `/`. A card or Uma the save doesn't hold says so, with a way on: "That card isn't in the Library." and **Open the Library** | `app/routes.tsx` |
+| **A new build** | **Update ready** with **Restart** ([Notices and sync](#notices-and-sync)) | `app/UpdateNotice.tsx` |
+
+## Albums
+
+Two albums share one chrome and one query engine: the **Stable**'s roster (`places/stable/`) and the **Card Library**
+(`places/card-library/`, [06](../game/06-cards-and-bonds.md) §6). The **Uma picker** (`ui/UmaPicker.tsx`, D181) is the
+Stable's album in a sheet, and the one way to choose an Uma anywhere. The engine is pure (`ui/album/query.ts`); the
+chrome is `ui/album/AlbumChrome.tsx`, with `FilterTray.tsx` and `SortSheet.tsx`. The patterns follow the faceted-tray
+research in [Game UI Reference](../research/game-ui-reference.md).
+
+### Shared browsing chrome
+
+```text
+┌──────────────────────────────────────────┐
+│ Roster                [icons|cards|list] │  title and the view switch
+│ 23 owned · 244 locked · 23 shown         │  count line (the Stable adds its ticket note)
+│ [ Search        ]   ↓ Level   Filters·2  │  sticky toolbar
+│ [ Owned · 23 | Locked · 244 ]   Select   │    the album's own segment
+│ Tier 1 ×   Distance ×   Clear all        │  active filters, only when there are some
+│ ▓▓▓▓▓▓    ▓▓▓▓▓▓    ▓▓▓▓▓▓               │  the grid
+└──────────────────────────────────────────┘
+```
+
+- **One title line** with the count, "N shown" and the album's own note: the Stable's Uma Tickets, with an **Exchange**
+  button when five Shards make a ticket. The view switch sits at its right.
+- **One sticky toolbar** stays pinned while the grid scrolls: search, a **Sort** button showing the key and its
+  direction, and **Filters**, which turns gold and shows the number of active filters in place of its label. Under it
+  sits the album's own segment: the Stable's Owned and Locked tabs and **Select**; the Library's lens chips and Uma
+  control.
+- **Sort and Filter are separate sheets.** Sort lists the keys, and tapping the chosen key again flips its direction.
+  A sort can take a parameter, shown as chips under the list; no album uses one yet.
+- **Every active filter is a chip** under the toolbar, removed with one tap, with **Clear all** at the end.
+- **The Filters tray** groups facets into collapsible sections, and a section with an active filter opens itself. Each
+  option shows the count it would return. An option that would return nothing is disabled, never a dead end. The draft
+  applies on **Show N**, which counts it as it changes; **Clear all** resets the draft.
+- **Quick picks and saved views sit at the top of the tray**, not in rows of their own, so the list starts near the
+  top (D176). A quick pick sets filters in one tap and never overwrites a saved view.
+- **Saved views:** up to 20 per album, named in up to 40 characters, each the whole query (search, filters, sort,
+  direction, view and the Library's lens). Saving under a name already used replaces that view.
+- **Preferences are per device**, in `uma-racer:g2:album:<album>` (`ui/albumPrefs.ts`): the query, the saved views and
+  the seen set behind NEW (up to 4,000 ids). The albums are `stable`, `card-library`, and `card-library-pick` for the
+  Library in pick mode. They are never synced, and a stored value the album no longer knows falls back to its default.
+  The Uma picker keeps nothing: it opens on its caller's order each time.
+- **An empty result names the way out:** "Nothing matches these filters", "Remove **Tier** to see 12", and
+  **Clear all**.
+- **Search** matches an Uma's name and outfit, or a card's character, title and skill names.
+
+### Default sorts
+
+| Album | Opens on | Ties | Other sorts |
+|---|---|---|---|
+| **Stable**, and the Uma picker | **Level**, highest first: the lifetime level, from her tier and Racing Level ([03](../game/03-uma-progression.md) §2) | Release, newest first; then name | Release · Name · Tier · Racing Level · Farm Level |
+| **Card Library** | **Era**, newest first | Release, newest first; then name | Type · Character · Card name · Per-node pay (in a lens) · Race Bonus · Umas bonded |
+
+- **A missing value sorts last** in either direction, so flipping never surfaces a hole. Locked Umas have no level,
+  so the Locked tab falls through to release and name. The id breaks the last tie, so one query always gives one order.
+- **Every list of Umas leads with the highest level (D181)**, unless the place has an order of its own: the Racecourse
+  strip puts open goals first and finished careers last, the Scenario Gate puts Umas ready to advance first, and a
+  picker can open on its caller's sort. Umas a picker can't take follow the ones it can, each with her reason (Bond's
+  picker leads with the Umas who can bond the card now).
+
+### View modes
+
+The view switch picks one of three modes, remembered per album with the rest of the query. Each opens on **Icons**.
+
+| Mode | Stable and the Uma picker | Card Library |
+|---|---|---|
+| **Icons** | Three to a row: her art, with her name and "T2 · Lv 13" under it | Three to a row: the card's art with its four corners, the character and the card's title |
+| **Cards** | Two to a row, larger art | Two to a row, larger art; in a lens, the per-node pay under it |
+| **List** | Full-width rows: a small tile, her name and scenario, her level and her marks | Full-width rows: a small tile, the name, and the per-node pay (or the era, in All) |
+
+The picker's tiles carry a line under the name: why she can't be picked, what picking her would do, or the caller's
+sort value.
+
+### Art tiers
+
+| Tier | Size | Source | Where it shows |
+|---|---|---|---|
+| **Icon** | 128 px, atlased (`uma-icons`, `card-icons`) | The content packs | Every card tile; every Uma tile until her bust arrives; the fallback for faces and the plaza |
+| **Uma bust** (`bust`) | 256 px square, head and shoulders | Cut from her portrait at import, one file per Uma | The Stable album, the Uma picker, her profile's header, and the plaza when she has no chibi |
+| **Uma portrait** (`uma`) | 512 px, transparent | One file per Uma, fetched on demand | The collection reveal |
+| **Card art** (`card`) | The full illustration, 600 px on its longest edge (450×600) | One file per card, fetched on demand | The card page's hero and the art viewer |
+| **Race face** (`face`) | 128 px square, transparent | One per character, cut from her summer-uniform stand at import (T059, D160) | Pips, slot cards, the Racecourse strip, the pre-race field, the race feed, the finishing order. The race scene can put them on its tokens, but the run doesn't pass them yet |
+| **Chibi** (`chibi`) | 256 px, transparent: standing (`-a`) and celebrating (`-b`) | One pair per outfit, from the owner's local copy (T059) | Standing: the featured Uma in the plaza, still until phase 6. Celebrating: not placed |
+| **Outfit stand** (`dress`) | 512 px, transparent: gym clothes, summer and winter uniforms, casual clothes | Four per character, from the owner's local copy (T059) | Not placed |
+
+- **Lists never use the large art; detail surfaces do.** The card page opens on its illustration full width, cropped
+  4:5 from the top, with the name over its foot. A tap on it opens the **art viewer** (`ui/ArtViewer.tsx`): the whole
+  image on a dark stage over everything, closed by a tap, its close button or Escape. The reveal shows her portrait.
+- **The icon shows first** and the larger art replaces it when it arrives, so nothing waits on a download. A missing or
+  failed file keeps the icon, with no error and no empty frame. Without content (the dev seeds), a tile shows a
+  labelled placeholder and Uma art shows her initial.
+- **Large art is never atlased and never precached.** Each file is content-addressed, fetched through the authenticated
+  API the first time it's shown, checked against its manifest's size and hash, and cached by the service worker
+  (`uma-racer-g2-content`, cache first). `useArt` (`ui/album/useArt.ts`) holds an entry while it's on screen, and each
+  kind keeps a bounded window of recent ones.
+- **The bust** is the original's Trainee Select tile. The importer finds her head from the portrait's own alpha,
+  centres on it and takes a square of 60% of the frame from near the top (`scripts/assets/src/art.ts`).
+  `content/overrides/bust-crops.json` pins any Uma the automatic crop misreads, and `pnpm assets:bust-sheet` renders
+  every bust for review.
+- **Faces, chibis and stands** come from the owner's own folder (`pnpm assets:import -- --source dir:<path>`), never
+  fetched. A chibi is matched to its outfit through GameTora's `costume` field (card id to dress id), never by name.
+  Faces and stands belong to the character, so every outfit of an Uma shares them.
+
+### Icon overlays
+
+Each tile keeps its marks inside its padding, so nothing covers a face (`ui/ArtTile.tsx`'s four corners).
+
+| Corner | Stable, Owned | Stable, Locked | Card Library |
+|---|---|---|---|
+| **Top left** | Her tier crest ("T1"), then NEW | A lock | Distance focus, then NEW, then **In set** (pick mode: the preset being filled) |
+| **Top right** | A Ready dot (ready to advance or promote) and the planner's crosshair | The check, while selecting | Running-style focus |
+| **Bottom left** | — | — | Card type |
+| **Bottom right** | — | — | The bond pill |
+
+- **A locked Uma** is her art dimmed and desaturated behind a lock, never an empty box. A Hall of Fame Uma gets a gold
+  frame. In the list view her marks move to the end of the row.
+- **The Uma picker** puts her "T2 · Lv 13" bottom right, and a check with its label top left once she's selected.
+- **The bond pill** ([06](../game/06-cards-and-bonds.md) §6): with no Uma chosen, how many Umas are bonded to the card
+  in their current tier (hidden at 0). With an Uma chosen: a check if she's bonded, a stopwatch while the bond is in
+  her work, "G5" on the card type's colour for the dish grade she needs, or a lock, with the art dimmed, when the
+  card's era is past her scenario.
+
+### Shared behaviours
+
+- **Filters and quick picks per album:**
+
+  | Album | Filters | Quick picks |
+  |---|---|---|
+  | **Stable** and the picker | Tier · Ready to advance or promote · Planner target · New; Distance, Surface and Style A or better | Tier 1 · Tier 2 · Tier 3 · Ready to advance or promote · Planner targets (none in the picker) |
+  | **Card Library** | Bondable now · Her bond (bonded or not) · Bonded to any Uma · In a set; Type · Running style · Distance · Era · Has Race Bonus · New | Bondable now and Bonded to her (with an Uma chosen) · Has Race Bonus |
+
+- **The Library's lens and Uma.** Lens chips pick **All** or one playable scenario (1–14 until the 15th ships). The Uma
+  control opens the picker ("See the Library as"). With an Uma chosen the lens follows her scenario; **No Uma** or a
+  lens chip clears her, and her two bond filters rest until one is chosen again. The Library opens on the featured Uma.
+  In pick mode the lens stays on the Uma it was given, and only the caller's eligible cards show.
+- **NEW** marks an entry this device hasn't seen. A device with nothing stored counts everything it already has as
+  seen, so only later arrivals read NEW: an Uma unlocked since, or a card a content update added. Opening her profile
+  clears an Uma's NEW.
+- **Select (the Stable's Locked tab)** picks up to the Uma Tickets in hand, then **Unlock N · N Uma Tickets** unlocks
+  each with its own operation, and the reveal shows them in turn: Next, "2 of 5", Skip all (11 §13).
+- **A filtered album is a browsing session.** An owned tile opens her profile, where Previous, Next and a swipe move
+  through the Owned tab's current order.
+- **One tile, one target, one line.** A tile is one link or button, and VoiceOver reads it as one line: her name, "T2 ·
+  Lv 13", ready to advance or promote, planner target, Hall of Fame, new; or a card's name, type, era and pill.
+- **Not in the albums:** compare, long-press actions, grouping, and a density toggle (the view switch replaced it).
 
 ## Accessibility and comfort
 
-- Tap targets are at least **44×44 pt**. Nothing critical lives in the top corners.
-- Tiers use **shape and label in addition to color**.
-- `prefers-reduced-motion`: no shake or parallax, shortened fanfares, instant counters.
-- Sound defaults on but respects the silent switch where the platform does. Everything is also shown visually.
-- Numbers use tabular figures, so counters don't jitter.
+- **Targets:** every tap target is at least **44×44 pt**. A place tile is at least 96×96 pt and covers its building,
+  name pill and pips. Pips (20 pt) are display only.
+- **Thumb zone:** primary actions sit low ([Principles](#principles)). Nothing in the top corners is needed to play.
+- **State never rests on colour alone.** The active tab is two-tone with an underline; a tier crest says "T1"; Ready is
+  a dot and a word in the label; the Sync chip says Offline, Sync paused or Sync; stats say Good, Average or Bad.
+- **VoiceOver** reads each place tile as one line ("Kitchen. 6 of 8 slots busy, 2 ready, 1 queued.") and each chip
+  with its count and where it goes ("Prize Money 12,340. Open the Exchange."). Tiles read in grid order, row by row.
+  The menu lists every place for anyone who can't use the page.
+- **Focus:** a Peek or a global sheet moves focus to its heading and gives it back to what opened it. Escape closes
+  Peeks, the global sheets and the art viewer.
+- **Reduced motion** is on when the system asks for it or when Account's switch is on for this phone
+  (`uma-racer:g2:reducedMotion`, never synced; `app/motion.tsx`). It reaches Motion through `MotionConfig` and CSS
+  through a `data-reduced-motion` attribute: no pip bounce, no number slide, no sheet slide, no reveal flip, no
+  fanfare movement and no last-spurt zoom. Every state change still shows, and no commit waits on an animation.
+- **Numbers** use tabular figures, so counters don't jitter, and large amounts are grouped ("12,340").
+- **No sound or haptics.** Everything is shown on screen.
+- **Portrait only:** the installed app is locked to portrait, the race included. The run keeps the screen awake.

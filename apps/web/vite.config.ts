@@ -36,12 +36,14 @@ export default defineConfig({
         navigateFallback: '/index.html',
         // /__/ is Firebase Hosting's reserved space (auth handler for redirect sign-in) — never answer it with the app shell.
         navigateFallbackDenylist: [/^\/api\//, /^\/__\//],
-        // Private content packs are content-hashed: cache forever on the device once downloaded.
+        // Private content packs are content-hashed: cache forever on the device once downloaded. Generation 2 caches
+        // under its own name, so the first-boot wipe's `caches.delete('racer-content')` takes only the old app's files
+        // and never what this app has just fetched (rearchitecture/07 §2).
         runtimeCaching: [
           {
             urlPattern: ({ url }) => url.pathname.startsWith('/api/content/files/'),
             handler: 'CacheFirst',
-            options: { cacheName: 'racer-content', expiration: { maxEntries: 4000 } },
+            options: { cacheName: 'uma-racer-g2-content', expiration: { maxEntries: 4000 } },
           },
         ],
       },

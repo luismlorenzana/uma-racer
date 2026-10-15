@@ -1,5 +1,5 @@
 // Scenario buffs (T053–T054, D165): the one declared way each scenario bends its constellation's rules
-// (docs/design/scenarios.md#scenario-buffs). Every buff is deterministic, visible on the constellation, never random,
+// (docs/game/04-tiers-and-promotion.md §8). Every buff is deterministic, visible on the constellation, never random,
 // and reaches a race only through the stats and skill points the tree pays. None depends on which node a card sits
 // on, so moving a card never changes a total; some reward which cards you bring or how many nodes each fills.
 
@@ -59,10 +59,6 @@ export const SCENARIO_BUFFS: readonly ScenarioBuff[] = [
 
 export const scenarioBuff = (tier: number): ScenarioBuff =>
   SCENARIO_BUFFS[Math.min(SCENARIO_BUFFS.length, Math.max(1, Math.trunc(tier))) - 1]!
-
-/** What one active Extra stat node pays at a tier, after Foundation (tier 1): the value shown on the node. */
-export const buffedStatNodeValue = (tier: number, base: number): number =>
-  scenarioBuff(tier).id === 'foundation' ? (base * BUFF_VALUES.foundationStatPct) / 100 : base
 
 /** Legends (tier 10): the first parent slot takes any Uma, owned or not. */
 export const lineageSlotTakesAnyUma = (tier: number, nodeId: string): boolean =>
