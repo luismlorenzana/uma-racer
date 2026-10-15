@@ -5,7 +5,7 @@
 // selected preset (`raceDefaults.selectedPreset`): her profile selects one, and every training screen edits the one it
 // shows. Pure.
 import type { DistanceCategory } from '@racer/domain'
-import type { UmaState } from '@racer/domain/tiers'
+import type { UmaState } from '@racer/domain/state'
 import { deriveUmaPreset, type DerivedBuild } from '@racer/domain/training'
 import { finishedCount, SESSION_KIND, type WorkState } from '@racer/domain/work'
 import { DISTANCES } from '../../ui/labels'

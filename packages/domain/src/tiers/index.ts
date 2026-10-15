@@ -1,8 +1,6 @@
-// @racer/domain/tiers: the rules that move one Uma through her tier, and the account's Uma Tickets
+// `@racer/domain/tiers`: the rules that move one Uma through her tier, and the account's Uma Tickets
 // (docs/rework/03-uma-progression.md, docs/rework/04-tiers-and-promotion.md). The shared state shapes and the time
-// factor sit beside the areas and are re-exported here for scripts/sim.
-export * from '../state/types'
-export * from '../state/time'
+// factor are `@racer/domain/state`'s.
 export * from './map'
 export * from './scaling'
 export * from './refusals'

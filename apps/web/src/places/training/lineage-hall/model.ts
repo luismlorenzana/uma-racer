@@ -6,7 +6,7 @@
 // Lineage picks are made here only (T139). Pure.
 import type { Aptitudes, DistanceCategory } from '@racer/domain'
 import { say } from '@racer/domain/check-in'
-import { isRefusal, type UmaState } from '@racer/domain/tiers'
+import { isRefusal, type UmaState } from '@racer/domain/state'
 import {
   deriveBuild, FIXED_UNLOCKS, fixedUnlock, goalsWon, goldPosition, isGrandparentSlot, lineagePays, setLineage, SLOT_LETTER, trainingTemplate,
   type DerivedBuild, type Unlock,

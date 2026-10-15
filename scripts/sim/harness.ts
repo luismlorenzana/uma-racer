@@ -23,7 +23,8 @@ import {
 } from '../../packages/domain/src/index'
 import { cardNodeId, fairShare as treeFairShare, perCardCap, treeCardNodesAt } from '../../packages/domain/src/training/trees/index'
 import type { TypicalRow } from '../../packages/domain/src/builds/types'
-import { EXTRA_NODE_VALUES_TIER_1, REWORK_BUFF_TYPICAL, rollRivalFieldAt, tierAndScenario, type Preset, type ScenarioOfTier, type UmaBuild } from '../../packages/domain/src/tiers/index'
+import type { Preset, ScenarioOfTier, UmaBuild } from '../../packages/domain/src/state/index'
+import { EXTRA_NODE_VALUES_TIER_1, REWORK_BUFF_TYPICAL, rollRivalFieldAt, tierAndScenario } from '../../packages/domain/src/tiers/index'
 import { EXTRA_NODES, LAYERS, deriveBuild, extraCapacity, layerUnlocks, reworkBuff, type DerivedBuild, type TrainingContent } from '../../packages/domain/src/training/index'
 import { V8_TUNING, createRng } from '../../packages/race/src/index'
 

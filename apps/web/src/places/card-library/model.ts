@@ -7,7 +7,8 @@
 import { clockTime, fill, type OperationEnv } from '@racer/domain/check-in'
 import { itemById } from '@racer/domain/items'
 import { workAhead } from '@racer/domain/planner'
-import { isRefusal, scenarioNumber, scenarioPlayable, scenarioRow, type Tier, type UmaState } from '@racer/domain/tiers'
+import { scenarioNumber, scenarioPlayable, scenarioRow } from '@racer/domain/tiers'
+import { isRefusal, type Tier, type UmaState } from '@racer/domain/state'
 import {
   bondDishId, bondGrade, bondStatus, cardFocus, cardNodeSkills, cardPay, dojoRoomOf, sessionSeconds, type BondStatus, type CardFocus,
   type CardPay,

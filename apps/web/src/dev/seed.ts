@@ -29,7 +29,8 @@ import { SPEED_TICKET_ID } from '@racer/domain/items'
 import {
   BASELINE, checkInsOn, createLoop, dayStart, loopRng, MS_PER_HOUR, MS_PER_MINUTE, SIM_CONTENT, SIM_UMAS, UTC_OFFSET_MIN, type LoopConfig,
 } from '@racer/domain/sim'
-import { EXPEDITION_WINS, isLastScenario, isRefusal, newAccount, recordExpeditionRace, type Refusal } from '@racer/domain/tiers'
+import { EXPEDITION_WINS, isLastScenario, newAccount, recordExpeditionRace } from '@racer/domain/tiers'
+import { isRefusal, type Refusal } from '@racer/domain/state'
 import { collect, newWorkState, queue, type WorkRequest, type WorkState } from '@racer/domain/work'
 import type { G2Records, G2Sync } from '../app/game'
 import { withSyntheticSkills } from './skills'

@@ -14,7 +14,7 @@
 //   callback that throws writes nothing, the tap included.
 import type { BadgeStateV1, FlairEventV1 } from '@racer/domain'
 import { recheck, type Answer, type OperationInput, type OperationName } from '@racer/domain/check-in'
-import type { LedgerEntry } from '@racer/domain/tiers'
+import type { LedgerEntry } from '@racer/domain/state'
 import {
   commitOperation, entityDraft, flairEventId, logDraft, parseEntityData, parseLogData, parseLogRow, stampEntity, stampLog, type ItemLedgerRow, type LogDraft,
   type Commit, type LogKind, type LogRow, type OperationEnv, type OperationEnvelope, type RaceResultRow, type SaveState,

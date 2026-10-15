@@ -6,7 +6,7 @@
 import type { DistanceCategory } from '@racer/domain'
 import { simCardId } from '@racer/domain/sim'
 import { bondUnlock, commitUnlocks, layerUnlocks, type Unlock } from '@racer/domain/training'
-import { isRefusal } from '@racer/domain/tiers'
+import { isRefusal } from '@racer/domain/state'
 import type { WorkState } from '@racer/domain/work'
 import { workView, type WorkView } from '../../../ui/work/view'
 import type { WordsContext } from '../../../ui/work/words'

@@ -32,7 +32,8 @@ import {
 } from '../../packages/domain/src/index'
 import { CAREER_TARGETS, meetsCareerTarget } from '../../packages/domain/src/builds/targets'
 import type { CareerRow, RateCell } from '../../packages/domain/src/builds/types'
-import { emptyBuild, freezeCareer, type CareerSubject, type TierContent } from '../../packages/domain/src/tiers/index'
+import { emptyBuild } from '../../packages/domain/src/state/index'
+import { freezeCareer, type CareerSubject, type TierContent } from '../../packages/domain/src/tiers/index'
 import { simulateRace } from '../../packages/race/src/index'
 import {
   FIELD_STRATEGIES, LONG, PLAYER_KIT, STAYER, STAYER_POWER, goldRecovery, reworkFairShare, reworkStats, reworkTypicalRows, rivalRunnersAt,

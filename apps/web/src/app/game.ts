@@ -16,7 +16,7 @@
 import type { BadgeStateV1, FlairEventV1 } from '@racer/domain'
 import type { HubView, hubView } from '@racer/domain/hub'
 import type { Answer, OperationEnv, OperationInput, OperationName, OperationReceipt, Words } from '@racer/domain/check-in'
-import type { LedgerEntry } from '@racer/domain/tiers'
+import type { LedgerEntry } from '@racer/domain/state'
 import type { WorkState } from '@racer/domain/work'
 import type { ItemLedgerRow, RaceResultRow } from '@racer/domain/save'
 import { createContext, useContext, useMemo, useSyncExternalStore } from 'react'

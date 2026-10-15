@@ -10,7 +10,7 @@ import {
 } from '@racer/domain/check-in'
 import { placeById } from '@racer/domain/hub'
 import { bestUse, planFrom, targetsOf, type Suggestion } from '@racer/domain/planner'
-import { isRefusal } from '@racer/domain/tiers'
+import { isRefusal } from '@racer/domain/state'
 import { facilityOf, UNLOCK_KINDS, unlockKey, unlockLabel, type UnlockKind, type UnlockRef } from '@racer/domain/training'
 import { SESSION_KIND, type FarmRequest, type SlotRef, type UnlockRef as WorkUnlockRef, type WorkRequest, type WorkState } from '@racer/domain/work'
 import { lineLabel, sheetQuery } from '../farm/building/model'

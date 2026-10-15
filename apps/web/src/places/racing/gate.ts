@@ -4,10 +4,8 @@
 // shows exactly what the tap will do; the layer and the buff come from rework/training's tables.
 import { careerComplete, goalRaceIds, scenarioJourneySummary, CAREER_STAGE_LABELS, careerStage, DISTANCE_CATEGORIES, STATS, type DistanceCategory, type RaceTemplate, type Stats } from '@racer/domain'
 import { OPERATIONS, type OperationEnv } from '@racer/domain/check-in'
-import {
-  advanceReadiness, canStartExpedition, capProfileAt, gateLevel, isRefusal, lifetimeLevel, promotionReadiness,
-  scenarioNumber, scenarioRow, spCapAt, PROMOTION_UMA_TICKETS, type ScenarioOfTier, type UmaState,
-} from '@racer/domain/tiers'
+import { advanceReadiness, canStartExpedition, capProfileAt, gateLevel, lifetimeLevel, promotionReadiness, scenarioNumber, scenarioRow, spCapAt, PROMOTION_UMA_TICKETS } from '@racer/domain/tiers'
+import { isRefusal, type ScenarioOfTier, type UmaState } from '@racer/domain/state'
 import {
   BONDS_BY_SCENARIO, LAYER_SIZES, bondsThrough, deriveUmaPreset, isOpen, layerUnlocks, promotionPresetStats, reworkBuff,
   type UnlockKind,

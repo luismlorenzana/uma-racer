@@ -4,7 +4,7 @@
 // chips, the size chips and a building's upgrade. Every number comes from a domain function; nothing here restates a rule.
 import { chipWords, clockTime, fill, fitWords, say, sizeChips, type OperationEnv, type Words } from '@racer/domain/check-in'
 import { buy as buyOperation, buyPrice } from '@racer/domain/economy'
-import { isRefusal } from '@racer/domain/tiers'
+import { isRefusal } from '@racer/domain/state'
 import { buildingSpeed, MAX_BUILDING_LEVEL, totalSlots, upgradeCost, type BuildingId } from '@racer/domain/farm'
 import { SPEED_TICKET_ID, type ItemId, type RecipeInput } from '@racer/domain/items'
 import type { Projection, QueueWarning } from '@racer/domain/planner'

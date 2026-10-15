@@ -1,7 +1,8 @@
 // The Stable's view model (docs/rework/11-hub-and-places.md §3.1, §5; 04 §6; 03 §2, §12; D181) on synthetic accounts
 // moved by the rules' own operations: counts, the default order, the tier filter, "T2 · Lv 13", Ready from the
 // readiness rules, when Exchange shows, the roster line, and what an Uma is doing for a job, a session and Free.
-import { advanceReadiness, isRefusal, lifetimeLevel } from '@racer/domain/tiers'
+import { advanceReadiness, lifetimeLevel } from '@racer/domain/tiers'
+import { isRefusal } from '@racer/domain/state'
 import { describe, expect, it } from 'vitest'
 import { account, umaIds } from '../../__fixtures__/testing-ops'
 import {

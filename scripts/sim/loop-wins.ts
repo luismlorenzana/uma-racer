@@ -13,7 +13,8 @@ import { INSPIRATION_SLOTS, STRATEGIES, type Aptitudes, type InspirationSlot, ty
 import { cardNodeId, treeCardNodesAt } from '../../packages/domain/src/training/trees/index'
 import { layerPart, WIN_SHARES } from '../../packages/domain/src/sim/build'
 import { WIN_GRADES, WIN_PLACES, type WinCell, type WinGrade, type WinTable } from '../../packages/domain/src/sim/places'
-import { tierAndScenario, type Preset, type ScenarioOfTier, type UmaBuild } from '../../packages/domain/src/tiers/index'
+import type { Preset, ScenarioOfTier, UmaBuild } from '../../packages/domain/src/state/index'
+import { tierAndScenario } from '../../packages/domain/src/tiers/index'
 import { deriveBuild, extraCapacity, LAYERS, layerUnlocks, type DerivedBuild, type TrainingContent } from '../../packages/domain/src/training/index'
 import { simulateRace } from '../../packages/race/src/index'
 import {

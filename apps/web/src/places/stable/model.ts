@@ -7,10 +7,8 @@
 import { placeById, type PlaceId } from '@racer/domain/hub'
 import { clockTime, type OperationEnv } from '@racer/domain/check-in'
 import { farmExpAtLevel, farmExpToNext, FARM_LEVEL_CAP, QUARTERS_PER_EXP } from '@racer/domain/farm'
-import {
-  advanceReadiness, isRefusal, lifetimeLevel, promotionReadiness, racingExpToNext, scenarioNumber, scenarioRow, TIER_REFUSALS,
-  UMA_SHARDS_PER_TICKET, type Tier, type UmaState,
-} from '@racer/domain/tiers'
+import { advanceReadiness, lifetimeLevel, promotionReadiness, racingExpToNext, scenarioNumber, scenarioRow, TIER_REFUSALS, UMA_SHARDS_PER_TICKET } from '@racer/domain/tiers'
+import { isRefusal, type Tier, type UmaState } from '@racer/domain/state'
 import { deriveUmaPreset, loadoutSummary } from '@racer/domain/training'
 import { endsAt, finishedCount, settle, statusOf, type WorkState } from '@racer/domain/work'
 import type { RaceResultRow } from '@racer/domain/save'

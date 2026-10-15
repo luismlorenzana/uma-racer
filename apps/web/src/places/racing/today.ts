@@ -5,7 +5,8 @@
 import {
   createScenarioTraining, DISTANCE_CATEGORIES, type RaceResultRecord, type RaceResultRunner, type ScenarioUnit, type TrainingPreset, type UmaSave,
 } from '@racer/domain'
-import { careerView, firstLevel, lifetimeLevel, scenarioNumber, type UmaState } from '@racer/domain/tiers'
+import { careerView, firstLevel, lifetimeLevel, scenarioNumber } from '@racer/domain/tiers'
+import type { UmaState } from '@racer/domain/state'
 import type { RaceResultRow } from '@racer/domain/save'
 
 /** Her lifetime level (03 §2): 50 × (tier − 1) + Racing Level. */

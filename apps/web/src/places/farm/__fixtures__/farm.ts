@@ -3,7 +3,7 @@
 import { OPERATIONS, runOnce, type OperationEnv, type OperationInput, type OperationName, type OperationReceipt } from '@racer/domain/check-in'
 import { farmExpAtLevel, QUARTERS_PER_EXP } from '@racer/domain/farm'
 import { simUmaId } from '@racer/domain/sim'
-import { isRefusal } from '@racer/domain/tiers'
+import { isRefusal } from '@racer/domain/state'
 import type { WorkState } from '@racer/domain/work'
 import { SEED_ENV, SEEDS, type G2Seed } from '../../../dev/seed'
 

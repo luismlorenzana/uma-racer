@@ -13,7 +13,8 @@ import {
   type Stats, type Strategy, type UmaTemplate,
 } from '@racer/domain'
 import type { OperationEnv } from '@racer/domain/check-in'
-import { rollRivalFieldAt, scenarioNumber, type ScenarioAt } from '@racer/domain/tiers'
+import { rollRivalFieldAt, scenarioNumber } from '@racer/domain/tiers'
+import type { ScenarioAt } from '@racer/domain/state'
 import { deriveUmaPreset, type DerivedBuild } from '@racer/domain/training'
 import { collectBeforeRace, type WorkState } from '@racer/domain/work'
 import { createRng, simulateRace, type RaceInput, type RaceTimeline } from '@racer/race'

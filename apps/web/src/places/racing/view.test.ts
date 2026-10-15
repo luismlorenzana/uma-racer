@@ -4,7 +4,8 @@
 // leaving flair (Graduate, Promoted), and 02 §9's banned words over every template. Synthetic seeds only.
 import { hasBannedWord, OPERATIONS } from '@racer/domain/check-in'
 import { PURSE_BANDS, WIN_PRIZE, type RacePrize } from '@racer/domain/economy'
-import { canStartExpedition, isRefusal, type UmaState } from '@racer/domain/tiers'
+import { canStartExpedition } from '@racer/domain/tiers'
+import { isRefusal, type UmaState } from '@racer/domain/state'
 import { describe, expect, it } from 'vitest'
 import { seed } from '../../__fixtures__/testing'
 import { devRaceContent } from './content'

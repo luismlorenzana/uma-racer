@@ -5,7 +5,8 @@
 // transaction; a refused or stale tap redraws the sheet under "Her build changed." and keeps the button.
 import { badgeStateId, STATS, type DistanceCategory } from '@racer/domain'
 import type { Place } from '@racer/domain/hub'
-import { scenarioNumber, type UmaState } from '@racer/domain/tiers'
+import { scenarioNumber } from '@racer/domain/tiers'
+import type { UmaState } from '@racer/domain/state'
 import { m, useReducedMotion } from 'motion/react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router'

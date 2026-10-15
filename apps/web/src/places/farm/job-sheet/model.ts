@@ -18,7 +18,7 @@ import {
   rawItem, recipeOf, type Destination, type DishDef, type FamilyId, type ItemDef, type ItemId,
 } from '@racer/domain/items'
 import { planFrom, remainingFor, targetsOf, type Plan } from '@racer/domain/planner'
-import { isRefusal } from '@racer/domain/tiers'
+import { isRefusal } from '@racer/domain/state'
 import {
   freeAt, holdsSlot, kindRules, largestCoverable, MAX_ITEMS_PER_ENTRY, MAX_QUEUE, queue, recall, shortfall, slotHolder, slotsOf, speedAt,
   start, statusOf, stockOf, sumInputs, SESSION_KIND, WORK_REFUSALS, type FarmKind, type FarmRequest, type PlannedItem, type QueueInput,

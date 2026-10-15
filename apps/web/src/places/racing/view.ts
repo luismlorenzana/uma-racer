@@ -9,7 +9,8 @@ import {
   type LocalDay, type PurseBand, type RacePrize,
 } from '@racer/domain/economy'
 import { BUILDINGS } from '@racer/domain/farm'
-import { advanceReadiness, isRefusal, lifetimeLevel, type AccountProfile, type DailyPurse, type UmaState } from '@racer/domain/tiers'
+import { advanceReadiness, lifetimeLevel } from '@racer/domain/tiers'
+import { isRefusal, type AccountProfile, type DailyPurse, type UmaState } from '@racer/domain/state'
 import { endsAt, type WorkRow, type WorkState } from '@racer/domain/work'
 import type { FinishRaceReceipt } from '@racer/domain/check-in'
 import { createRng } from '@racer/race'

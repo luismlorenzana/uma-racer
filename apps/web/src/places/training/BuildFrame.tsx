@@ -5,7 +5,8 @@
 // Stable doesn't hold says `unknown-uma`'s words with a way to the Stable.
 import type { DistanceCategory } from '@racer/domain'
 import type { Place } from '@racer/domain/hub'
-import { TIER_REFUSALS, type UmaState } from '@racer/domain/tiers'
+import { TIER_REFUSALS } from '@racer/domain/tiers'
+import type { UmaState } from '@racer/domain/state'
 import type { DerivedBuild } from '@racer/domain/training'
 import type { WorkState } from '@racer/domain/work'
 import { useMemo, type ReactNode } from 'react'

@@ -8,7 +8,7 @@ import {
 } from '@racer/domain'
 import type { Place } from '@racer/domain/hub'
 import { deriveUmaPreset, type DerivedBuild } from '@racer/domain/training'
-import type { UmaState } from '@racer/domain/tiers'
+import type { UmaState } from '@racer/domain/state'
 import { useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router'
 import { goalsAtStake } from './goals-view'

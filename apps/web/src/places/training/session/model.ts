@@ -16,7 +16,8 @@ import { clockTime, fitSize, hasReady, say, type Words } from '@racer/domain/che
 import { BUILDINGS, type FacilityId, type RoomId } from '@racer/domain/farm'
 import type { ItemId } from '@racer/domain/items'
 import { remainingFor, workAhead } from '@racer/domain/planner'
-import { isRefusal, TIER_REFUSALS, type UmaState } from '@racer/domain/tiers'
+import { TIER_REFUSALS } from '@racer/domain/tiers'
+import { isRefusal, type UmaState } from '@racer/domain/state'
 import {
   facilityOf, isOpen, isRoomOf, layerUnlocks, nextUnlocks, resolveUnlock, roomAccepts, roomsFor, sessionRequest, sessionSeconds,
   SESSION_MAX_UNLOCKS, TRAINING_REFUSALS, unlockKey, unlockStatus, type Unlock, type UnlockRef,

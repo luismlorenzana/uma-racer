@@ -12,7 +12,8 @@ import {
 } from './index'
 import { devGrant, OPERATIONS } from './check-in'
 import { SIM_CONTENT, SIM_RACES, SIM_UMAS } from './sim'
-import { EXPEDITION_WINS, isLastScenario, isRefusal, newAccount, promote, recordExpeditionRace, unlockUma } from './tiers'
+import { isRefusal } from './state'
+import { EXPEDITION_WINS, isLastScenario, newAccount, promote, recordExpeditionRace, unlockUma } from './tiers'
 import { everBondedCardIds, promotionPresetStats } from './training'
 import { newWorkState, type WorkState } from './work'
 
