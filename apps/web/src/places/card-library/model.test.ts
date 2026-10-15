@@ -5,9 +5,10 @@ import { bondGrade, cardPay } from '@racer/domain/training'
 import { hasBannedWord } from '@racer/domain/check-in'
 import { describe, expect, it } from 'vitest'
 import { account, umaIds } from '../../__fixtures__/testing-ops'
+import { cardName as cardNameById } from '../../ui/words'
 import {
-  bondChoice, bondCosts, bondedTo, bondSessionPath, buildLibrary, cookPath, eraLabel, lensMode, lensOf, payWords, pendingBond, pillFor, PLAYABLE,
-  raceBonusWords, umaLens,
+  bondChoice, bondCosts, bondedTo, bondSessionPath, buildLibrary, cardName, cookPath, eraLabel, lensMode, lensOf, payWords, pendingBond, pillFor,
+  PLAYABLE, raceBonusWords, umaLens,
 } from './model'
 
 const card = (acc: ReturnType<typeof account>, id: string) => acc.env.content.cards.get(id)!
@@ -55,6 +56,17 @@ describe('the lens and the pill (06 §6)', () => {
 })
 
 describe('the card page (06 §6)', () => {
+  it('names a card with its title in brackets, and by name alone when it has no title', () => {
+    expect(cardName({ charName: 'Synthetic Support', title: 'Profile Notes' })).toBe('Synthetic Support [Profile Notes]')
+    expect(cardName({ charName: 'Synthetic Support', title: '' })).toBe('Synthetic Support')
+    expect(cardName({ charName: 'Synthetic Support', title: '  ' })).toBe('Synthetic Support')
+    const acc = account('fresh')
+    const untitled = { ...card(acc, 'sim-card-speed-e1'), title: '' }
+    const content = { ...acc.env.content, cards: new Map([[untitled.id, untitled]]) }
+    // Every screen that names a card by id says the same.
+    expect(cardNameById(content, untitled.id)).toBe(untitled.charName)
+  })
+
   it('says what it pays: the split per node, SP for Friend and Group, and the full Race Bonus', () => {
     const acc = account('fresh')
     const speed = cardPay(card(acc, 'sim-card-speed-e1'), 1)

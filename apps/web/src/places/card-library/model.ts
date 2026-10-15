@@ -17,6 +17,7 @@ import { endsAt, freeAt, itemEnds, speedAt, statusOf, type WorkRow, type WorkSta
 import type { DistanceCategory, SupportCardTemplate } from '@racer/domain'
 import type { AlbumQuery, AlbumRow, FacetDef, SortDef, SortDirection } from '../../ui/album/query'
 import { DISTANCE_LABEL, duration, STAT_LABEL, STYLE_LABEL } from '../../ui/labels'
+import { titledCardName } from '../../ui/words'
 
 export type Content = OperationEnv['content']
 export const LIBRARY_ALBUM = 'card-library'
@@ -47,7 +48,8 @@ export const TYPE_COLOR: Readonly<Record<SupportCardTemplate['type'], string>> =
   wit: 'var(--color-stat-wit)', friend: 'var(--g2-room-friend)', group: 'var(--g2-room-friend)',
 }
 
-export const cardName = (card: Pick<SupportCardTemplate, 'charName' | 'title'>): string => `${card.charName} [${card.title}]`
+/** "Kitasan Black [Fire at My Heels]", or the name alone for a card with no title (half the catalogue has none). */
+export const cardName = (card: Pick<SupportCardTemplate, 'charName' | 'title'>): string => titledCardName(card)
 
 /** "Era 3 · Trackblazer". */
 export const eraLabel = (era: number): string => `Era ${era} · ${scenarioRow(Math.min(era, 15)).name}`
