@@ -22,6 +22,9 @@ const G2_ALLOWED: readonly RegExp[] = [
   /^content\/[\w./-]+$/,
   /^auth\/[\w./-]+$/,
   /^scenes\/race\/[\w./-]+$/,
+  // T136: the save layer's tests run against the generation-2 API's own pure resolver, so the device meets the server's
+  // real rules. Test support only; T143 moves it with the API module.
+  /^\.\.\/\.\.\/api\/src\/save-g2\/resolve$/,
 ]
 
 function files(dir: string): string[] {
