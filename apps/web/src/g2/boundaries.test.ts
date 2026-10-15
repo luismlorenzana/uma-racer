@@ -20,6 +20,12 @@ const G2_ALLOWED: readonly RegExp[] = [
   // T141: today's pure race and badge views, imported as they are (they read `UmaSave` through `careerView`), and the
   // race's accomplishment facts. T143 moves them with the race scene; none touches today's store or Dexie.
   /^game\/(race-plan|race-fit|race-facts|goals-view|flair-view|badge-collection-view|trainer-view|badge-frame)$/,
+  // T138's Town Hall: the album chrome and its pure query engine (the Stable, the Card Library, the Uma picker), art
+  // tiles, crests, the card type and focus icons, and the art viewer (T138 "Shared pieces"). The album's preferences are
+  // the new game's own (`g2/ui/albumPrefs`), not today's Dexie-backed `game/album/prefs`.
+  /^ui\/(ArtTile|ArtViewer|Crest|TypeIcon|CardFocusIcons)$/,
+  /^ui\/album\/(AlbumChrome|FilterTray|SortSheet|VirtualGrid|useArt)$/,
+  /^game\/album\/query$/,
   /^ui\/icons(\/index)?$/,
   /^ui\/icons\/defineIcon$/,
   /^ui\/motionFeatures$/,

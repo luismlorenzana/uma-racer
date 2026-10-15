@@ -132,7 +132,7 @@ describe('tiles and Peeks (§1, §4)', () => {
     fireEvent.click(await screen.findByRole('link', { name: 'Featured Uma: Amber Sprint' }))
     await waitFor(() => expect(where()).toBe('/town?sheet=featured'))
     const sheet = await screen.findByRole('dialog', { name: 'Featured Uma' })
-    expect(within(sheet).getByRole('link', { name: 'Profile' }).getAttribute('href')).toBe('/town/stable/outfit/sim-uma-01')
+    expect((await within(sheet).findByRole('link', { name: 'Profile' })).getAttribute('href')).toBe('/town/stable/outfit/sim-uma-01')
     expect(within(sheet).getByRole('link', { name: 'Race' }).getAttribute('href')).toBe('/racing/racecourse?uma=sim-uma-01')
   })
 })
