@@ -280,6 +280,33 @@ rows, so the device's numbers and the server's come from one function.
   Nothing else under `saves/` is touched. `meta` is not a save kind, so no pull returns it. The local repository clears
   the uid's entry from the old dev file at the fixed path `.data/save.json`, counting its rows by kind.
 
+### The web save as built (T136)
+
+`apps/web/src/g2/save/` keeps generation 2 on the device and plays on it at once, offline too. Nothing in today's entry
+imports it; `g2/app/boot.ts` loads it lazily. The decisions are in [02](02-check-ins-and-notifications.md) §11, and
+the boot's order in [rearchitecture/07](../rearchitecture/07-data-reset.md) §3.
+
+- **Dexie `uma-racer-g2`, version 1:** `profile`, `umas`, `buildings`, `work`, `items` and `badges` by `id`; `ledger`
+  (`id, at, data.reason`), `itemLedger`, `flairEvents` and `operations` (`id, at`), `raceResults` (`id, at,
+  data.umaId`), and `outbox` (`++seq, &key`). The kind tables hold the server's rows as sent; `badges` and
+  `flairEvents` also hold the device's own writes, an unconfirmed badge at version 0. Rows are read back through T134's
+  parsers, and one that fails to parse shuts the save without deleting anything.
+- **The outbox** keys are `create`, `op:<id>` (with its envelope), `badges/<id>` (coalesced; its data and base are read
+  at flush) and `flairEvents/<id>`. A row leaves only when its answer comes, and a badge rewritten in flight stays for
+  the next batch.
+- **One store, `useSave`:** `lifecycle` and its `words`, the folded `state`, `badges`, the latest 100 `receipts`
+  (`{ local, server? }`), `pendingLogs`, `notices`, `signedIn` and `sync` (`idle`, `pending`, `syncing`, `offline` or
+  `error`, with the waiting count, the oldest row's time and 02 §9's sentence). It publishes only after Dexie commits.
+- **The fold** starts from `toSaveState` of the confirmed entities, the rule ledger rows and the queued operations'
+  confirmed `operations` rows (so a lost answer folds as `repeated`), or from `initialSave(createdAt)` behind a create,
+  then applies each queued operation with `commitOperation` at its own time.
+- **A tap** (`run`) is one `commitOperation` on the store's state: `done` writes `op:<id>` in one transaction, then
+  publishes; a refusal is `recheck`'s `ask` or `say` and writes nothing; a held busy key gets the first tap's answer.
+- **The port.** `createSaveGame` adapts the store to T137's `G2Game` one to one, and adds `notices`, `dismissNotice`,
+  `syncNow` and `logs` (race results, the ledger, the Warehouse's movements and a receipt, read on demand). T143 calls
+  `bootSaveGame(content)` from the entry, points `setSaveTokenProvider` at the Firebase token and follows the auth
+  provider with `setSignedIn`.
+
 ## 7. Docs to retire or rewrite when phase 3 lands
 
 | Doc | Fate |
