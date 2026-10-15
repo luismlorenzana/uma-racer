@@ -7,7 +7,8 @@
 > simulated before the wipe. The changes to every page and decision here are listed in
 > [rework/13](../rework/13-removals-and-plan-changes.md). Where the two disagree, the rework wins.
 
-> **Status: phases 1 and 2 built 2026-10-14 (D337, D340–D350); phase 3, the cutover, is next ([tasks](../tasks/README.md)).** The order of work is
+> **Status: phases 1 and 2 built 2026-10-14 (D337, D340–D350); phase 3, the cutover, built 2026-10-15 (D352–D361) and
+> shipping with T144 ([tasks](../tasks/README.md)).** The game as it runs is [the manual](../game/README.md). The order of work is
 > [08](08-phases.md)'s revised table.
 >
 > **First written 2026-10-12 (D321–D325).** This folder describes how uma-racer is rebuilt
@@ -93,6 +94,6 @@ The plan keeps today's rules unless a page says otherwise. These are for the own
   [`decisions.md`](https://github.com/luismlorenzana/uma-platform/blob/main/docs/decisions.md) (P1–P39).
 - uma-rpg, the reference build of the shared stack: `docs/game/architecture.md` (repo, packages, save, deploy),
   `docs/game/sections.md` (the Hub) and `docs/decisions.md` (D92 live docs, H16 lazy domain and the JS budget guard).
-- Here: [technical/architecture.md](../technical/architecture.md) (today's local-first design),
-  [design/farm-kitchen-rework.md](../design/farm-kitchen-rework.md) (today's Farm) and
-  [design/minigame-kit.md](../design/minigame-kit.md).
+- Here: [the manual's architecture page](../game/architecture.md), generation 2 as built. The old app's pages (its
+  local-first design, the Stable Kitchen Farm and the minigame kit) were deleted with the cutover (T143) and are
+  readable at the `pre-split` tag.

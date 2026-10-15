@@ -22,7 +22,7 @@ Findings:
 - **@pixi/react v8 requires React 19** ✅. We still create the Pixi `Application` **imperatively** inside a React component for the race scene,
   so the render loop never goes through React reconciliation.
 - **GameTora images send `Access-Control-Allow-Origin: *`** (checked 2026-09-14), so they are usable as WebGL textures. We still copy them into
-  our own atlases (see [Architecture — Content](../technical/architecture.md#3-content-reference-data-and-images)) for performance and resilience.
+  our own atlases (see [Architecture — Private content](../game/architecture.md#private-content)) for performance and resilience.
 
 ## Frame rate on iPhone
 

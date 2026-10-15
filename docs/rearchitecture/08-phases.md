@@ -14,11 +14,11 @@ session first, and the racer then pins the released version.
 | Phase | Goal | Status | Sections below |
 |---|---|---|---|
 | **1** | A sound base: the API on the workspace domain, the startup budget enforced, GitHub Packages, the live manual | **Done, 2026-10-14 (D337)** | Phase 1 |
-| **2** | **The rework's rules in the domain**, pure and tested, and `pnpm sim:loop` passing [rework/12](../rework/12-economy-and-pacing.md) §12. No UI and no save change | **Done, 2026-10-14 (D340–D351)** | — (new) |
-| **3** | **Clean slate and the new game:** generation-2 save in the rework's shape, the wipe and purge, every deletion (RPG, Spark, Puzzles, Friendship, CL, stars, tokens, today's Farm), the new game on plain DOM screens. **The owner starts playing here** | **Next:** [M034](../tasks/M034-generation-2-cutover.md) | Phase 2 |
+| **2** | **The rework's rules in the domain**, pure and tested, and `pnpm sim:loop` passing [rework/12](../game/12-economy-and-pacing.md) §12. No UI and no save change | **Done, 2026-10-14 (D340–D351)** | — (new) |
+| **3** | **Clean slate and the new game:** generation-2 save in the rework's shape, the wipe and purge, every deletion (RPG, Spark, Puzzles, Friendship, CL, stars, tokens, today's Farm), the new game on plain DOM screens. **The owner starts playing here** | **Built** on `cutover/g2` (T134–T143, D352–D361); ships with T144 ([M034](../tasks/M034-generation-2-cutover.md)) | Phase 2 |
 | 4 | **Optional:** push notifications, a port of uma-rpg's, only if the owner asks | Waits on the owner | — (new) |
 | 5 | Platform master data and the first shared packages | Planned | Phase 3 |
-| 6 | The Hub: four pages, the place registry, art ([rework/11](../rework/11-hub-and-places.md)) | Planned | Phase 4 |
+| 6 | The Hub: four pages, the place registry, art ([rework/11](../game/11-hub-and-places.md)) | Planned | Phase 4 |
 | 7 | The Farm and Training Hub as pixel-art scenes on `uma-idle` | Planned | Phase 5 |
 | 8 | The race on Phaser; PixiJS leaves the repo | Planned | Phase 6 |
 | **9** | **World Expeditions:** 13 pools, about 89 course layouts, local champions, the Expedition Map, `sim:expeditions`. **Deadline:** before the first Uma finishes tier 1's last career, about 16–20 weeks after phase 3 | Starts as soon as phase 3 ships | — (new) |

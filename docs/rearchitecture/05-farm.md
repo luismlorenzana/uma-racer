@@ -1,8 +1,8 @@
 # 05 · Farm mechanics
 
-> **Superseded by [rework/07](../rework/07-farm.md) and [rework/08](../rework/08-item-catalogue-and-recipes.md)
-> (D330).** Today's Farm (M031) is deleted in phase 3 rather than carried through the rebuild. This page still
-> describes the Farm as built until then.
+> **Superseded by the manual's [07 · Farm](../game/07-farm.md) and [08 · Item catalogue and recipes](../game/08-item-catalogue-and-recipes.md)
+> (D330; 13 §7).** The old Farm (M031) was deleted in phase 3 (T143) rather than carried through the rebuild. This page
+> describes it as it was, as the plan's history.
 
 The Farm (the "Stable Kitchen", M031, live since D315) keeps its rules through the rebuild. What changes is everything
 around them:
@@ -15,8 +15,8 @@ New Farm content and pacing are for the owner's feature docs; §7 lists the hook
 
 ## 1. The Farm as built
 
-The full design is [design/farm-kitchen-rework.md](../design/farm-kitchen-rework.md); its technical contract is
-[technical/farm-kitchen-implementation.md](../technical/farm-kitchen-implementation.md). In short:
+Its full design was `docs/design/farm-kitchen-rework.md` and its technical contract
+`docs/technical/farm-kitchen-implementation.md`, both deleted with it (readable at the `pre-split` tag). In short:
 
 | Rule | As built |
 |---|---|
