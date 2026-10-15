@@ -93,6 +93,14 @@ export const WORK_WORDS = Object.freeze({
   'make-them-label': 'Make them: {place} ×{n}, by {uma}',
   dismiss: 'Dismiss',
   'dismiss-label': 'Dismiss {uma}’s stopped queue',
+  /** UpgradeControls (07 §7, 05 §7). */
+  upgrade: 'Upgrade to Lv {level}',
+  'upgrade-cost': '{pm} Prize Money',
+  'upgrade-item': '{need} {item} · {have} held',
+  'upgrade-ask': 'Upgrade the {place} to Lv {level} for {cost}?',
+  'upgrade-done': 'The {place} is Lv {level} now.',
+  'upgrade-slots': '{slots} slots at Lv {level}',
+  'upgrade-speed': 'Speed ×{speed} at Lv {level}',
   /** SizeChips (02 §3). */
   'size-label': 'How many',
   'size-chip': '×{n}',

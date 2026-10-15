@@ -16,61 +16,16 @@ import { PlaceHeader } from '../../../ui/PlaceHeader'
 import { SlotCard } from '../../../ui/work/SlotCard'
 import { TapNoteLine } from '../../../ui/work/TapNote'
 import { useTap, useWordsContext, type Tap } from '../../../ui/work/useTap'
+import { UpgradeControls } from '../../../ui/work/Upgrade'
 import { useWorkView } from '../../../ui/work/view'
-import { grouped, itemName, itemsList, showWords, workWords, type WordsContext } from '../../../ui/work/words'
+import { grouped, itemName, itemsList, showWords, type WordsContext } from '../../../ui/work/words'
 import { readSheetQuery, withoutSheet } from '../job-sheet/model'
 import { farmWords } from '../words'
-import { buildingView, sheetQuery, type BuildingView, type UpgradeView } from './model'
+import { buildingView, sheetQuery, type BuildingView } from './model'
 
 const JobSheet = lazy(() => import('../job-sheet/JobSheet'))
 
 const BUTTON = 'font-display inline-flex min-h-11 items-center justify-center rounded-sm px-4 text-[14px] font-semibold shadow-1 disabled:opacity-45 disabled:shadow-none'
-
-function Upgrade({ upgrade, building, name }: { upgrade: UpgradeView; building: FarmBuildingId; name: string }) {
-  const tap = useTap()
-  const context = useWordsContext()
-  const [asking, setAsking] = useState(false)
-  const [done, setDone] = useState<number | null>(null)
-  const items = upgrade.items.map((row) => farmWords('upgrade-item', { item: itemName(row.item), have: grouped(row.have), need: grouped(row.need) }))
-  const money = farmWords('upgrade-cost', { pm: grouped(upgrade.prizeMoney) })
-  const cost = [money, itemsList(upgrade.items.map((row) => ({ item: row.item, qty: row.need })))].join(' and ')
-  const run = async () => {
-    setAsking(false)
-    const answer = await tap.run('upgrade', { building }, `upgrade:${building}`)
-    if (answer?.kind === 'done') setDone(answer.receipt.to)
-  }
-  return (
-    <div data-g2="upgrade" className="space-y-2">
-      <div className="flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          data-action="upgrade"
-          disabled={upgrade.refusal !== null || tap.pending !== null}
-          onClick={() => setAsking(true)}
-          className={`${BUTTON} bg-accent text-ink`}
-        >
-          {farmWords('upgrade', { level: upgrade.to })}
-        </button>
-        <span className="min-w-0 flex-1 text-[12px] leading-snug font-semibold text-ink-soft">{money}</span>
-      </div>
-      <ul className="grid grid-cols-2 gap-x-3 text-[12px] leading-snug text-ink-soft">
-        {items.map((line, i) => (
-          <li key={line} className={upgrade.items[i]!.have < upgrade.items[i]!.need ? 'font-semibold text-danger' : ''}>{line}</li>
-        ))}
-      </ul>
-      {upgrade.refusal !== null && <p className="text-[13px] text-ink-soft">{showWords(upgrade.refusal, context)}</p>}
-      {asking && (
-        <div role="group" className="flex flex-wrap items-center gap-2 rounded-sm bg-accent-wash p-2 text-[13px]">
-          <span className="min-w-0 flex-1">{farmWords('upgrade-ask', { place: name, level: upgrade.to, cost })}</span>
-          <button type="button" onClick={() => void run()} className={`${BUTTON} bg-accent text-ink`}>{workWords('yes')}</button>
-          <button type="button" onClick={() => setAsking(false)} className="min-h-11 px-3 font-semibold text-ink-soft">{workWords('not-now')}</button>
-        </div>
-      )}
-      {done !== null && <p role="status" className="text-[13px] text-success">{farmWords('upgrade-done', { place: name, level: done })}</p>}
-      <TapNoteLine tap={tap} />
-    </div>
-  )
-}
 
 function Header({ model }: { model: BuildingView }) {
   return (
@@ -80,7 +35,7 @@ function Header({ model }: { model: BuildingView }) {
         <span>{farmWords('slots-in-use', { used: model.used, slots: model.slots })}</span>
         <span>{farmWords('speed', { speed: model.speed })}</span>
       </p>
-      {model.upgrade !== null && <Upgrade upgrade={model.upgrade} building={model.building} name={model.name} />}
+      {model.upgrade !== null && <UpgradeControls upgrade={model.upgrade} building={model.building} name={model.name} />}
     </section>
   )
 }

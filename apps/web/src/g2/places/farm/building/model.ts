@@ -3,9 +3,9 @@
 // use, speed and the next upgrade against stock; "For your targets", the planner's lines here in 02 §6's words, each
 // opening the job sheet filled in; one card per slot; the Umas with finished outputs here (the Counter), and who Repeat
 // here would take. Pure: every number is the domain's.
-import { CHECK_IN_WORDS, buyFor, clockTime, fill, fitSize, hasReady, repeatable, say, type Words } from '@racer/domain/rework/check-in'
+import { CHECK_IN_WORDS, buyFor, clockTime, fill, fitSize, hasReady, repeatable, say } from '@racer/domain/rework/check-in'
 import {
-  BUILDINGS, buildingSpeed, farmItemSeconds, MAX_BUILDING_LEVEL, upgradeCost, type BuildingLevel, type FarmBuildingId,
+  BUILDINGS, buildingSpeed, farmItemSeconds, type BuildingLevel, type FarmBuildingId,
 } from '@racer/domain/rework/farm'
 import {
   canWorkGrade, FAMILIES, highestOpenGrade, itemById, rawItem, type FamilyId, type ItemGrade, type ItemId,
@@ -13,24 +13,15 @@ import {
 import {
   Bench, freeUmas, jobFor, placeLines, planFrom, suggestFrom, targetsOf, type Plan, type PlanLine, type Suggestion, type Timing,
 } from '@racer/domain/rework/planner'
-import { isRefusal } from '@racer/domain/rework/tiers'
 import {
-  buildingLevel, holdsSlot, MAX_ITEMS_PER_ENTRY, speedAt, stockOf, upgrade, type FarmKind, type SlotRef, type WorkState,
+  buildingLevel, holdsSlot, MAX_ITEMS_PER_ENTRY, speedAt, stockOf, type FarmKind, type SlotRef, type WorkState,
 } from '@racer/domain/rework/work'
-import { slotCards, type SlotCardModel } from '../../../ui/work/model'
+import { slotCards, upgradeView, type SlotCardModel, type UpgradeView } from '../../../ui/work/model'
 import type { WorkView } from '../../../ui/work/view'
 import { grouped, type WordsContext } from '../../../ui/work/words'
-import { farmWords } from '../words'
 
-/** The next upgrade (07 §7) against what the account holds, with `upgrade`'s refusal when it can't be paid. */
-export interface UpgradeView {
-  readonly to: 2 | 3
-  readonly prizeMoney: number
-  readonly haveMoney: number
-  readonly items: readonly { readonly item: ItemId; readonly need: number; readonly have: number }[]
-  /** `prize-money` or `short` in the rule's words, else null. */
-  readonly refusal: Words | null
-}
+export type { UpgradeView }
+import { farmWords } from '../words'
 
 /** One line of "For your targets" (02 §6). */
 export interface TargetLineView {
@@ -151,22 +142,6 @@ function targetLines(view: WorkView, planned: Plan, building: FarmBuildingId, co
       sheet: sheetQuery({ job: line.item, uma, count }),
     }
   })
-}
-
-function upgradeView(view: WorkView, building: FarmBuildingId): UpgradeView | null {
-  const settled = view.settled
-  const level = buildingLevel(settled, building)
-  if (level >= MAX_BUILDING_LEVEL) return null
-  const to = (level + 1) as 2 | 3
-  const cost = upgradeCost(building, to)
-  const tried = upgrade(settled, { building }, view.now, view.env)
-  return {
-    to,
-    prizeMoney: cost.prizeMoney,
-    haveMoney: settled.profile.prizeMoney,
-    items: cost.items.map(({ item, qty }) => ({ item, need: qty, have: stockOf(settled.items, item) })),
-    refusal: isRefusal(tried) ? say(tried.reason, tried.data) : null,
-  }
 }
 
 /** Everything the building page draws at the view's `now`. */

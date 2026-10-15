@@ -2,7 +2,8 @@
 // session (T139 passes its unlock line as `what`). A held slot: her face, name and Farm Level; what it makes with a
 // ring for the current item's progress; "3 / 10 made"; the next item's and the entry's end; her queue; **Collect**
 // while items wait, **−30m** and **Finish** (`SpeedUpControls`), **Recall** (`RecallSheet`) and **+ Queue**. A free
-// slot: **Start a job**. VoiceOver reads the card as one line: "Special Week. Potato, 3 of 10 made, next at 11:10".
+// slot: **Start a job**, or a facility's **Start a session** (`startLabel`). VoiceOver reads the card as one line:
+// "Special Week. Potato, 3 of 10 made, next at 11:10".
 // The ring redraws on the shell's 30-second clock, never per frame.
 import { clockTime } from '@racer/domain/rework/check-in'
 import { itemById } from '@racer/domain/rework/items'
@@ -35,6 +36,8 @@ export interface SlotCardProps {
   readonly what?: SlotCardWhat
   /** Where a free slot's **Start a job** goes: the place's sheet. */
   readonly startTo?: string
+  /** The free slot's button: **Start a job**, or a facility's **Start a session** (T139). */
+  readonly startLabel?: string
   /** Where a running entry's **+ Queue** goes. */
   readonly queueTo?: string
   /** A queued request's name for `QueueChips`. */
@@ -64,7 +67,7 @@ function Ring({ progress, ready, children }: { progress: number; ready: boolean;
   )
 }
 
-export function SlotCard({ card, what, startTo, queueTo, queueLabel, farmLevel = true }: SlotCardProps) {
+export function SlotCard({ card, what, startTo, startLabel = workWords('start-job'), queueTo, queueLabel, farmLevel = true }: SlotCardProps) {
   const context = useWordsContext()
   const tap = useTap()
   const [recalling, setRecalling] = useState(false)
@@ -80,7 +83,7 @@ export function SlotCard({ card, what, startTo, queueTo, queueLabel, farmLevel =
         <span className="min-w-0 flex-1 text-[14px] text-ink-soft">{workWords('free')}</span>
         {startTo !== undefined && (
           <Link to={startTo} state={{ back: true }} className={`${ACTION} bg-accent text-ink`} data-action="start">
-            {workWords('start-job')}
+            {startLabel}
           </Link>
         )}
       </article>
