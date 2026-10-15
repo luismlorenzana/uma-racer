@@ -1,7 +1,7 @@
 # M034 — The generation-2 cutover and the new game
 
 **Re-architecture phase 3** ([08](../rearchitecture/08-phases.md), [rework/13](../rework/13-removals-and-plan-changes.md) §4).
-**State: specified 2026-10-15; T134–T142 landed on `cutover/g2` 2026-10-15; T143 next.**
+**State: specified 2026-10-15; T134–T143 landed on `cutover/g2` 2026-10-15; T144 next.**
 
 ## Outcome
 
@@ -16,8 +16,8 @@ A new account has 20 Uma Tickets and nothing else ([rework/13](../rework/13-remo
 ## Read first
 
 - [AGENTS.md](../../AGENTS.md); this page; [rework/13](../rework/13-removals-and-plan-changes.md) (what leaves, what
-  stays, the new account, the save, the docs to retire, "Done when"); [rework/11](../rework/11-hub-and-places.md) (the
-  routes, places and shell; §11 says what ships in phase 3); [rework/02](../rework/02-check-ins-and-notifications.md)
+  stays, the new account, the save, the docs to retire, "Done when"); [rework/11](../game/11-hub-and-places.md) (the
+  routes, places and shell; §11 says what ships in phase 3); [rework/02](../game/02-check-ins-and-notifications.md)
   (check-ins on screen).
 - [rearchitecture/01](../rearchitecture/01-target-architecture.md) §4–§6 (web shape, one store, sync v2, the API),
   [06](../rearchitecture/06-rpg-decommission.md) (the RPG's deletion lists), [07](../rearchitecture/07-data-reset.md)
@@ -75,7 +75,7 @@ A new account has 20 Uma Tickets and nothing else ([rework/13](../rework/13-remo
 | T140 — The Farm ✅ (D358) | The eight family sites, the Pantry and the Kitchen: job sheets with sizes and queues, collect and recall, Speed Tickets, upgrades | T136, T137 | T138, T139, T141, T142 |
 | T141 — Racing ✅ (D359) | The Racecourse (race select, the Daily Purse, featured races), the run and the result with Racing EXP and Prize Money on today's race engine and scene, the Scenario Gate (careers, advance, promotion), the Trophy Hall; the Expedition Map as a placeholder until phase 9 | T136, T137 | T138–T140, T142 |
 | T142 — Check-ins ✅ (D360) | Collect all, Repeat, the check-in summary, the planner's needs and targets, queue warnings and stopped queues, and the pill's counts (rework/02) | T136, T137 | T138–T141 |
-| T143 — The switch | Tag `pre-split`. The new app becomes the entry and the new API module is mounted; every retired system's code, routes, endpoints, tables, scripts, packs and docs are deleted (rework/13 §1, §7; rearchitecture/06 §3); the rework modules and `g2/` move to their final homes; the docs are rewritten as built | T134–T142 | — |
+| T143 — The switch ✅ (D361) | Tag `pre-split`. The new app becomes the entry and the new API module is mounted; every retired system's code, routes, endpoints, tables, scripts, packs and docs are deleted (rework/13 §1, §7; rearchitecture/06 §3); the rework modules and `g2/` move to their final homes; the docs are rewritten as built | T134–T142 | — |
 | T144 — The release | The rehearsal (a fresh account through every place locally, phone checks at 390×844, a stale-device 426 check, the purge on a synthetic account), the owner's go-ahead, the merge and deploy, the purge's verification, the bucket cleanup, and the owner's first session on the iPhone | T143 | — |
 
 **Order.** T134 and T137 start at once. T135 and T136 follow T134. The five place tasks (T138–T142) run in parallel
