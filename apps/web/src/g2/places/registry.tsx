@@ -4,8 +4,8 @@
 // plaza, the featured sheet and the reveal; T139 the facilities; T140 the Farm; T141 Racing; T142 the check-in sheet
 // and the Needs sub-pages), each emptying its part of `PENDING`, which T143 requires empty. An unfilled slot shows the
 // place's name, its blurb behind (i) and Enter.
-import type { Place, PlaceId } from '@racer/domain/hub'
-import type { ComponentType, LazyExoticComponent } from 'react'
+import { placesOn, type Place, type PlaceId } from '@racer/domain/hub'
+import { lazy, type ComponentType, type LazyExoticComponent } from 'react'
 import { matchPath } from 'react-router'
 
 export type Lazy<P> = LazyExoticComponent<ComponentType<P>>
@@ -46,11 +46,18 @@ export interface PlaceUi {
 /** One path segment: an Uma's build view at a facility (`/training/observatory/:umaId`). */
 const oneSegment = (rest: string): boolean => /^[^/]+$/.test(rest)
 
+// T140: the ten Farm buildings share one Page (07 §10's building page with its job sheet) and one Peek (§3.4); their
+// Counter is the hub view's `finished-here`. Read from the registry, so the entry holds no Farm rule.
+const FarmPage = lazy(() => import('./farm/building/BuildingPage'))
+const FarmPeek = lazy(() => import('./farm/building/BuildingPeek'))
+const FARM_UI: Readonly<Partial<Record<PlaceId, PlaceUi>>> = Object.fromEntries(placesOn('farm').map((place) => [place.id, { Page: FarmPage, Peek: FarmPeek }]))
+
 export const PLACE_UI: Readonly<Partial<Record<PlaceId, PlaceUi>>> = {
   // §6's full-screen flows inside place routes: the race run and result, the constellation tree and the Extra Stats map.
   racecourse: { fullScreen: (rest) => rest === 'run' || rest.startsWith('run/') },
   observatory: { fullScreen: oneSegment },
   gym: { fullScreen: oneSegment },
+  ...FARM_UI,
 }
 
 export interface SheetProps {
@@ -95,7 +102,6 @@ export type SlotId = PlaceId | 'sheet:check-in' | 'sheet:featured' | 'plaza' | '
 export const PENDING: readonly SlotId[] = Object.freeze([
   'stable', 'warehouse', 'exchange', 'card-library', 'account', 'plaza', 'sheet:featured', 'flow:reveal', // T138
   'observatory', 'lineage-hall', 'gym', 'dojo', // T139
-  'sugar-grove', 'orchard', 'fishery', 'nut-grove', 'herb-garden', 'fields', 'vegetable-garden', 'mushroom-cave', 'pantry', 'kitchen', // T140
   'racecourse', 'scenario-gate', 'expedition-map', 'trophy-hall', // T141
   'sheet:check-in', // T142
 ] as const)
