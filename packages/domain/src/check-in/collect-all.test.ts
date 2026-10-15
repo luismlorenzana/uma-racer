@@ -1,4 +1,4 @@
-// Collect all (docs/rework/02-check-ins-and-notifications.md §2, §9, §12; docs/rework/07-farm.md §9) on a synthetic
+// Collect all (docs/game/02-check-ins-and-notifications.md §2, §9, §12; docs/game/07-farm.md §9) on a synthetic
 // 25-Uma account: one operation claims every finished item and unlock with a line per slot, a retry pays nothing
 // twice, the other device's later Collect all reads "Already collected", a failing slot never blocks the rest, and
 // nothing is started, bought, sold or spent.
@@ -146,7 +146,7 @@ describe('collect-all', () => {
   })
 })
 
-describe('needs a tap (02 §7, rework/11 §2.4)', () => {
+describe('needs a tap (02 §7, game/11 §2.4)', () => {
   it('counts each Uma with something to collect, a running batch included, or Free, once', () => {
     const { state } = busyNight()
     expect(needsATap(state, clock('22:31'), ENV)).toBe(0)

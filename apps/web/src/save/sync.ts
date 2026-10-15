@@ -1,4 +1,4 @@
-// One sync lane (docs/rearchitecture/01-target-architecture.md §4.3; docs/rework/02-check-ins-and-notifications.md §8–§9,
+// One sync lane (docs/rearchitecture/01-target-architecture.md §4.3; docs/game/02-check-ins-and-notifications.md §8–§9,
 // §11; T136): entities, logs and operations flush through one outbox in order, one run at a time, and a trigger during
 // a run queues one more after it.
 // - Triggers: a write (1.5 s after the last one); the app hidden (flush now, before iOS suspends it); visible or back

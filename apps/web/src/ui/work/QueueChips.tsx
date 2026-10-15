@@ -1,4 +1,4 @@
-// Her queue on a card (docs/rework/02-check-ins-and-notifications.md §3; docs/rework/07-farm.md §2; T140): "+2" beside
+// Her queue on a card (docs/game/02-check-ins-and-notifications.md §3; docs/game/07-farm.md §2; T140): "+2" beside
 // the running entry, then each queued request in order with its projected end ("then Carrot ×6 → 08:20") and
 // `queueWarnings`' mark where the stock won't cover it ("Short 2 Honey."). Each can move earlier or be removed (`queue`
 // with `move` or `remove`). A queue that already stopped is the check-in's (T142).

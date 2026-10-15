@@ -1,5 +1,5 @@
-// Her constellation at the Observatory (docs/rework/05-training-hub.md §3, §4, §8; docs/rework/03-uma-progression.md §6;
-// docs/rework/11-hub-and-places.md §6; T139): `treeFor(T)` and `treeEdges`, each node's state for her now, the viewed
+// Her constellation at the Observatory (docs/game/05-training-hub.md §3, §4, §8; docs/game/03-uma-progression.md §6;
+// docs/game/11-hub-and-places.md §6; T139): `treeFor(T)` and `treeEdges`, each node's state for her now, the viewed
 // preset's card on each open node and what it pays there (`nodeSkillIds`), and the choices of another card of the set
 // under the per-card cap, each run through `set-assignments` on the current state so a refused one says why. The List
 // carries the same nodes and the next layer's, which the tree can't draw (its size is her scenario's). Pure.

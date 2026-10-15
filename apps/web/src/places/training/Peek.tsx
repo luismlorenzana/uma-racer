@@ -1,4 +1,4 @@
-// A Training facility's Peek (docs/rework/11-hub-and-places.md §3.2; T139): its slots with faces and finish times; the
+// A Training facility's Peek (docs/game/11-hub-and-places.md §3.2; T139): its slots with faces and finish times; the
 // Umas with unlocks left here in their open layers; and the facility's dishes in the Warehouse (Vegetables, Mushrooms,
 // or the Gym's stat, Duo and Feast dishes), or at the Dojo the bonds left this layer (`layerProgress`). Display only:
 // the Peek's Enter opens the page.

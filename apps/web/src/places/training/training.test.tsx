@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-// The Training places on screen (docs/rework/05-training-hub.md §2, §6–§8; docs/rework/06-cards-and-bonds.md §6;
-// docs/rework/09-racing-rewards-and-exchange.md §5.1; T139), through the real routes and the in-memory port on synthetic
+// The Training places on screen (docs/game/05-training-hub.md §2, §6–§8; docs/game/06-cards-and-bonds.md §6;
+// docs/game/09-racing-rewards-and-exchange.md §5.1; T139), through the real routes and the in-memory port on synthetic
 // accounts, its clock held and moved by hand: a three-node session from the sheet, its Collect chip and fill, Recall;
 // −30m and "Buy N and finish"; an upgrade's slot at once; the Card Library's Dojo link and Queue; the Extra Stats
 // switches over capacity; and a reopen keeping every change.

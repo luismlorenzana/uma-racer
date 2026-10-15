@@ -1,4 +1,4 @@
-// Plain words for the check-in and the planner (docs/rework/02-check-ins-and-notifications.md §4, §5, §9). Every
+// Plain words for the check-in and the planner (docs/game/02-check-ins-and-notifications.md §4, §5, §9). Every
 // sentence these rules can show is a template here; `{name}` placeholders are filled by the screen from the data
 // (`{uma}` an outfit and `{item}` an item it shows by name, `{place}` a building, `{time}` a timestamp it shows as a
 // clock time). 02 §9's banned words never appear in a template, and `hasBannedWord` is the test every refusal table of

@@ -1,4 +1,4 @@
-// Recall (docs/rework/07-farm.md §2, §5; docs/rework/05-training-hub.md §2; T140): before it confirms, a preview from
+// Recall (docs/game/07-farm.md §2, §5; docs/game/05-training-hub.md §2; T140): before it confirms, a preview from
 // `recall` run on the current state, so it says exactly what the real one does: the outputs it pays, the inputs that
 // come back ("8 Chopped Carrot and 2 Wheat Flour come back"), the minutes of progress lost and the queue dropped. Then
 // `recall`. `RecallPreviewLines` is the preview alone, for the job sheet's **Recall and start here**.

@@ -1,4 +1,4 @@
-// Plain words (T136; docs/rework/02-check-ins-and-notifications.md §9): every failure says one of 02 §9's sentences, a
+// Plain words (T136; docs/game/02-check-ins-and-notifications.md §9): every failure says one of 02 §9's sentences, a
 // refusal says its rule's own words, and no sentence in `save/` holds a banned word, a code or a status number.
 import { readdirSync, readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'

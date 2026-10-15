@@ -1,4 +1,4 @@
-// A synthetic regular race catalogue for the Exchange's tests (docs/rework/09-racing-rewards-and-exchange.md §4):
+// A synthetic regular race catalogue for the Exchange's tests (docs/game/09-racing-rewards-and-exchange.md §4):
 // invented ids, every featured grade, every distance category. Nothing from the private packs.
 import type { CatalogueRace } from '../economy/featured'
 import type { DistanceCategory, RaceGrade } from '../types'

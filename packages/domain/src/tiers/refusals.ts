@@ -1,4 +1,4 @@
-// Every rule failure of the tier rules, in plain words (docs/rework/02-check-ins-and-notifications.md §9). `{uma}` is
+// Every rule failure of the tier rules, in plain words (docs/game/02-check-ins-and-notifications.md §9). `{uma}` is
 // her outfit, which the screen turns into her name; the other placeholders are numbers or names. One table, so T131's
 // banned-word test reads every sentence the tier rules can show.
 import { refuse, type Refusal } from '../state/types'

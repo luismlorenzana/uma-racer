@@ -1,5 +1,5 @@
 // The save's boot (docs/rearchitecture/01-target-architecture.md §4.3; docs/rearchitecture/07-data-reset.md §2–§3;
-// docs/rework/02-check-ins-and-notifications.md §8, §11; T136), in this order:
+// docs/game/02-check-ins-and-notifications.md §8, §11; T136), in this order:
 // 1. The wipe (`wipe.ts`), unless `uma-racer:g2:wiped` is set. Only the new game's own boot asks for it.
 // 2. The purge, unless `uma-racer:g2:purged` is set: `POST /api/legacy/purge` in the background once signed in, again
 //    at the next boot or back online after a failure. It never blocks play, and it touches only `players/`, so it can

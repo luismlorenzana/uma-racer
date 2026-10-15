@@ -1,6 +1,6 @@
 // The operations' live block (docs/game/architecture.md#the-rework-modules "The live manual"): rework/13 §6's list of
 // every change to the account, rendered from `OPERATIONS`, so a new operation can't land without its line. Registered in
-// packages/domain/src/docs/rework.ts. Pure: no I/O.
+// packages/domain/src/docs/render.ts. Pure: no I/O.
 import { OPERATIONS, type OperationName } from './once'
 
 type Cell = string | number

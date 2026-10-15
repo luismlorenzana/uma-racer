@@ -1,4 +1,4 @@
-// A Hub page as a DOM grid of place tiles (docs/rework/11-hub-and-places.md §3, §4, §11, §12): each place in its
+// A Hub page as a DOM grid of place tiles (docs/game/11-hub-and-places.md §3, §4, §11, §12): each place in its
 // registry cell on a three-column grid that scrolls vertically when it doesn't fit, never sideways; the Town Hall plaza
 // with the featured Uma (§5); the floating pill (§2.3); and the Peek, a non-modal half sheet that leaves the page live.
 // A tile is one link: to its Peek, to its Page when it is `direct` or already peeked, labelled with its VoiceOver line.

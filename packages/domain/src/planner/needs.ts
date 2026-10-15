@@ -1,5 +1,5 @@
-// The planner: "what she still needs" (docs/rework/02-check-ins-and-notifications.md §6, §4 "Best use";
-// docs/rework/08-item-catalogue-and-recipes.md §4; uma-rpg's `targetPlan`, D100). Three steps, all derived on read:
+// The planner: "what she still needs" (docs/game/02-check-ins-and-notifications.md §6, §4 "Best use";
+// docs/game/08-item-catalogue-and-recipes.md §4; uma-rpg's `targetPlan`, D100). Three steps, all derived on read:
 // 1. Needs: for each target, oldest layer first, every unlock left needs its one dish (T128); a bond with no card
 //    chosen has no family, so it counts in `pickCards` and isn't cascaded.
 // 2. Supply: the free stock once projected queue starts have taken their inputs, then the outputs still to come in

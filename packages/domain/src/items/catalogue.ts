@@ -1,4 +1,4 @@
-// The rework's Farm catalogue (docs/rework/08-item-catalogue-and-recipes.md §1, §3, §4.3, §4.4, §9, §10): 80 raw and
+// The rework's Farm catalogue (docs/game/08-item-catalogue-and-recipes.md §1, §3, §4.3, §4.4, §9, §10): 80 raw and
 // 80 crafted ingredients, 80 planet dishes, 8 Duos, 4 Feasts and the Speed Ticket, 253 definitions in all. Ids and
 // names are uma-rpg's farming half as uma-art 2.4.0 draws it (D330), written here as data: generated once from the art
 // package's indexes, then frozen. Nothing reads the art package at run time; `art.test.ts` keeps the two in step.
@@ -263,7 +263,7 @@ export const DUOS: readonly DuoDishDef[] = Object.freeze(DUO_ROWS.map(([id, grad
 export const FEASTS: readonly FeastDishDef[] = Object.freeze(FEAST_ROWS.map(([id, grade, name]): FeastDishDef =>
   Object.freeze({ kind: 'dish', dish: 'feast', id, name, grade, destination: 'sun', art: art('dishes', id) })))
 
-/** uma-art draws no ticket; its new icon is on rework/11's art list. */
+/** uma-art draws no ticket; its new icon is on game/11's art list. */
 export const SPEED_TICKET: TicketDef = Object.freeze({ kind: 'ticket', id: SPEED_TICKET_ID, name: 'Speed Ticket', art: null })
 
 /**

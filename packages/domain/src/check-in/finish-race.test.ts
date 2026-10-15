@@ -1,4 +1,4 @@
-// `finish-race` (docs/rework/09-racing-rewards-and-exchange.md §9; docs/rework/01-game-loop.md §2; T134): a race's whole
+// `finish-race` (docs/game/09-racing-rewards-and-exchange.md §9; docs/game/01-game-loop.md §2; T134): a race's whole
 // commit in one operation, once under its id. Her finished unlocks are collected first and a Farm job runs on; Racing EXP,
 // goals and the gate's Shard follow; Prize Money and a featured bonus land under the race's ledger ids.
 import { describe, expect, it } from 'vitest'

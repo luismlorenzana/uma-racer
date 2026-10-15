@@ -1,4 +1,4 @@
-// The Exchange's view model (docs/rework/09-racing-rewards-and-exchange.md §5, §5.3, §5.5; T138): Speed Tickets at
+// The Exchange's view model (docs/game/09-racing-rewards-and-exchange.md §5, §5.3, §5.5; T138): Speed Tickets at
 // `buyPrice`, raw ingredients by family up to `stockedGrade` with the next grade's lock, each row's Warehouse count and
 // the planner's badge ("Vegetables G3 · short 6"), Buy off with `prize-money`'s words when short, the one question at
 // 1,000 or more (`buyNeedsConfirm`), and the Peek's top shortage priced by `buyFor`. Pure.

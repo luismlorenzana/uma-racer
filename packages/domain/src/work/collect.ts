@@ -1,5 +1,5 @@
-// Paying finished work (docs/rework/07-farm.md §2 "Collect", §4; docs/rework/05-training-hub.md §2 "Finishing";
-// docs/rework/02-check-ins-and-notifications.md §2, §9). Every finished item is paid once, oldest first: Farm items go
+// Paying finished work (docs/game/07-farm.md §2 "Collect", §4; docs/game/05-training-hub.md §2 "Finishing";
+// docs/game/02-check-ins-and-notifications.md §2, §9). Every finished item is paid once, oldest first: Farm items go
 // into the Warehouse with their Farm EXP and every level crossed, a session's unlocks go through its kind (T128). Once
 // everything is paid her slot is freed and her last work kept for Repeat. Nothing ready pays nothing and never refuses.
 // The caller settles before and after.

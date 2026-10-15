@@ -1,5 +1,5 @@
-// The work engine's state and shapes (docs/rework/07-farm.md §2, §5, §12; docs/rework/05-training-hub.md §2, §9;
-// docs/rework/02-check-ins-and-notifications.md §3, §10; docs/rework/13-removals-and-plan-changes.md §6). One engine
+// The work engine's state and shapes (docs/game/07-farm.md §2, §5, §12; docs/game/05-training-hub.md §2, §9;
+// docs/game/02-check-ins-and-notifications.md §3, §10; docs/rework/13-removals-and-plan-changes.md §6). One engine
 // runs every timed thing an Uma does, a Farm job or a Training Hub session: 1–10 items one after another in one slot,
 // with up to three requests queued behind. Only timestamps are stored. T127 widens T125's `ReworkState` with the three
 // parts it needs (the Warehouse's free stock, building levels and the work rows) rather than editing it, so T125's

@@ -1,4 +1,4 @@
-// The featured board (docs/rework/09-racing-rewards-and-exchange.md §4, §11) on a synthetic catalogue, drawn with the
+// The featured board (docs/game/09-racing-rewards-and-exchange.md §4, §11) on a synthetic catalogue, drawn with the
 // race engine's mulberry32 copied in as opponents.test.ts does.
 import { describe, expect, it } from 'vitest'
 import { RACES, days, mulberry32 } from '../__fixtures__/economy'

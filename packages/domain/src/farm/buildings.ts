@@ -1,5 +1,5 @@
-// The Farm's ten buildings and the Training Hub's four facilities (docs/rework/07-farm.md §1, §6, §7;
-// docs/rework/05-training-hub.md §1, §7; D327, D330, D331): ids, order, rooms, slots, speed and upgrade prices. Every
+// The Farm's ten buildings and the Training Hub's four facilities (docs/game/07-farm.md §1, §6, §7;
+// docs/game/05-training-hub.md §1, §7; D327, D330, D331): ids, order, rooms, slots, speed and upgrade prices. Every
 // building is the account's, starts at Lv 1 and carries through promotion; levels live in the state's `buildings`, and
 // a slot is held by a work row, never by a building (07 §5, §12). Pure data and lookups.
 import { STATS } from '../types'
@@ -13,7 +13,7 @@ export const FARM_BUILDING_IDS = Object.freeze([
 ] as const)
 export type FarmBuildingId = (typeof FARM_BUILDING_IDS)[number]
 
-/** The four Training Hub facilities in 05 §1's order (ids from rework/11 §3's places). */
+/** The four Training Hub facilities in 05 §1's order (ids from game/11 §3's places). */
 export const FACILITY_IDS = Object.freeze(['observatory', 'lineage-hall', 'gym', 'dojo'] as const)
 export type FacilityId = (typeof FACILITY_IDS)[number]
 

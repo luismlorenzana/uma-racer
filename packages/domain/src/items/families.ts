@@ -1,4 +1,4 @@
-// The Farm's eight families and where their dishes go (docs/rework/08-item-catalogue-and-recipes.md §2, §4.2, D330):
+// The Farm's eight families and where their dishes go (docs/game/08-item-catalogue-and-recipes.md §2, §4.2, D330):
 // uma-rpg's farming half, each family feeding one destination, on uma-art's Duo ring.
 import type { StatKey } from '../types'
 

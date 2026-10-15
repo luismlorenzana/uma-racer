@@ -1,4 +1,4 @@
-// A Training facility's page (docs/rework/05-training-hub.md §7, §8; docs/rework/11-hub-and-places.md §3.2; T139), one
+// A Training facility's page (docs/game/05-training-hub.md §7, §8; docs/game/11-hub-and-places.md §3.2; T139), one
 // for all four, at 390 × 844 top to bottom: the header (level, slots in use, speed, **Upgrade** with what it adds, (i));
 // **Needs here**; a card per slot, by room under its stat or card-type icon at the Gym and Dojo; and **Collect here** in
 // the thumb zone. The session sheet opens over the page from its query (`?session=…`), so a slot, a build view's

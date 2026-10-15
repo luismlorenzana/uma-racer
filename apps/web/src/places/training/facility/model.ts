@@ -1,5 +1,5 @@
-// A Training facility's page and Peek (docs/rework/05-training-hub.md §7, §8; docs/rework/11-hub-and-places.md §3.2;
-// docs/rework/02-check-ins-and-notifications.md §2, §6; T139), read from one work view: the header (level, slots in use
+// A Training facility's page and Peek (docs/game/05-training-hub.md §7, §8; docs/game/11-hub-and-places.md §3.2;
+// docs/game/02-check-ins-and-notifications.md §2, §6; T139), read from one work view: the header (level, slots in use
 // from `slotsOf` and `slotHolder`, speed, the next upgrade with what it adds); one card per slot, by room at the Gym and
 // Dojo, a busy one naming her current unlock and its dish; **Needs here**, the planner's `facilityLines` in 02 §6's
 // words with Start when she can and the Kitchen for a short dish; Collect here's slots; and the Peek's lines. Pure.

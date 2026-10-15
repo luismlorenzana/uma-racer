@@ -1,4 +1,4 @@
-// A place's counter (docs/rework/11-hub-and-places.md §1, §3): the hub view's count by default, or the place's own
+// A place's counter (docs/game/11-hub-and-places.md §1, §3): the hub view's count by default, or the place's own
 // `useCounter` where the rework state can't give it (T141's Racecourse and Trophy Hall). 0 is hidden, so the bar and
 // the pages stay quiet (§2.2).
 import type { HubView, Place } from '@racer/domain/hub'

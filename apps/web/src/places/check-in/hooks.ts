@@ -1,4 +1,4 @@
-// What the check-in sheet reads beside the work view (docs/rework/02-check-ins-and-notifications.md §9, §10; T142):
+// What the check-in sheet reads beside the work view (docs/game/02-check-ins-and-notifications.md §9, §10; T142):
 // an operation's receipt, the server's once it has answered, else this device's (so "Already collected." shows in place
 // when the other device collected first), read from the save's log when the snapshot no longer holds it; and whether
 // the phone is offline, from the port's Sync state or the browser's own signal.

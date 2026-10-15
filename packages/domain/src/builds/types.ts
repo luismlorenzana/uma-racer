@@ -1,4 +1,4 @@
-// The rework's balance reports (docs/rework/03-uma-progression.md §9, §12, 04 §8, 05 §12; T133): what
+// The rework's balance reports (docs/game/03-uma-progression.md §9, §12, 04 §8, 05 §12; T133): what
 // `pnpm sim:builds` and `pnpm sim:careers` write with `--write-report`, committed so the rework pages'
 // live blocks render without the race engine. Rates are whole percents; typical values are fractions of a tree.
 import type { CareerStage } from '../career-stages'

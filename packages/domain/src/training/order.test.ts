@@ -1,4 +1,4 @@
-// The unlock order (docs/rework/05-training-hub.md §3): every rule both ways, later layers refused by name, earlier
+// The unlock order (docs/game/05-training-hub.md §3): every rule both ways, later layers refused by name, earlier
 // layers open for the whole tier, the next unlocks at a facility, what is left of her layers, and a layer done.
 import { describe, expect, it } from 'vitest'
 import { cardOf } from '../__fixtures__/training'

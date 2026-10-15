@@ -1,4 +1,4 @@
-// What CI pins (docs/rework/12-economy-and-pacing.md §12, T132's "CI checks"): each check as data,
+// What CI pins (docs/game/12-economy-and-pacing.md §12, T132's "CI checks"): each check as data,
 // with the run it reads and how it reads it. A check passes when every value it reads is in its range. The ranges are
 // the owner's tolerances; only the owner's decision moves one (D351), and 12 §11 tunes the game, not the check.
 import { BUILDING_IDS } from '../farm/buildings'

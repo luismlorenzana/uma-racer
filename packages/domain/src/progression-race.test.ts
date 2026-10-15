@@ -222,7 +222,7 @@ describe('scenario-linked races (D122, T055)', () => {
   })
 })
 
-describe('a generation-2 race run (finish-race, docs/rework/09-racing-rewards-and-exchange.md §9)', () => {
+describe('a generation-2 race run (finish-race, docs/game/09-racing-rewards-and-exchange.md §9)', () => {
   const run = () => ({
     engineVersion: 9 as const,
     course: {

@@ -1,4 +1,4 @@
-// An item's icon (docs/rework/11-hub-and-places.md §10.3, §11; docs/rework/08-item-catalogue-and-recipes.md §9, §10;
+// An item's icon (docs/game/11-hub-and-places.md §10.3, §11; docs/game/08-item-catalogue-and-recipes.md §9, §10;
 // T140): the catalogue's `art` frame from uma-art's `items` or `dishes` atlas, a CSS sprite at a whole-number scale with
 // its pixels kept crisp, named for VoiceOver ("Carrot Salad, grade 1"). The Speed Ticket has no frame in the pinned
 // release (08 §9), so until one ships it is its name on a plain tile. Imported only by lazy chunks, so neither atlas

@@ -1,5 +1,5 @@
-// The shared work pieces' view models (docs/rework/07-farm.md §2, §8, §10; docs/rework/05-training-hub.md §2;
-// docs/rework/09-racing-rewards-and-exchange.md §5.1; docs/rework/02-check-ins-and-notifications.md §3; T140). Pure
+// The shared work pieces' view models (docs/game/07-farm.md §2, §8, §10; docs/game/05-training-hub.md §2;
+// docs/game/09-racing-rewards-and-exchange.md §5.1; docs/game/02-check-ins-and-notifications.md §3; T140). Pure
 // readings of the domain's state and rules for one slot's card, its Speed Ticket controls, a Recall's preview, a queue's
 // chips, the size chips and a building's upgrade. Every number comes from a domain function; nothing here restates a rule.
 import { chipWords, clockTime, fill, fitWords, say, sizeChips, type OperationEnv, type Words } from '@racer/domain/check-in'
@@ -45,7 +45,7 @@ export interface HeldSlotCard {
   readonly nextAt: number | null
   /** The latest entry's end. */
   readonly endsAt: number
-  /** The current item's progress, 0–1, as the Hub's pips draw it (rework/11 §4). */
+  /** The current item's progress, 0–1, as the Hub's pips draw it (game/11 §4). */
   readonly progress: number
   readonly queue: readonly WorkRequest[]
 }

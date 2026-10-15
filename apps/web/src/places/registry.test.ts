@@ -1,4 +1,4 @@
-// The slot registry (docs/rework/11-hub-and-places.md §1, §6): every place has a Page and, unless it is `direct` or
+// The slot registry (docs/game/11-hub-and-places.md §1, §6): every place has a Page and, unless it is `direct` or
 // `hidden`, a Peek, except the `PENDING` slots each place task empties as it lands (T143 requires none). Full-screen
 // flows and sub-page patterns resolve as T137 sets them.
 import { PLACE_IDS, PLACES } from '@racer/domain/hub'

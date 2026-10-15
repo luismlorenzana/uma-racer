@@ -1,4 +1,4 @@
-// Pins the rework's Farm catalogue (docs/rework/08-item-catalogue-and-recipes.md §1, §3, §4.3, §4.4, §9). Expected
+// Pins the rework's Farm catalogue (docs/game/08-item-catalogue-and-recipes.md §1, §3, §4.3, §4.4, §9). Expected
 // values are 08's tables copied as written, never recomputed by the code under test.
 import { describe, expect, it } from 'vitest'
 import {

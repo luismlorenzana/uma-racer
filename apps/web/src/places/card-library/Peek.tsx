@@ -1,4 +1,4 @@
-// The Card Library's Peek (docs/rework/11-hub-and-places.md §3.1; T138): the newest cards, the bonds made this tier (every
+// The Card Library's Peek (docs/game/11-hub-and-places.md §3.1; T138): the newest cards, the bonds made this tier (every
 // Uma's, in her current tier), and the cards the featured Uma could bond now.
 import { useMemo } from 'react'
 import { Link } from 'react-router'

@@ -1,4 +1,4 @@
-// The job sheet (docs/rework/07-farm.md §3, §5, §10, §11; docs/rework/02-check-ins-and-notifications.md §3, §6, §9;
+// The job sheet (docs/game/07-farm.md §3, §5, §10, §11; docs/game/02-check-ins-and-notifications.md §3, §6, §9;
 // T140), one for all ten buildings, opened over a building page by its query. Pure readings of the domain:
 // 1. **Uma**: Free first; once an item is chosen, the best suited (`bestExpTenths` over `expFamilies`); then Farm Level,
 //    highest first. A session greys her; her running job here offers Add to queue; one elsewhere, Recall and start here.

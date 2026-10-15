@@ -1,4 +1,4 @@
-// Pins the grade gate: grade g opens at Farm Lv 5g − 4 (docs/rework/08-item-catalogue-and-recipes.md §3, 07 §4, D330).
+// Pins the grade gate: grade g opens at Farm Lv 5g − 4 (docs/game/08-item-catalogue-and-recipes.md §3, 07 §4, D330).
 import { expect, it } from 'vitest'
 import { ITEM_GRADE_LIST } from './catalogue'
 import { canWorkGrade, gradeOpensAtFarmLevel, highestOpenGrade } from './grades'

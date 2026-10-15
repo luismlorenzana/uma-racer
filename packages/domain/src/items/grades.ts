@@ -1,4 +1,4 @@
-// The grade gate (docs/rework/08-item-catalogue-and-recipes.md §3, docs/rework/07-farm.md §4, README, D330): grade g
+// The grade gate (docs/game/08-item-catalogue-and-recipes.md §3, docs/game/07-farm.md §4, README, D330): grade g
 // opens at Farm Lv 5g − 4 (1, 6, 11 … 46) and gates every step, gathering, crafting and cooking a dish of grade g.
 import { ITEM_GRADES, isItemGrade, type ItemGrade } from './catalogue'
 

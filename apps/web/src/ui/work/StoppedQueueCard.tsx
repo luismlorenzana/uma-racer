@@ -1,4 +1,4 @@
-// A stopped queue (docs/rework/02-check-ins-and-notifications.md §3 "Queues", §4; T142), beside T140's work pieces: her
+// A stopped queue (docs/game/02-check-ins-and-notifications.md §3 "Queues", §4; T142), beside T140's work pieces: her
 // face and name, "Pantry ×10 at 06:00", what stopped behind it, "Short 2 Carrot.", and the one-tap ways to put it back:
 // - **Restart** when the stock covers it: `start { outfitId, from: 'dropped' }`, which puts the whole queue back;
 // - **Buy 2 and restart · 190**: asks once with the amount, then one `buy` per short item at `buyFor`'s prices, then

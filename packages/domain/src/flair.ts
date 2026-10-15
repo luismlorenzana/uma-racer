@@ -1,5 +1,5 @@
 // Catalog-v1 award evaluation and Prestige projection (docs/design/badges.md#catalog-v1), on generation 2's catalogue
-// (docs/rework/04-tiers-and-promotion.md §9, 06-cards-and-bonds.md §7, 13-removals-and-plan-changes.md §1,
+// (docs/game/04-tiers-and-promotion.md §9, 06-cards-and-bonds.md §7, 13-removals-and-plan-changes.md §1,
 // 05-training-hub.md §11; T141): Diligent retired, the scenario and level awards redefined, and the tier awards added.
 
 import {

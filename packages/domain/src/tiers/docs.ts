@@ -1,6 +1,6 @@
 // The tier rules' live blocks (docs/game/architecture.md#the-rework-modules "The live manual"): each table the rework pages state
 // that this area owns, rendered from the code so the design can't drift from it. Registered in
-// packages/domain/src/docs/rework.ts. Pure: no I/O.
+// packages/domain/src/docs/render.ts. Pure: no I/O.
 import { HISTORICAL_CARD_NORMALIZATION, TREE_BUDGET_SHARE } from '../constellation'
 import { GATE_SHARD_REWARD, expToNextUmaLevel, raceExp, umaGateShardLedgerId } from '../progression'
 import { LEVELS_PER_SCENARIO } from '../scenarios'

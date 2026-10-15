@@ -1,5 +1,5 @@
-// The Training places' own sentences (docs/rework/05-training-hub.md §8; docs/rework/11-hub-and-places.md §3.2;
-// docs/rework/02-check-ins-and-notifications.md §6, §9; T139): the facility pages, their Peeks, the session sheet and
+// The Training places' own sentences (docs/game/05-training-hub.md §8; docs/game/11-hub-and-places.md §3.2;
+// docs/game/02-check-ins-and-notifications.md §6, §9; T139): the facility pages, their Peeks, the session sheet and
 // the build views. Rules speak through the domain's refusal tables (filled by `ruleWords`); these are labels and
 // headings around them. 02 §9's banned words never appear here (`model.test.ts` holds every template to
 // `hasBannedWord`).

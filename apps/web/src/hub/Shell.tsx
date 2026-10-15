@@ -1,4 +1,4 @@
-// The shell (docs/rework/11-hub-and-places.md §2, §6): the account bar on top, the route between, the bottom bar in the
+// The shell (docs/game/11-hub-and-places.md §2, §6): the account bar on top, the route between, the bottom bar in the
 // thumb zone, and the global sheets' host, at 390×844 first with safe areas and `h-dvh`. A full-screen flow inside a
 // place route (a slot's `fullScreen(rest)`) hides both bars. While the port boots it is a quiet frame: bars without
 // numbers, nothing between. Each page visit is remembered for the start rule.

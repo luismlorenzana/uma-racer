@@ -1,4 +1,4 @@
-// Committing a tap (docs/rework/02-check-ins-and-notifications.md §9, §11; T134): applied with the rows it wrote, repeated
+// Committing a tap (docs/game/02-check-ins-and-notifications.md §9, §11; T134): applied with the rows it wrote, repeated
 // with its first receipt and no rows, or refused with nothing written. A caller's bug throws. Item rows carry each
 // movement's sign; a race writes its `raceResults` row with the scenario she raced in.
 import { describe, expect, it } from 'vitest'

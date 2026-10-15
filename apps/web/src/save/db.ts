@@ -1,4 +1,4 @@
-// The device's copy of generation 2 (docs/rearchitecture/01-target-architecture.md §4.2; docs/rework/02-check-ins-and-
+// The device's copy of generation 2 (docs/rearchitecture/01-target-architecture.md §4.2; docs/game/02-check-ins-and-
 // notifications.md §11; T136): Dexie `uma-racer-g2`, schema version 1, one table per kind and the outbox, and nothing
 // else (the run journals §4.2 first named left with the retired modes). The kind tables hold the rows the server
 // confirmed, as it sent them; `badges` and `flairEvents` also hold the device's own writes until their answer comes.

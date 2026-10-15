@@ -1,4 +1,4 @@
-// The four facilities (docs/rework/05-training-hub.md §1): what each unlocks, which dish family it takes, and which room
+// The four facilities (docs/game/05-training-hub.md §1): what each unlocks, which dish family it takes, and which room
 // takes which unlock. The Observatory opens nodes with Vegetables and the Lineage Hall Inspiration with Mushrooms; the
 // Gym's rooms, one per stat in ring order, take their stat's singles, any Duo with their stat, and any Sun; the Dojo's
 // rooms take their card type's bonds, Friend and Group sharing one. The ids, rooms, slots, levels, speeds and upgrades

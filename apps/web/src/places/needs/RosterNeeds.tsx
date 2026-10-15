@@ -1,4 +1,4 @@
-// The roster view (docs/rework/02-check-ins-and-notifications.md §6 "What it shows"; T142), the Stable's `needs`
+// The roster view (docs/game/02-check-ins-and-notifications.md §6 "What it shows"; T142), the Stable's `needs`
 // sub-page: the targets in allocation order with up, down and remove (`set-targets`), or "Automatic: the five furthest
 // behind" when none is marked; then `rosterTotals`: unlocks left per Uma, each opening her Needs tab, and the dishes
 // short across the roster by family and grade. Big-picture only: place lists stay with the targets.

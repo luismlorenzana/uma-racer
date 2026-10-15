@@ -1,4 +1,4 @@
-// Ledger ids and the audit (docs/rework/09-racing-rewards-and-exchange.md §9): every row's id comes from its cause, and
+// Ledger ids and the audit (docs/game/09-racing-rewards-and-exchange.md §9): every row's id comes from its cause, and
 // over a synthetic month of races, buys and sells the Prize Money deltas sum to the balance and the item deltas to the
 // Warehouse.
 import { describe, expect, it } from 'vitest'

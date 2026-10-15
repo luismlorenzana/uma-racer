@@ -1,4 +1,4 @@
-// Promotion (docs/rework/04-tiers-and-promotion.md §3–§5): what it needs, what it resets, what it keeps, what it pays.
+// Promotion (docs/game/04-tiers-and-promotion.md §3–§5): what it needs, what it resets, what it keeps, what it pays.
 import { describe, expect, it } from 'vitest'
 import { CONTENT, COLT, SPRINTER, placeUma } from '../__fixtures__/tiers'
 import { closeScenarioJourney } from '../scenario-goals'

@@ -1,4 +1,4 @@
-// The game port (T137; docs/rework/11-hub-and-places.md §2; docs/rework/02-check-ins-and-notifications.md §8–§9): the
+// The game port (T137; docs/game/11-hub-and-places.md §2; docs/game/02-check-ins-and-notifications.md §8–§9): the
 // shell and every place read the game only through `G2Game`. `boot.ts` creates it lazily: the in-memory port over
 // synthetic seeds at `/dev/seeds/*` (dev builds), or T136's device save (`save/`), whose `useSave` store adapts to it one to one:
 // - `status` is the store's `lifecycle` (`booting`, `ready`, `error`, with its `words`), `trainerName` the trainer
@@ -24,7 +24,7 @@ import type { Clock } from './clock'
 
 export type G2Status = 'booting' | 'ready' | 'error'
 
-/** The Sync chip (rework/11 §2.1, D157): hidden when `synced`. */
+/** The Sync chip (game/11 §2.1, D157): hidden when `synced`. */
 export type G2Sync = 'synced' | 'offline' | 'paused' | 'waiting' | 'failing'
 
 /** An operation's receipt on this device, and the server's once it answers (02 §9: "Already collected" in place). */
@@ -190,7 +190,7 @@ export function useGame<T>(selector: (snapshot: G2Snapshot) => T): T {
   return selector(useSnapshot())
 }
 
-/** The one 30-second clock (rework/11 §4, 02 §8): stops while the page is hidden, ticks again on return; writes nothing. */
+/** The one 30-second clock (game/11 §4, 02 §8): stops while the page is hidden, ticks again on return; writes nothing. */
 export function useNow(): number {
   const { clock } = useRuntime()
   return useSyncExternalStore(clock.subscribe, clock.get, clock.get)

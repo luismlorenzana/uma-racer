@@ -1,4 +1,4 @@
-// The balance targets the rework's builds are held to (docs/rework/03-uma-progression.md §12, 05 §12, D336 (4); T133).
+// The balance targets the rework's builds are held to (docs/game/03-uma-progression.md §12, 05 §12, D336 (4); T133).
 // `pnpm sim:builds` and `pnpm sim:careers` check them, and the live blocks mark a miss.
 import type { CareerStage } from '../career-stages'
 

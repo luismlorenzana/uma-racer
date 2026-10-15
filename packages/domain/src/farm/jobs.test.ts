@@ -1,4 +1,4 @@
-// The Farm's three jobs (docs/rework/07-farm.md §1–§4): job seconds at each speed from T126's base minutes, the
+// The Farm's three jobs (docs/game/07-farm.md §1–§4): job seconds at each speed from T126's base minutes, the
 // family → site map, what each building makes, Farm EXP by the right family, and the grade gate on every step.
 import { describe, expect, it } from 'vitest'
 import { atFarmLevel, ENV, farmAccount, PLAIN, SPRINTS } from '../__fixtures__/work'

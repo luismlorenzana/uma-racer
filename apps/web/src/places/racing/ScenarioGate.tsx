@@ -1,4 +1,4 @@
-// The Scenario Gate (T141; docs/rework/03-uma-progression.md §4, §5, §10.8; 04 §9; 11 §3.3, §6): every Uma's career at
+// The Scenario Gate (T141; docs/game/03-uma-progression.md §4, §5, §10.8; 04 §9; 11 §3.3, §6): every Uma's career at
 // `/racing/scenario-gate`, one Uma's at `/:umaId`, the Advance sheet (`?sheet=advance`), the Promote sheet
 // (`?sheet=promote`, only for an Uma who holds a completed run: before phase 9, the dev proof), and the full-screen
 // ceremony at `/:umaId/ceremony?op=` after either. Both operations run through the port with their flair in the same

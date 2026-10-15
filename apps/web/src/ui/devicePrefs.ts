@@ -1,4 +1,4 @@
-// This device's conveniences in Account (docs/rework/02-check-ins-and-notifications.md §10; T138): never synced, in
+// This device's conveniences in Account (docs/game/02-check-ins-and-notifications.md §10; T138): never synced, in
 // `uma-racer:g2:` keys. Reduced motion is T137's `motion.tsx` switch; the default race speed is read by T141's run.
 import { useSyncExternalStore } from 'react'
 import { REDUCED_MOTION_KEY, setDeviceReducedMotion } from '../app/motion'

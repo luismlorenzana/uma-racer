@@ -1,5 +1,5 @@
 // The mapping between generation 2's rows and the rework's state (docs/rework/13-removals-and-plan-changes.md §6;
-// docs/rework/07-farm.md §12; T134). `SaveState` is the work engine's state with the full profile: what every operation
+// docs/game/07-farm.md §12; T134). `SaveState` is the work engine's state with the full profile: what every operation
 // reads and returns. Rows map onto it one kind to one part; the ledger keeps only the rows a rule reads. No row is ever
 // deleted: a work row that empties is written as an empty row, and an item used up as a count of 0, so versions never
 // restart and a promoted Uma's dropped work row still syncs.

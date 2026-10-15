@@ -1,4 +1,4 @@
-// Her constellation at the Observatory, full screen (docs/rework/05-training-hub.md §4, §8; docs/rework/11-hub-and-
+// Her constellation at the Observatory, full screen (docs/game/05-training-hub.md §4, §8; docs/game/11-hub-and-
 // places.md §6; T139): `TreeGraph` with pinch zoom, or the **List** of 44 pt rows that VoiceOver reads, each node in its
 // state. Tapping one opens its sheet: an open node's card and the skills it pays there, with the set's other cards
 // under the per-card cap (`set-assignments`, refusals in words); a locked node what it needs and, for the next one,

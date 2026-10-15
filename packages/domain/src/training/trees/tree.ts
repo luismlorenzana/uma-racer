@@ -1,4 +1,4 @@
-// The re-authored constellation trees (docs/rework/05-training-hub.md §4): each scenario's drawing built into a tree
+// The re-authored constellation trees (docs/game/05-training-hub.md §4): each scenario's drawing built into a tree
 // whose node ids are its unlock order, breadth-first from the root (05 §3, 03 §6). Static content: built once, cached
 // and frozen. There are no lineage nodes; Inspiration is the Lineage Hall's own map (05 §5).
 import { cellKey, parseShapeArt, type ShapeCell } from '../../constellation-shapes'

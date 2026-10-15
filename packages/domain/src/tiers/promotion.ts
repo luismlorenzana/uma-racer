@@ -1,4 +1,4 @@
-// Promotion and the Hall of Fame (docs/rework/04-tiers-and-promotion.md §3–§5, §10, D327): an Uma whose tier's World
+// Promotion and the Hall of Fame (docs/game/04-tiers-and-promotion.md §3–§5, §10, D327): an Uma whose tier's World
 // Expedition run is complete may be promoted, once she is free. Everything on her resets (§4's left column), her
 // records and race defaults stay (the middle), the account carries untouched (the right), and she starts the next tier
 // at scenario 1 with a fresh career. Tier 3 doesn't promote: its completed run inducts her into the Hall of Fame,

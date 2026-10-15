@@ -1,4 +1,4 @@
-// The planner's targets (docs/rework/02-check-ins-and-notifications.md §6 "Targets", §10; docs/rework/12-economy-and-
+// The planner's targets (docs/game/02-check-ins-and-notifications.md §6 "Targets", §10; docs/game/12-economy-and-
 // pacing.md §12; uma-rpg's D100): up to five Umas in allocation order, marked by the owner, or, with none marked, the
 // five furthest behind: the Umas with the most unlocks left in their open layers. Marking one ends automatic.
 import { tierRefusal } from '../tiers/refusals'

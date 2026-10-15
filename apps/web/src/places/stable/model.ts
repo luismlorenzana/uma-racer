@@ -1,5 +1,5 @@
-// The Stable's view model (docs/rework/11-hub-and-places.md §3.1, §5; docs/rework/04-tiers-and-promotion.md §6, §10;
-// docs/rework/03-uma-progression.md §2, §12; Collection "Uma album", D176, D181): every outfit in the content as an album
+// The Stable's view model (docs/game/11-hub-and-places.md §3.1, §5; docs/game/04-tiers-and-promotion.md §6, §10;
+// docs/game/03-uma-progression.md §2, §12; Collection "Uma album", D176, D181): every outfit in the content as an album
 // entry, Owned and Locked, the default order (lifetime level, then newest release, then name), each tile's "T2 · Lv 13",
 // Ready from the readiness rules, the planner's targets and the Hall of Fame; the ticket note and when the Shard exchange
 // shows; the roster line; and what an Uma is doing. Pure: the screens draw what this returns. The Uma picker (D181) and

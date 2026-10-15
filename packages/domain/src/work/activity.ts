@@ -1,4 +1,4 @@
-// The activity rule (docs/rework/01-game-loop.md §2, docs/rework/07-farm.md §5, D328): an Uma does one passive thing at
+// The activity rule (docs/game/01-game-loop.md §2, docs/game/07-farm.md §5, D328): an Uma does one passive thing at
 // a time, a Farm job or a Training Hub session, and races in every state. She is Free (nothing started, nothing to
 // collect), Working (an entry is running, maybe with a queue) or Ready (everything finished and waiting for Collect).
 // Starting work for a Ready Uma collects her first; a Working one is refused with her free time; a queue never leaves

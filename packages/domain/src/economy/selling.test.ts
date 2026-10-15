@@ -1,4 +1,4 @@
-// Selling surplus (docs/rework/09-racing-rewards-and-exchange.md §6, §6.1, §9, §11): every cell of 09 §6, the Duos and
+// Selling surplus (docs/game/09-racing-rewards-and-exchange.md §6, §6.1, §9, §11): every cell of 09 §6, the Duos and
 // Feasts, the floor of 1, `sell` with its refusals, the sheet's queries, and no loop that mints time.
 import { describe, expect, it } from 'vitest'
 import {

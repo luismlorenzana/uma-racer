@@ -1,4 +1,4 @@
-// Pins Skill Points from the open tree (docs/rework/03-uma-progression.md §8): the baseline and a Friend or Group node's
+// Pins Skill Points from the open tree (docs/game/03-uma-progression.md §8): the baseline and a Friend or Group node's
 // SP at every T, and 03 §8's URA Finale example.
 import { describe, expect, it } from 'vitest'
 import { spCapAt } from '../tiers/scaling'

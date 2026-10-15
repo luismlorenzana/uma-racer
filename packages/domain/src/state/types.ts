@@ -9,7 +9,7 @@ import type { ItemGrade } from '../items/catalogue'
 export interface Refusal {
   readonly refused: true
   readonly code: string
-  /** Plain words, never protocol names (docs/rework/02-check-ins-and-notifications.md §9). */
+  /** Plain words, never protocol names (docs/game/02-check-ins-and-notifications.md §9). */
   readonly reason: string
   readonly data?: Readonly<Record<string, string | number>>
 }
@@ -41,7 +41,7 @@ export interface ScenarioAt {
 export type OpResult<R, S extends ReworkState = ReworkState> = { readonly state: S; readonly receipt: R } | Refusal
 
 /**
- * The Daily Purse (docs/rework/09-racing-rewards-and-exchange.md §3.3, §9): the day's gross prizes and the featured
+ * The Daily Purse (docs/game/09-racing-rewards-and-exchange.md §3.3, §9): the day's gross prizes and the featured
  * bonuses paid that day. T130's `economy` owns its rules.
  */
 export interface DailyPurse {

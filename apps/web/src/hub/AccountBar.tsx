@@ -1,4 +1,4 @@
-// The account bar (docs/rework/11-hub-and-places.md §2.1): the trainer's initial, Prize Money, Speed Tickets, Uma
+// The account bar (docs/game/11-hub-and-places.md §2.1): the trainer's initial, Prize Money, Speed Tickets, Uma
 // Tickets with the Shards toward the next one, and the Sync chip when anything isn't synced (D157). Every chip is a
 // 44 pt link to the place that sells or spends it. Numbers fill in when the game chunk arrives and move by a CSS
 // transition when they change.

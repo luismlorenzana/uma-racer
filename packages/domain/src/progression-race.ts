@@ -543,7 +543,7 @@ export function parseRaceResultRecord(value: unknown): RaceResultRecord | null {
 }
 
 /**
- * A race as it ran, without what it paid: the generation-2 `finish-race` operation's `run` (docs/rework/09-racing-
+ * A race as it ran, without what it paid: the generation-2 `finish-race` operation's `run` (docs/game/09-racing-
  * rewards-and-exchange.md §9), which its `raceResults` row keeps beside the operation's receipt. The rules that pay a
  * race live in the rework's areas, so the progression fields (levels, EXP, tickets, Shards, goals) stay out.
  */

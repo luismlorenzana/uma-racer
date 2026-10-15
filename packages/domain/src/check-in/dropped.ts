@@ -1,4 +1,4 @@
-// Queue stopped (docs/rework/02-check-ins-and-notifications.md §3 "Queues", §4, §10; docs/rework/07-farm.md §2, §9):
+// Queue stopped (docs/game/02-check-ins-and-notifications.md §3 "Queues", §4, §10; docs/game/07-farm.md §2, §9):
 // a queue whose next entry couldn't be covered drops, and her work row keeps it until the owner restarts or dismisses
 // it. T131 adds the two operation variants that act on it: `start { outfitId, from: 'dropped', count? }` restarts the
 // entry at its size, or at Start ×N's count, and puts the rest of the queue back; `queue { outfitId, dismiss }` clears

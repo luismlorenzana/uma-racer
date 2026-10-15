@@ -1,4 +1,4 @@
-// The job sheet's model (docs/rework/07-farm.md §2, §3, §5, §10, §11; docs/rework/02-check-ins-and-notifications.md §3;
+// The job sheet's model (docs/game/07-farm.md §2, §3, §5, §10, §11; docs/game/02-check-ins-and-notifications.md §3;
 // T140): the query (`back` in-app only); a site's ten raw grades, locked above her Farm Level; the Pantry's family tabs
 // in the ring's order; the Kitchen's eleven tabs with Can cook now; Cook Carrot Salad × 3's inputs; the preview's size
 // chips, minutes, end and whole Farm EXP; the aptitude line and the Uma order; and each button's rule in its own words.

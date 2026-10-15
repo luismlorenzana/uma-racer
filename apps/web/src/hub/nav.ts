@@ -1,4 +1,4 @@
-// How the shell moves (docs/rework/11-hub-and-places.md §1, §2): every place is a link, so Back and the iPhone's edge
+// How the shell moves (docs/game/11-hub-and-places.md §1, §2): every place is a link, so Back and the iPhone's edge
 // swipe work everywhere. A Peek is `/:page?peek=:place` and a global sheet `?sheet=…` on the route it opens over, so
 // Back closes either. An entry pushed from inside the app carries `back`, and leaving it pops history; a deep link
 // replaces itself with where it would have come from.

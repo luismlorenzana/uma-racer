@@ -1,5 +1,5 @@
-// Every rule failure of the Training Hub and the build, in plain words (docs/rework/02-check-ins-and-notifications.md
-// §9, docs/rework/05-training-hub.md §8). `{uma}` and `{card}` are ids the screen turns into names; `{unlock}`, `{needs}`
+// Every rule failure of the Training Hub and the build, in plain words (docs/game/02-check-ins-and-notifications.md
+// §9, docs/game/05-training-hub.md §8). `{uma}` and `{card}` are ids the screen turns into names; `{unlock}`, `{needs}`
 // and `{node}` are labels (`unlockLabel`); the rest are numbers or names. One table, so T131's banned-word test reads
 // every sentence these rules can show.
 import { refuse, type Refusal } from '../state/types'

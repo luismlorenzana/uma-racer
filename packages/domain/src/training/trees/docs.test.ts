@@ -1,4 +1,4 @@
-// The re-authored trees' live blocks in docs/rework/05-training-hub.md §4: the table keeps 05's sizes and caps, and
+// The re-authored trees' live blocks in docs/game/05-training-hub.md §4: the table keeps 05's sizes and caps, and
 // every drawing is shown. The live manual's check (src/docs/docs.test.ts) compares the page itself with them.
 import { describe, expect, it } from 'vitest'
 import { LIVE_BLOCKS } from './docs'

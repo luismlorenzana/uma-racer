@@ -1,4 +1,4 @@
-// The kinds of work the engine runs (docs/game/architecture.md#the-rework-modules; docs/rework/07-farm.md §2; docs/rework/05-training-hub.md
+// The kinds of work the engine runs (docs/game/architecture.md#the-rework-modules; docs/game/07-farm.md §2; docs/game/05-training-hub.md
 // §2). A kind plans a request into items (seconds, inputs, output and Farm EXP each) and pays finished outputs. The
 // engine owns everything else: slots, reserving, the clock, queues, collect, recall and Speed Tickets. T127 registers
 // gather, craft and cook, and T128's `session` (rework/training) joins them; a caller may pass its own table in

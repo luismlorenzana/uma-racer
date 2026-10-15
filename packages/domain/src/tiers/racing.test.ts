@@ -1,4 +1,4 @@
-// Racing Level and Racing EXP (docs/rework/03-uma-progression.md §2): today's curve inside a tier, its holds, the gate's
+// Racing Level and Racing EXP (docs/game/03-uma-progression.md §2): today's curve inside a tier, its holds, the gate's
 // bank, the tier's last gate, and a gate's Uma Shard paid once (04 §6, D336).
 import { describe, expect, it } from 'vitest'
 import { CONTENT, COLT, placeUma, wonCareer } from '../__fixtures__/tiers'

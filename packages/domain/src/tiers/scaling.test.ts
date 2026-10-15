@@ -1,4 +1,4 @@
-// Pins tier scaling (docs/rework/04-tiers-and-promotion.md §7, docs/rework/05-training-hub.md §6, D338).
+// Pins tier scaling (docs/game/04-tiers-and-promotion.md §7, docs/game/05-training-hub.md §6, D338).
 import { describe, expect, it } from 'vitest'
 import { capProfile } from '../constellation'
 import { treeCardNodesAt } from '../training/trees/sizes'

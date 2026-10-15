@@ -1,4 +1,4 @@
-// The check-in summary's own sentences (docs/rework/02-check-ins-and-notifications.md §4, §5, §9; T142): headings,
+// The check-in summary's own sentences (docs/game/02-check-ins-and-notifications.md §4, §5, §9; T142): headings,
 // lines and buttons around the rules' words, which come from the domain's tables (`CHECK_IN_WORDS`, the refusals) and
 // are filled with `showWords`. 02 §9's banned words never appear here (`check-in.test.tsx` holds every template, and
 // every filled one, to `hasBannedWord`).

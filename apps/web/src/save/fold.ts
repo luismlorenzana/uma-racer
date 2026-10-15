@@ -1,5 +1,5 @@
-// The store is a fold of the outbox over what the server confirmed (docs/rework/02-check-ins-and-notifications.md §8–§9,
-// §11; docs/rework/09-racing-rewards-and-exchange.md §8; T136). Pure: the same rows, outbox and content give the same
+// The store is a fold of the outbox over what the server confirmed (docs/game/02-check-ins-and-notifications.md §8–§9,
+// §11; docs/game/09-racing-rewards-and-exchange.md §8; T136). Pure: the same rows, outbox and content give the same
 // state after a reload, and a refused or changed answer rolls a tap back by folding again ("the local purchase rolls
 // back with a notice").
 // 1. It starts from `toSaveState` of the confirmed entities, the ledger's rule rows and the confirmed `operations` rows

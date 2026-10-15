@@ -1,4 +1,4 @@
-// The Card Library place (docs/rework/06-cards-and-bonds.md §6; docs/rework/11-hub-and-places.md §3.1, §7.1; T138): the
+// The Card Library place (docs/game/06-cards-and-bonds.md §6; docs/game/11-hub-and-places.md §3.1, §7.1; T138): the
 // album at its root and each card page at `card/:cardId`, in its own chunk.
 import { lazy, Suspense } from 'react'
 import { PlaceHeader } from '../../ui/PlaceHeader'

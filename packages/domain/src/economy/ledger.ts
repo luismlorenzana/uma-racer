@@ -1,4 +1,4 @@
-// Prize Money and item rows (docs/rework/09-racing-rewards-and-exchange.md §9): every movement is a row whose id comes
+// Prize Money and item rows (docs/game/09-racing-rewards-and-exchange.md §9): every movement is a row whose id comes
 // from what caused it, so phase 3 can find a retried race or operation and write nothing twice. Prize Money rows are
 // T125's `LedgerEntry` (resource `prize-money`); item rows are 13 §6's `itemLedger`, which receipts carry for phase 3
 // to write. The audit: the sum of a currency's deltas equals its balance.

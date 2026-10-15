@@ -1,4 +1,4 @@
-// Uma Tickets, Shards and unlocking (docs/rework/04-tiers-and-promotion.md §6, D336, 13 §5).
+// Uma Tickets, Shards and unlocking (docs/game/04-tiers-and-promotion.md §6, D336, 13 §5).
 import { describe, expect, it } from 'vitest'
 import { CONTENT, COLT, SPRINTER } from '../__fixtures__/tiers'
 import { GATE_SHARD_REWARD } from '../progression'
@@ -105,7 +105,7 @@ describe('exchangeShards', () => {
   })
 })
 
-describe('featureUma (rework/11 §5, T138)', () => {
+describe('featureUma (game/11 §5, T138)', () => {
   const two = () => ok(unlockUma(ok(unlockUma(newAccount(0), { outfitId: COLT.id }, 1, { content: CONTENT })).state,
     { outfitId: SPRINTER.id }, 2, { content: CONTENT })).state
 

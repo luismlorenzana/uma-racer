@@ -1,4 +1,4 @@
-// Pins the re-authored tree sizes and their per-card caps (rework/05 §4), and their parity with today's cap rule.
+// Pins the re-authored tree sizes and their per-card caps (game/05 §4), and their parity with today's cap rule.
 import { describe, expect, it } from 'vitest'
 import { cardFairShare, cardNodeCap, shapeDef } from '../../constellation'
 import { fairShare, perCardCap, TREE_CARD_NODES, treeCardNodes, treeCardNodesAt } from './sizes'

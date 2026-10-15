@@ -1,4 +1,4 @@
-// Farm EXP and Farm Level (docs/rework/07-farm.md §3–§4, README "Shared numbers", D327, D336): 1 EXP per listed minute
+// Farm EXP and Farm Level (docs/game/07-farm.md §3–§4, README "Shared numbers", D327, D336): 1 EXP per listed minute
 // of Farm work × her running aptitude for the family, paid at collection in quarter points; level L → L + 1 costs
 // 480 + 5(L − 1), Lv 1–50 per tier, and EXP stops at Lv 50. A listed minute is a real one, base × TIME_FACTOR before
 // building speed (T127's decision, 07 §14), so the EXP of an item is fixed by `workSeconds(base)` at speed 1. Aptitude

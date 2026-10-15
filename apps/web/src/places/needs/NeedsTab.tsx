@@ -1,4 +1,4 @@
-// Her Needs tab (docs/rework/02-check-ins-and-notifications.md §6 "What it shows"; T142), the body of T138's profile
+// Her Needs tab (docs/game/02-check-ins-and-notifications.md §6 "What it shows"; T142), the body of T138's profile
 // at `/town/stable/outfit/:umaId/needs` through `PROFILE_UI.Needs`, under her header and its target toggle: layer
 // progress ("Observatory 8/12 · …"); the cascade, dishes then crafted then raw, each line in 02 §6's words with its gate
 // and, where the Exchange sells it, **Buy at the Exchange · price**; "about 120 Uma-hours of work"; her three startable

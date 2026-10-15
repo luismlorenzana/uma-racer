@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-// The live router's routes (`G2_ROUTES`, which `createG2Router` serves; docs/rework/11-hub-and-places.md §2.4, §7; T143
+// The live router's routes (`G2_ROUTES`, which `createG2Router` serves; docs/game/11-hub-and-places.md §2.4, §7; T143
 // check 6) in a memory router: every §7.2 row lands on its "After" with its params and search; deleted paths,
 // `/training/<umaId>`, `/cards/redeem`, the seeds' path and unknown paths reach `/`; and `/` opens by the start rule's
 // three cases and the last page.

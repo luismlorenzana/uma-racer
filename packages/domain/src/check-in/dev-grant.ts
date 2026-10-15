@@ -1,5 +1,5 @@
 // `dev-grant`: the rehearsal's one shortcut (M034 "Dev shortcuts are dev-only"; docs/rearchitecture/07-data-reset.md §5;
-// docs/rework/09-racing-rewards-and-exchange.md §9's `dev-grant` reason; T134). A fresh account reaches what takes days
+// docs/game/09-racing-rewards-and-exchange.md §9's `dev-grant` reason; T134). A fresh account reaches what takes days
 // for real: items into the Warehouse, Prize Money, Uma Tickets, an Uma's running work finished now, and a jump to her
 // scenario's gate with her career won. It runs only where the env says `dev: true`: dev builds, and an API started with
 // `DEV_OPERATIONS=true` (T135). Everywhere else it is refused and changes nothing. Every grant is a ledger row, so the

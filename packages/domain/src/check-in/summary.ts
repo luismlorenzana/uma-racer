@@ -1,4 +1,4 @@
-// The check-in summary and Speed up all (docs/rework/02-check-ins-and-notifications.md §1, §4). The sheet reads top to
+// The check-in summary and Speed up all (docs/game/02-check-ins-and-notifications.md §1, §4). The sheet reads top to
 // bottom: Collected, Free with the planner's suggestions, Queue stopped with its fixes, Couldn't repeat, Training done,
 // Ready to advance, Next and Money; an empty section doesn't show. `since` is when this device last showed the sheet
 // (device storage, 02 §10), clamped to `now`. Speed up all takes 1 h, 2 h or "to the next check-in" off every running

@@ -1,4 +1,4 @@
-// The Racing page's Peeks (docs/rework/11-hub-and-places.md §1, §3.3; T141): the Scenario Gate's (the featured Uma's
+// The Racing page's Peeks (docs/game/11-hub-and-places.md §1, §3.3; T141): the Scenario Gate's (the featured Uma's
 // goals in progress and the Umas ready to advance), the Expedition Map's (how many could start an Expedition) and the
 // Trophy Hall's (recent flair). The Racecourse is `direct` and has none: its header carries what a Peek would.
 import { Link } from 'react-router'

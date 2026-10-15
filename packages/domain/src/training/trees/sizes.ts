@@ -1,4 +1,4 @@
-// The re-authored trees' sizes (docs/rework/05-training-hub.md §4, README): 12, 16, 20, 24 and 28 card nodes for a
+// The re-authored trees' sizes (docs/game/05-training-hub.md §4, README): 12, 16, 20, 24 and 28 card nodes for a
 // tier's scenarios 1–5, and the per-card cap from the size (D134). A leaf: T125 and T128 import it, T129 draws the trees.
 import { CARD_SET_SIZE } from '../../constellation'
 import type { ScenarioOfTier } from '../../state/types'

@@ -1,4 +1,4 @@
-// A stopped queue's card, as a pure reading (docs/rework/02-check-ins-and-notifications.md §3 "Queues", §4; T142): the
+// A stopped queue's card, as a pure reading (docs/game/02-check-ins-and-notifications.md §3 "Queues", §4; T142): the
 // entry that couldn't start, where and when ("Pantry ×10 at 06:00"), what came behind it, what was short in the rule's
 // words, and the fixes `queueStopped` offers at today's stock and prices: Restart, Buy and restart, Start ×N, Make them
 // and Dismiss. Every number is the domain's.

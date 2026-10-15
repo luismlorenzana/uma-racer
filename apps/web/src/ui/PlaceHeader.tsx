@@ -1,4 +1,4 @@
-// Every place Page's header (docs/rework/11-hub-and-places.md §1): back, the name, and (i) with the registry's blurb and
+// Every place Page's header (docs/game/11-hub-and-places.md §1): back, the name, and (i) with the registry's blurb and
 // the place's own lines, since explanations live behind (i), never in banners (uma-rpg D95). Back pops to where the Page
 // was opened from, or goes up: a sub-route to its place, a place to its page.
 import { HUB_PAGE_NAMES, hubWords, type Place } from '@racer/domain/hub'

@@ -1,4 +1,4 @@
-// Where the app opens (docs/rework/11-hub-and-places.md §2.4): `/` decides once, at launch. A new account with no Umas
+// Where the app opens (docs/game/11-hub-and-places.md §2.4): `/` decides once, at launch. A new account with no Umas
 // opens the Stable's Locked tab; anything that needs a tap (02 §7) opens the Farm; otherwise the last page viewed on this
 // device, or Town Hall the first time.
 import { isHubPage, type HubPage } from '@racer/domain/hub'

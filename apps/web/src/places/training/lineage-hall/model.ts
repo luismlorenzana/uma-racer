@@ -1,4 +1,4 @@
-// Her lineage at the Lineage Hall (docs/rework/05-training-hub.md §3, §5, §8; D250; T139): 05 §5's map, parents A and B
+// Her lineage at the Lineage Hall (docs/game/05-training-hub.md §3, §5, §8; D250; T139): 05 §5's map, parents A and B
 // above, A1, A2, B1 and B2 below, each slot locked, open or filled in the viewed preset, with its unique and two golds
 // and their states, the skills they pay from whoever fills it (`lineagePays`), and the gold warning of 05 §3 when she
 // has fewer natural golds than the position needs. Filling a slot is `set-lineage` through the Uma picker: owned Umas,

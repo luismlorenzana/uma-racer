@@ -1,4 +1,4 @@
-// What a screen does to the save (docs/rework/02-check-ins-and-notifications.md §9; T136). A tap is one operation: it is
+// What a screen does to the save (docs/game/02-check-ins-and-notifications.md §9; T136). A tap is one operation: it is
 // checked against the store's state with the domain's rule (`recheck`, the stale-screen rule), applied at once and
 // queued, and the server's answer reconciles it later.
 // - `done`: one Dexie transaction adds `op:<id>` to the outbox; then the store takes the new state and the local

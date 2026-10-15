@@ -1,4 +1,4 @@
-// Pins Farm EXP and Farm Level (docs/rework/07-farm.md §3–§4, README "Shared numbers", D336): the curve, the gate
+// Pins Farm EXP and Farm Level (docs/game/07-farm.md §3–§4, README "Shared numbers", D336): the curve, the gate
 // levels' EXP, the cap, the six multipliers and the family → aptitude map.
 import { describe, expect, it } from 'vitest'
 import { gradeOpensAtFarmLevel } from '../items/grades'

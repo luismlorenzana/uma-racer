@@ -1,4 +1,4 @@
-// The check-in summary (docs/rework/02-check-ins-and-notifications.md §1, §2, §4, §5, §9; T142), in T137's `?sheet=
+// The check-in summary (docs/game/02-check-ins-and-notifications.md §1, §2, §4, §5, §9; T142), in T137's `?sheet=
 // check-in` slot: a modal bottom sheet read top to bottom, with **Repeat all** in the thumb zone.
 // - **Collect all** reaches it with `{ collect: true }` in navigation state: it runs `collect-all { shown: readySlots }`
 //   once, then keeps the operation's id in that history entry's state, so a reload shows the same receipt and never

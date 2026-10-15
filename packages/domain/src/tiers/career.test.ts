@@ -1,4 +1,4 @@
-// Careers per scenario (docs/rework/03-uma-progression.md §4): today's planner on the rework's Uma, and the goal
+// Careers per scenario (docs/game/03-uma-progression.md §4): today's planner on the rework's Uma, and the goal
 // settlement on the rework's state.
 import { describe, expect, it } from 'vitest'
 import { CONTENT, COLT, DIRT_PARENT_A, DIRT_PARENT_B, DIRT_PARENT_C, RACES, SPRINTER, placeUma } from '../__fixtures__/tiers'

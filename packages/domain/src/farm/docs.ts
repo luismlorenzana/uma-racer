@@ -1,7 +1,7 @@
-// The Farm's and the facilities' live blocks (docs/game/architecture.md#the-rework-modules "The live manual"): rework/07's job
+// The Farm's and the facilities' live blocks (docs/game/architecture.md#the-rework-modules "The live manual"): game/07's job
 // times (§2), aptitudes and multipliers (§3), the grade ladder of Farm Levels (§4), slots (§6) and upgrades (§7), and
-// rework/05 §7's facility slots and prices, rendered from the code so the pages can't drift. Registered in
-// packages/domain/src/docs/rework.ts. Pure: no I/O.
+// game/05 §7's facility slots and prices, rendered from the code so the pages can't drift. Registered in
+// packages/domain/src/docs/render.ts. Pure: no I/O.
 import type { Grade } from '../types'
 import { ITEM_GRADES, ITEM_GRADE_LIST } from '../items/catalogue'
 import { FAMILIES, type Destination, type FamilyId } from '../items/families'

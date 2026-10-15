@@ -1,4 +1,4 @@
-// The tier rules' live blocks (docs/game/architecture.md#the-rework-modules): the eight tables of rework/03, /04 and /05 this area
+// The tier rules' live blocks (docs/game/architecture.md#the-rework-modules): the eight tables of game/03, /04 and /05 this area
 // owns. docs/docs.test.ts checks each page against them.
 import { describe, expect, it } from 'vitest'
 import { AREA_BLOCKS } from '../docs/render'

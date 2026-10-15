@@ -1,4 +1,4 @@
-// Her Extra Stats map at the Gym, full screen (docs/rework/05-training-hub.md §6, §8; docs/rework/11-hub-and-places.md
+// Her Extra Stats map at the Gym, full screen (docs/game/05-training-hub.md §6, §8; docs/game/11-hub-and-places.md
 // §6; T139): 05 §6's grid of 37 nodes, the five stat columns in ring order and the Sun's, a row of singles per layer
 // with its Sun and, in scenarios 2 and 3, the Duos between their columns. An open node is a switch for the viewed
 // preset (`set-active-nodes`; "Only 9 Extra Stats can be on at once." in the rule's words), under "9 of 9 on"; a locked

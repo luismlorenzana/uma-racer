@@ -1,4 +1,4 @@
-// Bonds (docs/rework/06-cards-and-bonds.md §2, D329): a card enters an Uma's sets only once it is bonded to her, by one
+// Bonds (docs/game/06-cards-and-bonds.md §2, D329): a card enters an Uma's sets only once it is bonded to her, by one
 // Dojo unlock. Its dish family follows the card type and its grade the card's era within her tier: a card first eligible
 // in the tier's scenario p takes grade 2p − 1, older eras counting as p = 1. Bondable when era ≤ T; any number; never
 // undone; reset at promotion (T125's).

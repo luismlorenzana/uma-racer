@@ -1,4 +1,4 @@
-// What a Training Hub session unlocks (docs/rework/05-training-hub.md §1–§3, docs/rework/06-cards-and-bonds.md §2,
+// What a Training Hub session unlocks (docs/game/05-training-hub.md §1–§3, docs/game/06-cards-and-bonds.md §2,
 // D328, D338): the layers of a tier, each unlock's fixed grade and its one exact dish, and the session time per grade.
 // Scenario s of a tier adds its layer: 89 fixed unlocks a tier (28 nodes, 24 Inspiration, 37 Extra Stats) and, at the
 // Dojo, bonds with cards the owner picks, counted at 6, 3, 3, 3, 3 for pacing. 107 a tier.

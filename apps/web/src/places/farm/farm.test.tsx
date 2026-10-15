@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-// The Farm places on screen (docs/rework/07-farm.md §2, §7, §8, §10, §11, §15; T140), through the real routes and the
+// The Farm places on screen (docs/game/07-farm.md §2, §7, §8, §10, §11, §15; T140), through the real routes and the
 // in-memory port on synthetic accounts, its clock held and moved by hand: gather, queue, Collect, −30m and the queued
 // start; cook, reserve and Recall with its preview; an upgrade's slots at once; a fresh account's shortfall and its
 // link; a Make more link returning to `back`; twelve hours away; a reopen; and offline taps.

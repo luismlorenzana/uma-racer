@@ -1,5 +1,5 @@
-// Stats after the rework (docs/rework/03-uma-progression.md §8, docs/rework/04-tiers-and-promotion.md §8,
-// docs/rework/06-cards-and-bonds.md §1, §4): exact invariance, every card at 100%, Extra Stats flat and unbuffed but for
+// Stats after the rework (docs/game/03-uma-progression.md §8, docs/game/04-tiers-and-promotion.md §8,
+// docs/game/06-cards-and-bonds.md §1, §4): exact invariance, every card at 100%, Extra Stats flat and unbuffed but for
 // Foundation, each reviewed buff, aptitudes, uniques and golds only once opened, SP and the full Race Bonus.
 import { describe, expect, it } from 'vitest'
 import { COLT } from '../__fixtures__/tiers'

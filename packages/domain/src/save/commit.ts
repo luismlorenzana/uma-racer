@@ -1,4 +1,4 @@
-// One tap, committed (docs/rework/02-check-ins-and-notifications.md §8–§9, §11; docs/rework/13-removals-and-plan-
+// One tap, committed (docs/game/02-check-ins-and-notifications.md §8–§9, §11; docs/rework/13-removals-and-plan-
 // changes.md §6; T134). Every change to the account is an operation: an envelope with an id chosen before the tap is
 // written, run through `runOnce` at the device's time. The device applies it at once and queues it; the server re-runs
 // the same function on its copy and stores what it gives. An applied commit writes the entities that changed and its

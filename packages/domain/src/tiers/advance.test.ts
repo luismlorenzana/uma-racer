@@ -1,4 +1,4 @@
-// Advancing to the next scenario (docs/rework/03-uma-progression.md §5), and the 14 → 15 rule (04 §2).
+// Advancing to the next scenario (docs/game/03-uma-progression.md §5), and the 14 → 15 rule (04 §2).
 import { describe, expect, it } from 'vitest'
 import { CONTENT, COLT, placeUma } from '../__fixtures__/tiers'
 import { closeScenarioJourney } from '../scenario-goals'

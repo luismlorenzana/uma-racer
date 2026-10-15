@@ -1,4 +1,4 @@
-// A building's upgrade (docs/rework/07-farm.md §7, §10; docs/rework/05-training-hub.md §7, §8; T140, shared with T139):
+// A building's upgrade (docs/game/07-farm.md §7, §10; docs/game/05-training-hub.md §7, §8; T140, shared with T139):
 // the next level's price against what the account holds, item by item, read from `upgradeCost` and from `upgrade` run
 // on the current state, so a disabled button says why in the rule's own words (`prize-money`, `short`). It asks once
 // with its whole cost, then runs `upgrade`. With `adds`, it also says what the level brings (`totalSlots`,

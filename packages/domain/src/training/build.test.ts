@@ -1,4 +1,4 @@
-// Her build (docs/rework/03-uma-progression.md §6, docs/rework/05-training-hub.md §4–§6, docs/rework/06-cards-and-bonds.md
+// Her build (docs/game/03-uma-progression.md §6, docs/game/05-training-hub.md §4–§6, docs/game/06-cards-and-bonds.md
 // §3): what a commit writes in every preset, the carry at the advance, and each preset edit, both ways.
 import { describe, expect, it } from 'vitest'
 import { CONTENT, COLT, SPRINTER, placeUma } from '../__fixtures__/tiers'

@@ -1,4 +1,4 @@
-// Pins the Extra Stats map (docs/rework/05-training-hub.md §6, §9, D338): its 37 ids, each node's stat vector in every
+// Pins the Extra Stats map (docs/game/05-training-hub.md §6, §9, D338): its 37 ids, each node's stat vector in every
 // tier, Foundation's ×1.5, and the capacity that T125's node values assume.
 import { describe, expect, it } from 'vitest'
 import { STATS } from '../types'

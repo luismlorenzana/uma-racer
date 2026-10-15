@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-// The shell (docs/rework/11-hub-and-places.md §2, §4, §12) on the dev seeds through the in-memory port: the pill's
+// The shell (docs/game/11-hub-and-places.md §2, §4, §12) on the dev seeds through the in-memory port: the pill's
 // three states, the tab badges, the chips' links, a tile's VoiceOver line, a Peek then the Page on the second tap, the
 // direct Racecourse, the menu's places, the plaza, full-screen flows, and reduced motion.
 import { hubView, placesOn, tileLabel, placeById } from '@racer/domain/hub'

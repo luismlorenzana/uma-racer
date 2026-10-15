@@ -1,4 +1,4 @@
-// The daily featured board (docs/rework/09-racing-rewards-and-exchange.md §4): three races a day from the regular
+// The daily featured board (docs/game/09-racing-rewards-and-exchange.md §4): three races a day from the regular
 // catalogue, one G1, one G2 or G3 and one OP or Pre-OP, drawn from the local date's seed, so every device shows the same
 // board. Each slot's pool keeps only the races at indices of the day number's parity, so no race is featured two days
 // running; a slot prefers a distance category not yet on the board. The bonus itself is paid by `race-prize.ts`.

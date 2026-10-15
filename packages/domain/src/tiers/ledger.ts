@@ -1,4 +1,4 @@
-// Once-only payments (docs/rework/04-tiers-and-promotion.md §3, §6): every ticket and Shard the tier rules pay is a
+// Once-only payments (docs/game/04-tiers-and-promotion.md §3, §6): every ticket and Shard the tier rules pay is a
 // ledger row whose id names it, so a second payment under the same id pays nothing.
 import { LEDGER_BALANCE, type AccountProfile, type LedgerEntry, type LedgerReason, type ReworkState, type UmaState } from '../state/types'
 

@@ -1,4 +1,4 @@
-// Start race (T141 "The race commit"; docs/rework/09-racing-rewards-and-exchange.md §8–§9; 01 §2): the race is settled
+// Start race (T141 "The race commit"; docs/game/09-racing-rewards-and-exchange.md §8–§9; 01 §2): the race is settled
 // when it starts, before playback. The attempt is prepared from the state as it stands, the timeline simulated, and
 // `finish-race` applied locally with the placement, the day and the board the screen showed; its flair rides in the
 // same transaction. The run page then plays the committed row (`?result=`), so quitting can't change the prize or the

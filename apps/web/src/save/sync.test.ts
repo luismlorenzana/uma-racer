@@ -1,4 +1,4 @@
-// The one sync lane (T136; docs/rework/02-check-ins-and-notifications.md §8–§9, §11): every answer reconciled in one
+// The one sync lane (T136; docs/game/02-check-ins-and-notifications.md §8–§9, §11): every answer reconciled in one
 // transaction (applied, repeated, refused with its notice, invalid, a badge's conflict, an answer that skips a change),
 // one lane in outbox order 100 at a time, its timing (the debounce, hidden, visible, online, the backoff), no retry
 // after a 426, a fresh boot after a 409, and pulls that overlap by five minutes and resume from their cursor.

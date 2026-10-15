@@ -1,4 +1,4 @@
-// The reveal's route (docs/rework/11-hub-and-places.md §6, §7.1; T138): `/collection/reveal/uma/:umaId`, with the Umas
+// The reveal's route (docs/game/11-hub-and-places.md §6, §7.1; T138): `/collection/reveal/uma/:umaId`, with the Umas
 // still to show as `?then=<id>,<id>` and how many there were as `?of=`, so Next reads "Next (2 of 5)" after a reload.
 
 export interface RevealQueue {

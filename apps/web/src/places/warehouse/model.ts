@@ -1,5 +1,5 @@
-// The Warehouse's view model (docs/rework/07-farm.md §10; docs/rework/09-racing-rewards-and-exchange.md §6, §6.1, §8;
-// docs/rework/08-item-catalogue-and-recipes.md §10; T138): every stack on its shelf (Raw · Crafted · Dishes · Tickets)
+// The Warehouse's view model (docs/game/07-farm.md §10; docs/game/09-racing-rewards-and-exchange.md §6, §6.1, §8;
+// docs/game/08-item-catalogue-and-recipes.md §10; T138): every stack on its shelf (Raw · Crafted · Dishes · Tickets)
 // with what's held, reserved (`reservedStock`), coming (`projectWork(...).coming`) and needed (`neededFromStock` over
 // the plan for `targetsOf`); the stock sheet's recipes, sell sizes (`stackCounts`), prices (`sellPrice`) and the one
 // question a sale asks (`sellConfirmations`); and the Peek's biggest stacks, shortfalls and surplus. Pure.

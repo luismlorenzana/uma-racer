@@ -1,4 +1,4 @@
-// `pnpm sim:loop` (D348, docs/rework/12-economy-and-pacing.md §12): the whole economy from a
+// `pnpm sim:loop` (D348, docs/game/12-economy-and-pacing.md §12): the whole economy from a
 // fresh account on the rework's rules, its report, and 12 §12's checks.
 //
 //   pnpm sim:loop                         the baseline (three tiers), the heavy variant and the probes; the report

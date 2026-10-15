@@ -1,4 +1,4 @@
-// What every Training screen reads the same way (docs/rework/05-training-hub.md §2, §3, §8; T139): an unlock's name and
+// What every Training screen reads the same way (docs/game/05-training-hub.md §2, §3, §8; T139): an unlock's name and
 // dish in words, where an unlock stands for her now (open, in her work, available with its stock, waiting on what it
 // names, or in a later layer), the line a locked item shows with what it needs, and the session sheet's link. Pure:
 // the states are the domain's `unlockStatus`, `dependenciesOf` and the work timeline, read, never restated.

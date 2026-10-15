@@ -1,4 +1,4 @@
-// Pins the tier map (docs/rework/04-tiers-and-promotion.md §1–§2) and Racing Level's place in it (03 §2–§3).
+// Pins the tier map (docs/game/04-tiers-and-promotion.md §1–§2) and Racing Level's place in it (03 §2–§3).
 import { describe, expect, it } from 'vitest'
 import {
   RACING_LEVELS_PER_TIER, SCENARIOS_PER_TIER, TIERS, TODAY_CATALOGUE, firstLevel, gateLevel, isLastScenario, lastGate,

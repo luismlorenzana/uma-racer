@@ -1,4 +1,4 @@
-// The Farm's live blocks (docs/game/architecture.md#the-rework-modules "The live manual"): seven tables in rework/07 and /05,
+// The Farm's live blocks (docs/game/architecture.md#the-rework-modules "The live manual"): seven tables in game/07 and /05,
 // registered once. docs/docs.test.ts checks each block's body against the page.
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest'
 import { AREA_BLOCKS } from '../docs/render'
 import { LIVE_BLOCKS } from './docs'
 
-const page = (name: string) => readFileSync(fileURLToPath(new URL(`../../../../docs/rework/${name}`, import.meta.url)), 'utf8')
+const page = (name: string) => readFileSync(fileURLToPath(new URL(`../../../../docs/game/${name}`, import.meta.url)), 'utf8')
 
 describe('the Farm blocks', () => {
   it('render seven tables, each in the page that states it', () => {

@@ -1,4 +1,4 @@
-// A race on generation 2 (T141 "The race commit"; docs/rework/09-racing-rewards-and-exchange.md §8–§9;
+// A race on generation 2 (T141 "The race commit"; docs/game/09-racing-rewards-and-exchange.md §8–§9;
 // docs/design/racing.md): today's `buildPreparedRace`, fed from the rework state. On a copy of the state her session's
 // finished unlocks are collected first (01 §2), so she races with every unlock she has earned; then stats, aptitudes
 // and loadout come from `deriveUmaPreset` on the preset of the race's distance (D254), rivals from `rollRivalFieldAt`

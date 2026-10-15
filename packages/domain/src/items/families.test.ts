@@ -1,4 +1,4 @@
-// Pins the eight families, the ring and the stat cycle (docs/rework/08-item-catalogue-and-recipes.md §2, §4.2, D330).
+// Pins the eight families, the ring and the stat cycle (docs/game/08-item-catalogue-and-recipes.md §2, §4.2, D330).
 import { describe, expect, it } from 'vitest'
 import { FAMILIES, FAMILY_IDS, FAMILY_RING, familyFor, STAT_CYCLE } from './families'
 

@@ -1,5 +1,5 @@
-// A Farm building's page and Peek (docs/rework/07-farm.md §10; docs/rework/11-hub-and-places.md §3.4;
-// docs/rework/02-check-ins-and-notifications.md §6; T140), read from one work view: the header with its level, slots in
+// A Farm building's page and Peek (docs/game/07-farm.md §10; docs/game/11-hub-and-places.md §3.4;
+// docs/game/02-check-ins-and-notifications.md §6; T140), read from one work view: the header with its level, slots in
 // use, speed and the next upgrade against stock; "For your targets", the planner's lines here in 02 §6's words, each
 // opening the job sheet filled in; one card per slot; the Umas with finished outputs here (the Counter), and who Repeat
 // here would take. Pure: every number is the domain's.

@@ -1,6 +1,6 @@
-// The Exchange's live blocks in docs/rework/09-racing-rewards-and-exchange.md (M033): the prize table (§2.1), the purse
+// The Exchange's live blocks in docs/game/09-racing-rewards-and-exchange.md (M033): the prize table (§2.1), the purse
 // bands (§3.3), the raw prices (§5.3) and the sell values (§6), rendered from the code so the page can't drift. Joined
-// into `docs/render.ts` through `docs/rework.ts`. §4's rule table is prose and stays hand-written; §3.4, §5.2 and §5.6
+// into `docs/render.ts`'s `AREA_BLOCKS`. §4's rule table is prose and stays hand-written; §3.4, §5.2 and §5.6
 // are pacing models for `sim:loop` (T132). Pure.
 import { RACE_GRADES, type RaceGrade } from '../types'
 import { craftedItem, ITEM_GRADE_LIST, planetDish, rawItem, type ItemId } from '../items/catalogue'

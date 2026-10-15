@@ -1,4 +1,4 @@
-// Every recipe (docs/rework/08-item-catalogue-and-recipes.md §4): a crafted item from its raw pair at the Pantry, and
+// Every recipe (docs/game/08-item-catalogue-and-recipes.md §4): a crafted item from its raw pair at the Pantry, and
 // every dish at the Kitchen from exact crafted items, with §4.2's side rotation. No substitutions: a recipe names its
 // items, and a higher grade never stands in for a lower one.
 import {

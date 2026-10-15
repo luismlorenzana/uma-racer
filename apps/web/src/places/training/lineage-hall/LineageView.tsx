@@ -1,4 +1,4 @@
-// Her lineage at the Lineage Hall, in the shell (docs/rework/05-training-hub.md §3, §5, §8; T139): 05 §5's map, parents
+// Her lineage at the Lineage Hall, in the shell (docs/game/05-training-hub.md §3, §5, §8; T139): 05 §5's map, parents
 // A and B above with their grandparents below, each slot locked, open or filled in the viewed preset, with its unique
 // and two golds as moons and their states; a locked item names its dish and blocker, and the next ones carry **Unlock**.
 // Filling or changing a slot opens T138's Uma picker (owned Umas, never herself, a refused pick in the rule's words,

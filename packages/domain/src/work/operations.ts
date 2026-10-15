@@ -1,6 +1,6 @@
-// The work operations (docs/rework/13-removals-and-plan-changes.md §6; docs/rework/07-farm.md §2, §5, §7, §8, §11;
-// docs/rework/05-training-hub.md §2, §7; docs/rework/09-racing-rewards-and-exchange.md §5.1, §9;
-// docs/rework/02-check-ins-and-notifications.md §3, §9): `start`, `queue`, `collect`, `recall`, `speed-up`, `finish`
+// The work operations (docs/rework/13-removals-and-plan-changes.md §6; docs/game/07-farm.md §2, §5, §7, §8, §11;
+// docs/game/05-training-hub.md §2, §7; docs/game/09-racing-rewards-and-exchange.md §5.1, §9;
+// docs/game/02-check-ins-and-notifications.md §3, §9): `start`, `queue`, `collect`, `recall`, `speed-up`, `finish`
 // and `upgrade`, each `(state, input, now, env) → { state, receipt } | Refusal`. Every one settles to `now` before and
 // after it runs, so a Finish starts the next queued entry at once, and its receipt lists every item movement for phase
 // 3's `itemLedger`. Refusals are plain words with the data a screen needs to ask again; a malformed input (an unknown

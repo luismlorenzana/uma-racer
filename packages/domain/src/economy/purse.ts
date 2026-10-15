@@ -1,4 +1,4 @@
-// The Daily Purse (docs/rework/09-racing-rewards-and-exchange.md §3.3, §3.4, §8, §9): every race's gross prize fills
+// The Daily Purse (docs/game/09-racing-rewards-and-exchange.md §3.3, §3.4, §8, §9): every race's gross prize fills
 // the account's purse for the day, in order. The first 4,500 pay in full (D348: `sim:loop` moved the edge from 6,000),
 // the rest to 12,000 a quarter, beyond that a twentieth; a race that crosses an edge is split. The day is the device's local date at race start, passed in by the
 // caller (a pure rule can't know the time zone), and the purse never goes back to an earlier day. Prize Money only:

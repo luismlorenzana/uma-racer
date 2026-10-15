@@ -1,4 +1,4 @@
-// A place's uma-art building as a CSS sprite at 2× (docs/rework/11-hub-and-places.md §10.1, §11): a 96 × 96 box on the
+// A place's uma-art building as a CSS sprite at 2× (docs/game/11-hub-and-places.md §10.1, §11): a 96 × 96 box on the
 // pinned atlas, its background twice the atlas's size and positioned from the index, pixels kept crisp. A frame the
 // release doesn't draw yet (§10.3) is a plain sunken square. Imported only by lazy chunks, so the atlas never weighs
 // on the entry.

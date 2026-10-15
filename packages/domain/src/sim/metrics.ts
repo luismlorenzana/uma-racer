@@ -1,5 +1,5 @@
 // What the loop simulation records and reports (T132's "Report", "Measures";
-// docs/rework/12-economy-and-pacing.md §12). The recorder samples the state at every check-in: slots held only change
+// docs/game/12-economy-and-pacing.md §12). The recorder samples the state at every check-in: slots held only change
 // at a check-in (a slot is held from start to Collect, 12 §7), and what ran in between is read back from the entries'
 // timestamps, so nothing is stepped minute by minute. The summary turns the logs into the report's numbers. Pure.
 import { BUILDING_IDS, totalSlots, type BuildingId, type BuildingLevel } from '../farm/buildings'

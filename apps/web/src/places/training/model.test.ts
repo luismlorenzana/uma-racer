@@ -1,5 +1,5 @@
-// The Training places' view models (docs/rework/05-training-hub.md §3, §6, §7, §8; docs/rework/06-cards-and-bonds.md
-// §3; docs/rework/11-hub-and-places.md §3.2; T139) on synthetic accounts built with the rework's own operations: slots by
+// The Training places' view models (docs/game/05-training-hub.md §3, §6, §7, §8; docs/game/06-cards-and-bonds.md
+// §3; docs/game/11-hub-and-places.md §3.2; T139) on synthetic accounts built with the rework's own operations: slots by
 // level and room, a session card's words and times, the Counter, Needs here, the session sheet's list, statuses, pre-pick
 // and Start, each build view's states, and every template against 02 §9's banned words.
 import { clockTime, fitSize, hasBannedWord } from '@racer/domain/check-in'

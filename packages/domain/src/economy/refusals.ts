@@ -1,5 +1,5 @@
-// Every rule failure of a race's prize, `buy` and `sell`, in plain words (docs/rework/02-check-ins-and-notifications.md
-// §9, docs/rework/09-racing-rewards-and-exchange.md §5.5, §6, §8). `{name}` placeholders are filled from the refusal's
+// Every rule failure of a race's prize, `buy` and `sell`, in plain words (docs/game/02-check-ins-and-notifications.md
+// §9, docs/game/09-racing-rewards-and-exchange.md §5.5, §6, §8). `{name}` placeholders are filled from the refusal's
 // data. One table, keyed by what refused, so T131's banned-word test reads every sentence the Exchange can show. The
 // two `quantity` codes differ by operation, which is why the table is keyed by operation first.
 import { refuse, type Refusal } from '../state/types'

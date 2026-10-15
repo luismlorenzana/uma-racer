@@ -1,4 +1,4 @@
-// A Farm building's page (docs/rework/07-farm.md §10; docs/rework/11-hub-and-places.md §3.4, §7.1; T140), one for all
+// A Farm building's page (docs/game/07-farm.md §10; docs/game/11-hub-and-places.md §3.4, §7.1; T140), one for all
 // ten, at 390 × 844 top to bottom: the header (level, slots in use, speed, **Upgrade** against stock, (i)); **For your
 // targets**, each line opening the job sheet filled in; a card per slot; and **Collect here** and **Repeat here** in
 // the thumb zone, whose receipt lists every line and every skip with its reason. The job sheet opens over the page from

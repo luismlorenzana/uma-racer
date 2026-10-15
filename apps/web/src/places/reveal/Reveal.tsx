@@ -1,4 +1,4 @@
-// The collection reveal (docs/rework/11-hub-and-places.md §6; docs/rework/03-uma-progression.md §12; T138): full screen
+// The collection reveal (docs/game/11-hub-and-places.md §6; docs/game/03-uma-progression.md §12; T138): full screen
 // outside the shell, today's reveal on her portrait: "New Uma", her name and outfit, "T1 · URA Finale · Racing Lv 1 ·
 // Farm Lv 1", and the save's state in 02 §9's words. Open profile; with more to show, Next (2 of 5) and Skip all to the
 // Owned tab. Reduced motion: no flip.

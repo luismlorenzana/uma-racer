@@ -1,5 +1,5 @@
-// Speed up all, inside the check-in sheet (docs/rework/02-check-ins-and-notifications.md §4 "Speed Tickets at a
-// check-in"; docs/rework/09-racing-rewards-and-exchange.md §5.1; T142): 1 h, 2 h and "to 13:00" (the next check-in),
+// Speed up all, inside the check-in sheet (docs/game/02-check-ins-and-notifications.md §4 "Speed Tickets at a
+// check-in"; docs/game/09-racing-rewards-and-exchange.md §5.1; T142): 1 h, 2 h and "to 13:00" (the next check-in),
 // each with its ticket count from `speedUpAllPlan`. One confirmation names the count and runs `speed-up { all: true,
 // span, utcOffsetMin }`; when the tickets run short the option reads `speedUpAll`'s own refusal ("Needs 12 Speed
 // Tickets.") with the Exchange's row. Below, **Best use**: up to three running entries from today's plan, each with

@@ -1,4 +1,4 @@
-// The Exchange (docs/rework/09-racing-rewards-and-exchange.md §5, §5.3–§5.5, §8, §9; D331, D336, D338): it sells
+// The Exchange (docs/game/09-racing-rewards-and-exchange.md §5, §5.3–§5.5, §8, §9; D331, D336, D338): it sells
 // Speed Tickets at 30 and raw ingredients at their real gathering minutes, never Uma Tickets, crafted items or dishes.
 // Raw grades are stocked up to the highest any Uma has ever opened, a mark that never drops. Prices follow T126's work
 // values, which already hold the time factor, so nothing here multiplies by it. `buy` is 13 §6's operation.

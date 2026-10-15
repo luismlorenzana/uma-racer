@@ -1,4 +1,4 @@
-// The re-authored trees (docs/rework/05-training-hub.md §4): breadth-first ids, prefixes that stay connected, the
+// The re-authored trees (docs/game/05-training-hub.md §4): breadth-first ids, prefixes that stay connected, the
 // carry at the advance, and parity with today's builder on today's drawings.
 import { describe, expect, it } from 'vitest'
 import { buildTemplate, DRAWN_TIPS, shapeDef } from '../../constellation'

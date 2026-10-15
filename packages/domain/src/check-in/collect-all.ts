@@ -1,4 +1,4 @@
-// Collect all (docs/rework/02-check-ins-and-notifications.md §2, §9; docs/rework/07-farm.md §9): one operation claims
+// Collect all (docs/game/02-check-ins-and-notifications.md §2, §9; docs/game/07-farm.md §9): one operation claims
 // every finished item and unlock across the roster. It settles, then runs T127's `collect` on every slot with something
 // finished, in building, room and slot order, so queues advance as if each entry had started on time. Each slot gets a
 // line: what came in, Farm EXP, levels crossed and grades opened. A slot the screen showed with nothing ready (the other
@@ -75,7 +75,7 @@ export interface CollectAllReceipt {
 
 /**
  * Whether a row holds a finished item not yet collected: a running batch's finished items count. One rule for the
- * pill, the Hub's pips and badges, and Collect all (rework/11 §4, T137).
+ * pill, the Hub's pips and badges, and Collect all (game/11 §4, T137).
  */
 export const hasReady = (row: WorkRow, now: number): boolean => row.entries.some((entry) => finishedCount(entry, now) > entry.collected)
 
@@ -104,7 +104,7 @@ export function needingATap(settled: WorkState, now: number): readonly string[] 
 
 /**
  * How many Umas need a tap at `now` (02 §7): Ready (anything to collect) or Free. The app badge's count in phase 4,
- * and the start rule's in phase 3 (rework/11 §2.4: anything needs a tap → the Farm page).
+ * and the start rule's in phase 3 (game/11 §2.4: anything needs a tap → the Farm page).
  */
 export function needsATap(state: WorkState, now: number, env: WorkEnv): number {
   assertNow(now)

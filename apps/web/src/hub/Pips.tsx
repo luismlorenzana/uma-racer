@@ -1,4 +1,4 @@
-// Slot pips (docs/rework/11-hub-and-places.md §4): up to eight 20 pt pips in two rows of four under a building's name
+// Slot pips (docs/game/11-hub-and-places.md §4): up to eight 20 pt pips in two rows of four under a building's name
 // pill, display only (the tile is the target, and VoiceOver reads its line). Busy: her face in a ring filled by the
 // current item's progress, with "+N" on its shoulder for requests queued behind. Ready: the ring full and gold with a
 // small bounce (none with reduced motion). Free: a hollow ring. The Gym's and Dojo's rings take their room's stat or

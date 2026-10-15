@@ -1,4 +1,4 @@
-// The check-ins' live block (docs/game/architecture.md#the-rework-modules "The live manual"): rework/02 §3's gap table, registered
+// The check-ins' live block (docs/game/architecture.md#the-rework-modules "The live manual"): game/02 §3's gap table, registered
 // once. docs/docs.test.ts checks the block's body against the page.
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest'
 import { AREA_BLOCKS } from '../docs/render'
 import { LIVE_BLOCKS } from './docs'
 
-const page = readFileSync(fileURLToPath(new URL('../../../../docs/rework/02-check-ins-and-notifications.md', import.meta.url)), 'utf8')
+const page = readFileSync(fileURLToPath(new URL('../../../../docs/game/02-check-ins-and-notifications.md', import.meta.url)), 'utf8')
 
 describe('the check-in block', () => {
   it('renders 02 §3 in the page that states it, and joins the registry', () => {

@@ -1,4 +1,4 @@
-// The new game's styles (docs/rework/11-hub-and-places.md §4, §12; CLAUDE.md "Conventions"): only transform and opacity
+// The new game's styles (docs/game/11-hub-and-places.md §4, §12; CLAUDE.md "Conventions"): only transform and opacity
 // move, a HUD number slides by a transition (never a spring), and reduced motion, from the system or Account's switch,
 // stills the Ready pip's bounce and the numbers' slide.
 import { readFileSync } from 'node:fs'

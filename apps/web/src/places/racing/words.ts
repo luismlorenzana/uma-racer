@@ -1,5 +1,5 @@
-// The Racing page's words (docs/rework/09-racing-rewards-and-exchange.md §3.5, §4, §7; 03 §5; 04 §9; 10 "Entry";
-// docs/rework/02-check-ins-and-notifications.md §9): every sentence the four places show, as templates whose numbers
+// The Racing page's words (docs/game/09-racing-rewards-and-exchange.md §3.5, §4, §7; 03 §5; 04 §9; 10 "Entry";
+// docs/game/02-check-ins-and-notifications.md §9): every sentence the four places show, as templates whose numbers
 // come in as `{name}` data from the rules' exports, so no screen restates one. `words.test.ts` holds every template to
 // 02 §9's banned words (which also catch a bare three-digit number).
 import { fill, say } from '@racer/domain/check-in'

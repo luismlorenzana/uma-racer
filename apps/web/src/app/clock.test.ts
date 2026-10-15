@@ -1,4 +1,4 @@
-// The shell's one clock (rework/11 §4, 02 §8): a 30-second tick that stops while the page is hidden and ticks again on
+// The shell's one clock (game/11 §4, 02 §8): a 30-second tick that stops while the page is hidden and ticks again on
 // return, reading the port's time; listeners hear only a change.
 import { describe, expect, it, vi } from 'vitest'
 import { CLOCK_MS, createClock } from './clock'

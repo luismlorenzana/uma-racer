@@ -1,4 +1,4 @@
-// The re-authored silhouettes (docs/rework/05-training-hub.md §4) and the area's purity.
+// The re-authored silhouettes (docs/game/05-training-hub.md §4) and the area's purity.
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'

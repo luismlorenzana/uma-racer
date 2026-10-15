@@ -11,8 +11,9 @@ import { renderBlock, type PackageJson } from './render'
 beforeAll(() => { loopReport() }, 120_000)
 
 const ROOT = fileURLToPath(new URL('../../../../', import.meta.url))
+// The manual: its own pages and the rework pages moved into it as built (T143).
 const DOCS = join(ROOT, 'docs', 'game')
-// The rework's pages carry live blocks for the rules it builds (M033) until they move into the manual (T143).
+// What stays of the rework's folder: Expeditions (phase 9) and the plan, whose §6 lists the operations live.
 const REWORK = join(ROOT, 'docs', 'rework')
 const BLOCK = /<!-- live:([a-z0-9-]+) -->\n[\s\S]*?<!-- \/live -->/g
 const PACKAGES = ['package.json', 'apps/web/package.json', 'apps/api/package.json', 'packages/domain/package.json', 'packages/race/package.json']

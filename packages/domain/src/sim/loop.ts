@@ -1,4 +1,4 @@
-// `pnpm sim:loop`'s core (D348, docs/rework/12-economy-and-pacing.md §12): a deterministic,
+// `pnpm sim:loop`'s core (D348, docs/game/12-economy-and-pacing.md §12): a deterministic,
 // seeded, headless run of the whole economy from a fresh account, built only from the phase-2 modules. Time jumps from
 // check-in to check-in (and midnight, for the weekly stock); T127's settle replays every queue start at its own moment,
 // so nothing between check-ins needs a step. Every change of state goes through the rules' operations; the only

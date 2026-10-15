@@ -1,4 +1,4 @@
-// The re-authored trees' live blocks in docs/rework/05-training-hub.md §4 (M033): the tree table and every drawing,
+// The re-authored trees' live blocks in docs/game/05-training-hub.md §4 (M033): the tree table and every drawing,
 // rendered from the code so the page can't drift from it. Pure: no I/O.
 import { SCENARIOS } from '../../scenarios'
 import { TREE_ART, TREE_MOTIFS } from './shapes'

@@ -1,4 +1,4 @@
-// The Exchange (docs/rework/09-racing-rewards-and-exchange.md §5, §5.3–§5.5, §8, §9): prices, the stock rule and `buy`
+// The Exchange (docs/game/09-racing-rewards-and-exchange.md §5, §5.3–§5.5, §8, §9): prices, the stock rule and `buy`
 // with each refusal in its order and words.
 import { describe, expect, it } from 'vitest'
 import { CONTENT, COLT, SPRINTER } from '../__fixtures__/tiers'

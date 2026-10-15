@@ -1,7 +1,7 @@
-// Racing Level and Racing EXP (docs/rework/03-uma-progression.md §2, D241): today's curve and EXP per finish, inside a
+// Racing Level and Racing EXP (docs/game/03-uma-progression.md §2, D241): today's curve and EXP per finish, inside a
 // tier. Her career holds levels 2 and 5 of each scenario, a gate banks up to the next scenario's first step (100), and
 // the tier's last gate stops EXP: there is no next scenario to bank for. Each gate reached pays 1 Uma Shard once
-// (D336, docs/rework/04-tiers-and-promotion.md §6).
+// (D336, docs/game/04-tiers-and-promotion.md §6).
 import { careerHoldLevel } from '../career-stages'
 import { GATE_SHARD_REWARD, expToNextUmaLevel, raceExp, umaGateShardLedgerId } from '../progression'
 import { isGateLevel } from '../scenarios'

@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-// The check-in on screen (docs/rework/02-check-ins-and-notifications.md §1–§5, §8, §9, §12; T142), through the real
+// The check-in on screen (docs/game/02-check-ins-and-notifications.md §1–§5, §8, §9, §12; T142), through the real
 // routes and the in-memory port on synthetic seeds: Collect all from the pill, once, its receipt kept through a reload
 // and replaced in place by the server's; Repeat all, per-Uma Repeat, Same/Fit, the shrink and Switch notes and every
 // skip's fixes; Start suggestions line by line; Queue stopped's buttons; Speed up all and Best use; stale screens,

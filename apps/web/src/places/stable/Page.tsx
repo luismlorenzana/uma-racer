@@ -1,4 +1,4 @@
-// The Stable (docs/rework/11-hub-and-places.md §3.1; docs/rework/04-tiers-and-promotion.md §6; Collection "Uma album",
+// The Stable (docs/game/11-hub-and-places.md §3.1; docs/game/04-tiers-and-promotion.md §6; Collection "Uma album",
 // D176, D181): the roster in the shared album chrome, Owned and Locked tabs with counts, the ticket note with the Shard
 // exchange, Unlock in a sheet, and the Locked tab's multi-select that unlocks up to the tickets in hand, then reveals
 // them in turn. Each profile (`outfit/:umaId`, `/skills`, `/needs`) is its own chunk.

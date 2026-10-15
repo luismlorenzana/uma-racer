@@ -1,4 +1,4 @@
-// Check-in times and batch sizing (docs/rework/02-check-ins-and-notifications.md §3): the next check-in, the size
+// Check-in times and batch sizing (docs/game/02-check-ins-and-notifications.md §3): the next check-in, the size
 // picker's chips, the marked size, Overnight, and the times setting. Items in base minutes, as the page states them.
 import { describe, expect, it } from 'vitest'
 import { account, clock } from '../__fixtures__/check-in'

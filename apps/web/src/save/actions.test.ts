@@ -1,4 +1,4 @@
-// A tap (T136; docs/rework/02-check-ins-and-notifications.md §9): one operation, written to the outbox before the store
+// A tap (T136; docs/game/02-check-ins-and-notifications.md §9): one operation, written to the outbox before the store
 // publishes it; a refusal or a question writes nothing; a held busy key ignores the second tap; a reload folds to the
 // same state and receipts. Badges and flair are written with their outbox key in one transaction, and the read helpers
 // merge Dexie's logs with the queued taps' own.

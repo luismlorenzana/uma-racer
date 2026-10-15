@@ -1,4 +1,4 @@
-// The bottom bar (docs/rework/11-hub-and-places.md §2.2): Town Hall · Training · (RACE) · Farm · menu. RACE is raised
+// The bottom bar (docs/game/11-hub-and-places.md §2.2): Town Hall · Training · (RACE) · Farm · menu. RACE is raised
 // and opens the Racing page. The active page shows by shape (the two-tone icon and the chamfered underline) as well as
 // colour. Only Farm and Training carry badges: Umas with something to collect there, hidden at 0, so the bar stays
 // quiet.

@@ -1,4 +1,4 @@
-// The check-in summary and Speed up all (docs/rework/02-check-ins-and-notifications.md §4): every section from a
+// The check-in summary and Speed up all (docs/game/02-check-ins-and-notifications.md §4): every section from a
 // synthetic night, empty ones dropped, `since` clamped, the next finish and when all is done; and Speed up all's ticket
 // counts, its clamp to Finish, and its refusal when tickets run short.
 import { describe, expect, it } from 'vitest'

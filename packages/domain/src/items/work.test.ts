@@ -1,4 +1,4 @@
-// Pins step times and work values (docs/rework/08-item-catalogue-and-recipes.md §3, §8; 12 §4; D338). Expected values
+// Pins step times and work values (docs/game/08-item-catalogue-and-recipes.md §3, §8; 12 §4; D338). Expected values
 // are 08's tables copied as written.
 import { describe, expect, it } from 'vitest'
 import { DUOS, FEASTS, ITEM_GRADE_LIST, ITEMS, craftedItem, planetDish, rawItem, SPEED_TICKET_ID, type ItemGrade } from './catalogue'

@@ -1,4 +1,4 @@
-// The web save layer (T136; docs/rework/02-check-ins-and-notifications.md §8–§11; docs/rearchitecture/01-target-
+// The web save layer (T136; docs/game/02-check-ins-and-notifications.md §8–§11; docs/rearchitecture/01-target-
 // architecture.md §4.2–§4.3; docs/rearchitecture/07-data-reset.md §2–§4), and its adapter to the shell's `G2Game` port
 // (T137's `app/game.ts`), one to one:
 // - `status` is the store's `lifecycle`, with its `words` on `error`; `state` the fold; `env` the content's, once open;

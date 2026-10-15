@@ -1,4 +1,4 @@
-// The Card Library's view model (docs/rework/06-cards-and-bonds.md §1–§4, §6, §10; Collection "Card album", D238; T138):
+// The Card Library's view model (docs/game/06-cards-and-bonds.md §1–§4, §6, §10; Collection "Card album", D238; T138):
 // every SSR in the content, open (D329), through a lens (All or one playable scenario) and an optional Uma whose
 // scenario the lens follows. A tile's pill is the Umas bonded in their current tier, or, with an Uma, her `bondStatus`:
 // a bond mark, the grade she needs (`bondGrade`) or a lock. The card page's pay (`cardPay`), skills by node, bond cost

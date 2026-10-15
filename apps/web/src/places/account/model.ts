@@ -1,4 +1,4 @@
-// Account's view model (docs/rework/11-hub-and-places.md §3.1; docs/rework/02-check-ins-and-notifications.md §3, §9;
+// Account's view model (docs/game/11-hub-and-places.md §3.1; docs/game/02-check-ins-and-notifications.md §3, §9;
 // M034 "Dev shortcuts are dev-only"; T138): check-in times as clock times, the sync row's words (D157), and the dev
 // section's grants for `dev-grant`. Pure.
 import { MAX_CHECK_INS, MINUTES_PER_DAY, type DevGrantInput } from '@racer/domain/check-in'

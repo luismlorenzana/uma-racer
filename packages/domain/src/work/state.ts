@@ -1,4 +1,4 @@
-// The work engine's state helpers (docs/rework/07-farm.md §2, §5, §6, §12; docs/rework/13-removals-and-plan-changes.md
+// The work engine's state helpers (docs/game/07-farm.md §2, §5, §6, §12; docs/rework/13-removals-and-plan-changes.md
 // §5–§6): a new account's Farm and Training Hub, slots and who holds them, building order, and the Warehouse's free
 // stock. Pure; every helper returns new objects and never writes into its inputs.
 import type { ItemId } from '../items/catalogue'

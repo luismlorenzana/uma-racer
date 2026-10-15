@@ -1,4 +1,4 @@
-// The Training Hub's live blocks (docs/game/architecture.md#the-rework-modules): the thirteen tables of rework/README, /04, /05 and
+// The Training Hub's live blocks (docs/game/architecture.md#the-rework-modules): the thirteen tables of game/README, /04, /05 and
 // /06 this area owns. docs/docs.test.ts checks each page against them.
 import { describe, expect, it } from 'vitest'
 import { AREA_BLOCKS } from '../docs/render'

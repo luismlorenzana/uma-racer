@@ -1,4 +1,4 @@
-// The app's routes (docs/rework/11-hub-and-places.md §7): `/` is the start rule; `/:page` a page grid, with
+// The app's routes (docs/game/11-hub-and-places.md §7): `/` is the start rule; `/:page` a page grid, with
 // `?peek=:place` for a Peek and `?sheet=menu | featured | check-in` for a global sheet, so Back closes either;
 // `/:page/:place/*` a place's sub-pages, then its Page; `/collection/reveal/uma/:umaId` the full-screen reveal; and
 // the old app's routes redirected by `redirects.ts`. Anything else, deleted paths included, goes to `/`. The live router

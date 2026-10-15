@@ -1,4 +1,4 @@
-// The job sheet (docs/rework/07-farm.md §10; T140), over a building page from its query: **Uma** (`UmaList`), **What**
+// The job sheet (docs/game/07-farm.md §10; T140), over a building page from its query: **Uma** (`UmaList`), **What**
 // (items by grade, tabs at the Pantry and the Kitchen), **How many** (`SizeChips`) with the preview from the kind's own
 // plan, then **Start**, **Add to queue** or **Recall and start here**. A disabled button always says why in the rule's
 // words, a shortfall links to the building that makes it (and the Exchange's row for a stocked raw item), an `ask`

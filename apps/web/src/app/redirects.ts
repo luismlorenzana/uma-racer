@@ -1,4 +1,4 @@
-// Today's routes, sent to the new ones (docs/rework/11-hub-and-places.md §7.2): the router makes each row a
+// Today's routes, sent to the new ones (docs/game/11-hub-and-places.md §7.2): the router makes each row a
 // `<Navigate replace>` that carries its params and search. DELETED WITH PHASE 4: the redirects ship with phase 3 and
 // leave with the next phase that ships, by when the installed app, bookmarks and notification links all use the new
 // paths (§7.2's rule). Deleted paths need no row: they fall to `/` through the route rules (a page that isn't one, or a

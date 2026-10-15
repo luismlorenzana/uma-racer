@@ -1,4 +1,4 @@
-// The session sheet's query (docs/rework/11-hub-and-places.md §1, §7.1; T139): the sheet opens over a facility page from
+// The session sheet's query (docs/game/11-hub-and-places.md §1, §7.1; T139): the sheet opens over a facility page from
 // `?session=:umaId&room=:room&unlocks=<kind>:<target>,…&back=<path>`, plus `&queue=1` (T138's Queue for a busy Uma)
 // and `&slot=n` (a slot card's Start a session). `session` present opens it, empty when the sheet picks her; `back` is an
 // in-app path only. Every place reaches the sheet by this link: a slot, a locked item's Unlock, a Needs line, the

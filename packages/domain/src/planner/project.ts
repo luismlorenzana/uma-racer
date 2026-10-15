@@ -1,5 +1,5 @@
-// What the work ahead will do (docs/rework/02-check-ins-and-notifications.md §3 "Queues", §6 "What counts first";
-// docs/rework/07-farm.md §2): T127's settle, run on a copy to the end of every chain with no collects, decides each
+// What the work ahead will do (docs/game/02-check-ins-and-notifications.md §3 "Queues", §6 "What counts first";
+// docs/game/07-farm.md §2): T127's settle, run on a copy to the end of every chain with no collects, decides each
 // queued entry's start, or its drop and shortfall, exactly as the real settle will, since finished outputs aren't stock
 // until collected. The planner and the queue warnings read this one projection, so they always agree with settle:
 // the free stock it leaves is the Warehouse less what queued entries will take, and the outputs still to come are every

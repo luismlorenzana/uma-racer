@@ -1,4 +1,4 @@
-// The Hub's view (docs/rework/11-hub-and-places.md §2, §4, §5, §14; 02 §2, §7) on synthetic accounts run by the real work
+// The Hub's view (docs/game/11-hub-and-places.md §2, §4, §5, §14; 02 §2, §7) on synthetic accounts run by the real work
 // engine: pips follow the work rows, busy first; past eight slots the eighth pip is "+N"; the pill's counts are
 // `readyCount`'s and `freeUmas`'; the start rule's is `needsATap`'s; tab badges, counters, the featured Uma and the
 // account bar's chips.

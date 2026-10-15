@@ -1,4 +1,4 @@
-// The Stable's Peek (docs/rework/11-hub-and-places.md §3.1; T138): the featured Uma first, "23 Umas · T1 21 · T2 2", the
+// The Stable's Peek (docs/game/11-hub-and-places.md §3.1; T138): the featured Uma first, "23 Umas · T1 21 · T2 2", the
 // Umas ready to advance or promote, and the Uma Tickets in hand.
 import { useMemo } from 'react'
 import { Link } from 'react-router'

@@ -1,5 +1,5 @@
-// Every build view's frame (docs/rework/05-training-hub.md §8; docs/rework/03-uma-progression.md §6, §8;
-// docs/rework/11-hub-and-places.md §6; T139): the place header with Back to where it was opened from, then her header:
+// Every build view's frame (docs/game/05-training-hub.md §8; docs/game/03-uma-progression.md §6, §8;
+// docs/game/11-hub-and-places.md §6; T139): the place header with Back to where it was opened from, then her header:
 // her bust and name, "T1 · URA Finale", the preset switch (`?preset=`, view-only, opening on her selected preset), that
 // preset's five stats and SP (`deriveUmaPreset`), and the Collect chip ("2 unlocks finished", `collect`). An id the
 // Stable doesn't hold says `unknown-uma`'s words with a way to the Stable.

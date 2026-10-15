@@ -1,4 +1,4 @@
-// The place registry (docs/rework/11-hub-and-places.md §1, §3, §10.1; D333): every place on the Hub's four pages, one
+// The place registry (docs/game/11-hub-and-places.md §1, §3, §10.1; D333): every place on the Hub's four pages, one
 // table for the page grids, the tiles, the ☰ menu, the routes and the live manual. Phase 3 draws each page as a DOM
 // grid of tiles (§11), so a place carries a grid `cell` from §3's sketches; phase 6 adds map positions. Imports from
 // the rules' areas are type-only, so the shell's entry chunk can read this file without the rules.

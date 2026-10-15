@@ -1,5 +1,5 @@
 // Careers on the rework's builds (T133): every career on full-layer rework builds against T125's fields
-// (docs/rework/03-uma-progression.md §4, §9 and §12, D137, D336 (4), D349).
+// (docs/game/03-uma-progression.md §4, §9 and §12, D137, D336 (4), D349).
 //
 //   pnpm sim:careers                      coverage of the private content pack + stage win rates at every T = 1–14
 //   pnpm sim:careers -- --content=<dir>   read the pack from another folder (default content/data)

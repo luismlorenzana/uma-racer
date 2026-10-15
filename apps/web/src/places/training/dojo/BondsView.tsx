@@ -1,4 +1,4 @@
-// Her bonds and card set at the Dojo, in the shell (docs/rework/06-cards-and-bonds.md §2, §3, §6; D129; T139): her
+// Her bonds and card set at the Dojo, in the shell (docs/game/06-cards-and-bonds.md §2, §3, §6; D129; T139): her
 // bonds this tier against the pacing count, the viewed preset's six slots (each card's nodes and pay, dimmed with
 // "Newer cards available" once its era falls behind), each slot opening T138's Card Library in pick mode on her bonded
 // cards (`set-card-set`, its refusals in words, its hand-over in one line), and **Bond more**: the Library on the cards

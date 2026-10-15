@@ -1,4 +1,4 @@
-// Selling surplus (docs/rework/09-racing-rewards-and-exchange.md §6, §6.1, §8, §9; D331, D338): any Warehouse item
+// Selling surplus (docs/game/09-racing-rewards-and-exchange.md §6, §6.1, §8, §9; D331, D338): any Warehouse item
 // sells for a third of its work value, rounded down, at least 1. The Exchange sells raw at its full work value, so a
 // buy and a sale lose two thirds and no loop mints time. Speed Tickets can't be sold, and reserved inputs have left the
 // Warehouse count. `sell` is 13 §6's operation; `stackCounts` and `sellConfirmations` are the sheet's queries: the

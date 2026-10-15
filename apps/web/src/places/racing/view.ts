@@ -1,4 +1,4 @@
-// The Racecourse's view models (docs/rework/09-racing-rewards-and-exchange.md §3.5, §4, §7; docs/rework/11-hub-and-
+// The Racecourse's view models (docs/game/09-racing-rewards-and-exchange.md §3.5, §4, §7; docs/game/11-hub-and-
 // places.md §3.3, §9.2; 03 §2): the Uma strip, the purse bar, today's featured board, the pre-race prize, and the
 // result's lines. Pure: the rules give every number (`purseFor`, `bandAt`, `PURSE_BANDS`, `featuredBoard`,
 // `grossPrize`, `payFromPurse`, the race finish's receipt), and the words are `words.ts`'s.

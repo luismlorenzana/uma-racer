@@ -1,4 +1,4 @@
-// The Card Library's album (docs/rework/06-cards-and-bonds.md §6; Collection "Card album", D238; T138): every SSR in the
+// The Card Library's album (docs/game/06-cards-and-bonds.md §6; Collection "Card album", D238; T138): every SSR in the
 // shared chrome, search over name, character and skill text, the lens chips (All and each playable scenario) and the
 // Uma control, whose scenario the lens follows. Tiles keep D238's corners; the bottom-right pill is the bond state.
 // `mode: 'pick'` is the same album for T139's card set tab and session sheet: her lens, the caller's `eligible`

@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-// The planner's own views (docs/rework/02-check-ins-and-notifications.md §6; T142) on the synthetic seeds: her Needs tab
+// The planner's own views (docs/game/02-check-ins-and-notifications.md §6; T142) on the synthetic seeds: her Needs tab
 // in T138's profile shows `needsFor`'s lines, its estimate and its startable lines; the target toggle in her header
 // marks and removes, refusing past five; the roster view orders, moves and removes targets, or reads automatic, and
 // shows `rosterTotals`; a gated line names its gate and the Exchange's row when `buyFor` sells it.

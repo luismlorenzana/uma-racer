@@ -1,4 +1,4 @@
-// What each place shows (docs/rework/11-hub-and-places.md §1, §5, §6; uma-rpg's `places/registry.tsx`): a Peek (the
+// What each place shows (docs/game/11-hub-and-places.md §1, §5, §6; uma-rpg's `places/registry.tsx`): a Peek (the
 // quick look over its page), a Page (its full screen) with sub-page slots, an optional full-screen rule, and an optional
 // counter hook. Every body is a lazy chunk. T137 fills none of them; the place tasks do (T138 Town Hall's places, the
 // plaza, the featured sheet and the reveal; T139 the facilities; T140 the Farm; T141 Racing; T142 the check-in sheet

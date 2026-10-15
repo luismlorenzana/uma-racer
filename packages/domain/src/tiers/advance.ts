@@ -1,4 +1,4 @@
-// Advancing to the next scenario (docs/rework/03-uma-progression.md §5): at the scenario's gate, with every goal of her
+// Advancing to the next scenario (docs/game/03-uma-progression.md §5): at the scenario's gate, with every goal of her
 // career won, and not in the tier's last scenario. Free and explicit. She moves to the gate + 1 and the EXP her gate
 // banked applies there, under the new career's holds. Her build, Farm, work and Expedition stay as they are; T128's
 // `advanceScenario` adds the preset carry (03 §6) on top of this one.

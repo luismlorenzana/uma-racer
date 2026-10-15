@@ -1,4 +1,4 @@
-// Pins the Daily Purse (docs/rework/09-racing-rewards-and-exchange.md §3.3, §3.4, §8, §11). 09 §3.4's rows are copied
+// Pins the Daily Purse (docs/game/09-racing-rewards-and-exchange.md §3.3, §3.4, §8, §11). 09 §3.4's rows are copied
 // as written; they model day totals, so they are checked on a day's whole gross, and race by race within the rounding.
 import { describe, expect, it } from 'vitest'
 import { days } from '../__fixtures__/economy'

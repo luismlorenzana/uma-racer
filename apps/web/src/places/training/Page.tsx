@@ -1,4 +1,4 @@
-// The four Training places' Page (docs/rework/11-hub-and-places.md §3.2, §6, §7.1; T139): `/training/:facility` is the
+// The four Training places' Page (docs/game/11-hub-and-places.md §3.2, §6, §7.1; T139): `/training/:facility` is the
 // facility page (with the session sheet over it from its query), and `/training/:facility/:umaId` her build view
 // there: the Observatory's tree and the Gym's Extra Stats map full screen, the Lineage Hall's map and the Dojo's bonds
 // in the shell. Each view is its own lazy chunk.

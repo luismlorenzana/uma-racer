@@ -1,4 +1,4 @@
-// Sessions on T127's work engine (docs/rework/05-training-hub.md §2): the `session` kind checks a request where its slot
+// Sessions on T127's work engine (docs/game/05-training-hub.md §2): the `session` kind checks a request where its slot
 // is and lists each unlock's dish and seconds; the engine's own `start`, `queue`, `collect`, `recall` and `speed-up` run
 // it. One session per facility reserves N dishes, finishes each unlock at its duration ÷ speed, Collect commits exactly
 // the finished ones and Recall returns the rest.

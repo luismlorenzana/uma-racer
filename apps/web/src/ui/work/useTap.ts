@@ -1,4 +1,4 @@
-// One tap through the game port (docs/rework/02-check-ins-and-notifications.md §9; T140): the port's `run` applies it
+// One tap through the game port (docs/game/02-check-ins-and-notifications.md §9; T140): the port's `run` applies it
 // through the domain's `recheck` and answers `done`, `ask` or `say`. While it runs the tap is pending and its busy key
 // held, so a second tap does nothing; a `say` keeps the rule's words beside the button, an `ask` its question with the
 // input that answers yes, and anything unexpected reads "That didn't work. Try again." (the outbox retries by itself).

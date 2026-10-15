@@ -1,5 +1,5 @@
-// The owner's check-in times and batch sizing (docs/rework/02-check-ins-and-notifications.md §1, §3, §8, §10;
-// docs/rework/12-economy-and-pacing.md §12; docs/rework/13-removals-and-plan-changes.md §6). One to four times a day,
+// The owner's check-in times and batch sizing (docs/game/02-check-ins-and-notifications.md §1, §3, §8, §10;
+// docs/game/12-economy-and-pacing.md §12; docs/rework/13-removals-and-plan-changes.md §6). One to four times a day,
 // by default 08:00, 13:00 and 22:30, in minutes after local midnight. The size picker gives each size its end and the
 // wait to the first check-in after it, and marks the largest size ending by the next check-in ("Fits 13:00"), or by
 // the one after when even ×1 overruns it; the day's earliest check-in reads "Overnight". Local time is the device's,

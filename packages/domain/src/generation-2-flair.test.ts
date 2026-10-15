@@ -1,4 +1,4 @@
-// Generation 2's award catalogue (T141; docs/rework/04-tiers-and-promotion.md §9–§10, 06-cards-and-bonds.md §7,
+// Generation 2's award catalogue (T141; docs/game/04-tiers-and-promotion.md §9–§10, 06-cards-and-bonds.md §7,
 // 13-removals-and-plan-changes.md §1, 05-training-hub.md §11): retired awards are absent, redefined ones read what
 // generation 2 writes, the tier awards and the Trainer's bonded meters are added, and Card Partners survives a
 // promotion, since the ever-bonded set is a projection of every Uma's bonds and tier histories. Synthetic content only.

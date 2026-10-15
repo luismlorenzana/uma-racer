@@ -1,5 +1,5 @@
-// What every build view shares (docs/rework/05-training-hub.md §8; docs/rework/03-uma-progression.md §6, §8;
-// docs/rework/11-hub-and-places.md §3.2, §6; T139): her header (her bust and name, "T1 · URA Finale", the preset the view
+// What every build view shares (docs/game/05-training-hub.md §8; docs/game/03-uma-progression.md §6, §8;
+// docs/game/11-hub-and-places.md §3.2, §6; T139): her header (her bust and name, "T1 · URA Finale", the preset the view
 // edits, that preset's five stats and SP from `deriveUmaPreset`, and the Collect chip for her session's finished,
 // uncollected unlocks), and the preset the view opens on. The preset switch is view-only (`?preset=`), opening on her
 // selected preset (`raceDefaults.selectedPreset`): her profile selects one, and every training screen edits the one it

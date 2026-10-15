@@ -1,4 +1,4 @@
-// The shell's one clock (docs/rework/11-hub-and-places.md §4; docs/rework/02-check-ins-and-notifications.md §8): pips
+// The shell's one clock (docs/game/11-hub-and-places.md §4; docs/game/02-check-ins-and-notifications.md §8): pips
 // and labels redraw every 30 seconds and on return to the app, never per frame, and nothing writes on a tick. It stops
 // while the page is hidden.
 

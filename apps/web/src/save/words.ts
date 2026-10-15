@@ -1,4 +1,4 @@
-// The save's plain words (docs/rework/02-check-ins-and-notifications.md §9; T136). Every sentence the save layer can put
+// The save's plain words (docs/game/02-check-ins-and-notifications.md §9; T136). Every sentence the save layer can put
 // on a screen comes from 02 §9 through the check-in's own table: offline, anything unexpected, and "Already collected."
 // for a line the other device collected. A refusal is said in its rule's words. No code, number or protocol word
 // reaches a screen: a failure kind is for the lane, and only its sentence leaves this module.

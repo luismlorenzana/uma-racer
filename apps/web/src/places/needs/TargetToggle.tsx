@@ -1,4 +1,4 @@
-// The target toggle (docs/rework/02-check-ins-and-notifications.md §6 "Targets"; T142): **Mark as target** or **Remove
+// The target toggle (docs/game/02-check-ins-and-notifications.md §6 "Targets"; T142): **Mark as target** or **Remove
 // target**, one `set-targets` with her added at the end or taken out. Past five, the rule says "Five targets at most."
 // beside the button. It sits on her Needs tab, and in T138's profile header through `PROFILE_UI.TargetToggle`.
 import { MAX_TARGETS } from '@racer/domain/planner'

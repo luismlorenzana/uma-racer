@@ -1,4 +1,4 @@
-// Queues at check-ins (docs/rework/02-check-ins-and-notifications.md §3, §4, §10, §12; docs/rework/07-farm.md §2): a
+// Queues at check-ins (docs/game/02-check-ins-and-notifications.md §3, §4, §10, §12; docs/game/07-farm.md §2): a
 // queue runs overnight with nobody there, its starts don't depend on collect order, a stopped queue shows under Queue
 // stopped with its fixes and goes back in one restart, the card warns before the night, and stock collected later
 // never counts backwards.

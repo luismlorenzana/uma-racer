@@ -1,4 +1,4 @@
-// The Trophy Hall's last visit on this device (T141 "Trophy Hall"; docs/rework/01-game-loop.md §4.2: device
+// The Trophy Hall's last visit on this device (T141 "Trophy Hall"; docs/game/01-game-loop.md §4.2: device
 // conveniences live in `uma-racer:g2:` keys): its counter is the flair earned since. A tiny module, so the counter's
 // hook in the shell's entry reads it without the Trophy Hall's chunk.
 

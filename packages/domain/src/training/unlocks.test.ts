@@ -1,4 +1,4 @@
-// Pins the layers (docs/rework/05-training-hub.md §3, README "Unlocks per scenario layer", D338): every fixed unlock's
+// Pins the layers (docs/game/05-training-hub.md §3, README "Unlocks per scenario layer", D338): every fixed unlock's
 // layer, grade, dish and what it waits on, the session minutes and seconds, and bonds' unlocks (06 §2).
 import { describe, expect, it } from 'vitest'
 import { cardOf } from '../__fixtures__/training'

@@ -1,7 +1,7 @@
 // The builds against the field's live blocks (docs/game/architecture.md#the-rework-modules "The live manual", T133): the stamina
-// ladder, the G1 grid and the career rates on rework builds, and the buffs' typical values, in rework/03 §9, /04 §8 and
+// ladder, the G1 grid and the career rates on rework builds, and the buffs' typical values, in game/03 §9, /04 §8 and
 // /05 §12. They render the reports `pnpm sim:builds` and `pnpm sim:careers` commit with `--write-report`,
-// since the domain can't run the race engine and CI needn't. Registered in packages/domain/src/docs/rework.ts. Pure.
+// since the domain can't run the race engine and CI needn't. Registered in packages/domain/src/docs/render.ts. Pure.
 import { CAREER_STAGES } from '../career-stages'
 import { SCENARIO_BUFFS } from '../scenario-buffs'
 import { CAREER_STAGE_GRADES } from '../scenario-goals'

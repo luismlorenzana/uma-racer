@@ -1,4 +1,4 @@
-// The words every timed thing shows (docs/rework/02-check-ins-and-notifications.md §9; T140): a rule's or a question's
+// The words every timed thing shows (docs/game/02-check-ins-and-notifications.md §9; T140): a rule's or a question's
 // template from the domain filled for the screen, `{uma}` with her template's name, `{item}` with the item's,
 // `{place}` with the building's and `{time}` as a clock time, numbers grouped ("1,200"); and the shared pieces' own
 // copy. 02 §9's banned words never appear here (`work.test.ts` holds every template to `hasBannedWord`).

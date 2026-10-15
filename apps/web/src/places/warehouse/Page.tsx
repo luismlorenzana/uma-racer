@@ -1,4 +1,4 @@
-// The Warehouse (docs/rework/07-farm.md §10; docs/rework/09-racing-rewards-and-exchange.md §6, §8; T138): Raw · Crafted
+// The Warehouse (docs/game/07-farm.md §10; docs/game/09-racing-rewards-and-exchange.md §6, §8; T138): Raw · Crafted
 // · Dishes · Tickets shelves, family and grade filters, a row per stack with what's held, reserved, coming and needed,
 // and the stock sheet: what it is, the recipes that use it, Make more (T140's job sheet), and Sell ×1 / ×10 / Surplus /
 // All free at the live price, asking the one question 09 §6.1 asks before it sells.

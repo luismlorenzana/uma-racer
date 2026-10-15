@@ -1,5 +1,5 @@
 /* The game's own styles (T137), beside the tokens in index.css: the Ready pip's small bounce, a HUD number's
-   slide when it changes (a CSS transition, never a spring), and reduced motion, which stills both (rework/11 §4, §12).
+   slide when it changes (a CSS transition, never a spring), and reduced motion, which stills both (game/11 §4, §12).
    Transform and opacity only. */
 
 :root {

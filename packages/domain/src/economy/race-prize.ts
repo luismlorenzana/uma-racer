@@ -1,4 +1,4 @@
-// A race's prize (docs/rework/09-racing-rewards-and-exchange.md §2.1, §3.3, §4, §7, §9): the prize half of a race's
+// A race's prize (docs/game/09-racing-rewards-and-exchange.md §2.1, §3.3, §4, §7, §9): the prize half of a race's
 // commit, written with its result. The day moves the purse forward, the gross fills it, the purse decides what is paid,
 // and a first win of a featured race pays its win prize again, outside the purse. It reads and writes the profile only,
 // so it never touches Racing EXP (09 §1, §3.3). Not one of 13 §6's operations: phase 3 commits it with the result row.

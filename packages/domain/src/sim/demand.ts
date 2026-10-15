@@ -1,4 +1,4 @@
-// What a tier of training asks of the Farm, per Uma (docs/rework/08-item-catalogue-and-recipes.md §7; M033 cross-task
+// What a tier of training asks of the Farm, per Uma (docs/game/08-item-catalogue-and-recipes.md §7; M033 cross-task
 // acceptance #2): each of T128's fixed unlocks takes its one dish, each bond of the deck the dish of its card's type at
 // its era's grade (06 §2), and T126's `craftedDemand` expands the dishes into crafted items. Pure.
 import type { SupportCardTemplate } from '../content'

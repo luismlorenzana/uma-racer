@@ -1,7 +1,7 @@
-// The check-ins' live block (docs/game/architecture.md#the-rework-modules "The live manual"): rework/02 §3's gap table, rendered
+// The check-ins' live block (docs/game/architecture.md#the-rework-modules "The live manual"): game/02 §3's gap table, rendered
 // from `sizeChips` at the default check-in times with grade-1 items in base minutes, as the page states it. A cell
 // fits each window from its first check-in; while the entry before is ×10, the next one queues behind it and fits the
-// same check-in, as 02 §3's craft row does. Registered in packages/domain/src/docs/rework.ts. Pure: no I/O.
+// same check-in, as 02 §3's craft row does. Registered in packages/domain/src/docs/render.ts. Pure: no I/O.
 import { cookBaseMinutes, craftBaseMinutes, gatherBaseMinutes } from '../items/work'
 import { SECONDS_PER_MINUTE } from '../state/time'
 import { sessionBaseMinutes } from '../training/unlocks'

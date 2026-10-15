@@ -1,4 +1,4 @@
-// The work operations (docs/rework/07-farm.md §2, §5, §7, §8; docs/rework/13-removals-and-plan-changes.md §6):
+// The work operations (docs/game/07-farm.md §2, §5, §7, §8; docs/rework/13-removals-and-plan-changes.md §6):
 // start, queue, collect, recall, speed-up, finish and upgrade, each with its checks in order and its receipt.
 import { describe, expect, it } from 'vitest'
 import {

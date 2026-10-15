@@ -1,4 +1,4 @@
-// The global sheets (docs/rework/11-hub-and-places.md §2.2, §2.3, §5) in today's modal BottomSheet: the menu (every
+// The global sheets (docs/game/11-hub-and-places.md §2.2, §2.3, §5) in today's modal BottomSheet: the menu (every
 // drawn place by page with its counter, then Account and the planner's roster view), the featured Uma's quick sheet
 // (T138's slot) and the check-in sheet (T142's slot). Focus moves into the sheet and returns to what opened it; Escape,
 // the close button, the handle and Back close it.

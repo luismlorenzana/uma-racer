@@ -1,5 +1,5 @@
-// Queue starts in time order (docs/rework/07-farm.md §2 "Which queue starts first", §11;
-// docs/rework/02-check-ins-and-notifications.md §3, §8). Settling to `now` takes, again and again, the earliest row
+// Queue starts in time order (docs/game/07-farm.md §2 "Which queue starts first", §11;
+// docs/game/02-check-ins-and-notifications.md §3, §8). Settling to `now` takes, again and again, the earliest row
 // whose last entry ended by `now` with a queue waiting (ties by building, room and slot order), plans its next request
 // at that moment's speed and starts it at that exact end if the Warehouse's free stock covers its inputs. Otherwise the
 // rest of the queue drops. Finished outputs that aren't collected aren't stock, so the result never depends on which

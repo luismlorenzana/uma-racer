@@ -1,4 +1,4 @@
-// The check-in summary as the sheet draws it (docs/rework/02-check-ins-and-notifications.md §4, §5, §6; T142): pure
+// The check-in summary as the sheet draws it (docs/game/02-check-ins-and-notifications.md §4, §5, §6; T142): pure
 // readings of `checkInSummary` and the receipts of this sheet's Collect all and Repeat, in the screen's words, with
 // each line's link and each fix's operations. Every number and every rule is the domain's: the sections and their
 // order, the suggestions, the stopped queues' fixes (`queueStopped`, `buyFor`, `makeThem`), Speed up all's counts

@@ -161,7 +161,7 @@ export function rivalRunners(tier: number, grade: RaceGrade, distance: number, s
   })
 }
 
-// --- The rework's builds (docs/rework/03-uma-progression.md §8–§9, 04 §7–§8, 05 §4 and §6; T133) ---------------------
+// --- The rework's builds (docs/game/03-uma-progression.md §8–§9, 04 §7–§8, 05 §4 and §6; T133) ---------------------
 // A full-layer build at the game's scenario T on T128's `deriveBuild`: the re-authored tree of N card nodes all open,
 // every card of the current era at 100% (no stars), the Inspiration slots her layers open filled, and the scenario's
 // Extra Stats capacity active. Rivals are T125's `rollRivalFieldAt`. Every Uma, parent and card here is invented.

@@ -1,4 +1,4 @@
-// Race select (T141 "Racecourse"; docs/rework/11-hub-and-places.md §3.3, §9.2; 09 §3.5, §4): the header with the purse
+// Race select (T141 "Racecourse"; docs/game/11-hub-and-places.md §3.3, §9.2; 09 §3.5, §4): the header with the purse
 // bar and the featured bonuses still open, the Uma strip, Today's featured, Next up and every race, then the pre-race
 // sheet. `?uma=&race=` preselects. Racing is never blocked (D328): no lock, no cost, and she races as her current
 // scenario (03 §6). Start race commits the race before it plays (09 §8) and opens the run on the committed result.

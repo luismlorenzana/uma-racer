@@ -1,4 +1,4 @@
-// The check-in summary's readings (docs/rework/02-check-ins-and-notifications.md §3, §4, §5, §9; T142) on synthetic
+// The check-in summary's readings (docs/game/02-check-ins-and-notifications.md §3, §4, §5, §9; T142) on synthetic
 // seeds: the header's `since`; the sections in the domain's order, empty ones absent, a check-in with nothing to fix
 // only Collected and Repeat all; the totals line; suggestions' words and preselected links; each skip's fixes; Speed up
 // all's counts and refusal; Best use; 02 §3's check-in-fits table, cell by cell, as size chips from base-minute items;
@@ -185,7 +185,7 @@ describe('Speed up all and Best use (02 §4)', () => {
 })
 
 describe("size chips (02 §3's check-in-fits table, cell by cell)", () => {
-  const doc = readFileSync(fileURLToPath(new URL('../../../../../docs/rework/02-check-ins-and-notifications.md', import.meta.url)), 'utf8')
+  const doc = readFileSync(fileURLToPath(new URL('../../../../../docs/game/02-check-ins-and-notifications.md', import.meta.url)), 'utf8')
   const block = doc.slice(doc.indexOf('<!-- live:check-in-fits -->'), doc.indexOf('<!-- /live -->', doc.indexOf('<!-- live:check-in-fits -->')))
   const rows = block.split('\n').filter((line) => /^\| (Gather|Craft|Cook|Session) \(/.test(line))
 

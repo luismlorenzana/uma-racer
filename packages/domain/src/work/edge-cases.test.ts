@@ -1,4 +1,4 @@
-// 07 §11's edge cases (docs/rework/07-farm.md §11; docs/rework/02-check-ins-and-notifications.md §8–§9): an empty
+// 07 §11's edge cases (docs/game/07-farm.md §11; docs/game/02-check-ins-and-notifications.md §8–§9): an empty
 // Warehouse, a stale start, an Uma in a session, Umas bought mid-tier, the clock moved either way, two devices.
 import { describe, expect, it } from 'vitest'
 import { clock, ENV, farmAccount, HELPER, minutes, node, ok, PLAIN, SESSION_ENV, STUDENT, withNodes, withStock } from '../__fixtures__/work'

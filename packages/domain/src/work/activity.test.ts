@@ -1,4 +1,4 @@
-// The activity rule (docs/rework/01-game-loop.md §2, docs/rework/07-farm.md §5, D328): Free, Working or Ready, racing
+// The activity rule (docs/game/01-game-loop.md §2, docs/game/07-farm.md §5, D328): Free, Working or Ready, racing
 // in all three, every row of 01 §2's table, and the tier rules' use of it (advancing leaves work alone, promotion needs
 // her Free).
 import { describe, expect, it } from 'vitest'

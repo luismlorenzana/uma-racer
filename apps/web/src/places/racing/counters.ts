@@ -1,4 +1,4 @@
-// The Racing page's own counters (T141; docs/rework/11-hub-and-places.md §3.3): the Racecourse's featured bonuses still
+// The Racing page's own counters (T141; docs/game/11-hub-and-places.md §3.3): the Racecourse's featured bonuses still
 // open and the Trophy Hall's flair since this device's last visit. Hooks in the shell's entry, so the Racecourse's draw
 // loads in its own chunk on first use and the count reads null until it arrives; the Trophy Hall's needs only the
 // records and one device key.

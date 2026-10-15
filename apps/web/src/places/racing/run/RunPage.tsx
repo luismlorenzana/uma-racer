@@ -1,4 +1,4 @@
-// The run and its result (T141 "Run", "Result"; docs/rework/09-racing-rewards-and-exchange.md §7, §8; 11 §6), full
+// The run and its result (T141 "Run", "Result"; docs/game/09-racing-rewards-and-exchange.md §7, §8; 11 §6), full
 // screen at `/racing/racecourse/run?result=:id`. It always plays a committed result: the `raceResults` row's run,
 // rebuilt and simulated on engine v9, so a reload or a reopen lands on the same race. Today's RaceRunScreen behaviour,
 // ported: the PixiJS scene (lazy, with this chunk), HUD, feed, speeds, step, pause, Skip, the wake lock and

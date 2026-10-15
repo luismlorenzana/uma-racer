@@ -1,6 +1,6 @@
-// The work clock (docs/rework/07-farm.md §2 "The clock", §8; docs/rework/09-racing-rewards-and-exchange.md §5.1;
-// docs/rework/02-check-ins-and-notifications.md §8). Numbers only, so phase 7 can move it to `uma-idle`
-// (docs/rework/02-check-ins-and-notifications.md §8): an entry's item k ends at its start plus the first k items'
+// The work clock (docs/game/07-farm.md §2 "The clock", §8; docs/game/09-racing-rewards-and-exchange.md §5.1;
+// docs/game/02-check-ins-and-notifications.md §8). Numbers only, so phase 7 can move it to `uma-idle`
+// (docs/game/02-check-ins-and-notifications.md §8): an entry's item k ends at its start plus the first k items'
 // seconds, less the milliseconds Speed Tickets took off. Nothing ticks; everything derives from the timestamps and the
 // `now` passed in. A clock moved back lengthens the wait and never makes progress negative.
 import { MS_PER_SECOND } from '../state/time'
@@ -42,7 +42,7 @@ export function progress(entry: Timed, now: number): number {
 }
 
 /**
- * How far through its current item the entry is at `now`, 0–1 (rework/11 §4: a busy pip's ring fills by "the current
+ * How far through its current item the entry is at `now`, 0–1 (game/11 §4: a busy pip's ring fills by "the current
  * output's or unlock's progress"): the first item not yet ended, from the previous item's end (or the start, less the
  * tickets) to its own. 0 before the entry starts and 1 once every item has ended, so a clock moved either way stays in
  * range.

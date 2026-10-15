@@ -1,4 +1,4 @@
-// One slot's card (docs/rework/07-farm.md §10; docs/rework/05-training-hub.md §2; T140), the same for a Farm job and a
+// One slot's card (docs/game/07-farm.md §10; docs/game/05-training-hub.md §2; T140), the same for a Farm job and a
 // session (T139 passes its unlock line as `what`). A held slot: her face, name and Farm Level; what it makes with a
 // ring for the current item's progress; "3 / 10 made"; the next item's and the entry's end; her queue; **Collect**
 // while items wait, **−30m** and **Finish** (`SpeedUpControls`), **Recall** (`RecallSheet`) and **+ Queue**. A free

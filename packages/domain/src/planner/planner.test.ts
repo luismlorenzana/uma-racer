@@ -1,4 +1,4 @@
-// The planner (docs/rework/02-check-ins-and-notifications.md §4 "Best use", §6, §12): targets, the cascade against a
+// The planner (docs/game/02-check-ins-and-notifications.md §4 "Best use", §6, §12): targets, the cascade against a
 // brute-force recount, allocation once in target order, what counts as coming, pick cards and gates, the views, her
 // Needs tab and the roster totals.
 import { describe, expect, it } from 'vitest'

@@ -1,4 +1,4 @@
-// The rework's one time factor (docs/rework/README.md "Time model", D338). Every duration is a base formula in minutes
+// The rework's one time factor (docs/game/README.md "Time model", D338). Every duration is a base formula in minutes
 // × TIME_FACTOR, held as whole seconds, then divided by a building's speed (docs/game/architecture.md#the-rework-modules).
 
 /** Every base duration (gather, craft, cook, session) is multiplied by this. The loop simulation tunes it (D338). */

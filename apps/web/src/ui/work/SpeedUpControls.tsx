@@ -1,5 +1,5 @@
-// Speed Tickets on a running job or session (docs/rework/07-farm.md §8; docs/rework/09-racing-rewards-and-exchange.md
-// §5.1; docs/rework/05-training-hub.md §2; T140): **−30m** is `speed-up` with the entry's `startedAt` and one ticket;
+// Speed Tickets on a running job or session (docs/game/07-farm.md §8; docs/game/09-racing-rewards-and-exchange.md
+// §5.1; docs/game/05-training-hub.md §2; T140): **−30m** is `speed-up` with the entry's `startedAt` and one ticket;
 // **Finish · N** is `finish`, N being `ticketsToFinish` of what remains. With too few tickets Finish reads "Buy 3 and
 // finish · 90", asks once, then runs `buy` and `finish` as two operations in order. Under 30 minutes left, it shows the
 // minutes the ticket wastes before it confirms. Nothing shows on a queued, finished or empty slot.

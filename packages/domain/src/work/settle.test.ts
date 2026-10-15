@@ -1,4 +1,4 @@
-// Queue starts in time order (docs/rework/07-farm.md §2, §11; docs/rework/02-check-ins-and-notifications.md §3, §8):
+// Queue starts in time order (docs/game/07-farm.md §2, §11; docs/game/02-check-ins-and-notifications.md §3, §8):
 // exact end times, collected stock only, drops that take the rest of the queue, ties by building, room and slot, and
 // a result that doesn't depend on collect order, on how often the app settled, or on the device.
 import { describe, expect, it } from 'vitest'

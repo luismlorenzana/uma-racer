@@ -1,4 +1,4 @@
-// The Hub's view of the account (docs/rework/11-hub-and-places.md §2.1–§2.4, §3, §4, §5; docs/rework/02-check-ins-
+// The Hub's view of the account (docs/game/11-hub-and-places.md §2.1–§2.4, §3, §4, §5; docs/game/02-check-ins-
 // and-notifications.md §2, §7): what the shell, the page grids and the tiles draw, from one settle at `now`. The pill's
 // Collect all and Check-in counts, the start rule's count, the bar's tab badges, every building's slot pips, each
 // place's default counter, the featured Uma and the account bar's chips. Pure: only the given `now` is read. Every rule

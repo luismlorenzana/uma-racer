@@ -1,5 +1,5 @@
-// Her one build per tier (docs/rework/03-uma-progression.md §6, docs/rework/05-training-hub.md §4–§6,
-// docs/rework/06-cards-and-bonds.md §3): what a finished unlock writes, what the advance carries, and the preset edits.
+// Her one build per tier (docs/game/03-uma-progression.md §6, docs/game/05-training-hub.md §4–§6,
+// docs/game/06-cards-and-bonds.md §3): what a finished unlock writes, what the advance carries, and the preset edits.
 // - Commit: a new node joins all four presets and takes, in each, the set's card with the fewest nodes under its cap
 //   (ties to the earlier slot), or stays empty; a new Extra Stats node turns on in every preset with room; a bond adds
 //   its card. The receipt names every opening and every newly bonded card (06 §7's "ever bonded").

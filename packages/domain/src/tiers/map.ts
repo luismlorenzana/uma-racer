@@ -1,6 +1,6 @@
-// The tier map (docs/rework/04-tiers-and-promotion.md §1–§2, D327): three tiers of five scenarios, scenario s of tier t
+// The tier map (docs/game/04-tiers-and-promotion.md §1–§2, D327): three tiers of five scenarios, scenario s of tier t
 // is the game's scenario T = 5(t − 1) + s, and Racing Level runs 1–50 a tier, ten a scenario
-// (docs/rework/03-uma-progression.md §2–§3). Tier 3 has four scenarios until Japan's 15th is in the catalogue.
+// (docs/game/03-uma-progression.md §2–§3). Tier 3 has four scenarios until Japan's 15th is in the catalogue.
 import { LEVELS_PER_SCENARIO, MAX_SCENARIO_TIER, SCENARIOS } from '../scenarios'
 import type { ScenarioAt, ScenarioOfTier, Tier } from '../state/types'
 

@@ -1,4 +1,4 @@
-// The Racing page's slots (T141; docs/rework/11-hub-and-places.md §1, §3.3, §6): each Page and Peek a lazy chunk, the
+// The Racing page's slots (T141; docs/game/11-hub-and-places.md §1, §3.3, §6): each Page and Peek a lazy chunk, the
 // full-screen flows (the run and its result; the Scenario Gate's ceremony), and the two counters the rework state
 // can't give (`useCounter`). The Scenario Gate's and the Expedition Map's counters are the hub view's.
 import type { PlaceId } from '@racer/domain/hub'

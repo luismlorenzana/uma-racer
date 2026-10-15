@@ -1,4 +1,4 @@
-// A race's prize (docs/rework/09-racing-rewards-and-exchange.md §2.1, §3.3, §4, §9, §11): day, gross, purse, featured
+// A race's prize (docs/game/09-racing-rewards-and-exchange.md §2.1, §3.3, §4, §9, §11): day, gross, purse, featured
 // bonus and pay, in that order, on the profile alone.
 import { describe, expect, it } from 'vitest'
 import { RACES, days, mulberry32 } from '../__fixtures__/economy'

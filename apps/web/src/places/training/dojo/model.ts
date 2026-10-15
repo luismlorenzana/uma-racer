@@ -1,4 +1,4 @@
-// Her bonds and card set at the Dojo (docs/rework/06-cards-and-bonds.md §2, §3, §6; D129; T139): her bonds this tier and
+// Her bonds and card set at the Dojo (docs/game/06-cards-and-bonds.md §2, §3, §6; D129; T139): her bonds this tier and
 // "6 of 9 by scenario 2" (`bondsThrough`); the viewed preset's six slots, each card with the nodes it holds and what one
 // pays (`cardPay`), dimmed with "Newer cards available" where its `eraPct` fell (06 §3); the set a pick would make for a
 // slot (`set-card-set` checks it); the receipt's hand-over and emptied nodes in one line; and which cards she can bond

@@ -1,4 +1,4 @@
-// Rival strength on the re-authored trees (docs/rework/04-tiers-and-promotion.md §7, docs/rework/03-uma-progression.md
+// Rival strength on the re-authored trees (docs/game/04-tiers-and-promotion.md §7, docs/game/03-uma-progression.md
 // §9, D336): today's typical trained Uma and today's handicaps, unchanged, reading the new tree sizes, node values and
 // the scenario's full Extra Stats. Rivals keep today's 84% card factor; it's the rivals' build, not a star.
 // D191's rule holds: a scenario's field is never stronger than a later one's in the catalogue.

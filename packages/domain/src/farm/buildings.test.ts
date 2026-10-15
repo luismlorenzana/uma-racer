@@ -1,4 +1,4 @@
-// Pins the buildings (docs/rework/07-farm.md §1, §6, §7; docs/rework/05-training-hub.md §1, §7): ids against uma-art,
+// Pins the buildings (docs/game/07-farm.md §1, §6, §7; docs/game/05-training-hub.md §1, §7): ids against uma-art,
 // order, rooms, slots, speed and every upgrade price.
 import { readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'

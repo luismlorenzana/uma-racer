@@ -1,4 +1,4 @@
-// Checks the recipes against 08 §7 (docs/rework/08-item-catalogue-and-recipes.md): the representative deck's dish
+// Checks the recipes against 08 §7 (docs/game/08-item-catalogue-and-recipes.md): the representative deck's dish
 // table, expanded through the recipes, gives §7's crafted table cell for cell. §7's numbers belong to the layers and the
 // deck: T132 rewrote them from `tierDemand` (D348, bonds at their era's odd grade) and renders them live. This test only
 // checks the expansion, with both tables copied as T132 wrote them.

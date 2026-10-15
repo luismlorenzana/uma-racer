@@ -1,5 +1,5 @@
-// `finish-race`: a race's commit as one operation (docs/rework/09-racing-rewards-and-exchange.md §8–§9; docs/rework/13-
-// removals-and-plan-changes.md §6; docs/rework/01-game-loop.md §2; T134). One tap pays everything a race pays, at once:
+// `finish-race`: a race's commit as one operation (docs/game/09-racing-rewards-and-exchange.md §8–§9; docs/rework/13-
+// removals-and-plan-changes.md §6; docs/game/01-game-loop.md §2; T134). One tap pays everything a race pays, at once:
 // her session's finished unlocks first (she races with every unlock she has earned), then Racing EXP, her goals and the
 // gate's Shard on the preset of the race's distance (D254), then Prize Money through the Daily Purse with any featured
 // bonus. A Farm job keeps running. The race's id is the operation's, so `runOnce` makes it once-only, and the server

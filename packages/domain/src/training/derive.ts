@@ -1,5 +1,5 @@
-// Stats after the rework (docs/rework/03-uma-progression.md §8, docs/rework/06-cards-and-bonds.md §1, §4,
-// docs/rework/04-tiers-and-promotion.md §8): one preset of her build at the game's scenario T, derived when read (D121).
+// Stats after the rework (docs/game/03-uma-progression.md §8, docs/game/06-cards-and-bonds.md §1, §4,
+// docs/game/04-tiers-and-promotion.md §8): one preset of her build at the game's scenario T, derived when read (D121).
 // - Every card pays 100%: no stars, no Card Level (D329). A node pays nodeValue(T) × eraPct × the buff, split by type.
 // - Card points accumulate as exact integers (share, era and buff percentages) and round once, so moving a card between
 //   nodes never changes a total (D126). Growth multiplies card points only.

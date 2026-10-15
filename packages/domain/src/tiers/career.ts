@@ -1,4 +1,4 @@
-// Her career in each scenario (docs/rework/03-uma-progression.md §4, D137): today's planner, unchanged, frozen when she
+// Her career in each scenario (docs/game/03-uma-progression.md §4, D137): today's planner, unchanged, frozen when she
 // arrives in a scenario. The planner reads a today's Uma, so `careerView` shows it one: her template, her race
 // preferences and the lifetime level of the scenario's first level, which equals today's Uma Level at the same T.
 import type { RaceTemplate, UmaTemplate } from '../content'

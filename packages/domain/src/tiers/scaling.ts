@@ -1,6 +1,6 @@
-// Tier scaling (docs/rework/04-tiers-and-promotion.md §7, D338): caps and SP caps by the game's scenario T, with the
+// Tier scaling (docs/game/04-tiers-and-promotion.md §7, D338): caps and SP caps by the game's scenario T, with the
 // 15th continuing today's +250 and +200 ladders; Extra Stats node values per tier; and the constellation node value,
-// whose 240-point term becomes the scenario's full active Extra Stats, E(t, s) (docs/rework/05-training-hub.md §6).
+// whose 240-point term becomes the scenario's full active Extra Stats, E(t, s) (docs/game/05-training-hub.md §6).
 import { CAP_PROFILES, TREE_BUDGET_SHARE, capProfile } from '../constellation'
 import { SKILL_POINT_CAPS, skillPointCap } from '../scenarios'
 import { STATS, type Stats } from '../types'

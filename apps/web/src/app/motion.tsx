@@ -1,4 +1,4 @@
-// Reduced motion for the new game (docs/rework/11-hub-and-places.md §12; ux "Accessibility and comfort"): on when the
+// Reduced motion for the new game (docs/game/11-hub-and-places.md §12; ux "Accessibility and comfort"): on when the
 // system asks for it or Account's device switch is set (`uma-racer:g2:reducedMotion`, T138). The root applies it through
 // Motion's `MotionConfig` and a `data-reduced-motion` attribute for CSS: no pip bounce, no number transition, instant
 // sheets. The shell runs under `LazyMotion strict`, so only `m.*` components draw.

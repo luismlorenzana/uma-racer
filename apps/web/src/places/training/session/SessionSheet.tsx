@@ -1,4 +1,4 @@
-// The one session sheet (docs/rework/05-training-hub.md §8, §10; docs/rework/06-cards-and-bonds.md §6, §10; T139), over
+// The one session sheet (docs/game/05-training-hub.md §8, §10; docs/game/06-cards-and-bonds.md §6, §10; T139), over
 // a facility page from its query: **Uma** (T138's picker unless the link names her; Queue for her running session here,
 // Recall first for a Farm job), **Room** at the Gym and Dojo, **Unlocks** (her items here with their dish, stock and
 // minutes, or at the Dojo the cards picked from T138's Card Library), and **Confirm** (the dishes to reserve, the time

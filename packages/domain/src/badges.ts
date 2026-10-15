@@ -32,7 +32,7 @@ export const BADGE_FILTER_CATEGORIES = [
 
 export const BADGE_TIER_POINTS = [1, 2, 4, 8, 16] as const
 export const BADGE_ONE_OFF_POINTS = 4
-/** The Hall of Fame badge, a one-off worth four ordinary one-offs (docs/rework/04-tiers-and-promotion.md §9). */
+/** The Hall of Fame badge, a one-off worth four ordinary one-offs (docs/game/04-tiers-and-promotion.md §9). */
 export const HALL_OF_FAME_POINTS = 16
 export const GOAL_RIBBON_POINTS = 1
 export const HONORS_POINTS = 4

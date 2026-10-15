@@ -1,6 +1,6 @@
-// Uma Tickets, Uma Shards and the roster (docs/rework/04-tiers-and-promotion.md §6, D336): a new account holds 20
+// Uma Tickets, Uma Shards and the roster (docs/game/04-tiers-and-promotion.md §6, D336): a new account holds 20
 // tickets; a ticket unlocks an Uma not yet owned, always into tier 1, scenario 1; gates pay Shards, and five Shards make
-// a ticket in an explicit exchange, as today. No Prize Money path makes a ticket. The featured Uma (rework/11 §5) and
+// a ticket in an explicit exchange, as today. No Prize Money path makes a ticket. The featured Uma (game/11 §5) and
 // each Uma's race defaults (03 §6–§7) are the roster's two settings, written by `feature-uma` and `set-race-defaults`
 // (T138).
 import { bestBaseDistance, type RacePreferences } from '../career-shapes'
@@ -140,7 +140,7 @@ export interface FeatureUmaReceipt {
 }
 
 /**
- * `feature-uma { outfitId }` (rework/11 §5, 13 §6; T138): the Town Hall plaza's Uma, any owned one. Featuring the Uma
+ * `feature-uma { outfitId }` (game/11 §5, 13 §6; T138): the Town Hall plaza's Uma, any owned one. Featuring the Uma
  * already featured changes nothing and answers as done.
  */
 export function featureUma<S extends ReworkState>(state: S, input: { readonly outfitId: string }, now: number): OpResult<FeatureUmaReceipt, S> {

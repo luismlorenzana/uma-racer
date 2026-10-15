@@ -1,4 +1,4 @@
-// The re-authored silhouettes (docs/rework/05-training-hub.md §4): every scenario keeps its motif
+// The re-authored silhouettes (docs/game/05-training-hub.md §4): every scenario keeps its motif
 // (docs/design/scenarios.md#constellation-shapes) at its rework size, 12, 16, 20, 24 or 28 card nodes, with exactly that
 // many drawn (D235's six pruned tips are gone).
 //

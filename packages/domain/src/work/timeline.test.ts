@@ -1,4 +1,4 @@
-// The work clock (docs/rework/07-farm.md §2, §8; docs/rework/09-racing-rewards-and-exchange.md §5.1): item ends from
+// The work clock (docs/game/07-farm.md §2, §8; docs/game/09-racing-rewards-and-exchange.md §5.1): item ends from
 // timestamps, progress, Speed Tickets and the chain of queued entries. 07 §2's and 09 §5.1's worked examples run here
 // in base seconds (k = 1), as the pages write them.
 import { describe, expect, it } from 'vitest'
@@ -36,7 +36,7 @@ describe('the clock', () => {
     expect(progress({ startedAt: 0, seconds: [], acceleratedMs: 0 }, 0)).toBe(1)
   })
 
-  it("fills a busy pip by the current item's progress, from start times, within 0–1 with the clock moved either way (rework/11 §4)", () => {
+  it("fills a busy pip by the current item's progress, from start times, within 0–1 with the clock moved either way (game/11 §4)", () => {
     expect(itemProgress(entry, clock('08:00'))).toBe(0)
     expect(itemProgress(entry, clock('07:00'))).toBe(0)
     expect(itemProgress(entry, clock('08:57'))).toBeCloseTo(0.6, 10)

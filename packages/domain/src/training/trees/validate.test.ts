@@ -1,4 +1,4 @@
-// The re-authored trees' drawing rules (docs/rework/05-training-hub.md §4): every tree passes, and the validator refuses
+// The re-authored trees' drawing rules (docs/game/05-training-hub.md §4): every tree passes, and the validator refuses
 // each broken rule in plain words that name the nodes.
 import { describe, expect, it } from 'vitest'
 import { TREE_BOX } from '../../constellation'

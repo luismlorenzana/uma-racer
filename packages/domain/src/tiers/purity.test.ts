@@ -1,6 +1,6 @@
 // The tier rules are pure (docs/game/architecture.md#the-rework-modules "Pure"): no clock, no randomness of their own, no I/O; they
 // never write into their inputs; the same state, input and now give the same result. Their refusals are plain words
-// (docs/rework/02-check-ins-and-notifications.md §9).
+// (docs/game/02-check-ins-and-notifications.md §9).
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'

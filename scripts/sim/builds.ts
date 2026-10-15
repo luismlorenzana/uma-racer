@@ -1,6 +1,6 @@
 // The rework's builds against the field (T133): the stamina ladder and the G1 win rates on rework builds, and each
-// scenario buff's typical value on the rework's typical build (docs/rework/03-uma-progression.md §8–§9,
-// docs/rework/04-tiers-and-promotion.md §7–§8, docs/rework/05-training-hub.md §6 and §12, D152, D349). Every id and
+// scenario buff's typical value on the rework's typical build (docs/game/03-uma-progression.md §8–§9,
+// docs/game/04-tiers-and-promotion.md §7–§8, docs/game/05-training-hub.md §6 and §12, D152, D349). Every id and
 // number is synthetic; this script never reads private or original-game content.
 //
 //   pnpm sim:builds                    stamina ladder at every T = 1–14 + G1 win rates + the buffs' typical values

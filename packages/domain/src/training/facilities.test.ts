@@ -1,4 +1,4 @@
-// Pins the four facilities (docs/rework/05-training-hub.md §1): what each unlocks, its dish families, its rooms and
+// Pins the four facilities (docs/game/05-training-hub.md §1): what each unlocks, its dish families, its rooms and
 // which room takes which unlock.
 import { describe, expect, it } from 'vitest'
 import { cardOf } from '../__fixtures__/training'

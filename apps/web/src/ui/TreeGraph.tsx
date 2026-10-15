@@ -1,5 +1,5 @@
-// An Uma's constellation drawn on `rework/constellation`'s `Tree` (docs/rework/05-training-hub.md §4, §8;
-// docs/rework/11-hub-and-places.md §6; T139). The tree's 0–100 canvas stretches to the validator's 351 × 525 pt graph
+// An Uma's constellation drawn on `rework/constellation`'s `Tree` (docs/game/05-training-hub.md §4, §8;
+// docs/game/11-hub-and-places.md §6; T139). The tree's 0–100 canvas stretches to the validator's 351 × 525 pt graph
 // box (`PHONE_GRAPH_BOX_PT`), scaled to the host's width, so nodes keep the validator's 40 pt spacing; pinch zooms
 // and a drag pans (transform only). Edges are SVG; each node is a DOM button, coloured by its card's type once open.
 // Nodes are 36 pt, under the 44 pt rule: the List view carries every node's action at 44 pt (T139). The old

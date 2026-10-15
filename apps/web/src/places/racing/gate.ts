@@ -1,5 +1,5 @@
-// The Scenario Gate's view models (T141 "Scenario Gate"; docs/rework/03-uma-progression.md §4, §5, §10.8;
-// docs/rework/04-tiers-and-promotion.md §9; 10 "Entry"): every Uma's career, the Advance sheet and the Promote sheet.
+// The Scenario Gate's view models (T141 "Scenario Gate"; docs/game/03-uma-progression.md §4, §5, §10.8;
+// docs/game/04-tiers-and-promotion.md §9; 10 "Entry"): every Uma's career, the Advance sheet and the Promote sheet.
 // "After" comes from running the operation itself on a copy of the state (`advance-scenario`, `promote`), so the sheet
 // shows exactly what the tap will do; the layer and the buff come from rework/training's tables.
 import { careerComplete, goalRaceIds, scenarioJourneySummary, CAREER_STAGE_LABELS, careerStage, DISTANCE_CATEGORIES, STATS, type DistanceCategory, type RaceTemplate, type Stats } from '@racer/domain'

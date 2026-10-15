@@ -1,4 +1,4 @@
-// Repeat (docs/rework/02-check-ins-and-notifications.md §5, §12; docs/rework/07-farm.md §9; docs/rework/05-training-hub.md
+// Repeat (docs/game/02-check-ins-and-notifications.md §5, §12; docs/game/07-farm.md §9; docs/game/05-training-hub.md
 // §2): every row of 02 §5's table, same or fit, Collect all then Repeat all always finding slots, and competing Umas
 // taking the stock in slot order.
 import { describe, expect, it } from 'vitest'

@@ -1,4 +1,4 @@
-// An Uma's profile (docs/rework/11-hub-and-places.md §3.1; docs/rework/03-uma-progression.md §2, §6–§8, §12; Collection
+// An Uma's profile (docs/game/11-hub-and-places.md §3.1; docs/game/03-uma-progression.md §2, §6–§8, §12; Collection
 // "Uma album"; T138): her header with "T1 · URA Finale · Racing Lv 1 · Farm Lv 1", both EXP bars, what she's doing and
 // T142's target slot; Previous, Next and a swipe through the Stable's filtered order; Overview (the preset switch and
 // that preset's stats, her build per facility, Collect, her career, Advance or Promote, Feature her), Needs (T142's;

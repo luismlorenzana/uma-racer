@@ -1,4 +1,4 @@
-// The Extra Stats map (docs/rework/05-training-hub.md §3, §6, §9, D338): 37 nodes a tier. A single per stat per scenario
+// The Extra Stats map (docs/game/05-training-hub.md §3, §6, §9, D338): 37 nodes a tier. A single per stat per scenario
 // at the scenario's first grade (1, 3, 5, 7, 9); the four ring Duos at the Duo grades (3 and 5); a Sun from each Feast
 // (4, 6, 8, 10). Values per kind and tier are T125's (`extraNodeValues`); Foundation's ×1.5 is the reviewed buffs'.
 // Active capacity per preset is 7, 9, 11, 13 and 15 by scenario of the tier.

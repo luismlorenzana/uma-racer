@@ -1,5 +1,5 @@
-// Every tap is one operation, applied once (docs/rework/02-check-ins-and-notifications.md §9; docs/rework/13-removals-
-// and-plan-changes.md §6; docs/rework/07-farm.md §11). An operation carries an id chosen before it is written; `runOnce`
+// Every tap is one operation, applied once (docs/game/02-check-ins-and-notifications.md §9; docs/rework/13-removals-
+// and-plan-changes.md §6; docs/game/07-farm.md §11). An operation carries an id chosen before it is written; `runOnce`
 // returns the receipt stored under that id and changes nothing, or runs the operation and stores its first receipt in
 // the `operations` log, so a retried Collect all or Repeat pays, reserves and starts nothing twice. A refusal changes
 // nothing and stores nothing. `recheck` is the stale-screen rule: an action is checked against the latest state and

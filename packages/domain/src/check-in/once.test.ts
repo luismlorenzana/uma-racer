@@ -1,4 +1,4 @@
-// Retries, stale screens and the clock (docs/rework/02-check-ins-and-notifications.md §8, §9, §12): an operation runs
+// Retries, stale screens and the clock (docs/game/02-check-ins-and-notifications.md §8, §9, §12): an operation runs
 // once under its id; every stale-screen case ends in a result or a one-sentence question, never an error; a clock
 // moved forward makes work Ready and Collect all accepts it; one moved back makes waits longer, never negative.
 import { describe, expect, it } from 'vitest'

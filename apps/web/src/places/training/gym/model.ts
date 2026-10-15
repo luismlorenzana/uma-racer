@@ -1,4 +1,4 @@
-// Her Extra Stats map at the Gym (docs/rework/05-training-hub.md §3, §6, §8; T139): 05 §6's 37 nodes, in columns by
+// Her Extra Stats map at the Gym (docs/game/05-training-hub.md §3, §6, §8; T139): 05 §6's 37 nodes, in columns by
 // `EXTRA_STATS` (the ring: Stamina, Wit, Power, Speed, Guts) and then the Sun, in rows by layer and grade, each with its
 // value at her tier and scenario (`extraNodeStats`) and its state; open nodes on or off in the viewed preset, "9 of 9 on"
 // against `extraCapacity`. A switch runs `set-active-nodes`, whose `over-capacity` reads in its own words. A Duo sits

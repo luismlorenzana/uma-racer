@@ -1,4 +1,4 @@
-// Plain words and purity (docs/rework/02-check-ins-and-notifications.md §9; docs/game/architecture.md#the-rework-modules "Pure"): no
+// Plain words and purity (docs/game/02-check-ins-and-notifications.md §9; docs/game/architecture.md#the-rework-modules "Pure"): no
 // banned word in any sentence the check-in, the planner or any rework refusal table can show, and the check-in and
 // planner read no clock, roll no dice, do no I/O, touch no browser global, never write into their inputs and repeat
 // themselves exactly.

@@ -1,5 +1,5 @@
-// The shared work pieces' models (docs/rework/07-farm.md §2, §6, §8, §10; docs/rework/09-racing-rewards-and-exchange.md
-// §5.1; docs/rework/02-check-ins-and-notifications.md §3, §9; T140): slot cards follow `totalSlots` at every level; 07
+// The shared work pieces' models (docs/game/07-farm.md §2, §6, §8, §10; docs/game/09-racing-rewards-and-exchange.md
+// §5.1; docs/game/02-check-ins-and-notifications.md §3, §9; T140): slot cards follow `totalSlots` at every level; 07
 // §2's Potato job reads "3 / 10 made" with its times from `itemEnds` and `endsAt`; SpeedUpControls' four states; a
 // Recall's preview equals the receipt `recall` gives; queue chips' ends and warnings; the size chips in `sizeChips`'
 // words; and every template passes 02 §9's banned words.

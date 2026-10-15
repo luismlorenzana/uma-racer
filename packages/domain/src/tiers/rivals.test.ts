@@ -1,4 +1,4 @@
-// Pins rival strength on the new trees (docs/rework/04-tiers-and-promotion.md §7, 03 §9) and its parity with today's
+// Pins rival strength on the new trees (docs/game/04-tiers-and-promotion.md §7, 03 §9) and its parity with today's
 // rival rules when both build on the same trained stat.
 import { describe, expect, it } from 'vitest'
 import { fieldTrainedStat, rivalPreset, rollRivalField, type RivalRng } from '../opponents'

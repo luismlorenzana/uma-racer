@@ -1,4 +1,4 @@
-// Repeat (docs/rework/02-check-ins-and-notifications.md §5; docs/rework/07-farm.md §9; docs/rework/05-training-hub.md
+// Repeat (docs/game/02-check-ins-and-notifications.md §5; docs/game/07-farm.md §9; docs/game/05-training-hub.md
 // §2): restarts each Free Uma's last job or session where the stock allows. Umas go in the order of their last slots,
 // each seeing the stock the ones before left and taking the lowest free slot at the same building and room, so Collect
 // all then Repeat all always finds one. The size is the last one, or the fitted one when the profile says `fit`, shrunk

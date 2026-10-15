@@ -1,4 +1,4 @@
-// Pins bonds (docs/rework/06-cards-and-bonds.md §2): the family by card type, 06 §2's era-to-grade table in all three
+// Pins bonds (docs/game/06-cards-and-bonds.md §2): the family by card type, 06 §2's era-to-grade table in all three
 // tiers, and a bond's status.
 import { describe, expect, it } from 'vitest'
 import { cardOf } from '../__fixtures__/training'

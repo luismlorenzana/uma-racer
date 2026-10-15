@@ -1,5 +1,5 @@
-// The building page's model (docs/rework/07-farm.md §10; docs/rework/11-hub-and-places.md §3.4;
-// docs/rework/02-check-ins-and-notifications.md §6; T140): the header and its upgrade against stock, the Counter as the
+// The building page's model (docs/game/07-farm.md §10; docs/game/11-hub-and-places.md §3.4;
+// docs/game/02-check-ins-and-notifications.md §6; T140): the header and its upgrade against stock, the Counter as the
 // Hub counts it, the targets' lines in 02 §6's words with the gate and the Exchange link only when stocked, a line's
 // sheet filled in, and a site's stock by open grade. Every template passes 02 §9's banned words.
 import { hubView } from '@racer/domain/hub'

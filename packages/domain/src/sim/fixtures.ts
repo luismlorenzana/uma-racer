@@ -1,6 +1,6 @@
 // The loop simulation's synthetic content (T132's "Policies", docs/rework/13-removals-and-plan-
 // changes.md §5): invented Uma templates, support cards and a race catalogue today's career planner accepts, and the
-// representative deck (docs/rework/06-cards-and-bonds.md §2, docs/rework/08-item-catalogue-and-recipes.md §7). No
+// representative deck (docs/game/06-cards-and-bonds.md §2, docs/game/08-item-catalogue-and-recipes.md §7). No
 // master data, names or ids from the private packs. Pure data.
 import { CARD_EFFECTS, type CardEffect } from '../cards'
 import { flairSeriesLegId, type FlairSeriesTag } from '../badges'

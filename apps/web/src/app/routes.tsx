@@ -1,4 +1,4 @@
-// The route bodies (docs/rework/11-hub-and-places.md §2.4, §7.1): the start rule, a page, a place, and a full-screen
+// The route bodies (docs/game/11-hub-and-places.md §2.4, §7.1): the start rule, a page, a place, and a full-screen
 // flow. Each is a thin check over a lazy body, so the entry chunk holds the route rules and none of the screens.
 import { isHubPage, placeOnPage } from '@racer/domain/hub'
 import { lazy, Suspense } from 'react'

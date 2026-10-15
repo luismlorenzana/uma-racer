@@ -1,4 +1,4 @@
-// `pnpm sim:loop` in CI (docs/game/architecture.md#the-rework-modules cross-task acceptance #2 and #3; docs/rework/12-economy-and-
+// `pnpm sim:loop` in CI (docs/game/architecture.md#the-rework-modules cross-task acceptance #2 and #3; docs/game/12-economy-and-
 // pacing.md §12): the baseline's three tiers, the heavy, one- and two-check-in variants for tier 1 and both probes, once
 // per worker through `loopReport()`. Every 12 §12 range is checked; a known miss (D348) is `it.fails` with its measured
 // value, so the day it passes this file says so. Then determinism, a second seed, conservation, the policies and the

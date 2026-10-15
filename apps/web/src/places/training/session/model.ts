@@ -1,5 +1,5 @@
-// The one session sheet (docs/rework/05-training-hub.md §2, §8, §10; docs/rework/06-cards-and-bonds.md §6, §10;
-// docs/rework/02-check-ins-and-notifications.md §3, §9; T139), read from one work view. Pure:
+// The one session sheet (docs/game/05-training-hub.md §2, §8, §10; docs/game/06-cards-and-bonds.md §6, §10;
+// docs/game/02-check-ins-and-notifications.md §3, §9; T139), read from one work view. Pure:
 // 1. **Uma** for T138's picker: what she still needs here (`remainingFor`), Free and Ready first; a busy one "Busy until
 //    14:20" (her chain's end) with Queue only when her running session is at this facility and room and her queue has
 //    room (`MAX_QUEUE`), and Recall first for a running Farm job (05 §2).

@@ -1,4 +1,4 @@
-// The save's state under a reveal, in 02 §9's words (docs/rework/02-check-ins-and-notifications.md §9; T138): never a
+// The save's state under a reveal, in 02 §9's words (docs/game/02-check-ins-and-notifications.md §9; T138): never a
 // code or an error, only where the unlock is kept and whether it has synced. Offline is 02 §9's own sentence.
 import { CHECK_IN_WORDS } from '@racer/domain/check-in'
 import type { G2Sync } from '../../app/game'

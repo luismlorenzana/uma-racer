@@ -1,4 +1,4 @@
-// The stand-in Expedition and the Hall of Fame (docs/rework/04-tiers-and-promotion.md §3, §10, D332).
+// The stand-in Expedition and the Hall of Fame (docs/game/04-tiers-and-promotion.md §3, §10, D332).
 import { describe, expect, it } from 'vitest'
 import { CONTENT, COLT, placeUma } from '../__fixtures__/tiers'
 import { isRefusal, type ReworkState, type ScenarioOfTier, type Tier } from '../state/types'

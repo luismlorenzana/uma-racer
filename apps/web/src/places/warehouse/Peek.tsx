@@ -1,4 +1,4 @@
-// The Warehouse's Peek (docs/rework/11-hub-and-places.md §3.1; T138): the three biggest stacks, the planner's three largest
+// The Warehouse's Peek (docs/game/11-hub-and-places.md §3.1; T138): the three biggest stacks, the planner's three largest
 // shortfalls, and "Surplus worth 1,240".
 import { itemById } from '@racer/domain/items'
 import { useMemo } from 'react'

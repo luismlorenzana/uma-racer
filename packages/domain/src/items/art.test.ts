@@ -1,4 +1,4 @@
-// The uma-art check (docs/rework/08-item-catalogue-and-recipes.md §10, §13; M033 "Art ids"): every id and name the
+// The uma-art check (docs/game/08-item-catalogue-and-recipes.md §10, §13; M033 "Art ids"): every id and name the
 // catalogue holds against the installed @luismlorenzana/uma-art 2.4.0 indexes. Only this test reads the art package;
 // the catalogue is frozen data and never imports it.
 import { readFileSync } from 'node:fs'

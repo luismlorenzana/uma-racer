@@ -1,5 +1,5 @@
-// Suggestions for Free Umas and her Needs tab (docs/rework/02-check-ins-and-notifications.md §4, §6 "Suggestions for
-// free Umas", "What it shows"; docs/rework/01-game-loop.md §4). Free Umas go by Farm Level, highest first (01 §4: the
+// Suggestions for Free Umas and her Needs tab (docs/game/02-check-ins-and-notifications.md §4, §6 "Suggestions for
+// free Umas", "What it shows"; docs/game/01-game-loop.md §4). Free Umas go by Farm Level, highest first (01 §4: the
 // higher grades are theirs), ties by outfit id. Each takes, in order:
 // 1. her own session, when a dish for one of her open unlocks is in the projected free stock: her oldest such unlock
 //    picks the facility and room, and she takes the next unlocks there while their dishes last, up to the fitted size;

@@ -1,4 +1,4 @@
-// Crafted demand (docs/rework/08-item-catalogue-and-recipes.md §7): any dish counts expanded through the recipes into
+// Crafted demand (docs/game/08-item-catalogue-and-recipes.md §7): any dish counts expanded through the recipes into
 // the crafted items they need, with each family split into its own recipes' use and its use as other dishes' sides.
 // The dish counts come from the layers and a deck (T128, T132); this module only expands them.
 import { FAMILY_IDS, type FamilyId } from './families'

@@ -1,5 +1,5 @@
-// The pieces every timed thing shares (docs/rework/07-farm.md §2, §8, §10; docs/rework/05-training-hub.md §2;
-// docs/rework/02-check-ins-and-notifications.md §3, §9; T140's contract, used by T139 and T142): one slot's card, Speed
+// The pieces every timed thing shares (docs/game/07-farm.md §2, §8, §10; docs/game/05-training-hub.md §2;
+// docs/game/02-check-ins-and-notifications.md §3, §9; T140's contract, used by T139 and T142): one slot's card, Speed
 // Tickets, Recall, queue chips and the size picker, with their pure models and a tap runner; T142 adds the stopped
 // queue's card and a list's tap runner, and T139 a building's upgrade.
 export { SlotCard, type SlotCardProps, type SlotCardWhat } from './SlotCard'

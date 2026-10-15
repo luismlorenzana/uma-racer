@@ -1,4 +1,4 @@
-// The planner's own views (docs/rework/02-check-ins-and-notifications.md §6 "Targets", "What it shows"; T142): her
+// The planner's own views (docs/game/02-check-ins-and-notifications.md §6 "Targets", "What it shows"; T142): her
 // Needs tab (`needsFor`), the roster view (`rosterTotals`) and the targets, as pure readings in 02 §6's words. The
 // planner runs with `chosen = {}`: bond picks aren't saved in phase 3, so an unchosen bond reads "N bonds: pick cards"
 // and links to her Dojo sheet. Every number is the domain's.

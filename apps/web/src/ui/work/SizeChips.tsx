@@ -1,4 +1,4 @@
-// The size picker every start and queue sheet shows (docs/rework/02-check-ins-and-notifications.md §3; T142 part 1,
+// The size picker every start and queue sheet shows (docs/game/02-check-ins-and-notifications.md §3; T142 part 1,
 // owned here by T140): a chip per size from 1 to what the stock covers, each with its end in `chipWords`' words ("ends
 // 14:00 · then free until 22:30"), the marked one carrying `fitWords` ("Fits 13:00" or "Overnight") and preselected.
 // Nothing is confirmed for the owner: a chip only sets the size. `start` is now for a start, and `freeAt` (her chain's

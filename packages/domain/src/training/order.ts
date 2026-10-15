@@ -1,4 +1,4 @@
-// The unlock order (docs/rework/05-training-hub.md §3): what each unlock waits on, which are open now, the next ones at a
+// The unlock order (docs/game/05-training-hub.md §3): what each unlock waits on, which are open now, the next ones at a
 // facility and room, what is left of her layers, and when a layer is done.
 // - Observatory: the lowest locked node. Lineage Hall: a grandparent slot needs its parent's slot open; a unique or gold
 //   needs its own slot open, not filled; gold 2 never needs gold 1, B never needs A. Gym: singles in grade order per

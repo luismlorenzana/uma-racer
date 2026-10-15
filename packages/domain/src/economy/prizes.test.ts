@@ -1,4 +1,4 @@
-// Pins the prize table (docs/rework/09-racing-rewards-and-exchange.md §2.1, README "Money", rework/10). Expected values
+// Pins the prize table (docs/game/09-racing-rewards-and-exchange.md §2.1, README "Money", rework/10). Expected values
 // are 09 §2.1's rows copied as written.
 import { describe, expect, it } from 'vitest'
 import type { RaceGrade } from '../types'

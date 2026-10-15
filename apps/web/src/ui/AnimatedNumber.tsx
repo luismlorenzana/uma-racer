@@ -1,4 +1,4 @@
-// A HUD number that moves when it changes (docs/rework/11-hub-and-places.md §2.1): the new value slides in by a CSS
+// A HUD number that moves when it changes (docs/game/11-hub-and-places.md §2.1): the new value slides in by a CSS
 // transform and opacity transition, never a spring (CLAUDE.md "Conventions"). Reduced motion swaps it at once
 // (`g2.css`). Tabular figures, so counters don't jitter.
 import { useLayoutEffect, useRef, useState } from 'react'

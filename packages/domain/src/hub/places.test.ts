@@ -1,4 +1,4 @@
-// The place registry (docs/rework/11-hub-and-places.md §1, §3, §10) and its frames against the pinned uma-art index,
+// The place registry (docs/game/11-hub-and-places.md §1, §3, §10) and its frames against the pinned uma-art index,
 // as uma-rpg's `frames.test` checks its own: a frame the pinned release lacks fails here, never a blank building, and a
 // release that draws one of the four new buildings fails until the registry wires it.
 import { readFileSync } from 'node:fs'
@@ -20,7 +20,7 @@ const art = read('package.json') as { version: string }
 const drawn = PLACES.filter((place) => !place.hidden)
 const id = (place: Place) => place.id
 
-describe('the place registry (rework/11 §3)', () => {
+describe('the place registry (game/11 §3)', () => {
   it('holds 23 places, page by page: 22 drawn and the hidden Account', () => {
     expect(PLACES.map(id)).toEqual([...PLACE_IDS])
     expect(new Set(PLACE_IDS).size).toBe(23)
@@ -104,7 +104,7 @@ describe('the place registry (rework/11 §3)', () => {
   })
 })
 
-describe('frames (rework/11 §10)', () => {
+describe('frames (game/11 §10)', () => {
   /** §10.1's source page for each reused frame. */
   const PAGES: Readonly<Record<string, string>> = {
     stable: 'town', warehouse: 'town', exchange: 'town', observatory: 'town', 'lineage-hall': 'town', 'scenario-gate': 'town',

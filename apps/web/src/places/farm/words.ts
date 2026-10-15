@@ -1,4 +1,4 @@
-// The Farm places' own sentences (docs/rework/07-farm.md §10; docs/rework/02-check-ins-and-notifications.md §6, §9;
+// The Farm places' own sentences (docs/game/07-farm.md §10; docs/game/02-check-ins-and-notifications.md §6, §9;
 // T140): the building page, its Peek and the job sheet. Rules speak through the domain's refusal tables and templates;
 // these are labels and headings around them. 02 §9's banned words never appear here (`model.test.ts` holds every
 // template to `hasBannedWord`).

@@ -1,7 +1,7 @@
-// The item rules' live blocks in docs/rework/08-item-catalogue-and-recipes.md (M033): the catalogue counts (§1), the
+// The item rules' live blocks in docs/game/08-item-catalogue-and-recipes.md (M033): the catalogue counts (§1), the
 // grade ladder and each family's table (§3), the side rotation, Duos and Feasts (§4.2–§4.4) and the work values (§8),
 // rendered from the code so the page can't drift. §8's third is the Exchange's `SELL_DIVISOR` (T130, D331), unrounded:
-// 09 §6 owns the rounding. Joined into `docs/render.ts` through `docs/rework.ts`. Pure.
+// 09 §6 owns the rounding. Joined into `docs/render.ts`'s `AREA_BLOCKS`. Pure.
 import { SELL_DIVISOR } from '../economy/selling'
 import {
   craftedItem, DUO_GRADES, DUO_PAIRS, DUOS, FEAST_GRADES, FEASTS, ITEM_GRADE_LIST, ITEM_GRADES, itemById, ITEMS, planetDish,

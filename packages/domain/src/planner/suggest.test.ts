@@ -1,4 +1,4 @@
-// Suggestions for Free Umas (docs/rework/02-check-ins-and-notifications.md §6; docs/rework/01-game-loop.md §4): her
+// Suggestions for Free Umas (docs/game/02-check-ins-and-notifications.md §6; docs/game/01-game-loop.md §4): her
 // own session first, then Farm Level order; the largest shortfall she can start for the first target she can work
 // for; no slot, input or output promised twice; sizes fitted and capped by stock; and Start suggestions.
 import { describe, expect, it } from 'vitest'

@@ -1,4 +1,4 @@
-// The Exchange (docs/rework/09-racing-rewards-and-exchange.md §5.5; T138): a header with Prize Money, Speed Tickets held
+// The Exchange (docs/game/09-racing-rewards-and-exchange.md §5.5; T138): a header with Prize Money, Speed Tickets held
 // and T141's purse bar; Speed Tickets ×1, ×10, ×50 or a typed amount with the total and Buy; raw ingredients in eight
 // family tabs, one row per stocked grade with its price, Warehouse count and the planner's badge, a quantity sheet of
 // 1–99, and the next grade's lock. The purse bar is T141's view (09 §3.5). Buy is off with "Need 120 more" when short and asks once at 1,000 or more. Deep

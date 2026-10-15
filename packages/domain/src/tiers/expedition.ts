@@ -1,4 +1,4 @@
-// A stand-in World Expedition (docs/rework/04-tiers-and-promotion.md §3, §10, D332), enough for promotion to have a
+// A stand-in World Expedition (docs/game/04-tiers-and-promotion.md §3, §10, D332), enough for promotion to have a
 // trigger: a run counts its races and wins, and its eighth win completes it. Phase 9 replaces it with the real rules
 // (docs/rework/10-expeditions.md): distinct race families, pools, fields and difficulty.
 import { isRefusal, type ExpeditionRun, type OpResult, type ReworkState } from '../state/types'

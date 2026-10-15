@@ -1,4 +1,4 @@
-// Pins every recipe and the side rotation (docs/rework/08-item-catalogue-and-recipes.md §4). Expected values are 08's
+// Pins every recipe and the side rotation (docs/game/08-item-catalogue-and-recipes.md §4). Expected values are 08's
 // tables copied as written.
 import { describe, expect, it } from 'vitest'
 import { DUOS, FEASTS, ITEM_GRADE_LIST, itemById, ITEMS, planetDish, SPEED_TICKET_ID, type ItemGrade } from './catalogue'

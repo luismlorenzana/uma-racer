@@ -1,7 +1,7 @@
 // The loop simulation's live blocks (T132's "Live blocks and pages rewritten"): the pacing tables
-// of rework/12, the Farm and Training Hub slot tables of rework/07 and /05, and rework/08 §7's demand, rendered from
+// of game/12, the Farm and Training Hub slot tables of game/07 and /05, and game/08 §7's demand, rendered from
 // `loopReport()` and `tierDemand` so the pages state what the rules measure. Registered in packages/domain/src/docs/
-// rework.ts. Pure: it returns text.
+// render.ts. Pure: it returns text.
 import { BUILDING_IDS, BUILDINGS, FACILITY_IDS, FARM_BUILDING_IDS, slotsPerRoom, totalSlots, type BuildingId } from '../farm/buildings'
 import { farmExpAtLevel } from '../farm/level'
 import { ITEM_GRADE_LIST, ITEM_GRADES, type ItemGrade } from '../items/catalogue'
