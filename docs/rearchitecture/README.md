@@ -7,7 +7,7 @@
 > simulated before the wipe. The changes to every page and decision here are listed in
 > [rework/13](../rework/13-removals-and-plan-changes.md). Where the two disagree, the rework wins.
 
-> **Status: phase 1 built 2026-10-14 (D337); phase 2 is next ([tasks](../tasks/README.md)).** The order of work is
+> **Status: phases 1 and 2 built 2026-10-14 (D337, D340–D350); phase 3, the cutover, is next ([tasks](../tasks/README.md)).** The order of work is
 > [08](08-phases.md)'s revised table.
 >
 > **First written 2026-10-12 (D321–D325).** This folder describes how uma-racer is rebuilt

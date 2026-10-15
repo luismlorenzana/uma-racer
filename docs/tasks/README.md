@@ -20,8 +20,8 @@ and bonded per Uma, uma-rpg's farming catalogue, Prize Money and the Exchange, a
 | Phase | Milestone | State |
 |---|---|---|
 | 1 | M032 — a sound base: the API on the workspace domain, the startup budget, GitHub Packages, the live manual | **Done, 2026-10-14** (D337) |
-| 2 | [M033 — the rework's rules and `sim:loop`](M033-rework-rules.md) | **In progress** on `feat/rework-rules`: T125, T126, T127, T129 and T130 landed; T128 next, then T131, T132 and T133 |
-| 3 | The generation-2 cutover and the new game on plain screens | Specified when phase 2 lands. **The owner starts the new game here** |
+| 2 | M033 — the rework's rules and `sim:loop` (T125–T133) | **Done, 2026-10-14** (D340–D350). Two pacing calls wait on the owner ([open questions](../open-questions.md)) |
+| 3 | The generation-2 cutover and the new game on plain screens | **Next:** specified after the owner's pacing calls. **The owner starts the new game here** |
 | 4 | Push notifications, a port of uma-rpg's | Only if the owner asks after playing (D336) |
 | 5–8 | Platform master data · the Hub · the Farm and Training scenes · the race on Phaser | Specified in turn |
 | 9 | World Expeditions | Starts when phase 3 ships; must land within about 16–20 weeks of it |
@@ -41,6 +41,7 @@ Each row's specs are readable with `git show <commit>:docs/tasks/<file>`.
 
 | Work | Landed | Carried by | Last commit with the specs |
 |---|---|---|---|
+| M033 / T125–T133 — The rework's rules, `sim:loop` and the builds against the field | 2026-10-14 | [docs/rework/](../rework/README.md) (live blocks), `packages/domain/src/rework/`, D340–D350 | M033: `{M033_COMMIT}`; each T spec: the commit before its merge |
 | M032 — Re-architecture phase 1: a sound base | 2026-10-14 | [rearchitecture/08](../rearchitecture/08-phases.md) phase 1, D337, [the manual](../game/README.md) | No spec file: the phase table was the spec |
 | M024 / T081, M010 / T035, M011 / T036–T039 — **retired unbuilt** (D339) | 2026-10-14 | — | `afe4696` |
 | M031 / T124 — Complete Farm release and guarded preparation | 2026-10-10 | [Release contract](../technical/farm-kitchen-implementation.md#10-t124-complete-release-d315), D315 and [acceptance evidence](../research/farm-kitchen-release-acceptance.md); owner iPhone/account/PWA checks pending | `f6c4dcf` |

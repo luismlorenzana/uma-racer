@@ -14,7 +14,7 @@ session first, and the racer then pins the released version.
 | Phase | Goal | Status | Sections below |
 |---|---|---|---|
 | **1** | A sound base: the API on the workspace domain, the startup budget enforced, GitHub Packages, the live manual | **Done, 2026-10-14 (D337)** | Phase 1 |
-| **2** | **The rework's rules in the domain**, pure and tested, and `pnpm sim:loop` passing [rework/12](../rework/12-economy-and-pacing.md) §12. No UI and no save change | **Next:** [M033](../tasks/M033-rework-rules.md) | — (new) |
+| **2** | **The rework's rules in the domain**, pure and tested, and `pnpm sim:loop` passing [rework/12](../rework/12-economy-and-pacing.md) §12. No UI and no save change | **Done, 2026-10-14 (D340–D350)**; two pacing calls wait on the owner ([open questions](../open-questions.md)) | — (new) |
 | **3** | **Clean slate and the new game:** generation-2 save in the rework's shape, the wipe and purge, every deletion (RPG, Spark, Puzzles, Friendship, CL, stars, tokens, today's Farm), the new game on plain DOM screens. **The owner starts playing here** | Specified after phase 2 | Phase 2 |
 | 4 | **Optional:** push notifications, a port of uma-rpg's, only if the owner asks | Waits on the owner | — (new) |
 | 5 | Platform master data and the first shared packages | Planned | Phase 3 |

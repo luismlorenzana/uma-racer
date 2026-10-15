@@ -1,8 +1,9 @@
 # Uma Racer rework: Race, Farm, Train
 
-> **Status: approved design, 2026-10-14 (D326–D336, D338).** The owner's requirements, with Claude's suggestions
-> accepted by the owner on 2026-10-13 and the Gym change of 2026-10-14. Nothing here is built yet: phase 2 builds the
-> rules ([tasks](../tasks/README.md)). Every number is a **draft** that the loop simulation
+> **Status: approved design, rules built, 2026-10-14 (D326–D350).** The owner's requirements, with Claude's suggestions
+> accepted by the owner on 2026-10-13 and the Gym change of 2026-10-14. Phase 2 built every rule as a pure, tested
+> module in `@racer/domain/rework/*` and `pnpm sim:loop` measures the pacing (D340–D350); none of it is in play until
+> phase 3's cutover ([tasks](../tasks/README.md)). Every number is a **draft** that the loop simulation
 > ([12](12-economy-and-pacing.md) §12) tunes and then pins in tests. When a page here disagrees with an older design
 > doc, this folder wins. Older docs are rewritten "as built" when each part lands.
 
