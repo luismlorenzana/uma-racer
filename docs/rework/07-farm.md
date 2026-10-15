@@ -2,7 +2,8 @@
 
 > **Status: approved design, 2026-10-14; first written 2026-10-13 (D326, D327, D328, D330, D331, D334).** Built as
 > rules in phase 2 (D343) and measured by the loop simulation ([12](12-economy-and-pacing.md) §12, D348), whose tables
-> here are live. Nothing live uses it yet: phase 3 ships it.
+> here are live. Nothing live uses it yet: phase 3 ships it. §10's screens are built in the new game beside today's
+> app (T140, D358), with §14's last rows.
 
 The Farm is where the roster spends most of its time. Umas gather ingredients at eight family sites, the **Pantry**
 crafts them and the **Kitchen** cooks them into dishes, all on timers that run while the app is closed. A dish is the
@@ -461,6 +462,22 @@ Today's Farm, the Stable Kitchen (M031, D304–D320; [design/farm-kitchen-rework
 | **An upgrade's only gate is its cost** | Its grade-3 items are §7's "from Farm Lv 11" |
 | **An upgrade's Prize Money is a ledger row** `upgrade:<building>:<level>`, reason `upgrade` | [09](09-racing-rewards-and-exchange.md) §9's reasons and audit; a building reaches each level once, so the id is once-only |
 | **Promotion clears her idle work row** (her last job and any dropped queue) | [02](02-check-ins-and-notifications.md) §5 never repeats a promoted Uma, and her last job's grade may be above her new Farm Level |
+| The job sheet opens over the building page from its query (`?job=:itemId&uma=:umaId&count=:n&queue=1&slot=:n&back=<path>`), `back` an in-app path only; an empty `job=` opens it with nothing chosen, and `slot` is the slot card's (T140) | Every place is a link ([11](11-hub-and-places.md) §1); the Warehouse, the planner and the session sheet reach it without importing it, and Start a job and + Queue name their slot |
+| A planner line opens the sheet filled in with the suggested Uma and a fitted size; it doesn't start at once. Without a suggestion for that item, the first Free Uma whose Farm Level opens it, sized as `jobFor` fits it (capped by stock), else by `fitSize` (T140) | §10 says "opens the job sheet with it filled in"; [02](02-check-ins-and-notifications.md) §6's one-tap start stays the summary's Start suggestions |
+| The section is titled "For your targets", in [02](02-check-ins-and-notifications.md) §6's line words: family and grade ("Vegetables G3", a Duo or Feast by its kind), short (left out at 0), Warehouse, and coming with each worker and time (T140) | 02 owns the planner's views (§10 calls it "Needed now") |
+| The Uma list is Free first, then Ready (a start collects her first), then busy Umas the sheet can take; within each, suited for the chosen item, then Farm Level. A session, or her full queue here, greys her with the reason (T140) | Joins §10's order with §3's "sorts suited Umas first" |
+| The Pantry's items sit in family tabs in the ring's order; a site lists its family's ten grades (T140) | §10 tabs only the Kitchen; the ring is the Farm page's order ([11](11-hub-and-places.md) §3.4) |
+| Can cook now lists dishes the free stock covers once and the chosen Uma's Farm Level opens (any Uma's highest when none is chosen); locks read the same way (T140) | §10 names the tab, not its rule; this is what Start would accept |
+| **Needed × N** on an item is the plan's still-to-start count for it (`short`), every target together (T140) | It is what a job should make; what the Warehouse or the outputs coming already cover needs no badge |
+| Moving a busy Uma is **Recall and start here**: one confirmation naming what is lost (`recall` run on the current state), then `recall` and `start` (T140) | §5: "the sheet shows what is lost … before it confirms" |
+| A shortfall links to the building that makes it and, for stocked raw, the Exchange; the sheet buys nothing inline (T140) | Only a stopped queue's Buy and restart ([02](02-check-ins-and-notifications.md) §4) and Finish ([09](09-racing-rewards-and-exchange.md) §5.1) buy inline; a purchase stays one deliberate tap |
+| Every button runs its operation on the current state first, so a disabled one reads the rule's own refusal; with no free slot, Start says when the next job here ends, or that one is ready to collect (T140) | §10's "a disabled button always says why", with no rule restated on screen |
+| "Buy N and finish" runs `buy` then `finish`, two operations after one question. Under 30 minutes left, −30m and Finish are the same ticket, so only **Finish · 1** shows and asks with the minutes wasted; with no ticket held, −30m hides and Finish reads "Buy N and finish" (T140) | [09](09-racing-rewards-and-exchange.md) §5.1; §8's "shows the minutes wasted before it confirms" |
+| An upgrade asks once with its whole cost, and its refusal (`prize-money`, `short`) reads beside it; nothing shows at Lv 3 (T140) | A spend of Prize Money and items confirms once, as the Exchange's large purchases do |
+| A card's ring is the current item's progress (`itemProgress`), as the Hub's pips are, redrawn on the 30-second clock (T140) | §10's "a ring for the current output"; one look for the pip and its card ([11](11-hub-and-places.md) §4) |
+| The Peek's stock by open grade runs up to the highest grade any current Uma has open; the Pantry and Kitchen show their lines short instead, the first three (T140) | [11](11-hub-and-places.md) §3.4 says "by open grade"; the same reading as the Exchange's stock ([09](09-racing-rewards-and-exchange.md) §5.3) |
+| Collect here and Repeat here sit in the page's thumb zone, off with their reason when nobody is ready or repeatable here; their receipt lists each line and each skip in the rule's words (T140) | §10 puts them beside the global ones; [02](02-check-ins-and-notifications.md) §5's "Kitchen full", "4 Honey short" |
+| `g2/ui/work/` (SlotCard, SpeedUpControls, RecallSheet, QueueChips, SizeChips) and `g2/ui/ItemIcon` are T140's, used unchanged by T139 and T142; the sheet keeps a short Uma list until T138's picker lands (T140) | One look for every timed thing and every item; the Farm makes the items |
 
 ## 15. Done when
 
