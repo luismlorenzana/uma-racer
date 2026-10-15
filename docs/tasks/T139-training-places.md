@@ -11,9 +11,11 @@ Read:
 - The modules it calls: `rework/training` (unlocks, order, facilities, extra, bonds, build, derive, sessions),
   `rework/constellation`, `rework/work`, `rework/farm` (buildings), `rework/planner`, `rework/check-in` and
   `rework/exchange` (`buy`). T134–T137 and T142 are specified beside it: use their exports by the M034 table.
-- [T138](T138-town-hall.md) (the Uma picker, the Card Library's pick mode) and [T140](T140-farm-places.md) (the shared
-  `g2/ui/work/` pieces and `ItemIcon`, the Kitchen's job-sheet link); the first of T138–T140 to land adds a shared
-  piece to its owner's contract. Today's `TrainingScene`, `ConstellationScreen`, `ExtraStatsScreen`, `CardSetScreen`
+- [T138](T138-town-hall.md) (the Uma picker, the Card Library's pick mode) and T140 (landed, D358; [rework/07](../rework/07-farm.md) §14): the
+  shared `g2/ui/work/` pieces (`SlotCard` with its `what` slot for an unlock line, `SpeedUpControls`, `RecallSheet`,
+  `QueueChips`, `SizeChips`, `useTap`, `TapNoteLine`, `useWorkView`, `showWords`), `g2/ui/ItemIcon`, and the job sheet's
+  link `sheetQuery` in `g2/places/farm/building/model.ts`; the first of T138–T140 to land adds a shared piece to its
+  owner's contract. Today's `TrainingScene`, `ConstellationScreen`, `ExtraStatsScreen`, `CardSetScreen`
   and `ui/constellation/*`, which it replaces and never edits.
 
 ## Goal and fixed scope

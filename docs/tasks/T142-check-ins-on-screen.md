@@ -43,14 +43,16 @@ dev proof at `/dev/check-in` in g2's router (DEV only, §7.2's rule for new proo
 task adds a `stopped` seed (a `busy` account with stock drained so queues dropped) and `?at=HH:MM` to move a seed's
 clock.
 
-**Part 1 lands first:** the pieces T139's and T140's sheets and cards embed.
-- `SizeChips { start, itemSeconds, max, value, onChange }`: one chip per size, 1 to `max` (what the stock covers, 10
-  at most), each in `chipWords`' words ("ends 14:00 · then free until 22:30"). The marked chip carries `fitWords`
-  ("Fits 13:00" or "Overnight") and is preselected; nothing is confirmed for the owner. `start` is now for a start,
-  and `freeAt` for an entry added to a queue.
-- `QueueTimes` and `QueueWarning`: a queued entry's projected finish from `projectWork` ("then Vegetables ×4 →
-  17:30"), and `queueWarnings`' mark ("Short 2 raw Vegetables G2."), for T140's `QueueChips`.
-- `StoppedQueueCard` (below), and `useOperation()`, which runs a tap and renders its answer (below).
+**Part 1 came with T140** (D358, [rework/07](../rework/07-farm.md) §14), which built the shared pieces in `g2/ui/work/`:
+- `SizeChips { start, itemSeconds, max, value, onChange }`, a chip per size the stock covers with `chipWords` and
+  `fitWords`, the marked chip preselected (`sizeChipsView` is its model);
+- `QueueChips { outfitId, label? }`, which already draws each queued entry's projected end and `queueWarnings`' mark,
+  so `QueueTimes` and `QueueWarning` are not separate pieces;
+- `useTap()` → `{ run(name, input, busyKey), pending, note, clear }` and `TapNoteLine`, which run a tap and render its
+  answer: this task uses them where it said `useOperation()`, and extends them if the summary needs more;
+- `SlotCard`, `SpeedUpControls`, `RecallSheet`, `ItemIcon`, `useWorkView()` (one projection per tick) and `showWords`.
+
+This task adds `StoppedQueueCard` (below) beside them.
 
 Part 2 is the summary, Speed up, the Needs views and targets.
 
@@ -151,7 +153,7 @@ All on T137's in-memory port and synthetic seeds, with Testing Library.
 
 ## Acceptance
 
-- [ ] Part 1 is merged before T139's and T140's sheets embed it.
+- [ ] `StoppedQueueCard` lives in `g2/ui/work/` beside T140's pieces, which this task reuses rather than duplicates.
 - [ ] `pnpm lint && pnpm test && pnpm build` are green, and the g2 measure build stays ≤ 180 KB gzip.
 - [ ] In the `uma-racer-dev` preview at 390×844 (mobile preset):
   - [ ] on `/dev/g2/?seed=busy`, the pill's **Collect all · N ready**, **Repeat all**, **Start suggestions** and close
@@ -191,5 +193,5 @@ All on T137's in-memory port and synthetic seeds, with Testing Library.
 | Spending confirms once with the amount; everything else is one tap | §1 counts two taps for Buy and restart; §4 confirms Speed up all |
 | A gated Needs line links to the Exchange row; only Queue stopped's fixes buy inline | T140's rule: a purchase stays one deliberate tap, outside §4's fixes |
 | `SizeChips` shows a chip per size, 1 to what the stock covers | §3: "a chip per size with its finish time" |
-| The shared pieces land first, as part 1, in `g2/ui/work/` | T139 and T140 embed the size chips, queue times and warnings |
+| The shared pieces came with T140 in `g2/ui/work/`; `useTap` is the tap runner | One runner and one set of pieces for every timed thing (D358) |
 | Offline shows one line in the summary's footer | §9's words, where the owner just tapped |
