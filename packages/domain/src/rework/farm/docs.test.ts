@@ -21,7 +21,7 @@ describe('the Farm blocks', () => {
   })
 
   it('render the totals the pages state', () => {
-    expect(LIVE_BLOCKS['farm-slots']!()).toContain('| **All ten** | **27** | **38** | 38 (47.5 slot-equivalents) |')
+    expect(LIVE_BLOCKS['farm-slots']!()).toContain('| **All ten** | **27** | **39** | 39 (48.75 slot-equivalents) |')
     expect(LIVE_BLOCKS['farm-upgrades']!()).toContain('| **All ten** | **14,100 PM** | **37,200 PM** |')
     expect(LIVE_BLOCKS['facility-slots-upgrades']!()).toContain('| **All four** | | | | **6,100 PM** | **10,700 PM** |')
     expect(LIVE_BLOCKS['farm-level-grades']!()).toContain('| (Lv 50) | 50 | 29,400 |')

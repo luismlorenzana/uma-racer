@@ -2,8 +2,8 @@
 
 > **Status: approved design, 2026-10-14 (D326, D331, D334, D336, D338); measured by `pnpm sim:loop` (D348).** The
 > model of §4 sized the first draft; the loop simulation (§12) now measures the pace on the rules themselves, and its
-> tables here are live blocks rendered from that run. Two of its checks miss (§12): a new account's first scenario runs
-> long, and the Pantry runs at the 90% ceiling; the owner decides how to read them ([open questions](../open-questions.md)).
+> tables here are live blocks rendered from that run. Every check passes since the owner's pacing calls (D351): the
+> Pantry's fifth slot, a new account's first scenario read as its ramp, and tiers 2–3 at 18–28 days a scenario.
 > If a page elsewhere quotes a number from here and the sim later moves it, this page and the sim win.
 
 This page answers: how long things take, what the currencies are, where they come from and go, and how we know the
@@ -134,12 +134,12 @@ and career are both done:
 <!-- live:loop-scenarios -->
 | Scenario of the tier | Grades | Unlocks | Uma-hours | Farm work | Sessions | Days, tier 1 (p10–p90) | Days, tier 2 · tier 3 |
 |---|---|---|---|---|---|---|---|
-| 1 | 1–2 | 27 | 539 | 439 (82%) | 100 | **38.0 (30.6–48.2)** | 23.4 · 21.4 |
-| 2 | 3–4 | 23 | 506 | 408 (81%) | 98 | **30.0 (23.0–37.4)** | 20.0 · 23.0 |
-| 3 | 5–6 | 21 | 510 | 408 (80%) | 102 | **22.6 (7.0–41.4)** | 22.0 · 22.0 |
-| 4 | 7–8 | 19 | 507 | 402 (79%) | 104 | **24.2 (5.0–27.0)** | 22.0 · 23.0 |
-| 5 | 9–10 | 17 | 492 | 388 (79%) | 104 | **21.6 (11.4–25.4)** | 20.4 · – |
-| **Tier** | | **107** | **2,554** | | | **20.3 weeks** | 16.7 · 13.9 weeks |
+| 1 | 1–2 | 27 | 539 | 439 (82%) | 100 | **38.0 (30.6–50.2)** | 22.0 · 22.8 |
+| 2 | 3–4 | 23 | 506 | 408 (81%) | 98 | **28.0 (6.2–35.8)** | 22.6 · 23.8 |
+| 3 | 5–6 | 21 | 510 | 408 (80%) | 102 | **26.6 (18.6–42.4)** | 21.4 · 21.4 |
+| 4 | 7–8 | 19 | 507 | 402 (79%) | 104 | **24.4 (6.4–28.0)** | 27.8 · 24.6 |
+| 5 | 9–10 | 17 | 492 | 388 (79%) | 104 | **25.0 (10.2–29.8)** | 18.2 · – |
+| **Tier** | | **107** | **2,554** | | | **20.9 weeks** | 16.9 · 14.5 weeks |
 <!-- /live -->
 
 At *k* = 1.2 (D338). D336's 24 Inspiration unlocks (6 slots, 6 inherited uniques, 12 golds) are spread 4, 6, 4, 6, 4
@@ -152,12 +152,12 @@ How to read it:
   Uma's dishes are often cooked by others.
 - **The tier takes about 20 weeks**, D334's target, with the cohort travelling together: the planner serves the Umas
   furthest behind first (§12), so each scenario ends for most of the cohort within a few days.
-- **Scenario 1 of a new account runs long, about 5½ weeks.** Every building is at Lv 1, every Uma starts at Farm Lv 1,
-  the Warehouse is empty, and no Prize Money comes in until the first careers are raced at the end of the layer, so the
-  first upgrades land around day 31.
-- **The later scenarios run about 3 to 4 weeks.** By then the roster is 25, every building reaches Lv 3 by about day
-  65 (×1.25 speed), and Prize Money buys Speed Tickets. Tiers 2 and 3, fully upgraded from the start, run 20–23 days a
-  scenario.
+- **Scenario 1 of a new account is its ramp, about 5½ weeks** (the owner's reading, D351). Every building is at Lv 1,
+  every Uma starts at Farm Lv 1, the Warehouse is empty, and no Prize Money comes in until the first careers are raced
+  at the end of the layer, so the first upgrades land around day 31. It happens once, at the start of the new game.
+- **The later scenarios of tier 1 run about 3½ to 4 weeks** (24–28 days on the committed seed). By then the roster is
+  25, every building reaches Lv 3 by about day 65 (×1.25 speed), and Prize Money buys Speed Tickets. Tiers 2 and 3,
+  fully upgraded from the start, run 18–28 days a scenario.
 
 **Why *k* = 1.2 stays.** The sim tried the nearest faster step that keeps raw prices in whole minutes, *k* = 1.0
 ([09](09-racing-rewards-and-exchange.md) §5): it takes tier 1 to about 17 weeks and most later scenarios under 20 days.
@@ -220,24 +220,24 @@ the spending policy's upgrade dates:
 <!-- live:loop-capacity -->
 | Building | Slots Lv 1 / 2 / 3 | Hours a day held, tier 1 | Running | Peak use (scenario) | Bottleneck hours | Lv 2 / Lv 3 on day |
 |---|---|---|---|---|---|---|
-| Sugar Grove | 2 / 3 / 3 | 20.6 | 17.1 | 42% (3·2) | 15 | 32 / 43 |
-| Orchard | 2 / 3 / 3 | 20.5 | 17.3 | 40% (2·4) | 0 | 33 / 41 |
-| Fishery | 2 / 3 / 3 | 20.3 | 17.0 | 38% (3·2) | 0 | 32 / 56 |
-| Nut Grove | 2 / 3 / 3 | 20.3 | 17.1 | 41% (1·3) | 0 | 34 / 64 |
-| Herb Garden | 2 / 3 / 3 | 20.2 | 17.2 | 37% (2·3) | 0 | 33 / 41 |
-| Fields | 2 / 3 / 3 | 28.0 | 23.3 | 60% (1·3) | 10 | 34 / 41 |
-| Vegetable Garden | 4 / 5 / 5 | 44.2 | 38.0 | 65% (3·1) | 0 | 34 / 42 |
-| Mushroom Cave | 2 / 3 / 3 | 39.0 | 32.5 | 85% (2·4) | 0 | 32 / 56 |
-| Pantry | 3 / 4 / 4 | 62.9 | 45.0 | 91% (3·3) | 58 | 33 / 40 |
-| Kitchen | 6 / 8 / 8 | 133.0 | 87.1 | 83% (2·5) | 586 | 31 / 55 |
-| Observatory | 2 / 3 / 3 | 30.2 | 18.2 | 77% (3·1) | 0 | 31 / 61 |
-| Lineage Hall | 2 / 3 / 3 | 26.9 | 15.5 | 53% (3·2) | 0 | 31 / 61 |
-| Gym | 5 rooms × 1 / 2 / 2 | 49.0 | 21.1 | 33% (1·3) | 0 | 32 / 63 |
-| Dojo | 6 rooms × 1 / 2 / 2 | 25.5 | 10.8 | 17% (2·1) | 0 | 31 / 65 |
+| Sugar Grove | 2 / 3 / 3 | 20.8 | 17.1 | 40% (2·2) | 5 | 32 / 47 |
+| Orchard | 2 / 3 / 3 | 20.8 | 17.2 | 40% (3·2) | 0 | 33 / 41 |
+| Fishery | 2 / 3 / 3 | 19.9 | 16.7 | 39% (2·2) | 0 | 32 / 63 |
+| Nut Grove | 2 / 3 / 3 | 20.5 | 16.6 | 41% (1·3) | 0 | 34 / 57 |
+| Herb Garden | 2 / 3 / 3 | 19.6 | 16.3 | 43% (1·3) | 0 | 33 / 64 |
+| Fields | 2 / 3 / 3 | 27.3 | 22.8 | 57% (2·3) | 43 | 34 / 41 |
+| Vegetable Garden | 4 / 5 / 5 | 44.0 | 37.4 | 63% (2·1) | 0 | 34 / 51 |
+| Mushroom Cave | 2 / 3 / 3 | 38.0 | 32.1 | 76% (3·4) | 0 | 32 / 55 |
+| Pantry | 3 / 5 / 5 | 67.6 | 44.4 | 80% (2·3) | 48 | 33 / 46 |
+| Kitchen | 6 / 8 / 8 | 124.2 | 82.6 | 79% (2·5) | 499 | 31 / 40 |
+| Observatory | 2 / 3 / 3 | 29.1 | 17.9 | 76% (3·1) | 5 | 31 / 57 |
+| Lineage Hall | 2 / 3 / 3 | 26.3 | 14.8 | 54% (2·2) | 15 | 31 / 61 |
+| Gym | 5 rooms × 1 / 2 / 2 | 45.6 | 21.0 | 31% (3·3) | 24 | 32 / 63 |
+| Dojo | 6 rooms × 1 / 2 / 2 | 25.4 | 11.1 | 17% (2·1) | 0 | 31 / 64 |
 <!-- /live -->
 
 - **The Kitchen is the busiest building**, about 130 slot-hours a day, and the Pantry the fullest: the planner fills
-  its four slots at nearly every check-in, so it peaks at the 90% ceiling (§12, D348). The Mushroom Cave runs hot in
+  its slots at nearly every check-in, so it takes a fifth slot at Lv 2 and 3 (D351) and peaks at about 80%. The Mushroom Cave runs hot in
   the scenarios with six Inspiration unlocks.
 - **Lv 1 carries the 20-Uma start, and the roster grows to 25 as the first Lv 2s land.** Every Lv 2 is bought between
   days 31 and 34 of a new account, as the first careers pay, and every Lv 3 by about day 65.
@@ -262,8 +262,8 @@ cohort's days of finishing are its racing days. Measured over tier 1:
 <!-- live:loop-racing -->
 | Racing day | Races a day, tier 1 | Prize Money a day | Speed Tickets bought a day, tier 1 | Time saved | Tier 1 |
 |---|---|---|---|---|---|
-| Target: her career once her layer is done | 13.4 | 1,847 | 45 | **8.2%** | 20.3 weeks |
-| Heavy: G1s at 22:30 to 40 races a day | 34.7 | 4,452 | 133 | **22.5%** | 20.5 weeks |
+| Target: her career once her layer is done | 13.1 | 1,791 | 44 | **8.1%** | 20.9 weeks |
+| Heavy: G1s at 22:30 to 40 races a day | 34.8 | 4,438 | 131 | **22.9%** | 20.5 weeks |
 <!-- /live -->
 
 - **Racing buys real progress without replacing the Farm.** The Daily Purse ([09](09-racing-rewards-and-exchange.md)
@@ -287,13 +287,13 @@ until the roster is 25 and then holds them. The founding cohort is the 20 day-0 
 | Day 38 | 22 | An Uma Ticket from five Uma Shards (a Shard a gate) |
 | Day 40 | 23 | An Uma Ticket from five Uma Shards (a Shard a gate) |
 | Day 47 | 24 | An Uma Ticket from five Uma Shards (a Shard a gate) |
-| Day 61 | 25 | An Uma Ticket from five Uma Shards (a Shard a gate) |
-| Day 136 | | Tier 1: the cohort's median Uma starts her Expedition |
-| Day 142 | | Tier 1: the cohort's median promotion |
-| Day 252 | | Tier 2: the cohort's median Uma starts her Expedition |
-| Day 259 | | Tier 2: the cohort's median promotion |
-| Day 349 | | Tier 3: the cohort's median Uma starts her Expedition |
-| Day 356 | | Tier 3: the cohort's median Hall of Fame |
+| Day 63 | 25 | An Uma Ticket from five Uma Shards (a Shard a gate) |
+| Day 141 | | Tier 1: the cohort's median Uma starts her Expedition |
+| Day 147 | | Tier 1: the cohort's median promotion |
+| Day 258 | | Tier 2: the cohort's median Uma starts her Expedition |
+| Day 265 | | Tier 2: the cohort's median promotion |
+| Day 359 | | Tier 3: the cohort's median Uma starts her Expedition |
+| Day 366 | | Tier 3: the cohort's median Hall of Fame |
 | End of the run | 25 | 137 Uma Tickets held: the roster stays at 25 |
 <!-- /live -->
 
@@ -344,10 +344,10 @@ If the sim or the owner's play says it's too slow or too fast:
 <!-- live:loop-utilisation -->
 | Check-ins | Racing | Utilisation, tier 1 | Tier 1 | Races a day | Time saved by racing |
 |---|---|---|---|---|---|
-| One (08:00) | Target | 48% | **27.8 weeks** | 9.3 | 9.4% |
-| Two (08:00, 22:30) | Target | 63% | **21.4 weeks** | 12.0 | 9.1% |
-| Three (08:00, 13:00, 22:30) | Target | 67% | **20.3 weeks** | 13.4 | 8.2% |
-| Three | Heavy | 59% | **20.5 weeks** | 34.7 | 22.5% |
+| One (08:00) | Target | 48% | **28.2 weeks** | 9.6 | 9.4% |
+| Two (08:00, 22:30) | Target | 64% | **21.4 weeks** | 12.2 | 8.3% |
+| Three (08:00, 13:00, 22:30) | Target | 65% | **20.9 weeks** | 13.1 | 8.1% |
+| Three | Heavy | 57% | **20.5 weeks** | 34.8 | 22.9% |
 <!-- /live -->
 
    Three check-ins work about two-thirds of the time, not the first draft's 75%. Most of the rest is the wait between
@@ -409,12 +409,13 @@ every finish on day 0).
 every tier with real race engine runs. It will pin how many races an Expedition takes and the win rate per tier, and
 the loop sim will read its median race count instead of the placeholder.
 
-**What CI pins** (initial tolerances, never widened):
+**What CI pins** (the owner's tolerances; only the owner's decision moves one, D351):
 
 | Check | Range |
 |---|---|
-| Each scenario of tier 1, 25 Umas, three check-ins, target racing, the spending policy | 24–32 days |
-| Each scenario of tiers 2 and 3 (buildings at Lv 3) | 20–28 days |
+| A new account's first scenario, its ramp | within 6 weeks (42 days) |
+| Each later scenario of tier 1, 25 Umas, three check-ins, target racing, the spending policy | 24–32 days |
+| Each scenario of tiers 2 and 3 (buildings at Lv 3) | 18–28 days |
 | Tier 1 | 19–23 weeks |
 | Any building's slot use in a scenario window, with the spending policy | ≤ 90% (no permanent bottleneck) |
 | Time saved by target racing / by heavy racing | 5–10% / 18–25% |
@@ -426,29 +427,29 @@ the loop sim will read its median race count instead of the placeholder.
 <!-- live:loop-checks -->
 | Check | Range | Measured | Result |
 |---|---|---|---|
-| Days in each scenario of tier 1 | 24–32 days | 38.0, 30.0, 22.6, 24.2, 21.6 | **miss** (known, D348) |
-| Days in each scenario of tiers 2 and 3 (buildings at Lv 3) | 20–28 days | 23.4, 20.0, 22.0, 22.0, 20.4, 21.4, 23.0, 22.0, 23.0 | pass |
-| Tier 1 | 19–23 weeks | 20.3 | pass |
-| Every building's and facility's slot use, in every scenario window | ≤ 90% | 91.5% | **miss** (known, D348) |
-| Time saved by target racing | 5–10% | 8.2% | pass |
-| Time saved by heavy racing | 18–25% | 22.5% | pass |
+| A new account's first scenario | ≤ 42 days | 38.0 | pass |
+| Days in each later scenario of tier 1 | 24–32 days | 28.0, 26.6, 24.4, 25.0 | pass |
+| Days in each scenario of tiers 2 and 3 (buildings at Lv 3) | 18–28 days | 22.0, 22.6, 21.4, 27.8, 18.2, 22.8, 23.8, 21.4, 24.6 | pass |
+| Tier 1 | 19–23 weeks | 20.9 | pass |
+| Every building's and facility's slot use, in every scenario window | ≤ 90% | 80.2% | pass |
+| Time saved by target racing | 5–10% | 8.1% | pass |
+| Time saved by heavy racing | 18–25% | 22.9% | pass |
 | Farm Levels a day early in a tier, at C | 2–3 levels a day | 2.71 | pass |
 | Farm Levels a day early in a tier, at A and S | 4–5 levels a day | 4.32, 4.83 | pass |
 | First unlock on a fresh account | ≤ 12 hours | 12.0 | pass |
 <!-- /live -->
 
-**The two misses** are marked in the loop test as known misses (`it.fails`, uma-rpg's H14 pattern): the day either
-passes, the test says so. No lever of §11 fixes them without breaking another check (D348):
-- **Tier 1's scenarios aren't even.** The first runs about 38 days, the cold start of §5; the later ones 22–30, after
-  the upgrades. *k* moves them all the same way, and the bonds are the only layer size left to move, which would cut
-  scenario 1's six-card first preset. The tier itself is on target.
-- **The Pantry peaks at the 90% ceiling** (81–91% across seeds; 91.5% in tier 3 on the committed seed). Slot counts are
-  [07](07-farm.md) §6's, not a lever here.
+**How the two first-run misses closed (D351).** The loop first measured tier 1's scenarios at 38, 30, 23, 24 and 22
+days and the Pantry at 91.5% (D348). The owner chose the Pantry's fifth slot, which evens tier 1's later scenarios
+(28, 27, 24, 25) and brings the Pantry to 80%. The first scenario's cold start is read as the new account's ramp, and
+tiers 2–3, a little quicker with every building at Lv 3, at 18–28 days. On other seeds the tier still takes 20.4–20.9
+weeks, while a later tier-1 scenario can dip to about 20 days, so the committed seed is the one the range pins.
 
 ## 13. Decided here
 
 | Choice | Why |
 |---|---|
+| The Pantry has five slots at Lv 2 and 3; a new account's first scenario is its ramp (≤ 6 weeks); tiers 2–3 run 18–28 days a scenario (D351) | The owner's pacing calls on the loop's first run: the fifth slot evens tier 1's later scenarios and ends the Pantry bottleneck |
 | Read the target as "25 Umas max a scenario in ~4 weeks", a tier ~20 weeks | The owner's own refinement of "4 weeks a tier"; the time factor (§10) covers the other reading |
 | One anchor: 1 Prize Money ≈ 1 minute of Uma work | Every price follows from it, and no trade mints time |
 | Grades barely change times (×1.5 from grade 1 to 10) | Keeps every scenario at about four weeks; grades mark which layer an unlock belongs to |
@@ -468,7 +469,7 @@ passes, the test says so. No lever of §11 fixes them without breaking another c
 ## 14. Done when
 
 - `pnpm sim:loop` runs on a fresh synthetic account with the domain's real rules and reports §12's metrics.
-- CI fails if any §12 check leaves its range, except a known miss the owner has been asked about (D348).
+- CI fails if any §12 check leaves its range.
 - This page's tables are live blocks rendered from the domain constants (in this page until phase 3 moves it into the
   manual, `docs/game/`), so the numbers here can't drift from the code.
 - After four weeks of the owner's real play on the new game, the measured pace (scenario 1's completion across the

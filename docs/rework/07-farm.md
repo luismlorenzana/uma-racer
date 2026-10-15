@@ -232,10 +232,10 @@ buildings: cooking is 30% of all Farm work, and Vegetables feed every constellat
 | Building | Lv 1 | Lv 2 | Lv 3 |
 |---|---|---|---|
 | **Kitchen** | 6 | 8 | 8, speed ×1.25 |
-| **Pantry** | 3 | 4 | 4, speed ×1.25 |
+| **Pantry** | 3 | 5 | 5, speed ×1.25 |
 | **Vegetable Garden** | 4 | 5 | 5, speed ×1.25 |
 | **Each of the other seven sites** | 2 | 3 | 3, speed ×1.25 |
-| **All ten** | **27** | **38** | 38 (47.5 slot-equivalents) |
+| **All ten** | **27** | **39** | 39 (48.75 slot-equivalents) |
 <!-- /live -->
 
 ### Slot demand at the target
@@ -248,16 +248,16 @@ tier-1 scenario's window (the cohort's median entry to its median finish):
 <!-- live:loop-farm-slots -->
 | Building | Slots Lv 1 / 2 / 3 | Hours a day held, tier 1 | Slots needed (÷ 18) | Use in 1·1 | Use in 1·2 | Use in 1·3 | Use in 1·4 | Use in 1·5 | Peak, all tiers |
 |---|---|---|---|---|---|---|---|---|---|
-| Sugar Grove | 2 / 3 / 3 | 20.6 | 1.1 | 31% | 33% | 29% | 37% | 24% | 42% (3·2) |
-| Orchard | 2 / 3 / 3 | 20.5 | 1.1 | 32% | 33% | 27% | 39% | 25% | 40% (2·4) |
-| Fishery | 2 / 3 / 3 | 20.3 | 1.1 | 33% | 33% | 31% | 33% | 25% | 38% (3·2) |
-| Nut Grove | 2 / 3 / 3 | 20.3 | 1.1 | 22% | 35% | 41% | 22% | 40% | 41% (1·3) |
-| Herb Garden | 2 / 3 / 3 | 20.2 | 1.1 | 29% | 28% | 36% | 24% | 35% | 37% (2·3) |
-| Fields | 2 / 3 / 3 | 28.0 | 1.6 | 50% | 29% | 60% | 29% | 48% | 60% (1·3) |
-| Vegetable Garden | 4 / 5 / 5 | 44.2 | 2.5 | 58% | 30% | 28% | 34% | 34% | 65% (3·1) |
-| Mushroom Cave | 2 / 3 / 3 | 39.0 | 2.2 | 51% | 55% | 55% | 77% | 63% | 85% (2·4) |
-| Pantry | 3 / 4 / 4 | 62.9 | 3.5 | 58% | 64% | 83% | 84% | 66% | 91% (3·3) |
-| Kitchen | 6 / 8 / 8 | 133.0 | 7.4 | 74% | 75% | 64% | 80% | 80% | 83% (2·5) |
+| Sugar Grove | 2 / 3 / 3 | 20.8 | 1.2 | 31% | 33% | 32% | 30% | 28% | 40% (2·2) |
+| Orchard | 2 / 3 / 3 | 20.8 | 1.2 | 32% | 36% | 27% | 34% | 23% | 40% (3·2) |
+| Fishery | 2 / 3 / 3 | 19.9 | 1.1 | 33% | 34% | 31% | 35% | 20% | 39% (2·2) |
+| Nut Grove | 2 / 3 / 3 | 20.5 | 1.1 | 22% | 32% | 41% | 22% | 34% | 41% (1·3) |
+| Herb Garden | 2 / 3 / 3 | 19.6 | 1.1 | 29% | 27% | 43% | 19% | 34% | 43% (1·3) |
+| Fields | 2 / 3 / 3 | 27.3 | 1.5 | 50% | 27% | 54% | 31% | 43% | 57% (2·3) |
+| Vegetable Garden | 4 / 5 / 5 | 44.0 | 2.4 | 58% | 34% | 31% | 30% | 33% | 63% (2·1) |
+| Mushroom Cave | 2 / 3 / 3 | 38.0 | 2.1 | 51% | 58% | 52% | 74% | 54% | 76% (3·4) |
+| Pantry | 3 / 5 / 5 | 67.6 | 3.8 | 56% | 55% | 65% | 76% | 63% | 80% (2·3) |
+| Kitchen | 6 / 8 / 8 | 124.2 | 6.9 | 74% | 63% | 65% | 77% | 74% | 79% (2·5) |
 <!-- /live -->
 
 How to read it:
@@ -267,8 +267,8 @@ How to read it:
   dish fills only half of a 9.5-hour gap between check-ins. Six slots carry the 20-Uma start; the eight of Lv 2 carry
   25 at about 80%.
 - **The Pantry is the fullest.** The planner fills its slots at nearly every check-in, and the owner queues more crafts
-  behind one that ends early, so its four slots run at the 90% ceiling (a known miss, D348): the recommendation is a
-  fifth slot at Lv 2 ([open questions](../open-questions.md)).
+  behind one that ends early, so it has five slots at Lv 2 and 3, not four (D351): with four it ran at the 90% ceiling,
+  with five it peaks at about 80%.
 - **The Vegetable Garden is the hot site in scenario 1**, where 12 of the 27 unlocks are constellation nodes, and the
   **Mushroom Cave** in the scenarios with six Inspiration unlocks. Fields carries 63 of a tier's 107 sides.
 - **The stat sites run under half full** since D338 halved the Gym's singles ([08](08-item-catalogue-and-recipes.md)
@@ -282,7 +282,7 @@ minute of Uma work** (D331), plus crafted items of the building's own family. Th
 family, so they take one or two of each.
 
 <!-- live:farm-upgrades -->
-| Building | To Lv 2 (one more slot; two for the Kitchen) | To Lv 3 (speed ×1.25) |
+| Building | To Lv 2 (one more slot; two for the Pantry; two for the Kitchen) | To Lv 3 (speed ×1.25) |
 |---|---|---|
 | Each site | 1,200 PM + 4 crafted grade 1 of its family | 2,400 PM + 4 crafted grade 3 of its family |
 | Pantry | 1,500 PM + 1 crafted grade 1 of each of the eight families | 6,000 PM + 1 crafted grade 3 of each family |

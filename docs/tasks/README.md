@@ -20,7 +20,7 @@ and bonded per Uma, uma-rpg's farming catalogue, Prize Money and the Exchange, a
 | Phase | Milestone | State |
 |---|---|---|
 | 1 | M032 — a sound base: the API on the workspace domain, the startup budget, GitHub Packages, the live manual | **Done, 2026-10-14** (D337) |
-| 2 | M033 — the rework's rules and `sim:loop` (T125–T133) | **Done, 2026-10-14** (D340–D350). Two pacing calls wait on the owner ([open questions](../open-questions.md)) |
+| 2 | M033 — the rework's rules and `sim:loop` (T125–T133) | **Done, 2026-10-14** (D340–D351) |
 | 3 | The generation-2 cutover and the new game on plain screens | **Next:** specified after the owner's pacing calls. **The owner starts the new game here** |
 | 4 | Push notifications, a port of uma-rpg's | Only if the owner asks after playing (D336) |
 | 5–8 | Platform master data · the Hub · the Farm and Training scenes · the race on Phaser | Specified in turn |

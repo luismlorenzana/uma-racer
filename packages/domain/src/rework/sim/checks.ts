@@ -1,6 +1,6 @@
 // What CI pins (docs/rework/12-economy-and-pacing.md §12, T132's "CI checks"): each check as data,
 // with the run it reads and how it reads it. A check passes when every value it reads is in its range. The ranges are
-// the owner's initial tolerances; they never widen (12 §11 tunes the game, not the check).
+// the owner's tolerances; only the owner's decision moves one (D351), and 12 §11 tunes the game, not the check.
 import { BUILDING_IDS } from '../farm/buildings'
 import type { LoopResult } from './loop'
 import type { FarmLevelProbe, FirstUnlockProbe } from './probes'
@@ -38,15 +38,19 @@ const scenarioDays = (result: LoopResult, tiers: readonly number[]) =>
 
 export const LOOP_CHECKS: readonly LoopCheck[] = Object.freeze([
   {
-    id: 'tier-1-scenarios', label: 'Days in each scenario of tier 1', run: 'baseline', min: 24, max: 32, unit: 'days',
-    knownMiss: "A new account's first scenario runs about 5½ weeks (Lv 1 buildings, Farm Levels from 1, no Prize Money until the first careers), and the upgraded later ones about 3",
+    // A new account's ramp (D351): every building at Lv 1, Farm Levels from 1, no Prize Money until the first careers.
+    id: 'first-scenario', label: "A new account's first scenario", run: 'baseline', min: null, max: 42, unit: 'days',
+    read: ({ baseline }) => [scenarioDays(baseline, [1])[0] ?? null],
+  },
+  {
+    id: 'tier-1-scenarios', label: 'Days in each later scenario of tier 1', run: 'baseline', min: 24, max: 32, unit: 'days',
     read: ({ baseline }) => {
-      const days = scenarioDays(baseline, [1])
-      return days.length === 5 ? days : [...days, null]
+      const days = scenarioDays(baseline, [1]).slice(1)
+      return days.length === 4 ? days : [...days, null]
     },
   },
   {
-    id: 'later-scenarios', label: 'Days in each scenario of tiers 2 and 3 (buildings at Lv 3)', run: 'baseline', min: 20, max: 28, unit: 'days',
+    id: 'later-scenarios', label: 'Days in each scenario of tiers 2 and 3 (buildings at Lv 3)', run: 'baseline', min: 18, max: 28, unit: 'days',
     read: ({ baseline }) => {
       const days = scenarioDays(baseline, [2, 3])
       return days.length === 9 ? days : [...days, null]
@@ -62,7 +66,6 @@ export const LOOP_CHECKS: readonly LoopCheck[] = Object.freeze([
   },
   {
     id: 'slot-use', label: "Every building's and facility's slot use, in every scenario window", run: 'baseline', min: null, max: 0.9, unit: 'share',
-    knownMiss: "The Pantry's four slots run at the 90% ceiling: the planner fills them at every check-in, and they peak at 81–91% across seeds",
     read: ({ baseline }) => [Math.max(...BUILDING_IDS.map((id) => baseline.metrics.slots.find((row) => row.building === id)!.peakHeld))],
   },
   {

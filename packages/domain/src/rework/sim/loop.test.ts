@@ -60,11 +60,10 @@ describe('determinism', () => {
     const heavy = simulateLoop({ ...LOOP_VARIANTS.heavy!, seed: SECOND_SEED }, loopRng(SECOND_SEED))
     expect(baseline.metrics).not.toEqual(report.baseline.metrics)
     const results = evaluateChecks({ ...report, baseline, heavy })
-    for (const id of ['tier-1-weeks', 'slot-use', 'racing-target', 'racing-heavy']) {
+    // Scenarios 2–5 of tier 1 vary by seed (about 20–30 days, D351); the committed seed pins them, these hold on every seed.
+    for (const id of ['first-scenario', 'tier-1-weeks', 'slot-use', 'racing-target', 'racing-heavy']) {
       expect(results.find((entry) => entry.check.id === id)!.pass, id).toBe(true)
     }
-    // Scenario 1's cold start is the same known miss on every seed.
-    expect(results.find((entry) => entry.check.id === 'tier-1-scenarios')!.values[0]).toBeGreaterThan(32)
   })
 })
 

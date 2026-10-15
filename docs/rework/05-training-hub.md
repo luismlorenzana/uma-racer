@@ -669,10 +669,10 @@ held over a tier-1 scenario's window:
 <!-- live:loop-hub-slots -->
 | Building | Slots Lv 1 / 2 / 3 | Hours a day held, tier 1 | Slots needed (÷ 18) | Use in 1·1 | Use in 1·2 | Use in 1·3 | Use in 1·4 | Use in 1·5 | Peak, all tiers |
 |---|---|---|---|---|---|---|---|---|---|
-| Observatory | 2 / 3 / 3 | 30.2 | 1.7 | 62% | 41% | 36% | 36% | 46% | 77% (3·1) |
-| Lineage Hall | 2 / 3 / 3 | 26.9 | 1.5 | 26% | 45% | 37% | 52% | 53% | 53% (3·2) |
-| Gym | 5 rooms × 1 / 2 / 2 | 49.0 | 2.7 | 13% | 25% | 33% | 21% | 21% | 33% (1·3) |
-| Dojo | 6 rooms × 1 / 2 / 2 | 25.5 | 1.4 | 13% | 10% | 10% | 8% | 9% | 17% (2·1) |
+| Observatory | 2 / 3 / 3 | 29.1 | 1.6 | 62% | 44% | 35% | 31% | 48% | 76% (3·1) |
+| Lineage Hall | 2 / 3 / 3 | 26.3 | 1.5 | 26% | 48% | 38% | 48% | 48% | 54% (2·2) |
+| Gym | 5 rooms × 1 / 2 / 2 | 45.6 | 2.5 | 13% | 24% | 30% | 20% | 20% | 31% (3·3) |
+| Dojo | 6 rooms × 1 / 2 / 2 | 25.4 | 1.4 | 13% | 12% | 9% | 9% | 8% | 17% (2·1) |
 <!-- /live -->
 
 - **Lv 1 carries the 20-Uma start and Lv 2 carries 25**, the same rule as the Farm's buildings ([07](07-farm.md) §6).
