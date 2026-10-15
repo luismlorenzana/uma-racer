@@ -17,7 +17,7 @@ import { Button } from '../../ui/Button'
 import { Crest } from '../../ui/Crest'
 import { FlairCards } from '../../ui/FlairCards'
 import { RaceMarkIcon } from '../../ui/RaceMarkIcon'
-import { SegmentedControl } from '../../ui/SegmentedControl'
+import { Tabs } from '../../ui/Tabs'
 import { NO_RECORDS, useGame, useNow, useRuntime, type G2Applied } from '../../app/game'
 import { useReducedMotionSetting } from '../../app/motion'
 import { PlaceHeader } from '../../ui/PlaceHeader'
@@ -148,7 +148,7 @@ function AdvancePanel({ uma, content, env, onClose }: { uma: UmaState; content: 
         <Crest tone="accent">T{sheet.to.T}</Crest>
       </div>
       <p className="font-display text-[15px] font-semibold text-accent-strong">{racingWords('advance-level', { from: sheet.levelFrom, to: sheet.levelTo })}</p>
-      <SegmentedControl
+      <Tabs
         label={racingWords('stats-before-after', { preset: PRESET_NAME[preset] })}
         value={preset}
         onChange={setPreset}

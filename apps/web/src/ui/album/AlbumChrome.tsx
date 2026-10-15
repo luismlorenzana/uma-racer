@@ -117,7 +117,7 @@ export function AlbumChrome({
               aria-pressed={query.view === view}
               aria-label={`${view === 'icons' ? 'Icon' : view === 'cards' ? 'Card' : 'List'} view`}
               onClick={() => onQueryChange({ ...query, view })}
-              className={`flex h-9 w-9 items-center justify-center rounded-xs ${
+              className={`flex h-11 w-11 items-center justify-center rounded-xs ${
                 query.view === view ? 'bg-panel text-ink shadow-1' : 'text-ink-faint'
               }`}
             >
