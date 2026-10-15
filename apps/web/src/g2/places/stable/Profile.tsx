@@ -120,6 +120,7 @@ export default function Profile({ place, rest, umaId, tab: routeTab }: PageProps
     ['overview', 'Overview', base], ['needs', 'Needs', `${base}/needs`], ['skills', 'Skills', `${base}/skills`], ['racing', 'Racing', `${base}?tab=racing`],
   ]
   const Target = PROFILE_UI.TargetToggle
+  const Needs = PROFILE_UI.Needs
   const arrow = 'flex size-11 shrink-0 items-center justify-center rounded-full text-ink-soft disabled:opacity-30'
 
   return (
@@ -166,7 +167,7 @@ export default function Profile({ place, rest, umaId, tab: routeTab }: PageProps
           ))}
         </nav>
         {tab === 'overview' && <Overview umaId={umaId} featured={view?.featured === umaId} ready={doing?.kind === 'ready'} />}
-        {tab === 'needs' && <NeedsFallback umaId={umaId} />}
+        {tab === 'needs' && (Needs !== undefined ? <Suspense fallback={null}><Needs umaId={umaId} /></Suspense> : <NeedsFallback umaId={umaId} />)}
         {tab === 'skills' && <Skills umaId={umaId} />}
         {tab === 'racing' && <Racing umaId={umaId} />}
       </div>

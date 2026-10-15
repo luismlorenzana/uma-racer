@@ -1,6 +1,6 @@
 // Synthetic accounts for the dev mount (T137), picked by `?seed=`: every one is built by the rework's own operations on
-// `rework/sim`'s invented content, never from the private packs. Later tasks add their seeds to `SEEDS` (T142's
-// `stopped`). The Umas get invented display names with distinct initials, so a pip's fallback initial says who it is.
+// `rework/sim`'s invented content, never from the private packs. Later tasks add their seeds to `SEEDS`. The Umas get
+// invented display names with distinct initials, so a pip's fallback initial says who it is.
 //
 // - `busy` (the default): `createLoop` on BASELINE's policies with the roster at its cap of 25, through day 2. At day
 //   3's 08:00 check-in every Uma is Ready; of the Farm's, the owner collects three in five and repeats their work, and
@@ -16,12 +16,21 @@
 //   the game calls before phase 9: the first is Free, so Promote is enabled; the second is still working, so the
 //   sheet offers Collect, Recall and −30m first.
 // - `tired` and `spent` (T141): `busy` with today's Daily Purse past its first or second edge.
-import { devGrant, nextCheckIn, OPERATIONS, repeat, type OperationEnv } from '@racer/domain/rework/check-in'
+// - `stopped` (T142): `busy` with stock drained so queues dropped. At its 08:00 check-in the owner queues the same
+//   Pantry jobs again (Chopped Carrot ×10 then ×5; Dried Basil ×10) and a Fruits dish behind the Kitchen's, then sells
+//   the Carrots, all but six Basil and the Apple Preserve, and buys 12 Speed Tickets with part of the proceeds. The clock
+//   opens at 13:05: the three queues dropped at 12:30 and 12:48, so Queue stopped offers Buy and restart, Start ×6 and
+//   Make them, and Prize Money and Speed Tickets are on hand for Speed up.
+// `?at=HH:MM` moves any seed's clock to that time of its own day, forward or back (T142).
+import { devGrant, localMinute, nextCheckIn, OPERATIONS, repeat, type OperationEnv } from '@racer/domain/rework/check-in'
+import { buy, sell, sellPrice, SPEED_TICKET_PRICE } from '@racer/domain/rework/exchange'
+import type { BuildingId } from '@racer/domain/rework/farm'
+import { SPEED_TICKET_ID } from '@racer/domain/rework/items'
 import {
   BASELINE, checkInsOn, createLoop, dayStart, loopRng, MS_PER_HOUR, MS_PER_MINUTE, SIM_CONTENT, SIM_UMAS, UTC_OFFSET_MIN, type LoopConfig,
 } from '@racer/domain/rework/sim'
-import { EXPEDITION_WINS, isLastScenario, isRefusal, newAccount, recordExpeditionRace } from '@racer/domain/rework/tiers'
-import { collect, newWorkState, queue, type WorkState } from '@racer/domain/rework/work'
+import { EXPEDITION_WINS, isLastScenario, isRefusal, newAccount, recordExpeditionRace, type Refusal } from '@racer/domain/rework/tiers'
+import { collect, newWorkState, queue, type WorkRequest, type WorkState } from '@racer/domain/rework/work'
 import type { G2Records, G2Sync } from '../app/game'
 import { withSyntheticSkills } from './skills'
 
@@ -165,10 +174,48 @@ function purseAt(name: string, gross: number): G2Seed {
   return seed(name, { ...state, profile: { ...state.profile, purse: { day, gross, featuredPaid: [] } } }, OPENS)
 }
 
+/** The jobs `stopped` queues again at 08:00, behind the same Umas' running ones. */
+const REQUEUED: readonly { readonly outfitId: string; readonly building: BuildingId; readonly request: WorkRequest }[] = [
+  { outfitId: 'sim-uma-20', building: 'pantry', request: { kind: 'craft', item: 'chopped-carrot', count: 10 } },
+  { outfitId: 'sim-uma-20', building: 'pantry', request: { kind: 'craft', item: 'chopped-carrot', count: 5 } },
+  { outfitId: 'sim-uma-02', building: 'pantry', request: { kind: 'craft', item: 'dried-basil', count: 10 } },
+  { outfitId: 'sim-uma-23', building: 'kitchen', request: { kind: 'cook', item: 'dish-fruits-1', count: 1 } },
+]
+
+/** What `stopped` sells at 08:00, and how many of each it keeps. */
+const DRAINED: readonly { readonly item: string; readonly keep: number }[] = [
+  { item: 'carrot', keep: 0 }, { item: 'basil', keep: 6 }, { item: 'apple-preserve', keep: 0 },
+]
+
+/** Speed Tickets `stopped` buys: enough for 1 h and 2 h at 13:05, short of "to 22:30". */
+const STOPPED_TICKETS = 12
+
+function stopped(): G2Seed {
+  let state = busyState().state
+  const step = (result: { readonly state: WorkState } | Refusal) => {
+    if (isRefusal(result)) throw new Error(`The stopped seed was refused: ${result.code}`)
+    state = result.state
+  }
+  for (const { outfitId, building, request } of REQUEUED) step(queue(state, { outfitId, add: { request, building } }, CHECK_IN, SEED_ENV))
+  for (const { item, keep } of DRAINED) {
+    step(sell(state, { opId: `seed-sell-${item}`, itemId: item, qty: (state.items[item] ?? 0) - keep, unitPrice: sellPrice(item)! }, CHECK_IN))
+  }
+  step(buy(state, { opId: 'seed-buy-tickets', sku: SPEED_TICKET_ID, qty: STOPPED_TICKETS, unitPrice: SPEED_TICKET_PRICE }, CHECK_IN))
+  return seed('stopped', state, CHECK_IN + 5 * MS_PER_HOUR + 5 * MS_PER_MINUTE)
+}
+
 /** Every seed by name; the first is the default. */
 export const SEEDS: Readonly<Record<string, () => G2Seed>> = Object.freeze({
-  busy, fresh, quiet, gate, promote, tired: () => purseAt('tired', 6_420), spent: () => purseAt('spent', 13_100),
+  busy, fresh, quiet, gate, promote, tired: () => purseAt('tired', 6_420), spent: () => purseAt('spent', 13_100), stopped,
 })
+
+/** `?at=HH:MM`: the seed's clock moved to that minute of its own local day, or the seed as it is. */
+export function seedAt(made: G2Seed, at: string | null): G2Seed {
+  const match = at === null ? null : /^([01]\d|2[0-3]):([0-5]\d)$/.exec(at)
+  if (match === null) return made
+  const midnight = made.at - localMinute(made.at, made.utcOffsetMin) * MS_PER_MINUTE - (made.at % MS_PER_MINUTE)
+  return { ...made, at: midnight + (Number(match[1]) * 60 + Number(match[2])) * MS_PER_MINUTE }
+}
 
 const SEED_KEY = 'uma-racer:g2:dev-seed'
 const SYNC_STATES: readonly G2Sync[] = ['synced', 'offline', 'paused', 'waiting', 'failing']
@@ -194,7 +241,7 @@ function remember(name: string): void {
 
 /**
  * The seed `?seed=` names (remembered for this tab, so a reload on any route keeps it), else `busy`; `?sync=` previews
- * the Sync chip's states.
+ * the Sync chip's states, and `?at=HH:MM` moves its clock (T142).
  */
 export function seedFor(search: string): G2Seed {
   const params = new URLSearchParams(search)
@@ -202,6 +249,6 @@ export function seedFor(search: string): G2Seed {
   const name = [asked, remembered()].find((value): value is string => value !== null && value in SEEDS) ?? 'busy'
   if (asked !== null) remember(name)
   const sync = params.get('sync') as G2Sync | null
-  const made = SEEDS[name]!()
+  const made = seedAt(SEEDS[name]!(), params.get('at'))
   return sync !== null && SYNC_STATES.includes(sync) ? { ...made, sync } : made
 }

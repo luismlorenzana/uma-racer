@@ -2,7 +2,7 @@
 // seeds only; the port's clock is held at the seed's time so every count is fixed.
 import { render } from '@testing-library/react'
 import { domMax } from 'motion/react'
-import { MemoryRouter, useLocation, useRoutes, type Location } from 'react-router'
+import { MemoryRouter, useLocation, useRoutes, type InitialEntry, type Location } from 'react-router'
 import { vi } from 'vitest'
 import type { G2Game, G2Rules } from './app/game'
 import { GameProvider } from './app/GameProvider'
@@ -59,9 +59,9 @@ function Probe({ seen }: { seen: { current: Location | null } }) {
 
 /**
  * The real routes in a declarative memory router (the data router's fetch `Request` refuses jsdom's AbortSignal under
- * Node), with the location read back after each render.
+ * Node), with the location read back after each render. `path` may carry navigation state, as a reload keeps it.
  */
-export function renderG2(path: string, game: G2Game, rules: G2Rules | null = RULES) {
+export function renderG2(path: InitialEntry, game: G2Game, rules: G2Rules | null = RULES) {
   const seen: { current: Location | null } = { current: null }
   const result = render(
     <MotionRoot features={domMax}>

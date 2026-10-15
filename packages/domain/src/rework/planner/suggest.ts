@@ -297,7 +297,7 @@ export interface Needs {
    * work her shortfalls take. Bonds still waiting for a card have no dish or grade yet, so they aren't in it.
    */
   readonly estimateSeconds: number
-  /** Her first three startable lines, each with the Free Uma and size that would start it. */
+  /** Her first three startable lines, each with its own Free Uma and the size that would start it. */
   readonly startable: readonly { readonly line: PlanLine; readonly start: Suggestion }[]
 }
 
@@ -337,13 +337,17 @@ export function needsFor(state: WorkState, outfitId: string, now: number, contex
   const timing = timingOf(current, now, context)
   const bench = new Bench(current, planned.freeStock)
   const startable: { line: PlanLine; start: Suggestion }[] = []
+  // Each line takes its own Free Uma, as the suggestions do: one slot per Uma (01 §2), so every Start can run (T142).
+  const working = new Set<string>()
   for (const line of [...mine.dishes, ...mine.crafted, ...mine.raw]) {
     if (startable.length >= NEEDS_STARTABLE) break
     if (line.short <= 0) continue
     for (const worker of freeUmas(current)) {
+      if (working.has(worker.outfitId)) continue
       const job = jobFor(current, bench, worker, line.item, 'fit', timing)
       if (job === null) continue
       bench.claim(job.slot, (recipeOf(line.item)?.inputs ?? []).map(({ item, qty }) => ({ item, qty: qty * job.size })))
+      working.add(worker.outfitId)
       startable.push({ line, start: { ...job, forTarget: outfitId } })
       break
     }

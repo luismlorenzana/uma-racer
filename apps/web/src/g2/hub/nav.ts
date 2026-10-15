@@ -11,6 +11,10 @@ export interface G2NavState {
   readonly back?: boolean
   /** Collect all's intent for the check-in sheet (T142); a reload never collects again. */
   readonly collect?: boolean
+  /** The check-in sheet's Collect all, once it ran: its receipt is the summary's, on a reload too (T142). */
+  readonly collectId?: string
+  /** The check-in sheet's latest Repeat all, the same way (T142). */
+  readonly repeatId?: string
 }
 
 export const GLOBAL_SHEETS = Object.freeze(['menu', 'featured', 'check-in'] as const)
