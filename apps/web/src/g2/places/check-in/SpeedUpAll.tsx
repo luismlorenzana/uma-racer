@@ -61,18 +61,16 @@ export function SpeedUpAll({ taps, onBack }: { taps: Taps; onBack: () => void })
               >
                 {summaryWords('speed-option', { span: option.label, n: grouped(option.tickets) })}
               </button>
-              {option.refusal !== null && (
-                <p className="flex flex-wrap items-center gap-x-2 text-[13px] text-ink-soft">
-                  <span>{showWords(option.refusal, context)}</span>
-                  {option.short && (
-                    <Link to={TICKETS_ROW} state={{ back: true }} className="inline-flex min-h-11 items-center font-semibold text-accent-strong underline">
-                      {summaryWords('buy-tickets')}
-                    </Link>
-                  )}
-                </p>
-              )}
+              {option.refusal !== null && <p className="text-[13px] text-ink-soft">{showWords(option.refusal, context)}</p>}
             </li>
           ))}
+          {options.some((option) => option.short) && (
+            <li>
+              <Link to={TICKETS_ROW} state={{ back: true }} className="inline-flex min-h-11 items-center text-[14px] font-semibold text-accent-strong underline">
+                {summaryWords('buy-tickets')}
+              </Link>
+            </li>
+          )}
         </ul>
       )}
       {used !== null && <p role="status" className="text-[13px] text-success">{summaryWords('speed-done', { n: grouped(used) })}</p>}

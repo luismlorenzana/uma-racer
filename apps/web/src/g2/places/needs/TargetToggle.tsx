@@ -18,7 +18,7 @@ export default function TargetToggle({ umaId }: ProfileSlotProps) {
   const at = marked.indexOf(umaId)
   const isTarget = at >= 0
   return (
-    <div data-g2="target-toggle" className="flex flex-wrap items-center gap-2">
+    <div data-g2="target-toggle" className="flex max-w-44 shrink-0 flex-col items-end gap-1 text-right">
       <button
         type="button"
         aria-pressed={isTarget}
@@ -32,7 +32,7 @@ export default function TargetToggle({ umaId }: ProfileSlotProps) {
         {needsWords(isTarget ? 'remove' : 'mark')}
       </button>
       {isTarget && <span className="text-[12px] font-semibold text-ink-soft">{needsWords('is-target', { n: at + 1, max: MAX_TARGETS })}</span>}
-      <TapNoteLine tap={tap} className="w-full" />
+      <TapNoteLine tap={tap} className="text-[12px]" />
     </div>
   )
 }
