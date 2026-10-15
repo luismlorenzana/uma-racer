@@ -123,8 +123,10 @@ the module that owns that rule now, or the use goes with the retired system; `pn
 2. **Nothing old remains** (M034 #2, 13 §9, 06 §6). This prints nothing:
    ```bash
    git grep -n -i -E "puzzle|friendship|constellation level|training ticket|card coupon|inspiration token|rpg|priconne|spark rival" \
-     -- apps packages scripts | grep -v -E "racing RPG|uma-rpg|friendshipBonus"
+     -- apps packages scripts ':!apps/web/src/app/router.test.tsx' | grep -v -E "racing RPG|uma-rpg|friendshipBonus"
    ```
+   `apps/web/src/app/router.test.tsx` is the one file allowed: check 6 walks 11 §7.2's deleted rows to `/`, so it
+   names them.
 3. **PixiJS for the race only.** `git grep -l "from 'pixi.js'" -- apps packages` lists only `apps/web/src/scenes/race/`.
 4. **The moves are complete.** This prints nothing, and `apps/web/src/g2`, `apps/api/src/save-g2` and
    `packages/domain/src/rework` don't exist:
@@ -138,7 +140,8 @@ the module that owns that rule now, or the use goes with the retired system; `pn
    pnpm exec tsc -p tsconfig.reach.json --listFilesOnly | sed -n "s|^$PWD/||p" | sort > "$REACH"; rm tsconfig.reach.json
    git ls-files 'src/*.ts' 'src/*.tsx' | grep -v -E '\.test\.tsx?$|/__fixtures__/|\.d\.ts$' | sort | comm -23 - "$REACH"
    ```
-   The same check runs on `packages/domain` with `files` set to every export entry of its `package.json`.
+   The same check runs on `packages/domain` with `files` set to every export entry of its `package.json` plus
+   `src/docs/render.ts`, the live-block renderer that only `pnpm docs:update` and the docs test run.
 6. **Redirects.** T137's router test walks 11 §7.2's table against the live router (11 §14).
 7. **Docs.** The docs check passes on the moved pages, and this prints nothing:
    ```bash
