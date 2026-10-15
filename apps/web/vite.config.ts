@@ -78,6 +78,8 @@ export default defineConfig(({ mode }) => {
     server: {
       // `host: true` exposes the dev server on the LAN so the iPhone can load it directly.
       host: true,
+      // The new game's measure build lands beside the source; a build must not reload the pages being served.
+      watch: { ignored: ['**/dist-g2/**'] },
       proxy: {
         // API_PROXY_TARGET lets a second dev server run beside another checkout's (another agent's on 8080).
         '/api': { target: process.env.API_PROXY_TARGET ?? 'http://localhost:8080', changeOrigin: true },
