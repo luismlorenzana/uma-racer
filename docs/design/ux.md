@@ -77,6 +77,9 @@ for global sheets. The rules and their reasons are [11](../game/11-hub-and-place
   link it goes up a level instead: a sub-route to its place, a place to its page.
 - **History follows the taps** (`useLeave` in `hub/nav.ts`). An entry pushed from inside the app carries `back`, and
   leaving it pops history. A deep link replaces itself with its parent.
+- **A Page opened by a link starts at the top; Back returns to where the last one was** (D176, `app/scroll.ts`). The
+  place's own scroller is reset on a new path and restored on Back or Forward; a Peek, a sheet or a tab (a change of
+  search alone) leaves the page where it is.
 - **Full-screen flows** hide both bars and return where they came from: the race run and its result
   (`/racing/racecourse/run`), the Scenario Gate's ceremony (`/racing/scenario-gate/:umaId/ceremony`), an Uma's
   constellation tree and Extra Stats map (`/training/observatory/:umaId`, `/training/gym/:umaId`), and the collection
