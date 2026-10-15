@@ -225,6 +225,60 @@ no migrations, no legacy constants and no cutover rows; the API (T135) and the w
 - **Dev grants.** `dev-grant` runs only where the env says `dev: true`: a dev build, or an API started with
   `DEV_OPERATIONS=true`. Production refuses it (M034).
 
+### The API as built (T135)
+
+`apps/api/src/save-g2/` serves generation 2 beside today's `save/` module. `AppModule` doesn't import it until T143
+mounts it and deletes today's. The server is the authority: it re-runs every operation with `commitOperation` on its own
+rows, so the device's numbers and the server's come from one function.
+
+- **Routes.** All three sit behind `AuthGuard`. Each runs the guard first, then the stamp, then T134's parser:
+
+  | Route | Stamp | Answers |
+  |---|---|---|
+  | `GET /api/save` | In the query: `protocol=2&generation=2`, with `since` (whole ms, default 0) and `cursor` | 200 `SaveSnapshotV2` |
+  | `POST /api/sync` | In the `SyncRequestV2` body | 200 `SyncResponseV2`, every change answered in order. 409 `{ code: 'no-save' }` with no save and no create. 503 `{ code: 'content-unavailable' }` when an operation's content can't load, with nothing written |
+  | `POST /api/legacy/purge` | The body is exactly `{ protocol: 2, generation: 2 }` | 200 `PurgeResponse` |
+
+  Without a token, every route is 401. Any stamp but 2 and 2 is 426 `{ code: 'upgrade-required', protocol: 2,
+  generation: 2 }`, with nothing read or written. A body or query that T134's parsers refuse is 400, with developer text.
+  The web turns every status into plain words (T136).
+- **A sync reads only what it needs.**
+  - A create or an operation reads every row of `profile`, `umas`, `buildings`, `work` and `items`, the ledger's rule
+    rows, and `operations/{id}` for its operation ids. A create also reads `badges`, so its `exists` answers every entity.
+  - Every request reads the badge and flair rows it names.
+  - A request without a create or an operation also reads `profile/main`, so a missing save is still a 409.
+- **A sync walks the changes in order on one state.**
+  - A create is `exists`, or it writes `initialSave(createdAt)`.
+  - A badge whose base matches (0 for a missing row) is written at its stored version + 1. Any other badge is a
+    `conflict`, with the server's copy when there is one.
+  - A flair event's first write wins.
+  - An operation is `invalid` when its input is malformed or a rule throws, and the walk goes on. Otherwise it is
+    `refused` with its plain words, `repeated` with its first receipt and no writes, or `applied`.
+
+  Each document is written once a sync, with its final data and its version raised once. Every written row gets the
+  server's `savedAt`.
+- **A pull** returns the rows saved after `since`, and `operations` from the last week at most. They come in
+  `KIND_ORDER`, then `savedAt`, then id, up to 1,000 rows and 4 MiB a page. The cursor is the page's last row, written
+  `kind~savedAt~id`.
+- **Firestore** keeps each row at `saves/{uid}/{kind}/{id}` through today's codec, which stores a work row's arrays of
+  arrays as `dataJson` (D151). A sync is one transaction, with every read before the first write. A pull queries each
+  kind by `savedAt` and then document id, outside a transaction.
+- **Local dev** keeps one file, `.data/save-g2.json` (the default for `LOCAL_SAVE_FILE` here), shaped
+  `{ [uid]: { rows: { 'kind/id': row }, purge? } }`. Writes are atomic and calls are serialized.
+- **Content.** Operations run on the server's current `umas`, `races`, `cards` and `skills` packs. Each pack is verified
+  by its hash, checked as the web checks it, and built with `buildOperationEnv`. The env is cached per manifest version,
+  and the manifest is re-read at most once a minute. The env's `dev` is `DEV_OPERATIONS === 'true'`. No deploy sets
+  that variable, so production refuses `dev-grant`.
+- **The purge** ([rearchitecture/07](../rearchitecture/07-data-reset.md) §3):
+  1. If `saves/{uid}/meta/purge` exists, it answers `already` with the first purge's record.
+  2. Otherwise it counts `players/{uid}`'s subcollections and deletes the tree with `recursiveDelete`, counting each
+     document through the bulk writer.
+  3. It then `create()`s the marker `{ generation: 2, at, collections, documents }`. A device that loses the race to
+     write the marker answers `already` with the stored record.
+
+  Nothing else under `saves/` is touched. `meta` is not a save kind, so no pull returns it. The local repository clears
+  the uid's entry from the old dev file at the fixed path `.data/save.json`, counting its rows by kind.
+
 ## 7. Docs to retire or rewrite when phase 3 lands
 
 | Doc | Fate |
@@ -264,6 +318,24 @@ no migrations, no legacy constants and no cutover rows; the API (T135) and the w
 | The bounds of §6 | Under Firestore's 1 MiB document and Cloud Run's response limits, with room for a 25-Uma Collect all |
 | `dev-grant` gives items, Prize Money and Uma Tickets as `dev-grant` ledger and item rows, ends an Uma's running entry now without tickets, and jumps her to her gate with her career won and the gate's Shard paid once | M034's rehearsal reaches a gate on a fresh account. The rows keep 09 §9's audit, and the jump pays what reaching the gate pays, under the same once-only id |
 | Every receipt that moves Warehouse stock lists it in `movements`, `finish-race` its collect's too; an item row is dated when its movement applied | One rule writes every item row, and a queued start that settled during a tap keeps its own time |
+| `GET` carries its stamp as query parameters; the POSTs carry it in the body (T135) | [rearchitecture/07](../rearchitecture/07-data-reset.md) §4 stamps every request, and a GET has no body |
+| The guard runs before the stamp | The release's smoke check expects 401 without a token ([rearchitecture/07](../rearchitecture/07-data-reset.md) §6) |
+| A malformed operation input is that operation's `invalid`; a malformed request is a 400 | One bad tap never blocks the outbox behind it, and a broken request is a client bug |
+| 409 only for a missing save; per-change conflicts come in a 200 | Today's pattern: one answer accounts for every change |
+| 503 when content can't load, and only for requests with operations | No operation runs without its rules' content, and badges never need it |
+| One version bump per document per sync | Several operations on one Uma in one batch are one write |
+| An operation request reads the whole operation set | Collect all and Repeat read every Uma. At 25 Umas a sync is about 200 reads, so even 100 syncs a day stay under the free tier's 50,000 |
+| The server runs on its current content, not the device's version | Server authority; the device adopts the server's rows |
+| The purge counts with `listCollections` and the bulk writer, and writes its marker with `create()` | Exact counts, and two devices racing write one marker |
+| The local purge clears the old dev file's entry for the uid, at a fixed path, never an env var | [rearchitecture/07](../rearchitecture/07-data-reset.md) §2: the dev store is deleted, and dev uses `.data/save-g2.json`. T143 points `LOCAL_SAVE_FILE` at the new file, so the old one can't share the variable |
+| Content is cached per manifest version, re-read at most once a minute | One bucket read a minute at most, and a publish takes effect within a minute |
+| A request with no create and no operation also reads `profile/main` | Its 409 for a missing save needs the profile, at the cost of one read |
+| A create reads the `badges` too | Its `exists` answers every entity of the save (§6), and badges are entities |
+| The POSTs answer 200, not Nest's default 201 | A sync or a purge creates nothing the client addresses, and per-change answers come in a 200 |
+| The cursor is `kind~savedAt~id` | `~` is in no kind and no id, so it splits cleanly, and the cursor stays in T134's cursor alphabet |
+| A failed pack load is tried again on the next call; the manifest still waits its minute | A brief bucket error costs one 503, not a minute of them |
+| Rows are written as their JSON copy | Firestore refuses `undefined` fields, so Firestore, the dev file and the wire hold the same copy |
+| The purge counts the parent document only if it existed | `recursiveDelete` deletes it either way, and the counts stay exact |
 
 ## 9. Done when
 
