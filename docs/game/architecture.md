@@ -27,6 +27,7 @@ A pnpm 10 workspace with Turbo, on Node 22, in strict TypeScript.
 | `@racer/domain/puzzles/<module>` | The API's Puzzle operations | `src/minigames/uma-puzzles/<module>.ts`; `dist/cjs/…` |
 | `@racer/domain/rework/<area>` | The rework's rules ([below](#the-rework-modules)); not in play until T143 | `src/rework/<area>/index.ts`; `dist/cjs/rework/<area>/…` |
 | `@racer/domain/save-g2` | The generation-2 save: rows, parsers, operation commits, sync v2 ([rework/13](../rework/13-removals-and-plan-changes.md) §6); not in play until T143 | `src/save-g2/index.ts`; `dist/cjs/save-g2/…` |
+| `@racer/domain/hub` | The new game's place registry and Hub view ([below](#the-rework-modules)); not in play until T143 | `src/hub/index.ts`; `dist/cjs/hub/…` |
 
 The API resolves with Node16 rules, so it takes the `require` condition and reads the built CommonJS. Everything else
 takes `default` and reads the source. Turbo builds the domain before any package's `lint`, `test`, `build` or `dev`.
@@ -57,7 +58,9 @@ domain's source, and its test runs the checks in CI.
 
 The rules of the [game rework](../rework/README.md), built in phase 2 (D340–D350) under
 `packages/domain/src/rework/<area>/` and exported lazily as `@racer/domain/rework/<area>`. **None of it is in play
-yet:** nothing in `apps/web` or `apps/api` imports them until phase 3's cutover, which moves them to their final homes.
+yet.** Phase 3 builds the new game beside today's app ([M034](../tasks/M034-generation-2-cutover.md)): `apps/web/src/g2/`
+imports the rework modules, reachable only at `/dev/g2/*` in development, while today's entry imports none of them and
+`apps/api` neither. The cutover (T143) makes `g2/` the entry and moves the modules to their final homes.
 
 | Area | Holds |
 |---|---|
@@ -82,7 +85,7 @@ The rules every area follows:
 - **Numbers are named constants** citing their rework page, pinned by tests beside the modules. A number changes only
   with its page, its test and a decision entry.
 - **Art ids are uma-art's**, checked against the package's indexes by a test (`@luismlorenzana/uma-art`, a dev
-  dependency).
+  dependency of the domain; also a dependency of `@racer/web`, whose new game draws the Hub's buildings from it).
 - **State, not saves.** Plain typed state (`rework/types.ts`) shaped after the generation-2 save kinds
   ([rework/13](../rework/13-removals-and-plan-changes.md) §6). Each owner action is a pure function
   `(state, input, now, env?) → { state, receipt } | Refusal`, and a refusal carries plain words, never protocol names.
@@ -96,12 +99,22 @@ through `runOnce`, and the rows it writes), the mapping between rows and the rul
 Like the rules, it is pure and not in play: the generation-2 API and web save layer build on it, and T143 makes it
 `@racer/domain/save`. Its contract is [rework/13](../rework/13-removals-and-plan-changes.md) §6.
 
+**The Hub.** Beside the areas, `@racer/domain/hub` (`packages/domain/src/hub/`, T137) is the new game's Hub
+([rework/11](../rework/11-hub-and-places.md)): `PLACES`, the 23 places of the four pages with their routes, counters,
+uma-art frames and grid cells (rendered in rework/11 §3), and `hubView`, which settles once and gathers what the shell
+draws from the rules above: the pill's counts, tab badges, every building's slot pips, the counters, the featured Uma
+and the account bar's chips. The registry imports the rules for types only, so the shell's entry chunk reads it cheaply.
+
 ## The web app
 
 - **Local-first.** Game state lives in Zustand stores, persisted to the IndexedDB database `uma-racer` (Dexie, 34
   versions, 47 tables). A background sync pushes changes through an outbox.
 - **Three sync lanes:** ordinary writes, Puzzle operations and Farm operations take turns.
 - **Lazy by default.** PixiJS, Firebase, the race engine and the heavy screens load on demand.
+- **The new game beside it** (`src/g2/`, M034): its own entry `g2.html`, served only by the dev server at `/dev/g2/*`
+  over synthetic seeds (`?seed=busy | fresh | quiet`), with no auth, content or service worker. It imports only today's
+  generic pieces (the `ui/` primitives and icons, `content/`, `auth/`, `scenes/race/`), held by a test both ways, and
+  reads the game through one port (`g2/app/game.ts`) that T136's store fills.
 
 ## The API
 
@@ -120,7 +133,11 @@ development, `AUTH_MODE=disabled` and a local JSON file stand in.
 
 - **Startup JS ≤ 180 KB gzip, enforced.** `scripts/check-size.mjs` runs at the end of the web build. It fails when the
   HTML entry, or the entry plus every chunk it statically imports, passes the budget. Dynamic imports don't count.
-  Measured at 155.10 KB on 2026-10-14.
+  Measured at 155.09 KB on 2026-10-14. It also fails when today's build holds a module of the new game (`src/g2/`).
+- **The new game's budget is checked from now** (T137): the web build ends with a measure-only build of `g2.html`
+  (`vite build --mode g2-size`, no PWA) into the gitignored `dist-g2/`, checked the same way
+  (`check-size.mjs dist-g2 g2.html`). Its entry holds the router, the shell's frame, the place registry and the game
+  port's interface; the rules, the port, pages and sheets are lazy. Measured at 125.96 KB on 2026-10-14.
 - 390×844 portrait first, 44 pt targets, safe-area padding, transform and opacity animation only
   ([game-web-tech.md](../research/game-web-tech.md)).
 
@@ -141,6 +158,7 @@ image build receives the token as a BuildKit secret, so it never lands in a laye
 | Package | Dependency | Version | Kind |
 |---|---|---|---|
 | uma-racer | turbo | ^2.10.13 | dev |
+| @racer/web | @luismlorenzana/uma-art | 2.4.0 | runtime |
 | @racer/web | @racer/domain | workspace:* | runtime |
 | @racer/web | @racer/race | workspace:* | runtime |
 | @racer/web | @tanstack/react-query | ^5.102.8 | runtime |

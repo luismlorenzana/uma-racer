@@ -7,7 +7,7 @@ import * as checkIn from './index'
 describe('the check-in and planner entries', () => {
   it('export the check-in', () => {
     for (const name of [
-      'nextCheckIn', 'sizeChips', 'fitSize', 'chipWords', 'fitWords', 'clockTime', 'setCheckInTimes', 'collectAll', 'readyCount', 'repeat', 'repeatable',
+      'nextCheckIn', 'sizeChips', 'fitSize', 'chipWords', 'fitWords', 'clockTime', 'setCheckInTimes', 'collectAll', 'readyCount', 'needsATap', 'repeat', 'repeatable',
       'setRepeatSizing', 'buyFor', 'restartDropped', 'dismissDropped', 'queueStopped', 'makeThem', 'checkInSummary', 'speedUpAll', 'speedUpAllPlan',
       'runOnce', 'recheck', 'hasBannedWord', 'say', 'fill', 'finishRace', 'devGrant',
     ] as const) expect(typeof checkIn[name], name).toBe('function')

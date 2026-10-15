@@ -48,6 +48,16 @@
         "default": "./src/minigames/uma-puzzles/*.ts"
       }
     },
+    "./hub": {
+      "require": {
+        "types": "./dist/cjs/hub/index.d.ts",
+        "default": "./dist/cjs/hub/index.js"
+      },
+      "default": {
+        "types": "./src/hub/index.ts",
+        "default": "./src/hub/index.ts"
+      }
+    },
     "./rework/*": {
       "require": {
         "types": "./dist/cjs/rework/*/index.d.ts",

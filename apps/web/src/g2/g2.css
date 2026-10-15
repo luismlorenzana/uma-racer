@@ -1,0 +1,58 @@
+/* The new game's own styles (T137), beside today's tokens in index.css: the Ready pip's small bounce, a HUD number's
+   slide when it changes (a CSS transition, never a spring), and reduced motion, which stills both (rework/11 §4, §12).
+   Transform and opacity only. */
+
+:root {
+  /* The Dojo's Friend and Group room: the original's Friend card rim (D183), beside the five stat colours. */
+  --g2-room-friend: #e5a93a;
+}
+
+@keyframes g2-pip-bounce {
+  0%,
+  24%,
+  100% {
+    transform: translateY(0);
+  }
+  12% {
+    transform: translateY(-3px);
+  }
+}
+
+.g2-pip-ready {
+  animation: g2-pip-bounce 2.4s var(--ease-standard) infinite;
+}
+
+.g2-number {
+  transition:
+    transform var(--duration-standard) var(--ease-standard),
+    opacity var(--duration-standard) var(--ease-standard);
+}
+
+.g2-number[data-entering] {
+  transform: translateY(-40%);
+  opacity: 0;
+  transition: none;
+}
+
+[data-reduced-motion] .g2-pip-ready {
+  animation: none;
+}
+
+[data-reduced-motion] .g2-number,
+[data-reduced-motion] .g2-number[data-entering] {
+  transform: none;
+  opacity: 1;
+  transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .g2-pip-ready {
+    animation: none;
+  }
+  .g2-number,
+  .g2-number[data-entering] {
+    transform: none;
+    opacity: 1;
+    transition: none;
+  }
+}

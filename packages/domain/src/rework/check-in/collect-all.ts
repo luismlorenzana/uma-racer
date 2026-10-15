@@ -9,6 +9,7 @@ import type { BuildingId } from '../farm/buildings'
 import { itemById, type ItemGrade } from '../items/catalogue'
 import type { RecipeInput } from '../items/recipes'
 import { assertNow } from '../tiers/ledger'
+import { isFree } from '../work/activity'
 import type { CollectReceipt } from '../work/collect'
 import type { WorkEnv } from '../work/kinds'
 import { collect } from '../work/operations'
@@ -72,8 +73,11 @@ export interface CollectAllReceipt {
   readonly settled: SettleReport
 }
 
-/** Whether a row holds a finished item not yet collected. */
-const hasReady = (row: WorkRow, now: number): boolean => row.entries.some((entry) => finishedCount(entry, now) > entry.collected)
+/**
+ * Whether a row holds a finished item not yet collected: a running batch's finished items count. One rule for the
+ * pill, the Hub's pips and badges, and Collect all (rework/11 §4, T137).
+ */
+export const hasReady = (row: WorkRow, now: number): boolean => row.entries.some((entry) => finishedCount(entry, now) > entry.collected)
 
 const inPlaces = (slot: SlotRef, places: readonly BuildingId[] | undefined): boolean => places === undefined || places.includes(slot.building)
 
@@ -85,6 +89,26 @@ const emptyLine = (outfitId: string | null, slot: SlotRef, status: CollectLineSt
 export function readyCount(state: WorkState, now: number, env: WorkEnv): number {
   assertNow(now)
   return Object.values(settle(state, now, env).state.work).filter((row) => hasReady(row, now)).length
+}
+
+/**
+ * The Umas that need a tap on a state already settled to `now`, in outfit order: something to collect (`readyCount`'s
+ * rule) or Free (01 §2). They never overlap: a Free Uma has nothing started, so nothing to collect.
+ */
+export function needingATap(settled: WorkState, now: number): readonly string[] {
+  return Object.keys(settled.umas).sort().filter((id) => {
+    const row = settled.work[id]
+    return (row !== undefined && hasReady(row, now)) || isFree(settled, id)
+  })
+}
+
+/**
+ * How many Umas need a tap at `now` (02 §7): Ready (anything to collect) or Free. The app badge's count in phase 4,
+ * and the start rule's in phase 3 (rework/11 §2.4: anything needs a tap → the Farm page).
+ */
+export function needsATap(state: WorkState, now: number, env: WorkEnv): number {
+  assertNow(now)
+  return needingATap(settle(state, now, env).state, now).length
 }
 
 /** `collect-all { places?, shown? }` (02 §2, 13 §6). It never refuses. */

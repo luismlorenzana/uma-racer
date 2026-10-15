@@ -1,0 +1,122 @@
+// The game port (T137; docs/rework/11-hub-and-places.md §2; docs/rework/02-check-ins-and-notifications.md §8–§9): the
+// shell and every place read the game only through `G2Game`. `boot.ts` creates it lazily: the in-memory port over
+// synthetic seeds until T136, whose `useSave` store adapts to it one to one:
+// - `status` is the store's `lifecycle` (`booting`, `ready`, `error`, with its `words`), `trainerName` the trainer
+//   badge row's display name;
+// - `sync` is the chip's state: `paused` while signed out (today's `useAuth`), `offline`, `failing` (red) on `error`,
+//   `waiting` (amber, D157) when `oldestQueuedAt` is over a day old, else `synced`;
+// - `run` builds the operation's id, runs the domain's `recheck` and answers with it, the id riding along.
+// Only types come from the domain here, so this file costs the entry chunk nothing but the hooks.
+import type { HubView, hubView } from '@racer/domain/hub'
+import type { Answer, OperationEnv, OperationInput, OperationName } from '@racer/domain/rework/check-in'
+import type { WorkState } from '@racer/domain/rework/work'
+import { createContext, useContext, useMemo, useSyncExternalStore } from 'react'
+import type { Clock } from './clock'
+
+export type G2Status = 'booting' | 'ready' | 'error'
+
+/** The Sync chip (rework/11 §2.1, D157): hidden when `synced`. */
+export type G2Sync = 'synced' | 'offline' | 'paused' | 'waiting' | 'failing'
+
+/** An operation's receipt on this device, and the server's once it answers (02 §9: "Already collected" in place). */
+export interface G2Receipt {
+  readonly local: unknown
+  readonly server?: unknown
+}
+
+export interface G2Snapshot {
+  readonly status: G2Status
+  /** The rework state; null until the save opens. */
+  readonly state: WorkState | null
+  /** What every operation and query reads beyond the state; null until the save opens. */
+  readonly env: OperationEnv | null
+  readonly trainerName: string
+  readonly sync: G2Sync
+  /** The latest operations' receipts, by operation. */
+  readonly receipts: Readonly<Record<string, G2Receipt>>
+  /** Why the save can't open, in plain words, when `status` is `error`. */
+  readonly words?: string
+}
+
+/** `recheck`'s answer (T131: done, ask or say), with the operation's id so a sheet can find its receipt again. */
+export type G2Answer<N extends OperationName = OperationName> = Answer<N, WorkState> & { readonly id: string }
+
+export interface G2Game {
+  subscribe(listener: () => void): () => void
+  getSnapshot(): G2Snapshot
+  /** The game's clock, integer milliseconds. */
+  now(): number
+  /** The device's offset from UTC at `now`, in minutes, for check-in times. */
+  utcOffsetMin(now: number): number
+  /** One tap: applied at once through `recheck`, never twice; a second tap while `busyKey` is held gets the first's answer. */
+  run<N extends OperationName>(name: N, input: OperationInput<N>, busyKey?: string): Promise<G2Answer<N>>
+}
+
+/** The rules the shell runs, loaded with the port so the entry chunk holds none of them. */
+export interface G2Rules {
+  readonly hubView: typeof hubView
+}
+
+export interface G2Runtime {
+  readonly game: G2Game
+  readonly rules: G2Rules | null
+  readonly clock: Clock
+}
+
+const EMPTY: G2Snapshot = Object.freeze({ status: 'booting', state: null, env: null, trainerName: '', sync: 'synced', receipts: {} })
+
+const deviceOffset = (now: number): number => -new Date(now).getTimezoneOffset()
+
+/** The port while the real one loads: a quiet frame, no state, and taps that wait for nothing. */
+export const BOOTING_GAME: G2Game = Object.freeze({
+  subscribe: () => () => {},
+  getSnapshot: () => EMPTY,
+  now: () => Date.now(),
+  utcOffsetMin: deviceOffset,
+  run: () => Promise.reject(new Error('The game is still opening.')),
+})
+
+/** A port that couldn't open: the shell shows why, with Try again and Copy details, and offers to clear nothing. */
+export function errorGame(words: string): G2Game {
+  const snapshot: G2Snapshot = Object.freeze({ ...EMPTY, status: 'error', words })
+  return { ...BOOTING_GAME, getSnapshot: () => snapshot }
+}
+
+export const RuntimeContext = createContext<G2Runtime | null>(null)
+
+export function useRuntime(): G2Runtime {
+  const runtime = useContext(RuntimeContext)
+  if (runtime === null) throw new Error('The new game needs its GameProvider')
+  return runtime
+}
+
+/** The snapshot, re-read whenever the port publishes. */
+export function useSnapshot(): G2Snapshot {
+  const { game } = useRuntime()
+  return useSyncExternalStore(game.subscribe, game.getSnapshot, game.getSnapshot)
+}
+
+/** A slice of the snapshot. The selector runs on every publish, so keep it cheap. */
+export function useGame<T>(selector: (snapshot: G2Snapshot) => T): T {
+  return selector(useSnapshot())
+}
+
+/** The one 30-second clock (rework/11 §4, 02 §8): stops while the page is hidden, ticks again on return; writes nothing. */
+export function useNow(): number {
+  const { clock } = useRuntime()
+  return useSyncExternalStore(clock.subscribe, clock.get, clock.get)
+}
+
+/** The Hub's view at the clock's `now`, or null until the save and the rules have loaded. */
+export function useHub(): HubView | null {
+  const { rules } = useRuntime()
+  const { state, env } = useSnapshot()
+  const now = useNow()
+  return useMemo(() => (rules !== null && state !== null && env !== null ? rules.hubView(state, now, env) : null), [rules, state, env, now])
+}
+
+/** The port's `run`, for a tap. */
+export function useRun(): G2Game['run'] {
+  const { game } = useRuntime()
+  return useMemo(() => game.run.bind(game), [game])
+}

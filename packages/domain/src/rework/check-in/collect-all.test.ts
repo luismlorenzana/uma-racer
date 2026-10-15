@@ -14,7 +14,7 @@ import { rawItem, SPEED_TICKET_ID } from '../items/catalogue'
 import { WORK_KINDS } from '../work/kinds'
 import { start } from '../work/operations'
 import type { SlotRef, WorkRequest, WorkState } from '../work/types'
-import { collectAll, readyCount } from './collect-all'
+import { collectAll, needingATap, needsATap, readyCount } from './collect-all'
 import { runOnce } from './once'
 
 /** Every site's slots at Lv 1, in building order: 18 gatherers. */
@@ -143,5 +143,21 @@ describe('collect-all', () => {
     expect(receipt.lines.filter((line) => line.status === 'collected')).toHaveLength(24)
     expect(after.work[uma(3)]!.entries).toHaveLength(1)
     expect(readyCount(after, clock('08:00', 1), env)).toBe(1)
+  })
+})
+
+describe('needs a tap (02 §7, rework/11 §2.4)', () => {
+  it('counts each Uma with something to collect, a running batch included, or Free, once', () => {
+    const { state } = busyNight()
+    expect(needsATap(state, clock('22:31'), ENV)).toBe(0)
+    const night = clock('02:30', 1)
+    expect(readyCount(state, night, ENV)).toBeGreaterThan(0)
+    expect(needsATap(state, night, ENV)).toBe(readyCount(state, night, ENV))
+    expect(needsATap(state, clock('08:00', 1), ENV)).toBe(25)
+    const after = collectAll(state, {}, clock('08:00', 1), ENV).state
+    expect(readyCount(after, clock('08:00', 1), ENV)).toBe(0)
+    expect(needsATap(after, clock('08:00', 1), ENV)).toBe(25)
+    expect(needingATap(account(3), clock('08:00'))).toEqual([uma(1), uma(2), uma(3)])
+    expect(needsATap(account(0), clock('08:00'), ENV)).toBe(0)
   })
 })

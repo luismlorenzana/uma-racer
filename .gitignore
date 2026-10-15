@@ -1,6 +1,8 @@
 node_modules
 dist
 dist-ssr
+# The new game's measure-only build (T137, `vite build --mode g2-size`)
+dist-g2
 build
 *.local
 .DS_Store

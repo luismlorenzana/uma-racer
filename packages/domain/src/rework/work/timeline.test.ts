@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest'
 import { clock, minutes } from '../../__fixtures__/rework-work'
 import { farmExpPerItem } from '../farm/level'
 import {
-  applyTickets, chainTimes, endsAt, finishedCount, itemEnds, progress, remainingMs, SPEED_TICKET_MS, ticketsToFinish, type Timed,
+  applyTickets, chainTimes, endsAt, finishedCount, itemEnds, itemProgress, progress, remainingMs, SPEED_TICKET_MS, ticketsToFinish, type Timed,
 } from './timeline'
 
 const POTATO = 95 * 60 // 07 §2: a grade-2 gather in base seconds
@@ -34,6 +34,27 @@ describe('the clock', () => {
     expect(remainingMs(entry, clock('23:00'))).toBe(minutes(50))
     expect(remainingMs(entry, clock('09:00', 1))).toBe(0)
     expect(progress({ startedAt: 0, seconds: [], acceleratedMs: 0 }, 0)).toBe(1)
+  })
+
+  it("fills a busy pip by the current item's progress, from start times, within 0–1 with the clock moved either way (rework/11 §4)", () => {
+    expect(itemProgress(entry, clock('08:00'))).toBe(0)
+    expect(itemProgress(entry, clock('07:00'))).toBe(0)
+    expect(itemProgress(entry, clock('08:57'))).toBeCloseTo(0.6, 10)
+    // The second Potato runs 09:35–11:10; the whole entry is far less along.
+    expect(itemProgress(entry, clock('10:22') + 30_000)).toBeCloseTo(0.5, 10)
+    expect(progress(entry, clock('10:22') + 30_000)).toBeLessThan(0.2)
+    expect(itemProgress(entry, clock('09:35'))).toBe(0)
+    expect(itemProgress(entry, clock('23:50'))).toBe(1)
+    expect(itemProgress(entry, clock('09:00', 1))).toBe(1)
+    // Tickets move every end earlier, so the current item is further along.
+    expect(itemProgress({ ...entry, acceleratedMs: minutes(30) }, clock('08:57'))).toBeCloseTo((57 + 30) / 95, 10)
+    expect(itemProgress({ startedAt: 0, seconds: [], acceleratedMs: 0 }, 0)).toBe(1)
+    expect(itemProgress({ startedAt: clock('08:00'), seconds: [0, 60], acceleratedMs: 0 }, clock('07:00'))).toBe(0)
+    for (const at of [-1e15, 0, clock('12:00'), clock('12:00', 9), 1e15]) {
+      const share = itemProgress(entry, at)
+      expect(share).toBeGreaterThanOrEqual(0)
+      expect(share).toBeLessThanOrEqual(1)
+    }
   })
 })
 
