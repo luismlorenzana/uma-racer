@@ -88,6 +88,7 @@ export const SHEET_UI: {
   readonly featured?: Lazy<FeaturedSheetProps>
 } = {
   featured: lazy(() => import('./stable/Featured').then((mod) => ({ default: mod.FeaturedSheet }))),
+  'check-in': lazy(() => import('./check-in/CheckInSheet')), // T142
 }
 
 /** The Town Hall plaza's cell (§5): T138's `FeaturedUmaCard`. It opens `?sheet=featured` itself. */
@@ -123,7 +124,6 @@ export type SlotId = PlaceId | 'sheet:check-in' | 'sheet:featured' | 'plaza' | '
  */
 export const PENDING: readonly SlotId[] = Object.freeze([
   'observatory', 'lineage-hall', 'gym', 'dojo', // T139
-  'sheet:check-in', // T142
 ] as const)
 
 /** The sub-page `rest` names, if any, with its params. */
