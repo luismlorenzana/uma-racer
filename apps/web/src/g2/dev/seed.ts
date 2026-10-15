@@ -9,13 +9,20 @@
 //   busy slots.
 // - `fresh`: a new account (rework/13 §5): 20 Uma Tickets and nothing else.
 // - `quiet`: the same loop through day 3's 08:00 check-in itself, a minute on: every Uma Working, nothing to collect.
-import { nextCheckIn, repeat, type OperationEnv } from '@racer/domain/rework/check-in'
+// - `gate` (T141): `busy` with two Umas jumped to their scenario's gate, every goal won, by the dev build's `dev-grant`:
+//   the Scenario Gate's Advance sheet on a gate-ready Uma.
+// - `promote` (T141, the dev proof of 04 §9): `busy` with two Umas taken through tier 1 by `dev-grant` and
+//   `advance-scenario`, then through 04 §3's stand-in Expedition (`recordExpeditionRace`, eight wins), which nothing in
+//   the game calls before phase 9: the first is Free, so Promote is enabled; the second is still working, so the
+//   sheet offers Collect, Recall and −30m first.
+// - `tired` and `spent` (T141): `busy` with today's Daily Purse past its first or second edge.
+import { devGrant, nextCheckIn, OPERATIONS, repeat, type OperationEnv } from '@racer/domain/rework/check-in'
 import {
   BASELINE, checkInsOn, createLoop, dayStart, loopRng, MS_PER_HOUR, MS_PER_MINUTE, SIM_CONTENT, SIM_UMAS, UTC_OFFSET_MIN, type LoopConfig,
 } from '@racer/domain/rework/sim'
-import { isRefusal, newAccount } from '@racer/domain/rework/tiers'
+import { EXPEDITION_WINS, isLastScenario, isRefusal, newAccount, recordExpeditionRace } from '@racer/domain/rework/tiers'
 import { collect, newWorkState, queue, type WorkState } from '@racer/domain/rework/work'
-import type { G2Sync } from '../app/game'
+import type { G2Records, G2Sync } from '../app/game'
 
 export interface G2Seed {
   readonly name: string
@@ -26,6 +33,8 @@ export interface G2Seed {
   readonly trainerName: string
   readonly utcOffsetMin: number
   readonly sync: G2Sync
+  /** Race results, badges and flair the account starts with; none when absent. */
+  readonly records?: G2Records
 }
 
 /** Invented names, one initial each, for the roster's first 25 synthetic Umas. */
@@ -67,7 +76,8 @@ function loopUntil(before: number): WorkState {
 const seed = (name: string, state: WorkState, at: number): G2Seed =>
   ({ name, state, env: SEED_ENV, at, trainerName: TRAINER, utcOffsetMin: UTC_OFFSET_MIN, sync: 'synced' })
 
-function busy(): G2Seed {
+/** The busy account's state at its check-in, with the Farm's Umas collected, repeated and queued as `busy` says. */
+function busyState(): { readonly state: WorkState; readonly freed: readonly string[]; readonly again: readonly string[] } {
   let state = loopUntil(CHECK_IN)
   // Training sessions stay Ready, so the Training page has its pips and badge too.
   const inSession = (id: string) => state.work[id]?.entries.some((entry) => entry.request.kind === 'session') === true
@@ -82,7 +92,55 @@ function busy(): G2Seed {
     const queued = queue(state, { outfitId: line.outfitId, add }, CHECK_IN, SEED_ENV)
     if (!isRefusal(queued)) state = queued.state
   }
-  return seed('busy', state, CHECK_IN + 40 * MS_PER_MINUTE)
+  return { state, freed, again }
+}
+
+const OPENS = CHECK_IN + 40 * MS_PER_MINUTE
+
+function busy(): G2Seed {
+  return seed('busy', busyState().state, OPENS)
+}
+
+/** The dev build's env: `dev-grant` runs only where it says `dev` (M034). */
+const DEV_ENV: OperationEnv = Object.freeze({ ...SEED_ENV, dev: true })
+
+/** Her scenario's gate with every goal won, by `dev-grant`. */
+function atGate(state: WorkState, umaId: string, step: string): WorkState {
+  const granted = devGrant(state, { gate: umaId }, CHECK_IN, DEV_ENV, `seed-${step}-${umaId}`)
+  if (isRefusal(granted)) throw new Error(`The ${step} seed couldn't reach ${umaId}'s gate: ${granted.code}`)
+  return granted.state
+}
+
+function gate(): G2Seed {
+  const { state: busyAt, freed } = busyState()
+  let state = busyAt
+  for (const umaId of freed.slice(0, 2)) state = atGate(state, umaId, 'gate')
+  return seed('gate', state, OPENS)
+}
+
+/** Through every scenario of her tier, then the stand-in Expedition's eight wins: a completed run (04 §3). */
+function throughTier(start: WorkState, umaId: string): WorkState {
+  let state = start
+  for (let step = 0; !isLastScenario(state.umas[umaId]!); step += 1) {
+    state = atGate(state, umaId, `tier-${step}`)
+    const advanced = OPERATIONS['advance-scenario'](state, { umaId }, CHECK_IN, SEED_ENV)
+    if (isRefusal(advanced)) throw new Error(`The promote seed couldn't advance ${umaId}: ${advanced.code}`)
+    state = advanced.state
+  }
+  state = atGate(state, umaId, 'last')
+  for (let win = 0; win < EXPEDITION_WINS; win += 1) {
+    const raced = recordExpeditionRace(state, { umaId, expeditionId: 'dev-stand-in', won: true }, CHECK_IN)
+    if (isRefusal(raced)) throw new Error(`The promote seed's Expedition refused ${umaId}: ${raced.code}`)
+    state = raced.state
+  }
+  return state
+}
+
+function promote(): G2Seed {
+  const { state: busyAt, freed, again } = busyState()
+  let state = busyAt
+  for (const umaId of [freed[0]!, again[0]!]) state = throughTier(state, umaId)
+  return seed('promote', state, OPENS)
 }
 
 function fresh(): G2Seed {
@@ -94,8 +152,17 @@ function quiet(): G2Seed {
   return seed('quiet', loopUntil(CHECK_IN + 1), CHECK_IN + MS_PER_MINUTE)
 }
 
+/** `busy` with today's Daily Purse already at `gross`: the purse bar and the prices past its edges (09 §3.5). */
+function purseAt(name: string, gross: number): G2Seed {
+  const state = busyState().state
+  const day = new Date(OPENS + UTC_OFFSET_MIN * MS_PER_MINUTE).toISOString().slice(0, 10)
+  return seed(name, { ...state, profile: { ...state.profile, purse: { day, gross, featuredPaid: [] } } }, OPENS)
+}
+
 /** Every seed by name; the first is the default. */
-export const SEEDS: Readonly<Record<string, () => G2Seed>> = Object.freeze({ busy, fresh, quiet })
+export const SEEDS: Readonly<Record<string, () => G2Seed>> = Object.freeze({
+  busy, fresh, quiet, gate, promote, tired: () => purseAt('tired', 6_420), spent: () => purseAt('spent', 13_100),
+})
 
 const SEED_KEY = 'uma-racer:g2:dev-seed'
 const SYNC_STATES: readonly G2Sync[] = ['synced', 'offline', 'paused', 'waiting', 'failing']
