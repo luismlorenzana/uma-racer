@@ -119,7 +119,12 @@ and the account bar's chips. The registry imports the rules for types only, so t
   Places fill the registry's slots (`g2/places/registry.tsx`): the Farm's ten share one building page and one job sheet
   (`g2/places/farm/`, T140), and every timed thing shares `g2/ui/work/` (slot cards, Speed Tickets, Recall, queue chips,
   size chips) and `g2/ui/ItemIcon`, each a view over one projection of the work per 30-second tick, every tap through
-  `recheck`.
+  `recheck`. The Racing page's four (`g2/places/racing/`, T141): the Racecourse commits `finish-race` at Start race and
+  plays the committed row on engine v9 and today's `RaceScene`; the Scenario Gate's Advance and Promote sheets run their
+  operation on a copy for "after"; the Expedition Map is a placeholder; the Trophy Hall reads today's pure badge views on
+  generation 2's catalogue. Flair rides in the operation's transaction through the port's `device` rows, and race
+  results and flair events are read through its `logs`. Dev seeds `gate`, `promote`, `tired` and `spent` show an Uma at
+  her gate, the Promote sheet's proof and the purse past each edge.
 
 ## The API
 

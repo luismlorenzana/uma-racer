@@ -519,6 +519,11 @@ running style's:
 | The rules are ports, each held to today's by a parity test: Racing EXP restates `addUmaRaceExp`, goal settlement `evaluateScenarioGoals`; career generation and every constant are imported (D340) | Today's functions take today's whole save and stop at Uma Level 140, not at each tier's last gate |
 | A career's aptitudes come from the selected preset's lineage, its filled open slots (D340) | As from today's active preset (D252): lineage carried from the scenario before shapes her next career |
 | Lifetime level equals today's Uma Level at the same T, so today's level helpers (holds, the planner) take it unchanged (D340) | 50(*t* − 1) + Racing Level is 10(T − 1) + level into the scenario |
+| **Race again** stays enabled at a gate (T141) | §10.5: waiting at the gate is allowed and keeps paying Prize Money |
+| Legacy counts the selected preset's parents at each arrival (unlock, advance, promotion), when her career freezes (T141) | Today's Scenario Start is gone; arrival is when the career freezes (§4) |
+| The Advance sheet's "after" (stats, SP and caps per preset, the level, the new career) is `advance-scenario` run on a copy of the state. A race or session that changed her since the sheet was drawn, or a refusal, redraws it under "Her build changed." and keeps the button (T141) | §5: the sheet shows exactly what the tap does; §10.8's stale rule, checked on the device, since the operation takes no version |
+| "Layer 1: 23 of 27" counts the layer's open fixed unlocks and its bonds in order across layers (6, 3, 3, 3, 3) (T141) | [05](05-training-hub.md) §3's layer sizes count the Dojo's pacing bonds |
+| After Advance the "<Scenario> Graduate" award plays full screen, then her profile opens (`/town/stable/outfit/:umaId`) (T141) | §5's "After Advance" |
 
 ## 12. Done when
 

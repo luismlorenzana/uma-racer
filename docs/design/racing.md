@@ -327,6 +327,24 @@ append-only flair events, and exact new event ids in that same transaction. This
 memory-only play. The first finish on a course establishes its baseline; only a strictly lower later time earns Course
 Record, so ties and slower finishes do not. Race retries validate and return stored ids without reevaluation or fanfare.
 
+## Generation 2: the race on `finish-race` (T141, D359)
+
+The new game races with today's engine (v9) and scene, on generation 2's rules
+([rework/09](../rework/09-racing-rewards-and-exchange.md) §7–§10):
+
+- **Prepare.** Today's preparation, fed from the rework state: her session's finished unlocks collected on a copy, stats,
+  aptitudes and loadout from `deriveUmaPreset` on the preset of the race's distance, rivals from `rollRivalFieldAt` at
+  her T and the race's grade, and the seed `raceAttemptSeed(createdAt, content version, outfit, race, style, n)`, *n* her
+  results so far. The same state, race, style and *n* give the same race. She races as her current scenario: no picker.
+- **Commit at Start race.** The timeline is simulated and `finish-race` applied locally with the placement, the device's
+  date and the board the screen showed; its flair rides in the same transaction. Racing is never blocked and costs
+  nothing. A commit that fails starts nothing.
+- **Play the committed row.** `/racing/racecourse/run?result=:id` rebuilds the race from the row's run alone and plays
+  it, with today's HUD, feed, speeds, step, pause, Skip, wake lock and `window.__raceScene`; PixiJS loads only then.
+- **The result** reads the row's receipt: the stamp, the order and margins, Racing EXP with Race Bonus named, level-ups,
+  the hold and the gate's Shard, Prize Money with only the lines that applied, goal ribbons, flair, and **Next Uma**,
+  **Race again**, **Races** and **Advance**. The first showing plays the fanfare; a reload shows it quietly.
+
 ## Presentation: the race on its own course
 
 - The race is drawn on **its own course**: the snapshotted corners and straights laid out as a path (each numbered

@@ -316,6 +316,7 @@ and collect with the session operations; a set edit is one ordinary Uma write.
 | A loadout keeps her unique first and checks the rest against the preset's derived library and SP; one over her SP is refused unless it costs no more than the one it replaces (D196, D344) | Today's rules; the unique is always equipped and costs nothing |
 | Cross-task acceptance #2 (demand equals [08](08-item-catalogue-and-recipes.md) §7) belongs to the loop simulation (D344) | 08 §7 puts 9 of 18 bonds at even grades, which the era rule can't produce; the simulation rewrites 08 §7 |
 | §2's "Cards" column leaves the live block for a sentence (D344) | It counts the private pack, which code may not render |
+| The ever-bonded set is a projection, `everBondedCardIds` over every Uma's bonds and tier histories, reconciled in each race, advance and promotion commit and when the Trophy Hall opens, so no other place calls flair (T141) | §9 keeps each tier's bonds, so it equals §7's record without a fact of its own |
 
 ## 12. Done when
 

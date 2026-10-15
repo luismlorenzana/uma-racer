@@ -4,7 +4,8 @@
 > from replacing the timers, the daily featured races, the Exchange, Speed Tickets and selling surplus. The prize
 > table, the purse, the featured draw, the Exchange's goods and stock rule and selling are built as rules in
 > `@racer/domain/rework/exchange` (T130, D345), and the tables marked live are rendered from them; nothing is in the
-> game yet. Every number is a **draft**. The loop simulation ([12](12-economy-and-pacing.md) §12) tunes them, and its
+> game yet. The Racecourse (§3.5, §4), the race's commit (§8–§9) and the result (§7) are built in the new game beside
+> today's app (T141, D359), with §10's last rows. Every number is a **draft**. The loop simulation ([12](12-economy-and-pacing.md) §12) tunes them, and its
 > checks become the tests that pin them.
 
 Races are the free-time half of the game. They cost nothing, are never blocked by Farm work or sessions (D328), and
@@ -455,6 +456,18 @@ result, the operation, the building.
 | Surplus is the Free count; "All free" is every unreserved item, which dips into needed and so asks first; a needed-stock confirmation names the planner's whole shortfall after the sale (D345) | §6.1 defines Free as "the rest", then offers "Surplus (free minus needed)"; reserved inputs leave the Warehouse count when work starts ([07](07-farm.md) §2, §12), so the count is what can be sold |
 | A race result's `expedition` says the Expedition rate applied: a family not yet won on her run (D345) | It is what the result's "Expedition rate" line shows (§7); a family already won pays the home G1 row |
 | **The collect commit raises the stock mark:** `runOnce`, which every owner action passes through on the device and the server, sets `exchangeGrade` to `stockedGrade` over every current Farm Level after an operation applies, a no-op unless a collect (`collect`, `collect-all`, `recall`, `repeat` or `start`'s collect-first) lifted one; a retried id changes nothing (T140, D358) | D345's "phase 3 puts that in the collect commit": one place covers every collect path, and the Farm's rules still don't read the Exchange. `stockedGrade` never goes below the mark, so a promotion can't lower it |
+| A race commits at **Start race**, before playback: the attempt is prepared, the timeline simulated, and `finish-race` applied locally and queued; the run (`/racing/racecourse/run?result=:id`) plays the committed row. A commit that fails starts nothing, and the sheet says "That didn't work. Try again." (T141) | §8: settled at the start, so quitting can't change the prize or purse, and a reopen lands on the same race; [01](01-game-loop.md) §2: the race reads her build at its start |
+| The prepared build first collects her session's finished unlocks on a copy, as `finish-race` does; the pre-race sheet says "Collects 2 finished unlocks first" (T141) | 01 §2's one tap; the device and the server agree |
+| The seed counts her results (`raceAttemptSeed(…, n)`, *n* her `raceResults` rows), and the result's id is the operation's (T141) | Today's seed rule keeps an attempt reproducible; T134 makes the id once-only |
+| `localDay`, the device's date at Start race, and the board the screen showed ride in the attempt (T141) | §3.3: the race's day is the day it starts; the bonus is the one the owner saw |
+| The `raceResults` row keeps the set she raced with (`cardSetIds`: the preset of the race's distance, after the collect), and the prize receipt the day's gross after the race (`dayGross`) (T141) | Era Loyalist reads every race's set ([06](06-cards-and-bonds.md) §7); the tired and spent lines name the day's gross, and a reload shows the day as it stood |
+| The result's header shows the account bar's Prize Money chip alone; the purse's pay and any bonus fly into it on the first showing (T141) | §7 and [11](11-hub-and-places.md) §2.1 fly the prize into the chip; 11 §6 hides the bars in full-screen flows |
+| "Gate reached · +1 Uma Shard" shows when the receipt pays one; the hold's line ("Held at Lv 25 · win the Trials") and **Advance** read her as she stands, on her latest result only (T141) | [04](04-tiers-and-promotion.md) §6 pays the Shard in that commit; an older result can't know her hold now |
+| The first showing on this device plays the fanfare; a reload or a reopen shows the stored row's result, prize and band quietly (T141) | §7's last line: what was paid is the receipt's, the fanfare this visit's |
+| The tired line reads "Tired purse: paid a quarter (6,420 of 12,000)" and the spent line "Spent purse: paid a twentieth (13,100 today)"; the shares' words come from `PURSE_BANDS` (T141) | §7 names only the tired line; the spent band has no upper edge to name |
+| The purse bar reads the device's date: a later day is an empty purse; its (i) gives the bands in two lines from `PURSE_BANDS` (T141) | §3.5's bar; the next race starts the new day's purse |
+| The strip leads with open goals, then D181's order by lifetime level, then name, finished careers last; a tile reads "T1 · Lv 13" with her work in one chip. **Next Uma** is the next in that order, round to the first (T141) | [11](11-hub-and-places.md) §9.2 |
+| Race select opens on the first Uma in the strip; `?uma=&race=` preselects her and opens the pre-race sheet. The sheet's running style starts at her race defaults (her preferences, else today's recommendation) and is not saved (T141) | 11 §9.2's first Uma with an unwon goal; the Uma profile owns `set-race-defaults` (T138) |
 
 ## 11. Done when
 
