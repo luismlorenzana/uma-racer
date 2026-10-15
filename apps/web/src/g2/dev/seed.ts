@@ -23,6 +23,7 @@ import {
 import { EXPEDITION_WINS, isLastScenario, isRefusal, newAccount, recordExpeditionRace } from '@racer/domain/rework/tiers'
 import { collect, newWorkState, queue, type WorkState } from '@racer/domain/rework/work'
 import type { G2Records, G2Sync } from '../app/game'
+import { withSyntheticSkills } from './skills'
 
 export interface G2Seed {
   readonly name: string
@@ -44,16 +45,21 @@ const NAMES = [
   'Quill Arrow', 'Rosy Horizon', 'Saffron Flash', 'Tidal Charm', 'Umber Spark', 'Velvet Lane', 'Willow Drift', 'Xenia Star', 'Yarrow Glen',
 ] as const
 
-/** `rework/sim`'s content with the invented names: the same templates otherwise, so every rule reads them as the sim does. */
+/**
+ * `rework/sim`'s content with the invented names: the same templates otherwise, so every rule reads them as the sim
+ * does, plus invented skills and card names (T138's `withSyntheticSkills`), which change no stat. `dev: true`, so
+ * Account's dev section can run `dev-grant` on these synthetic accounts (M034).
+ */
 export const SEED_ENV: OperationEnv = Object.freeze({
-  content: {
+  content: withSyntheticSkills({
     ...SIM_CONTENT,
     umas: new Map([...SIM_CONTENT.umas].map(([id, template]) => {
       const index = SIM_UMAS.findIndex((uma) => uma.id === id)
       const name = NAMES[index]
       return [id, name === undefined ? template : { ...template, name }]
     })),
-  },
+  }),
+  dev: true,
 })
 
 /** BASELINE's policies with the roster at its cap from day 0: BASELINE alone holds 20 Umas until Shards grow it. */
@@ -174,6 +180,9 @@ function remembered(): string | null {
     return null
   }
 }
+
+/** Remembers a seed for this tab, so a reload on any route reopens it (Account's dev section, T138). */
+export const rememberSeed = (name: string): void => remember(name)
 
 function remember(name: string): void {
   try {
