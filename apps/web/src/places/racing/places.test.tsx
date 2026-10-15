@@ -3,13 +3,16 @@
 // is four taps from the Racing page, its result reads the committed row and a reopen shows it without fanfare; the
 // Racecourse and Trophy Hall counters; a stale Advance redraws under "Her build changed." and keeps the button; the
 // Promote sheet waits for her to be free; the Map offers no Start and sends its sub-routes back; the three scopes. A run
-// starts at Account's race speed and follows Account's reduced motion, and a badge's race link opens that result. The
-// PixiJS scene is stubbed: jsdom has no WebGL, and it ends the race as soon as it mounts.
+// starts at Account's race speed and follows Account's reduced motion, a badge's race link opens that result, and a turn
+// race that runs past its turn count holds the HUD at the count. The PixiJS scene is stubbed: jsdom has no WebGL, and it
+// ends the race as soon as it mounts.
 import { act, cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderG2, seedGame, stubStorage } from '../../__fixtures__/testing'
-import { TURN_RACE_RATE } from '../../scenes/race/presentation'
+import { raceTurns, timelineDuration } from '@racer/race'
+import { hudTurn, TURN_RACE_RATE } from '../../scenes/race/presentation'
 import { setRaceSpeed, setReducedMotion, startingSpeed } from '../../ui/devicePrefs'
+import { replayOf, simulate } from './prepare'
 import { readLogs } from './records'
 import { TROPHY_HALL_SEEN_KEY } from './seen'
 import { resultPath } from './today'
@@ -123,6 +126,18 @@ describe('the Racecourse', () => {
     expect(await screen.findByRole('region', { name: 'Prize Money' })).toBeTruthy()
     expect(document.querySelector('[data-g2="race-result"]')).not.toBeNull()
     expect(view.where()).toBe(`/racing/racecourse/run?result=${id}`)
+  })
+
+  it("runs a turn race past the course's turn count in normal play, and the HUD holds at the count", async () => {
+    const game = seedGame('busy')
+    const { where } = renderG2('/racing/racecourse?uma=sim-uma-01&race=sim-g1-medium-a', game)
+    const id = await startRace(where)
+    const timeline = simulate(replayOf((await readLogs(game)).raceResults[id]!))
+    const total = raceTurns(timeline.courseDistance)
+    expect(timeline.tickRate).toBe(1)
+    // The field takes turns until its last runner finishes: here past the 2,000 m course's 100.
+    expect(timelineDuration(timeline)).toBeGreaterThan(total)
+    expect(hudTurn(timelineDuration(timeline), total)).toBe(total)
   })
 
   it('says nothing more than "That didn\'t work. Try again." when the commit fails', async () => {
