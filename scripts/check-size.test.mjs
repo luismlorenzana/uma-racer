@@ -5,13 +5,13 @@ import { join } from 'node:path'
 import test from 'node:test'
 import { checkSize, entrySrc } from './check-size.mjs'
 
-async function fixture(fn, { entry = 'assets/main.js', imports = [], extra = {} } = {}) {
+async function fixture(fn, { entry = 'assets/main.js', imports = [], extra = {}, html = 'index.html' } = {}) {
   const root = await mkdtemp(join(tmpdir(), 'racer-size-test-'))
   try {
     await mkdir(join(root, '.vite'))
     await mkdir(join(root, 'assets'))
-    await writeFile(join(root, 'index.html'), `<script crossorigin src="/${entry}" type="module"></script>`)
-    const manifest = { 'index.html': { file: entry, isEntry: true, imports, dynamicImports: ['lazy'] },
+    await writeFile(join(root, html), `<script crossorigin src="/${entry}" type="module"></script>`)
+    const manifest = { [html]: { file: entry, isEntry: true, imports, dynamicImports: ['lazy'] },
       lazy: { file: 'assets/phaser.js' }, ...extra }
     await writeFile(join(root, '.vite/manifest.json'), JSON.stringify(manifest))
     await writeFile(join(root, 'assets/main.js'), 'console.log("boot")')
@@ -42,6 +42,18 @@ test('measures the entry, not a large lazy Phaser asset, and includes the exact 
 test('counts static imports so a small entry cannot hide oversized initial vendor JS', async () => {
   await fixture(async (root) => { await assert.rejects(checkSize(root), /exceeds/) },
     { imports: ['vendor'], extra: { vendor: { file: 'assets/vendor.js' } } })
+})
+test("measures the new game's g2.html entry when named, and refuses an unsafe HTML name (T137)", async () => {
+  await fixture(async (root) => {
+    const result = await checkSize(root, undefined, 'g2.html')
+    assert.equal(result.entry, 'assets/main.js')
+    await assert.rejects(checkSize(root), /ENOENT/)
+    await assert.rejects(checkSize(root, undefined, '../index.html'), /Unsafe HTML/)
+  }, { html: 'g2.html' })
+})
+test("refuses today's build when it holds a module of the new game (src/g2/)", async () => {
+  await fixture(async (root) => { await assert.rejects(checkSize(root), /new game's modules: src\/g2\/main.tsx/) },
+    { extra: { 'src/g2/main.tsx': { file: 'g2.js', src: 'src/g2/main.tsx' } } })
 })
 test('refuses traversal and missing static manifest nodes', async () => {
   await fixture(async (root) => { await assert.rejects(checkSize(root), /Unsafe JS/) }, { entry: '../escape.js' })

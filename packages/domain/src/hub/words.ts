@@ -24,6 +24,8 @@ export const HUB_WORDS = Object.freeze({
   'prize-money': 'Prize Money {n}. Open the Exchange.',
   'speed-tickets': 'Speed Tickets {n}. Open the Exchange.',
   'uma-tickets': 'Uma Tickets {n}, Uma Shards {shards} of {per}. Open the Stable.',
+  /** §4: a building's Ready badge, the count of its Umas with something to collect. */
+  'ready-badge': 'Ready {n}',
   /** §2.2: the bottom bar. */
   bar: 'Hub pages',
   race: 'Race',
@@ -40,6 +42,7 @@ export const HUB_WORDS = Object.freeze({
   'back-to': 'Back to {to}',
   'peek-label': '{place}, quick look',
   featured: 'Featured Uma: {uma}',
+  'featured-title': 'Featured Uma',
   'no-umas': 'No Umas yet',
   train: 'Train',
   profile: 'Profile',
