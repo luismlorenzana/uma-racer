@@ -182,7 +182,7 @@ collected card, and the summary's **Repeat all** applies it to every free Uma wi
 
 ## 6. The planner: "what she still needs"
 
-Adapted from uma-rpg's farming targets ([D100](https://github.com/luismlorenzana/uma-rpg/blob/main/docs/design/farm.md),
+Adapted from uma-rpg's farming targets ([D100][uma-rpg-farm],
 [loops "Targets"](https://github.com/luismlorenzana/uma-rpg/blob/main/docs/game/loops.md#professions)) and the old Farm's
 Wishlist.
 
@@ -487,3 +487,5 @@ The planner, suggestions, finish times and the badge count are **derived on read
   lengthens the wait and never shows negative progress.
 - **Plain words:** a test fails if any player-facing string contains a banned word (§9), and the stale-screen cases of
   §9 each have a test that ends in a result or a one-sentence question, never an error.
+
+[uma-rpg-farm]: https://github.com/luismlorenzana/uma-rpg/blob/main/docs/design/farm.md

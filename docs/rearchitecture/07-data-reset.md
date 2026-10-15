@@ -57,7 +57,7 @@ document stays as a record.
 > entry from `.data/save.json`. That path is fixed, never an env var, and is refused if it resolves to the
 > generation-2 file.
 
-> **As built on the device (T136, [rework/02](../game/02-check-ins-and-notifications.md) §11).** The app's boot runs
+> **As built on the device (T136, [game/02](../game/02-check-ins-and-notifications.md) §11).** The app's boot runs
 > in this order:
 > 1. **The wipe**, unless `uma-racer:g2:wiped` is set: `Dexie.delete('uma-racer')`; in dev builds every
 >    `farm-kitchen-proof-*` and `puzzle-proof-*` database; every localStorage key that starts with `uma-racer:` and not

@@ -55,6 +55,8 @@ lists where each lives in the code.
 
 - [docs/rearchitecture/README.md](../rearchitecture/README.md): the technical rebuild this design rides on.
 - [docs/research/world-expeditions.md](../research/world-expeditions.md): the 13 Expedition race pools.
-- uma-rpg's [farm](https://github.com/luismlorenzana/uma-rpg/blob/main/docs/design/farm.md), [kitchen](https://github.com/luismlorenzana/uma-rpg/blob/main/docs/design/kitchen.md),
+- uma-rpg's [farm][uma-rpg-farm], [kitchen](https://github.com/luismlorenzana/uma-rpg/blob/main/docs/design/kitchen.md),
   [items](https://github.com/luismlorenzana/uma-rpg/blob/main/docs/design/items.md) and [loops](https://github.com/luismlorenzana/uma-rpg/blob/main/docs/game/loops.md) pages (sibling repo):
   the farming design and art this reuses.
+
+[uma-rpg-farm]: https://github.com/luismlorenzana/uma-rpg/blob/main/docs/design/farm.md
