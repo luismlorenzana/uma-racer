@@ -31,7 +31,7 @@ import { prepareRace } from './prepare'
 import { useRecords } from './records'
 import { startRace } from './race'
 import { STRATEGY_LABEL } from './run/labels'
-import { historyOf, resultCount, umaSaveOf } from './today'
+import { historyOf, resultCount, resultPath, umaSaveOf } from './today'
 import { featuredView, gradeWords, localDayAt, prizePreview, purseBar, stripOrder, type FeaturedView, type PurseBar, type StripTile } from './view'
 import { amount, racingWords } from './words'
 
@@ -200,7 +200,7 @@ function PreRaceSheet({ race, uma, content, derived, records, onClose }: {
     if (answer.kind === 'done') {
       // The sheet closes behind the run, so leaving the result lands on race select, not on a sheet already raced.
       navigate(`/racing/racecourse?uma=${encodeURIComponent(uma.outfitId)}`, { replace: true })
-      navigate(`/racing/racecourse/run?result=${encodeURIComponent(answer.id)}`, { state: { back: true } })
+      navigate(resultPath(answer.id), { state: { back: true } })
       return
     }
     setStarting(false)

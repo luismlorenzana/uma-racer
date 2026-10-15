@@ -4,11 +4,10 @@
 // convenience under `uma-racer:g2:trophy-hall-seen` (01 §4.2).
 import { badgeStateId, buildTrainerAchievementCatalog, buildUmaFlairCatalog, type BadgeStateV1, type FlairEventV1, type UmaBadgeStateV1, type UmaSave } from '@racer/domain'
 import type { WorkState } from '@racer/domain/work'
-import type { RaceResultRecord } from '@racer/domain'
 import type { LoadedContent } from '../../content/runtime'
 import type { G2Records } from '../../app/game'
 import { TRAINER_BADGE_ID } from './flair'
-import { historyOf, umaSaveOf } from './today'
+import { linkedHistoryOf, umaSaveOf, type LinkedRaceRecord } from './today'
 export { readSeen, TROPHY_HALL_SEEN_KEY, writeSeen } from './seen'
 
 /** Flair earned after the last visit on this device: the Trophy Hall's counter. */
@@ -23,9 +22,9 @@ export const eventList = (records: G2Records): (FlairEventV1 & { id: string })[]
 export const savesOf = (state: Pick<WorkState, 'umas'>): Record<string, UmaSave> =>
   Object.fromEntries(Object.values(state.umas).map((uma) => [uma.outfitId, umaSaveOf(uma)]))
 
-/** Every race as today's record, every Uma's in sequence. */
-export const raceRecords = (state: Pick<WorkState, 'umas'>, records: G2Records): RaceResultRecord[] =>
-  Object.keys(state.umas).sort().flatMap((umaId) => historyOf(records.raceResults, umaId))
+/** Every race as today's record with its row's id, every Uma's in sequence. */
+export const raceRecords = (state: Pick<WorkState, 'umas'>, records: G2Records): LinkedRaceRecord[] =>
+  Object.keys(state.umas).sort().flatMap((umaId) => linkedHistoryOf(records.raceResults, umaId))
 
 export const umaBadge = (records: G2Records, umaId: string): UmaBadgeStateV1 | null => {
   const state = records.badges[badgeStateId(umaId)]

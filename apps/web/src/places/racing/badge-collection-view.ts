@@ -20,10 +20,10 @@ import {
   type UmaBadgeStateV1,
   type UmaSave,
   type StableBadgeRarity,
-  type RaceResultRecord,
 } from '@racer/domain'
 import type { LoadedContent } from '../../content/runtime'
 import { badgeFrameStyle, type BadgeFrameStyle } from './badge-frame'
+import { resultPath, type LinkedRaceRecord } from './today'
 
 export { badgeFrameStyle, type BadgeFrameStyle } from './badge-frame'
 
@@ -148,12 +148,12 @@ const normalizeSearch = (value: string): string => value.trim().toLocaleLowerCas
 const humanize = (value: string): string => value.split(/[-_:]/).filter(Boolean)
   .map((part) => part.charAt(0).toLocaleUpperCase() + part.slice(1)).join(' ')
 
-function sourceView(source: FlairSource | null, umaId: string, raceResults: readonly RaceResultRecord[] = []): BadgeSourceView | null {
+function sourceView(source: FlairSource | null, umaId: string, raceResults: readonly LinkedRaceRecord[] = []): BadgeSourceView | null {
   if (!source) return null
   if (source.kind === 'race' && source.id) {
     const record = raceResults.find((entry) => `race:${entry.umaId}:${entry.sequence}` === source.id)
     return record
-      ? { label: 'View race result', to: `/race/run?uma=${encodeURIComponent(record.umaId)}&race=${encodeURIComponent(record.raceId)}&strategy=${record.strategy}&sequence=${record.sequence}`, safeId: source.id }
+      ? { label: 'View race result', to: resultPath(record.resultId), safeId: source.id }
       : { label: 'Race result unavailable', to: null, safeId: source.id }
   }
   if (source.kind === 'goal') return { label: 'View Journey', to: `/stable/${encodeURIComponent(umaId)}#journey`, safeId: source.id }
@@ -218,7 +218,7 @@ function awardDetails(state: UmaBadgeStateV1, awardKey: string) {
   return { earnedAt: earnedAt < 0 ? null : earnedAt, source }
 }
 
-function missingItem(awardKey: string, state: UmaBadgeStateV1, pin: { pinned: boolean; groupId: string | null }, raceResults: readonly RaceResultRecord[]): BadgeCollectionItem {
+function missingItem(awardKey: string, state: UmaBadgeStateV1, pin: { pinned: boolean; groupId: string | null }, raceResults: readonly LinkedRaceRecord[]): BadgeCollectionItem {
   const details = awardDetails(state, awardKey)
   return {
     awardKey, label: `Missing content · ${awardKey}`, description: 'This earned award is preserved while its content is unavailable.',
@@ -234,7 +234,7 @@ export function buildUmaBadgeCollection(
   content: LoadedContent,
   state: UmaBadgeStateV1,
   events: readonly (FlairEventV1 & { id: string })[] = [],
-  raceResults: readonly RaceResultRecord[] = [],
+  raceResults: readonly LinkedRaceRecord[] = [],
 ): UmaBadgeCollection {
   const catalog = buildUmaFlairCatalog({ state, races: content.races.items })
   const groups = new Map(state.preferences.showcaseGroups.flatMap((group) => group.awardRefs.map((ref) => [ref, group.id] as const)))
@@ -280,7 +280,7 @@ export function buildStableBadgeCollection(
   content: LoadedContent,
   owned: readonly { save: UmaSave; state: UmaBadgeStateV1 | null }[],
   events: readonly (FlairEventV1 & { id: string })[] = [],
-  raceResults: readonly RaceResultRecord[] = [],
+  raceResults: readonly LinkedRaceRecord[] = [],
 ): StableBadgeCollection {
   const valid = owned.filter((entry): entry is { save: UmaSave; state: UmaBadgeStateV1 } => entry.state?.umaId === entry.save.templateId)
   const orphanedUmaIds = owned.filter((entry) => !content.umas.byId.has(entry.save.templateId) || entry.state?.umaId !== entry.save.templateId)
@@ -365,7 +365,7 @@ export function sortBadgeItems<T extends BadgeCollectionItem | StableBadgeItem>(
   return result
 }
 
-export function buildTrophyWall(content: LoadedContent, state: UmaBadgeStateV1, raceResults: readonly RaceResultRecord[] = []): TrophyView[] {
+export function buildTrophyWall(content: LoadedContent, state: UmaBadgeStateV1, raceResults: readonly LinkedRaceRecord[] = []): TrophyView[] {
   return state.awards.trophies.map((trophy) => {
     const race = content.races.items.find((entry) => entry.familyId === trophy.familyId)
     return {
@@ -380,7 +380,7 @@ export function buildTrophyWall(content: LoadedContent, state: UmaBadgeStateV1, 
 
 export function buildTimelineItems(
   content: LoadedContent, state: UmaBadgeStateV1, events: readonly (FlairEventV1 & { id: string })[],
-  raceResults: readonly RaceResultRecord[] = [],
+  raceResults: readonly LinkedRaceRecord[] = [],
 ): TimelineItemView[] {
   const definitions = new Map(buildUmaFlairCatalog({ state, races: content.races.items }).definitions.map((row) => [row.awardKey, row]))
   return events.filter((event) => event.scope === 'uma' && event.umaId === state.umaId).map((event) => ({

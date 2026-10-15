@@ -1,12 +1,13 @@
 // The run and its result (T141 "Run", "Result"; docs/game/09-racing-rewards-and-exchange.md §7, §8; 11 §6), full
 // screen at `/racing/racecourse/run?result=:id`. It always plays a committed result: the `raceResults` row's run,
 // rebuilt and simulated on engine v9, so a reload or a reopen lands on the same race. Today's RaceRunScreen behaviour,
-// ported: the PixiJS scene (lazy, with this chunk), HUD, feed, speeds, step, pause, Skip, the wake lock and
-// `window.__raceScene` in dev builds. The result reads the row's receipt, so a reload shows exactly what was paid; only
-// the first showing on this device plays the fanfare, and the prize flies into the Prize Money chip, shown alone.
+// ported: the PixiJS scene (lazy, with this chunk), HUD, feed, speeds (from Account's default race speed), step, pause,
+// Skip, the wake lock and `window.__raceScene` in dev builds. The result reads the row's receipt, so a reload shows
+// exactly what was paid; only the first showing on this device plays the fanfare, and the prize flies into the Prize
+// Money chip, shown alone. Reduced motion is the app's rule: the system setting or Account's switch.
 import { badgeStateId, COURSE_ROTATION } from '@racer/domain'
 import { formatMargin } from '@racer/race'
-import { AnimatePresence, m, useReducedMotion } from 'motion/react'
+import { AnimatePresence, m } from 'motion/react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router'
 import { buildFlairFanfare, buildTrainerFlairFanfare } from '../flair-view'
@@ -18,16 +19,18 @@ import { FlairCards } from '../../../ui/FlairCards'
 import { ChevronLeftIcon, ChevronRightIcon, HonorsIcon, PauseIcon, PlayIcon, RibbonIcon, SkipIcon } from '../../../ui/icons'
 import { Meter } from '../../../ui/Meter'
 import { useGame, useRuntime } from '../../../app/game'
+import { useReducedMotionSetting } from '../../../app/motion'
 import { useLeave } from '../../../hub/nav'
 import { AnimatedNumber } from '../../../ui/AnimatedNumber'
 import { CoinIcon } from '../../../ui/icons'
 import { UmaFace } from '../../../ui/UmaArt'
+import { raceSpeed, startingSpeed } from '../../../ui/devicePrefs'
 import { useRaceContent } from '../content'
 import { eventsOfCommit } from '../flair'
 import { replayOf, simulate } from '../prepare'
 import { useRecords } from '../records'
 import { startRace, takeFanfare } from '../race'
-import { recordOf, rowsOf, umaSaveOf } from '../today'
+import { recordOf, resultPath, rowsOf, umaSaveOf } from '../today'
 import { canAdvance, featuredView, finishLines, gradeWords, holdLine, localDayAt, nextUma, prizeLines, stripOrder } from '../view'
 import { amount, ordinal, racingWords } from '../words'
 import { RaceFeed } from './RaceFeed'
@@ -68,7 +71,8 @@ function Message({ title, action }: { title: string; action: { label: string; on
 
 export default function RunPage() {
   const navigate = useNavigate()
-  const reducedMotion = Boolean(useReducedMotion())
+  // The app's one rule (`app/motion.tsx`): the system setting or Account's switch for this phone.
+  const reducedMotion = useReducedMotionSetting()
   const [params] = useSearchParams()
   const resultId = params.get('result') ?? ''
   const { game } = useRuntime()
@@ -81,8 +85,12 @@ export default function RunPage() {
   const [fresh] = useState(() => takeFanfare(resultId))
   const hostRef = useRef<HTMLDivElement>(null)
   const sceneRef = useRef<RaceScene | null>(null)
+  // The playback rate now, for a scene that loads after the speed is set.
+  const rateRef = useRef(1)
   const [hud, setHud] = useState<RaceHudState | null>(null)
-  const [speed, setSpeed] = useState(1)
+  // Account's default race speed for this phone, read once; a tap here chooses for this run.
+  const [saved] = useState(raceSpeed)
+  const [chosen, setSpeed] = useState<number | null>(null)
   const [paused, setPaused] = useState(false)
   const [showResults, setShowResults] = useState(!fresh)
   const [again, setAgain] = useState<'idle' | 'busy' | 'failed'>('idle')
@@ -109,6 +117,7 @@ export default function RunPage() {
       scene = new Scene(timeline, runners, replay.playerIndex, setHud, () => setShowResults(true), reducedMotion,
         replay.input.course.layout, replay.input.course.rotation ?? (race ? COURSE_ROTATION[race.direction] : undefined))
       sceneRef.current = scene
+      scene.setSpeed(rateRef.current)
       if (!fresh) scene.seek(Number.POSITIVE_INFINITY)
       if (import.meta.env.DEV) (window as unknown as { __raceScene?: RaceScene }).__raceScene = scene
       void scene.mount(host)
@@ -123,9 +132,13 @@ export default function RunPage() {
   }, [replay, timeline, reducedMotion])
 
   const turnRace = timeline?.tickRate === 1
+  const speeds = turnRace ? TURN_SPEEDS : TIME_SPEEDS
+  const speed = chosen ?? startingSpeed(speeds.map((option) => option.value), saved)
+  const rate = paused ? 0 : speed * (turnRace ? TURN_RACE_RATE : 1)
+  rateRef.current = rate
   useEffect(() => {
-    sceneRef.current?.setSpeed(paused ? 0 : speed * (turnRace ? TURN_RACE_RATE : 1))
-  }, [paused, speed, timeline, turnRace])
+    sceneRef.current?.setSpeed(rate)
+  }, [rate, timeline])
   const step = (direction: -1 | 1) => {
     const scene = sceneRef.current
     if (!scene) return
@@ -190,7 +203,7 @@ export default function RunPage() {
       game, state, env, content, umaId: row.umaId, raceId: row.raceId, strategy: row.run.strategy, localDay,
       board: featuredView(state.profile, localDay, content.races.items).board,
     })
-    if (answer.kind === 'done') navigate(`/racing/racecourse/run?result=${encodeURIComponent(answer.id)}`, { replace: true })
+    if (answer.kind === 'done') navigate(resultPath(answer.id), { replace: true })
     else setAgain('failed')
   }
   const next = () => {
@@ -281,7 +294,7 @@ export default function RunPage() {
               <button type="button" onClick={() => step(1)} disabled={!paused || hud?.stage !== 'running'} aria-label={racingWords('step-on')} className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-hairline-strong bg-panel disabled:opacity-35"><ChevronRightIcon size={20} /></button>
             </div>
             <div className="flex items-center gap-1" role="group" aria-label={racingWords('playback-speed')}>
-              {(turnRace ? TURN_SPEEDS : TIME_SPEEDS).map((option) => (
+              {speeds.map((option) => (
                 <button
                   key={option.label}
                   type="button"
