@@ -215,7 +215,7 @@ Late, Long set in two taps.
 
 The Card Library is a place in the **Town Hall** ([11](11-hub-and-places.md), D333). It replaces the Cards tab and uses
 the shared album chrome ([Albums](../design/ux.md#albums)): sticky search, Sort and Filter, filter chips,
-saved views, three view modes, compare and long-press actions.
+saved views and three view modes (Icons, Cards, List).
 
 **Lens and Uma.** A chip row picks the **lens**: **All**, or one of the playable scenarios (14 until the 15th ships, D131). A second control picks an
 **Uma**: when one is set, the lens follows her scenario and every tile shows her bond state. The Library opens on the
@@ -304,7 +304,7 @@ Diner's **Orders**, and Project L'Arc's **Expedition**, which needs a new name, 
 | `umas/{outfitId}` | `bonds`: the card ids bonded in her current tier. Each preset's `cardSet` (six ids or empty) and node assignments by node id |
 | `umas/{outfitId}` promotion history | The bonded ids of each finished tier, for history |
 | `work/{outfitId}` | A running Dojo session, as any session ([05](05-training-hub.md) §9) |
-| `badges/trainer` | The set of card ids ever bonded, for Card Partners and the [Era]/[Type] Bonded one-offs |
+| `badges/trainer` | The Trainer's achievement counts. The set of cards ever bonded, for Card Partners and the [Era]/[Type] Bonded one-offs, is not stored: it is projected from every Uma's `bonds` and promotion history (`everBondedCardIds`, §11) |
 
 There is **no per-account card entity**: no `cards/{cardId}`, no stars, no coupon flags. Bonds start, speed up, recall
 and collect with the session operations; a set edit is one ordinary Uma write.

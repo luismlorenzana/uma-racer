@@ -17,7 +17,7 @@ Everything priced in Prize Money follows one anchor (D331): **1 Prize Money ≈ 
 
 ## 1. Racing EXP (unchanged, restated)
 
-Racing EXP is today's rule ([design/racing.md](../design/racing.md#rewards)), with the cards in her set now being her
+Racing EXP is the rule kept from before the rework ([design/racing.md](../design/racing.md#rewards)), with the cards in her set now being her
 **bonded** cards ([06](06-cards-and-bonds.md)):
 
 | Outcome | Racing EXP |
@@ -377,7 +377,8 @@ joins.
 7. **Actions:** **Next Uma** (the Racecourse on the next Uma with something to race, [11](11-hub-and-places.md)),
    **Race again** (same Uma, same race) and **Races**. At a gate with her career complete, an **Advance** action joins
    them and opens the Scenario Gate; an Expedition's eighth win shows **Promote** instead, and a lost Expedition race
-   **Retry** ([10](../rework/10-expeditions.md)). Until the result is saved only **Retry save** shows, as today.
+   **Retry** ([10](../rework/10-expeditions.md), phase 9). The result is committed at Start race, before playback
+   (§10), so there is no separate save step to retry.
 
 A reload shows the stored result, its prize and band from the saved row, without replaying fanfare.
 
