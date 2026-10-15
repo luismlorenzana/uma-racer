@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
-// The new game's routes (docs/rework/11-hub-and-places.md §2.4, §7) in a memory router: every §7.2 row lands on its
-// "After" with its params and search; deleted paths, `/training/<umaId>`, `/cards/redeem` and unknown paths reach `/`;
-// and `/` opens by the start rule's three cases and the last page.
+// The live router's routes (`G2_ROUTES`, which `createG2Router` serves; docs/rework/11-hub-and-places.md §2.4, §7; T143
+// check 6) in a memory router: every §7.2 row lands on its "After" with its params and search; deleted paths,
+// `/training/<umaId>`, `/cards/redeem`, the seeds' path and unknown paths reach `/`; and `/` opens by the start rule's
+// three cases and the last page.
 import { cleanup, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderG2, seedGame, stubStorage } from '../__fixtures__/testing'
@@ -47,6 +48,7 @@ describe("today's routes (§7.2)", () => {
     '/cards/redeem', '/training/sim-uma-07', '/rpg/roster', '/rpg/party/1/2/fight', '/puzzles', '/puzzles/practice', '/puzzles/content',
     '/minigames/spark-match/sim-uma-07', '/minigames/friendship-training/c', '/minigames/bond-recall', '/farm/section/crops', '/farm/workers',
     '/farm/crops', '/farm/nowhere', '/collection/reveal/card/sim-card-wit-e2', '/dev/farm-kitchen-proof', '/dev/spark-rival-proof',
+    '/dev/seeds', '/dev/seeds/town',
     '/nowhere', '/town/nowhere', '/town/kitchen', '/racing/stable/outfit/x', '/a/b/c/d',
   ])('sends %s to /', async (path) => {
     expect(await landing(path)).toBe('/')
