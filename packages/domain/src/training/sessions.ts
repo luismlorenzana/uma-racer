@@ -18,7 +18,7 @@ import { roomAccepts } from './facilities'
 import { unlockStatus } from './order'
 import { trainingRefusal } from './refusals'
 import {
-  SESSION_MAX_UNLOCKS, SESSION_MIN_UNLOCKS, UNLOCK_KINDS, bondUnlock, facilityOf, fixedUnlock, sessionBaseMinutes, sessionSeconds,
+  SESSION_MAX_UNLOCKS, SESSION_MIN_UNLOCKS, UNLOCK_KINDS, bondUnlock, facilityOf, fixedUnlock, sessionSeconds,
   unlockKey, unlockLabel, type Unlock, type UnlockKind, type UnlockRef,
 } from './unlocks'
 

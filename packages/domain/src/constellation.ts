@@ -3,7 +3,7 @@
 
 import { SHAPE_ART, cellKey, parseShapeArt, type ShapeCell } from './constellation-shapes'
 import type { SupportCardTemplate } from './content'
-import { MAX_SCENARIO_TIER, SCENARIOS, skillPointCap } from './scenarios'
+import { MAX_SCENARIO_TIER, SCENARIOS } from './scenarios'
 import { STATS, type StatKey, type Stats } from './types'
 
 export const CARD_SET_SIZE = 6
@@ -100,9 +100,6 @@ export const cardFairShare = (tier: number): number => Math.ceil(shapeDef(tier).
  * build, and the +1 leaves room to lean a set one node towards Speed or Wit for a given race.
  */
 export const cardNodeCap = (tier: number): number => cardFairShare(tier) + 1
-
-/** SP one node of a max-bonded, current-era Friend or Group card pays (D133). An integer at every tier. */
-export const spNodeValue = (tier: number): number => Math.round((SP_CARD_SHARE * skillPointCap(tier)) / cardFairShare(tier))
 
 // --- Cards -------------------------------------------------------------------------------------
 

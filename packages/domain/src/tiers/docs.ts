@@ -10,7 +10,7 @@ import type { ScenarioOfTier, Tier } from '../state/types'
 import { LAST_SCENARIO_NUMBER, SCENARIOS_PER_TIER, TIERS, firstLevel, gateLevel, scenarioRow } from './map'
 import { HALL_OF_FAME_TIER, PROMOTION_UMA_TICKETS, promotionTicketLedgerId } from './promotion'
 import { INITIAL_UMA_TICKETS, INITIAL_UMA_TICKETS_LEDGER_ID, TICKETS_PER_EXCHANGE, UMA_SHARDS_PER_TICKET } from './roster'
-import { FULL_ACTIVE_EXTRA_NODES, capBudgetAt, capProfileAt, extraBudget, extraBudgetAt, extraNodeValues, nodeValue, spCapAt } from './scaling'
+import { capBudgetAt, capProfileAt, extraBudget, extraBudgetAt, extraNodeValues, nodeValue, spCapAt } from './scaling'
 
 type Cell = string | number
 /** A Markdown table; an empty cell renders as `| |`, as the hand-written pages have it. */

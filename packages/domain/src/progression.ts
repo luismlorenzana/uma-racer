@@ -35,6 +35,3 @@ export function raceExp(grade: RaceGrade, placement: number, raceBonus = 0): num
 
 /** Gate-level overflow EXP is banked up to one level's worth and applied after promotion. */
 export const OVERFLOW_BANK_LEVELS = 1
-
-/** Flat bonus to each stat on promotion (not limited by caps). */
-export const PROMOTION_BONUS_PER_STAT = 10

@@ -60,10 +60,6 @@ export const SCENARIO_BUFFS: readonly ScenarioBuff[] = [
 export const scenarioBuff = (tier: number): ScenarioBuff =>
   SCENARIO_BUFFS[Math.min(SCENARIO_BUFFS.length, Math.max(1, Math.trunc(tier))) - 1]!
 
-/** What one active Extra stat node pays at a tier, after Foundation (tier 1): the value shown on the node. */
-export const buffedStatNodeValue = (tier: number, base: number): number =>
-  scenarioBuff(tier).id === 'foundation' ? (base * BUFF_VALUES.foundationStatPct) / 100 : base
-
 /** Legends (tier 10): the first parent slot takes any Uma, owned or not. */
 export const lineageSlotTakesAnyUma = (tier: number, nodeId: string): boolean =>
   scenarioBuff(tier).id === 'legends' && nodeId === 'parent0'

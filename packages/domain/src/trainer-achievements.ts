@@ -112,7 +112,6 @@ export interface TrainerAchievementProgress {
   frozenAllKeys: string[]
 }
 
-const NORMAL_STAGES = BADGE_TIERS.slice(0, 4)
 
 function sortedUnique(values: readonly string[]): string[] {
   return [...new Set(values)].sort((left, right) => left.localeCompare(right))

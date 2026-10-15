@@ -1,7 +1,6 @@
 // SSR support cards: the generated effect profile that still feeds Race Bonus (docs/design/support-cards.md). The rest
 // of the effect model died with the training turn (D125), and every card pays 100%: no stars (D329).
 
-import { CARD_SET_SIZE } from './constellation'
 import type { SkillTemplate, SupportCardTemplate } from './content'
 
 export const eraMult = (era: number): number => 1 + 0.08 * (era - 1)
@@ -20,9 +19,6 @@ export const CARD_EFFECTS = [
 ] as const
 export type CardEffect = (typeof CARD_EFFECTS)[number]
 
-/** Six slots at every tier; the 4/5/6 ramp was ours to begin with and the original always has six (D125). */
-export const deckSlotCount = (_tier: number): number => CARD_SET_SIZE
-
 export const STAT_BONUS_SOURCE_IDS = { speed: 3, stamina: 4, power: 5, guts: 6, wit: 7 } as const
 export const INITIAL_STAT_SOURCE_IDS = { speed: 9, stamina: 10, power: 11, guts: 12, wit: 13 } as const
 
@@ -37,9 +33,6 @@ export function cardGoldSkillIds(
 ): string[] {
   return template.eventSkillIds.filter((id) => skills.get(id)?.kind === 'gold')
 }
-
-export const isBroadSupportCard = (template: Pick<SupportCardTemplate, 'type'>): boolean =>
-  template.type === 'friend' || template.type === 'group'
 
 /** Map only source effect identity; original values and conditions never enter the generated rules. */
 export function sourceCardEffect(effectType: number, cardType: SupportCardTemplate['type']): CardEffect | null {

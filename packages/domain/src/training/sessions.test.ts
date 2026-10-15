@@ -4,7 +4,7 @@
 // the finished ones and Recall returns the rest.
 import { describe, expect, it } from 'vitest'
 import { COLT, placeUma } from '../__fixtures__/tiers'
-import { ENV, TIER_AND_TRAINING, cardOf, slotAt, workAccount } from '../__fixtures__/training'
+import { ENV, TIER_AND_TRAINING, slotAt, workAccount } from '../__fixtures__/training'
 import type { FacilityId, RoomId } from '../farm/buildings'
 import { SPEED_TICKET_ID } from '../items/catalogue'
 import { secondsToMs } from '../state/time'

@@ -18,8 +18,8 @@ import {
   type RacePreferences,
   type UmaSave,
 } from './career-shapes'
-import { LEVELS_PER_SCENARIO, isGateLevel, scenarioForTier, tierOfLevel } from './scenarios'
-import { CAREER_STAGE_LEVELS, careerHoldLevel, isCareerJourney, isCareerStage } from './career-stages'
+import { isGateLevel, scenarioForTier, tierOfLevel } from './scenarios'
+import { isCareerJourney } from './career-stages'
 
 // The stage rules live in a leaf module, which the career shapes read too (D241).
 export { CAREER_STAGE_LEVELS, careerHoldLevel, isCareerJourney, isCareerStage } from './career-stages'
