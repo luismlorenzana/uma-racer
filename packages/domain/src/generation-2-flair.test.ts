@@ -53,6 +53,8 @@ describe("generation 2's Uma catalogue", () => {
     expect(definition('badge:living-legend')!.description).toContain('Hall of Fame')
     expect(definition('badge:scenario:3:era-loyalist')!.description).toContain('every race she ran')
     expect(definition('badge:full-house')!.description).toBe('Fill every card node of one constellation.')
+    // Honors is every goal of her career there, however many it has (badges.md), not a fixed three.
+    expect(definition('honors:2')!.description).toBe(`Win every goal of her career in ${SCENARIOS[1]!.name}.`)
     for (const row of buildUmaFlairCatalog({ state: fresh(), races }).definitions) {
       expect(row.description, row.awardKey).not.toMatch(/Training Level|TL10|Spark Match|Produce|coupon/i)
     }

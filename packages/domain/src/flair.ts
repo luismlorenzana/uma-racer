@@ -403,7 +403,7 @@ export function buildUmaFlairCatalog(input: {
       definition({ awardKey: `badge:scenario:${tier}:speedrun`, kind: 'one-off', label: `${label} Speedrun`, description: `Complete ${label} in 15 or fewer race starts.`, category: 'scenario', criterion: { kind: 'scenario', rule: 'speedrun', tier }, history: speedrunHistory, tags: ['scenario', `tier:${tier}`] }),
       definition({ awardKey: `badge:scenario:${tier}:fully-trained`, kind: 'one-off', label: `${label} Fully Trained`, description: `Open every unlock of ${label}'s layer.`, category: 'training', criterion: { kind: 'scenario', rule: 'fully-trained', tier }, history: state.history.training, tags: ['training', 'scenario', `tier:${tier}`] }),
       definition({ awardKey: `badge:scenario:${tier}:era-loyalist`, kind: 'one-off', label: `${label} Era Loyalist`, description: `Complete ${label} with only era-${tier} cards in the set of every race she ran in it.`, category: 'training', criterion: { kind: 'scenario', rule: 'era-loyalist', tier }, history: snapshotHistory, tags: ['training', 'scenario', `tier:${tier}`] }),
-      definition({ awardKey: `honors:${tier}`, kind: 'honors', label: `${label} Honors`, description: `Complete all three tracked goals in ${label}.`, category: 'goals', criterion: { kind: 'scenario', rule: 'honors', tier }, history: 'exact', tags: ['goals', 'scenario', `tier:${tier}`] }),
+      definition({ awardKey: `honors:${tier}`, kind: 'honors', label: `${label} Honors`, description: `Win every goal of her career in ${label}.`, category: 'goals', criterion: { kind: 'scenario', rule: 'honors', tier }, history: 'exact', tags: ['goals', 'scenario', `tier:${tier}`] }),
     )
   }
   const scenarioTiers = Array.from({ length: SCENARIOS.length }, (_, index) => index + 1)

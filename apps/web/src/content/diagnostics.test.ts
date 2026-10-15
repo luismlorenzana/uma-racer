@@ -1,3 +1,4 @@
+import { hasBannedWord } from '@racer/domain/check-in'
 import { describe, expect, it } from 'vitest'
 import { ApiError } from '../api/client'
 import { diagnoseContentError, diagnoseLoadedContent, EMPTY_BUCKET_CONTENT, SIGNED_OUT_CONTENT } from './diagnostics'
@@ -27,5 +28,28 @@ describe('content diagnostics', () => {
   it('calls verified network content current', () => {
     const content = { origin: 'network' } as LoadedContent
     expect(diagnoseLoadedContent(content)).toMatchObject({ code: 'ready', success: true, action: null })
+  })
+
+  it('says every sentence the session panel can show in plain words (02 §9)', () => {
+    const shown = [
+      SIGNED_OUT_CONTENT,
+      EMPTY_BUCKET_CONTENT,
+      diagnoseContentError(new ApiError('/api/content/manifest', 401, 'Unauthorized')),
+      diagnoseContentError(new ApiError('/api/content/manifest', 403, 'Forbidden')),
+      diagnoseContentError(new ApiError('/api/content/files/data%2Fmissing.json', 404, 'Missing')),
+      diagnoseContentError(new Error('Content hash mismatch: data/synthetic.json')),
+      diagnoseContentError(new ApiError('/api/content/manifest', 503, 'Unavailable')),
+      diagnoseContentError(new TypeError('Failed to fetch')),
+      diagnoseContentError(new Error('Something else')),
+      diagnoseLoadedContent({ origin: 'offline-cache' } as LoadedContent),
+      diagnoseLoadedContent({ origin: 'network' } as LoadedContent),
+    ]
+    expect(new Set(shown.map((diagnostic) => diagnostic.code)).size).toBe(8)
+    const sentences = shown.flatMap((diagnostic) => [diagnostic.title, diagnostic.message, ...(diagnostic.action ? [diagnostic.action.label] : [])])
+    for (const text of sentences) {
+      expect(hasBannedWord(text), text).toBe(false)
+      // Not on 02 §9's list, but the same kind of word: the content's plumbing.
+      expect(text, text).not.toMatch(/manifest|bucket|object|verif|allow-?list/i)
+    }
   })
 })
