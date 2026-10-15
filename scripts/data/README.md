@@ -32,13 +32,6 @@ may participate in more than one tag but only one leg within a tag. Every family
 normalized race pack. The file and generated packs remain ignored. Missing input produces an aggregate warning and empty
 coverage; malformed input fails the import. Logs expose aggregate coverage only, and tests use invented references.
 
-The optional private input `content/overrides/spark-rivals.json` supplies the fourteen Spark Rival Circuit rosters. Its
-version-1 shape is `{ version: 1, scenarios: [{ tier, ordinary, bosses }] }`; candidates contain only a private Uma
-`templateId` and one checked-in recipe id. Import validation resolves every identity, derives its canonical character and
-stable best strategy, enforces no-self/no-duplicate coverage, and logs aggregate counts only. Missing input is allowed for
-development and omits the optional pack so the app uses its deterministic catalogue fallback. A publication dry run or
-real publish refuses a manifest without a complete, valid `spark-rivals` pack.
-
 ## Output
 
 ```text
@@ -49,39 +42,15 @@ content/
   data/skills.<hash8>.json
   data/races.<hash8>.json
   data/courses.<hash8>.json
-  data/spark-rivals.<hash8>.json # optional during development; required to publish
-  atlases/...                   # preserved when present; written by scripts/assets
+  atlases/..., art/...          # preserved when present; written by scripts/assets
 ```
 
 Each pack is compact JSON with `{ version, items }`; items are sorted by string id, and stale hashes for that pack are
-removed after the replacement manifest is written. Existing atlas entries are preserved. `manifest.json` records the GameTora dataset versions plus every content file's relative
+removed after the replacement manifest is written. Existing atlases and art of the families `scripts/assets` builds
+are preserved; any other file leaves the manifest, so a family no pipeline builds any more is never published again.
+`manifest.json` records the GameTora dataset versions plus every content file's relative
 path, byte count, and full SHA-256. Its version is the first 12 hexadecimal characters of the SHA-256 over the sorted file
 hashes. Paths are resolved from this package's location, so the result does not depend on the command's current directory.
-
-## Private RPG chapter pipeline
-
-After a reviewed private `content/overrides/rpg-chapters.json` and official-page evidence are authored:
-
-```bash
-pnpm assets:rpg:import
-pnpm data:rpg:import
-pnpm data:rpg:validate --replay  # offline, credential-free validation and bounded invented-party replay
-```
-
-See [the standing RPG content contract](../../docs/technical/rpg-chapter-content.md) for v2 provenance, exact-version
-catalog/art references, custom paths and owner-authorized publication. Every old pack/image remains retained; versions
-cannot be reauthored. Regular data imports preserve RPG files/catalog and source pins. A present RPG pack must pass
-this gate before the existing publisher contacts storage. A partial RPG-only staging manifest must never replace
-the complete production manifest. The first URA chapter's [publication record](../../docs/research/rpg-private-ura-handoff.md)
-records the complete manifest and immutable pack hash (D257).
-
-## Private Uma Puzzles content
-
-After permitted source/evidence collection (currently pinned by the owner): `pnpm assets:puzzles:import`,
-`pnpm data:puzzles:import`, then `pnpm data:puzzles:validate`. The [standing contract](../../docs/technical/puzzle-content.md)
-defines exact reviewed inputs, capability/schema checks, all-chapter joins, immutable retained packs/atlases, aggregate
-output and authenticated client leases. Regular imports preserve Puzzle files/pins alongside RPG. Present Puzzle content
-must validate before publisher storage access. No publication occurs during import; real-source acceptance remains open.
 
 ## Safety and tests
 

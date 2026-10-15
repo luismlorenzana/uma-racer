@@ -2,26 +2,17 @@
 // private or original-game content.
 import {
   CARD_EFFECTS,
-  CARD_SET_SIZE,
   INSPIRATION_SLOTS,
-  MAX_STARS,
   SCENARIO_BUFFS,
   STATS,
-  constellationTemplate,
-  deriveStats,
-  extraStatsFromProduce,
   parseRaceCondition,
   rollRivalField,
   rollRivalSkills,
-  shapeDef,
-  unlockedNodeCount,
   type Aptitudes,
   type CardEffect,
-  type CardNodeState,
   type CompiledRaceSkill,
   type DistanceCategory,
   type InspirationSlot,
-  type NodeAssignment,
   type RaceGrade,
   type RaceSkillEffectKind,
   type StatKey,
@@ -103,36 +94,21 @@ export const PLAYER_KIT = [
 export type CardType = 'speed' | 'stamina' | 'power' | 'guts' | 'wit' | 'friend'
 /** Median base stats of the imported roster, zero growth: the typical Uma, not a favourable one. */
 const BASE: Stats = { speed: 110, stamina: Number(process.env.BASE_STAMINA ?? 105), power: 110, guts: Number(process.env.BASE_GUTS ?? 110), wit: 110 }
-const umaTemplate = { baseStats: BASE, growthRates: { speed: 0, stamina: 0, power: 0, guts: 0, wit: 0 } }
-const flatProfile = { trainingBonus: 1, friendshipBonus: 1, statBonus: 1, skillPointBonus: 1, specialtyPriority: 1, hintFrequency: 1, raceBonus: 1, initialStats: 1 }
-
-export const fairShare = (tier: number) => Math.ceil(shapeDef(tier).cardNodes / CARD_SET_SIZE)
-export const cardCap = (tier: number) => fairShare(tier) + 1
 
 export const SPRINT_GUTS: CardType[] = ['speed', 'speed', 'guts', 'wit', 'wit', 'friend']
-export const SPRINT_POWER: CardType[] = ['speed', 'speed', 'power', 'wit', 'wit', 'friend']
 export const STAYER: CardType[] = ['speed', 'speed', 'stamina', 'wit', 'wit', 'friend']
 export const STAYER_POWER: CardType[] = ['speed', 'speed', 'stamina', 'power', 'wit', 'friend']
 export const LONG: CardType[] = ['speed', 'speed', 'stamina', 'stamina', 'wit', 'friend']
 
 export interface BuildOptions {
-  /** Defaults to 10. Only the nodes open at this Training Level are filled, lowest order first. */
-  trainingLevel?: number
   /** Nodes go to the Friend card first (its fair share, for SP) or last, when stats matter more than skills. */
   friend?: 'first' | 'last'
-  /** Every card's stars in this scenario. Defaults to max, a fully bonded set. */
-  stars?: number
   /** Cards (by deck index) filled to their cap right after the lean, before Speed and Wit. */
   first?: number[]
 }
 
-/**
- * The six Extra stats a build turns on (D235): four of the stat it leans on, the most a stat holds, and two of the stat
- * that best backs it up (Guts behind Stamina, which spends less HP on the spurt; Power behind Speed).
- */
+/** The stat that best backs up a lean (D235): Guts behind Stamina, which spends less HP on the spurt; Power behind Speed. */
 const EXTRA_BACKUP: Record<StatKey, StatKey> = { speed: 'power', stamina: 'guts', power: 'speed', guts: 'stamina', wit: 'speed' }
-export const buildExtraStats = (stat: StatKey) =>
-  extraStatsFromProduce([stat, stat, stat, stat, EXTRA_BACKUP[stat], EXTRA_BACKUP[stat]])
 
 /**
  * How many of `cardNodes` each deck card fills: the Friend card its fair share first (unless last), the card at
@@ -169,30 +145,6 @@ export function dealNodes(ids: string[], want: number[], deck: CardType[], optio
     for (const index of order) if (want[index]! > round) queue.push(ids[index]!)
   }
   return queue
-}
-
-/**
- * Race stats for a six-card set, current era, maxed unless `stars` says otherwise. The card at `leanIndex` takes `lean`
- * nodes, any `first` cards fill to their cap, Speed then Wit fill what is left up to the per-card cap, and the Friend
- * card takes its fair share first or last. Six Extra stats lean on `statNodesTo` at any Training Level.
- */
-export function buildStats(tier: number, deck: CardType[], leanIndex: number, lean: number, statNodesTo: StatKey, options: BuildOptions = {}): Stats {
-  const trainingLevel = options.trainingLevel ?? 10
-  const template = constellationTemplate(tier)
-  const ids = deck.map((type, index) => `${type}-${index}`)
-  const cards = new Map<string, CardNodeState>(ids.map((id, index) => [id, {
-    template: { id, type: deck[index]!, era: tier, effectProfile: flatProfile, hintSkillIds: [] },
-    stars: options.stars ?? MAX_STARS,
-  }]))
-  const queue = dealNodes(ids, allocateNodes(shapeDef(tier).cardNodes, fairShare(tier), cardCap(tier), deck, leanIndex, lean, options), deck, options)
-  const open = unlockedNodeCount(tier, trainingLevel)
-  const assignments: Record<string, NodeAssignment> = {}
-  for (const node of [...template.nodes].sort((a, b) => a.order - b.order)) {
-    if (node.order >= open) continue
-    if (node.kind === 'card' && queue.length > 0) assignments[node.id] = { kind: 'card', cardId: queue.shift()! }
-  }
-  return deriveStats({ tier, trainingLevel, template, assignments, cardSetIds: ids, umaTemplate, cards,
-    extraStats: buildExtraStats(statNodesTo) }).stats
 }
 
 /**
@@ -264,7 +216,7 @@ export interface ReworkBuildOptions extends Pick<BuildOptions, 'friend' | 'first
 }
 
 /**
- * One preset of a full-layer build at scenario T: today's `buildStats` allocation on the re-authored tree (the lean,
+ * One preset of a full-layer build at scenario T: the sims' card allocation on the re-authored tree (the lean,
  * `first` cards to the cap, Speed then Wit, the Friend card first or last), every Inspiration slot her layers open
  * filled, and Extra Stats leaning on `statNodesTo` at the scenario's capacity. Derived by T128's `deriveBuild`.
  */

@@ -22,6 +22,13 @@ export interface WriteContentPacksOptions {
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../../..')
 export const DEFAULT_CONTENT_DIR = resolve(repoRoot, 'content')
 
+/**
+ * The previous manifest's files a data import keeps: the atlases and art the asset pipeline builds (scripts/assets),
+ * which it rewrites itself. Every `data/` file is written again here, and a file of any other family (one no pipeline
+ * builds any more) leaves the manifest, so the next publish lists only what the app reads (T143).
+ */
+const ASSET_FILE = /^(?:atlases\/(?:uma-icons|card-icons|scenario-icons|skill-icons)[.-]|art\/(?:uma|card|bust|chibi|dress|face)\/)/
+
 export function sha256(value: string | Buffer): string {
   return createHash('sha256').update(value).digest('hex')
 }
@@ -47,7 +54,7 @@ export async function writeContentPacks(options: WriteContentPacksOptions): Prom
   await mkdir(dataDir, { recursive: true })
 
   const previous = await readExistingManifest(contentDir)
-  const files: ContentManifestFile[] = previous?.files.filter((file) => !file.path.startsWith('data/') || /^data\/(rpg-(chapters|catalog)|puzzles-(cast|catalog))\./.test(file.path)) ?? []
+  const files: ContentManifestFile[] = previous?.files.filter((file) => ASSET_FILE.test(file.path)) ?? []
   const stale: string[] = []
   for (const pack of options.packs) {
     const items = [...pack.items].sort((left, right) => left.id.localeCompare(right.id))
