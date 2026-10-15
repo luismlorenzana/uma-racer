@@ -250,7 +250,7 @@ export function trainerBadge(name = 'Hana', at = 0): BadgeStateV1 {
     catalogVersion: 1,
     evaluatorVersion: 0,
     trackingStartedAt: at,
-    sourceWatermarks: { contributors: 0, ledgerEntries: 0, contentVersion: null },
+    sourceWatermarks: { contributors: 0, contentVersion: null },
     aggregates: [],
     records: [],
     awards: { achievements: [] },

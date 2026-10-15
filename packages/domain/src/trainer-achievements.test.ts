@@ -8,7 +8,6 @@ import {
   parseBadgeState,
   projectTrainerAchievementProgress,
   reconcileTrainerState,
-  type CardSave,
   type EarnedBadgeStage,
   type EarnedTitle,
   type RaceResultRecord,
@@ -18,7 +17,7 @@ import {
   type UmaSave,
   type UmaTemplate,
 } from './index'
-import { createCardSave, createUmaSave } from './save'
+import { createUmaSave } from './save'
 
 function umaTemplate(id: string): UmaTemplate {
   return {
@@ -63,7 +62,7 @@ function contributor(template: UmaTemplate, rich: boolean, trackingStartedAt: nu
   const goals = Array.from({ length: 5 }, (_, index) => ({ goalId: `goal:${index + 1}:synthetic`, resultId: `race:uma-a:${index}`, tier: index + 1, completedAt: 100 + index }))
   const candidate: UmaBadgeStateV1 = {
     ...base,
-    sourceWatermarks: { raceSequence: 9, trainingTurns: 0, scenarioCompletions: 5, lineageEvidence: 6 },
+    sourceWatermarks: { raceSequence: 9, scenarioCompletions: 5, lineageEvidence: 6 },
     facts: {
       ...base.facts,
       starts: 10,
@@ -90,7 +89,7 @@ function raceResult(): RaceResultRecord {
     engineVersion: 3, course: { distance: 1_600, surface: 'turf', season: 1 }, contentVersion: 'synthetic-v1', umaId: 'uma-a', raceId: 'race-a',
     sequence: 0, seed: 1, strategy: 'pace', startLevel: 1, startExp: 0,
     startStats: { speed: 100, stamina: 100, power: 100, guts: 100, wit: 100 }, raceBonus: 0, playerPlacement: 1,
-    expGained: 0, levelsGained: [], ticketReward: 0, shardReward: 0, completedGoalIds: [],
+    expGained: 0, levelsGained: [], shardReward: 0, completedGoalIds: [],
     field: [
       { umaId: 'uma-a', isPlayer: true, strategy: 'pace', gate: 0, stats: { speed: 100, stamina: 100, power: 100, guts: 100, wit: 100 }, aptitude: { distance: 'A', surface: 'A', strategy: 'A' }, placement: 1, finishTime: 100, marginLengths: 0 },
       { umaId: 'rival-a', isPlayer: false, strategy: 'pace', gate: 1, stats: { speed: 100, stamina: 100, power: 100, guts: 100, wit: 100 }, aptitude: { distance: 'A', surface: 'A', strategy: 'A' }, placement: 2, finishTime: 101, marginLengths: 7 },
@@ -103,34 +102,28 @@ describe('Trainer achievement reconciliation', () => {
   const umas = [umaTemplate('uma-a'), umaTemplate('uma-b')]
   const cards = [cardTemplate('card-a', 'speed'), cardTemplate('card-b', 'wit')]
   const ownedUmas: UmaSave[] = umas.map((template, index) => ({ ...createUmaSave(template), level: index === 0 ? 110 : 50 }))
-  const ownedCards: CardSave[] = cards.map((template) => ({ schemaVersion: 1, templateId: template.id, stars: 3, maxCouponGranted: true }))
   const contributors = [contributor(umas[0]!, true, 100), contributor(umas[1]!, false, 50)]
   const baseInput = {
-    contentVersion: 'synthetic-v1', umas, cards, races: [], ownedUmas, ownedCards, contributors,
-    ledger: [{ id: 'card-coupon-redeem:card-a', data: { resource: 'card-coupons' as const, delta: -1, reason: 'card-coupon-redeem' as const, localDay: '2000-01-01', createdAt: 100 } }],
+    contentVersion: 'synthetic-v1', umas, cards, races: [], ownedUmas, contributors, bondedCardIds: cards.map((card) => card.id),
     raceResults: [raceResult()], now: 500, retroactive: true,
   }
 
   it('builds fixed and dynamic definitions without original-game fixtures', () => {
     const catalog = buildTrainerAchievementCatalog(baseInput)
     expect(catalog.definitions.map((row) => row.awardKey)).toContain('trainer:stable-master')
-    expect(catalog.definitions.map((row) => row.awardKey)).toContain('trainer:era-complete:1')
-    expect(catalog.definitions.filter((row) => row.label.endsWith('Complete'))).toHaveLength(3)
+    expect(catalog.definitions.map((row) => row.awardKey)).toContain('trainer:era-bonded:1')
+    expect(catalog.definitions.filter((row) => row.label.endsWith('Bonded'))).toHaveLength(3)
   })
 
-  it('reconciles all seven type-complete denominators, including Friend and Group, exactly once', () => {
+  it('reconciles all seven type-bonded denominators, including Friend and Group, exactly once', () => {
     const allTypes = ['speed', 'stamina', 'power', 'guts', 'wit', 'friend', 'group'] as const
     const typeCards = allTypes.map((type) => cardTemplate(`card-${type}`, type))
-    const typeOwned = typeCards.map((card) => ({
-      ...createCardSave(card),
-      level: 1,
-    }))
-    const input = { ...baseInput, contentVersion: 'synthetic-types-v1', cards: typeCards, ownedCards: typeOwned }
+    const input = { ...baseInput, contentVersion: 'synthetic-types-v1', cards: typeCards, bondedCardIds: typeCards.map((card) => card.id) }
     const first = reconcileTrainerState({ ...input, state: createTrainerBadgeState(1) })
     const typeAwards = first.state.awards.achievements
-      .filter((entry) => entry.awardKey.startsWith('trainer:type-complete:'))
+      .filter((entry) => entry.awardKey.startsWith('trainer:type-bonded:'))
       .map((entry) => entry.awardKey)
-    expect(typeAwards).toEqual(allTypes.map((type) => `trainer:type-complete:${type}`).sort())
+    expect(typeAwards).toEqual(allTypes.map((type) => `trainer:type-bonded:${type}`).sort())
 
     const retry = reconcileTrainerState({ ...input, state: first.state, now: 501 })
     expect(retry.events).toEqual([])
@@ -142,7 +135,7 @@ describe('Trainer achievement reconciliation', () => {
       now: 502,
     })
     expect(expanded.state.awards.achievements.map((entry) => entry.awardKey)).toEqual(expect.arrayContaining([
-      'trainer:type-complete:friend', 'trainer:type-complete:group',
+      'trainer:type-bonded:friend', 'trainer:type-bonded:group',
     ]))
   })
 
@@ -172,13 +165,12 @@ describe('Trainer achievement reconciliation', () => {
 
   it('reconciles every aggregate family, stable records, and deterministic Trainer events', () => {
     const result = reconcileTrainerState({ ...baseInput, state: createTrainerBadgeState(1) })
-    expect(result.state.sourceWatermarks).toEqual({ contributors: 2, ledgerEntries: 1, contentVersion: 'synthetic-v1' })
+    expect(result.state.sourceWatermarks).toEqual({ contributors: 2, contentVersion: 'synthetic-v1' })
     expect(result.state.awards.achievements).toEqual(expect.arrayContaining([
       expect.objectContaining({ awardKey: 'trainer:stable-master', stage: 'rainbow', frozenKeys: ['uma-a', 'uma-b'] }),
-      expect.objectContaining({ awardKey: 'trainer:card-collector', stage: 'rainbow', frozenKeys: ['card-a', 'card-b'] }),
       expect.objectContaining({ awardKey: 'trainer:stable-wins', stage: 'bronze' }),
       expect.objectContaining({ awardKey: 'trainer:family-tree', stage: 'bronze' }),
-      expect.objectContaining({ awardKey: 'trainer:era-complete:1', stage: 'one-off' }),
+      expect.objectContaining({ awardKey: 'trainer:era-bonded:1', stage: 'one-off', frozenKeys: ['card-a', 'card-b'] }),
     ]))
     expect(result.events.every((event) => event.data.kind === 'trainer-achievement' && event.data.retroactive)).toBe(true)
     expect(result.state.records).toEqual(expect.arrayContaining([
@@ -216,20 +208,6 @@ describe('Trainer achievement reconciliation', () => {
   it('rejects duplicate or malformed contributors instead of silently undercounting', () => {
     expect(() => reconcileTrainerState({ ...baseInput, state: createTrainerBadgeState(1), contributors: [contributors[0]!, contributors[0]!] })).toThrow(/Duplicate/)
     expect(() => reconcileTrainerState({ ...baseInput, state: createTrainerBadgeState(1), contributors: [{ ...contributors[0]!, version: 2 as 1 }, contributors[1]!] })).toThrow(/invalid/)
-  })
-
-  it('counts only target-keyed coupon spends and excludes shard exchanges or malformed lookalikes', () => {
-    const state = reconcileTrainerState({
-      ...baseInput,
-      state: createTrainerBadgeState(1),
-      ledger: [
-        ...baseInput.ledger,
-        { id: 'uma-coupon-redeem:uma-a', data: { resource: 'uma-coupons' as const, delta: -1, reason: 'uma-coupon-redeem' as const, localDay: '2000-01-01', createdAt: 101 } },
-        { id: 'uma-shard-exchange:1:coupon', data: { resource: 'uma-coupons' as const, delta: 1, reason: 'uma-shard-exchange' as const, localDay: '2000-01-01', createdAt: 102 } },
-        { id: 'synthetic-lookalike', data: { resource: 'card-coupons' as const, delta: -1, reason: 'card-coupon-redeem' as const, localDay: '2000-01-01', createdAt: 103 } },
-      ],
-    }).state
-    expect(state.aggregates.find((row) => row.key === 'coupon-redemptions')?.count).toBe(2)
   })
 
   it('keeps stage ordering aligned with the shared Bronze-to-Rainbow ladder', () => {

@@ -12,7 +12,7 @@
 //   distance focus is today's (06 §5), passed through for the Library's corners.
 // - For the build views (T139): `nodeSkillIds` names what each paying node pays, and `lineagePays` what an Uma pays
 //   from a slot (her golds by position and her inherited unique), the same reading the derivation itself uses.
-import { MAX_STARS, cardGoldSkillIds, cardRaceBonus } from '../../cards'
+import { cardGoldSkillIds, cardRaceBonus } from '../../cards'
 export { CARD_DISTANCE_FOCI, CARD_STYLE_FOCI, cardFocus, type CardFocus } from '../../card-focus'
 import { cardShares, eraPct, paysSkillPoints } from '../../constellation'
 import type { SkillTemplate, SupportCardTemplate, UmaTemplate } from '../../content'
@@ -224,7 +224,7 @@ export function deriveBuild(input: DeriveBuildInput): DerivedBuild {
     skillCostMultipliers: multipliers,
     lineage: Object.fromEntries(held),
     loadoutSkillIds: preset.loadoutSkillIds.filter((id) => inLibrary.has(id)),
-    raceBonus: [...cards.values()].reduce((sum, card) => sum + cardRaceBonus(card, MAX_STARS), 0),
+    raceBonus: [...cards.values()].reduce((sum, card) => sum + cardRaceBonus(card), 0),
     cardSkillIds,
     nodeSkillIds,
     openNodes,
@@ -374,7 +374,7 @@ export function cardPay(card: SupportCardTemplate, T: number): CardPay {
     perNodeTotal,
     spPerNode: skillPoints ? (reworkSpNodeValue(T) * pct * 100) / SP_SCALE : 0,
     nodeCap: perCardCap(treeCardNodesAt(T)),
-    raceBonus: cardRaceBonus(card, MAX_STARS),
+    raceBonus: cardRaceBonus(card),
     later,
   }
 }

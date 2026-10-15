@@ -3,8 +3,6 @@
 // a ticket in an explicit exchange, as today. No Prize Money path makes a ticket. The featured Uma (rework/11 §5) and
 // each Uma's race defaults (03 §6–§7) are the roster's two settings, written by `feature-uma` and `set-race-defaults`
 // (T138).
-import { nextUmaShardExchangeSequence } from '../../collection'
-import { UMA_SHARDS_PER_COUPON } from '../../economy'
 import { bestBaseDistance, type RacePreferences } from '../../save'
 import { recommendedRacePreferences } from '../../scenario-goals'
 import type { DistanceCategory } from '../../types'
@@ -21,8 +19,8 @@ export const INITIAL_UMA_TICKETS = 20
 export const INITIAL_UMA_TICKETS_LEDGER_ID = 'initial-uma-tickets'
 /** One ticket unlocks one Uma (04 §6). */
 export const UMA_UNLOCK_TICKET_COST = 1
-/** Five Shards make one ticket: today's `UMA_SHARDS_PER_COUPON` (D336). */
-export const UMA_SHARDS_PER_TICKET = UMA_SHARDS_PER_COUPON
+/** Five Shards make one ticket (D336). */
+export const UMA_SHARDS_PER_TICKET = 5
 /** One exchange makes one ticket, as today. */
 export const TICKETS_PER_EXCHANGE = 1
 
@@ -97,6 +95,22 @@ export interface ExchangeShardsReceipt {
   readonly sequence: number
   readonly shardsSpent: number
   readonly ticketsGained: number
+}
+
+/**
+ * The next exchange's number: one past the highest `uma-shard-exchange:{n}:shards` / `:coupon` row in the ledger.
+ */
+export function nextUmaShardExchangeSequence(ids: readonly string[]): number {
+  let maximum = 0
+  for (const id of ids) {
+    const match = /^uma-shard-exchange:(\d+):(shards|coupon)$/.exec(id)
+    if (!match) continue
+    const sequence = Number(match[1])
+    if (!Number.isSafeInteger(sequence) || sequence < 1) throw new Error('Invalid Uma shard exchange sequence')
+    maximum = Math.max(maximum, sequence)
+  }
+  if (maximum >= Number.MAX_SAFE_INTEGER) throw new Error('Uma shard exchange sequence is exhausted')
+  return maximum + 1
 }
 
 /**

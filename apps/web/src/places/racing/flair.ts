@@ -29,9 +29,6 @@ import type { LoadedContent } from '../../content/runtime'
 import type { G2DeviceRows, G2Records } from '../../app/game'
 import { lifetimeOf, recordOf, rowsOf, umaSaveOf } from './today'
 
-/** Generation 2's catalogue, beside today's until T143 removes it. */
-export const FLAIR_GENERATION = 2 as const
-
 /** The account and what the flair reads beyond it. */
 export interface FlairWorld {
   /** The account after the operation. */
@@ -60,7 +57,7 @@ export const deviceRows = (change: FlairChange): G2DeviceRows => ({
 /** Her badge subject: the selected preset's stats and library, at her scenario T. */
 function subjectOf(uma: UmaState, env: OperationEnv): BadgeSubject {
   const derived = deriveUmaPreset(uma, uma.raceDefaults.selectedPreset, env.content)
-  return { tier: scenarioNumber(uma), trainingLevel: 0, stats: { ...derived.stats }, library: derived.library }
+  return { tier: scenarioNumber(uma), stats: { ...derived.stats }, library: derived.library }
 }
 
 /** Her stored badge state, else a new one with her past races replayed in order, as today's bootstrap does. */
@@ -109,7 +106,7 @@ export function withBuildFacts(state: UmaBadgeStateV1, uma: UmaState, env: Opera
 
 /** Today's evaluator on the generation-2 catalogue. */
 function evaluate(world: FlairWorld, state: UmaBadgeStateV1, trigger: FlairTrigger, courseRecordIds?: ReadonlySet<string>) {
-  const catalog = buildUmaFlairCatalog({ state, races: world.content.races.items, courseRecordIds, generation: FLAIR_GENERATION })
+  const catalog = buildUmaFlairCatalog({ state, races: world.content.races.items, courseRecordIds })
   return evaluateUmaFlair(catalog, state, trigger)
 }
 
@@ -135,14 +132,11 @@ function reconcileTrainer(world: FlairWorld, states: ReadonlyMap<string, UmaBadg
     cards: world.content.cards.items,
     races: world.content.races.items,
     ownedUmas: umas.map(umaSaveOf),
-    ownedCards: [],
     contributors: umas.map((uma) => states.get(uma.outfitId)!),
-    ledger: [],
     raceResults,
     now: world.now,
     retroactive: false,
     sourceId,
-    generation: FLAIR_GENERATION,
     bondedCardIds: everBondedCardIds(umas),
   })
   return { ...result, created: stored?.scope !== 'trainer' }
@@ -226,13 +220,9 @@ export function completionFact(world: FlairWorld, uma: UmaState, rows: readonly 
   return {
     tier: T,
     completedAt: world.now,
-    // Generation 2 has no Training Level; the fact keeps its shape with a permanent 1 (as D120 kept turns at 0).
-    trainingLevel: 1,
     stats: { ...deriveUmaPreset(uma, uma.raceDefaults.selectedPreset, world.env.content).stats },
     deckCardIds,
     deckEras: deckCardIds.map(eraOf),
-    trainingTurns: 0,
-    friendshipTrainings: 0,
     raceStarts: here.length,
     completedGoalIds: won,
     honors: uma.career.tracking === 'tracked' && uma.career.goals.length > 0 && won.length === uma.career.goals.length,

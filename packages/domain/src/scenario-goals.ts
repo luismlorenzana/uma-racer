@@ -7,12 +7,9 @@ import {
   type FlairSeriesTag,
 } from './badges'
 import type { RaceTemplate, UmaTemplate } from './content'
-import { parseRaceResultRecord, raceScenarioTier, type RaceResultRecord } from './progression-race'
 import {
   activeScenario,
   CAREER_STAGES,
-  parseUmaSave,
-  SCENARIO_GOAL_VERSION,
   SAVE_ID_PATTERN,
   type CareerStage,
   type ScenarioGoal,
@@ -24,7 +21,7 @@ import {
 import { LEVELS_PER_SCENARIO, isGateLevel, scenarioForTier, tierOfLevel } from './scenarios'
 import { CAREER_STAGE_LEVELS, careerHoldLevel, isCareerJourney, isCareerStage } from './career-stages'
 
-// The stage rules live in a leaf module so the save's v13 migration can read a career's holds (D241).
+// The stage rules live in a leaf module, which the career shapes read too (D241).
 export { CAREER_STAGE_LEVELS, careerHoldLevel, isCareerJourney, isCareerStage } from './career-stages'
 import {
   GRADES,
@@ -414,89 +411,6 @@ export function planScenarioCareer(input: GenerateScenarioJourneyInput): CareerP
 }
 
 export const generateScenarioJourney = (input: GenerateScenarioJourneyInput): ScenarioJourney => planScenarioCareer(input).journey
-
-const untouched = (journey: ScenarioJourney): boolean => journey.goals.every((goal) =>
-  goal.status === 'active' && (goal.series?.legs.every((leg) => leg.status === 'active') ?? true))
-
-/**
- * Upgrade an Uma to the current goal plan. Only the active scenario's journey can change, and only when nothing in it
- * has been won or missed: legacy plans become careers, and v3 careers with retired targets are repaired. A journey
- * with progress keeps its frozen plan (D137, D194). Migration invents no wins, misses, or rewards.
- */
-export function upgradeGoalPlan(input: GenerateScenarioJourneyInput): UmaSave {
-  const { uma } = input
-  if (uma.goalPlanVersion >= SCENARIO_GOAL_VERSION) return uma
-  const run = uma.scenarios.find((entry) => entry.tier === uma.unlockedTier)
-  const journey = run?.journey
-  const availableRaceIds = new Set(input.races.map((race) => race.id))
-  const referencesRetiredRace = isCareerJourney(journey) &&
-    journey.goals.some((goal) => goalRaceIds(goal).some((raceId) => !availableRaceIds.has(raceId)))
-  const regenerate = run?.started === true && journey?.tracking === 'tracked' && journey.state === 'active' &&
-    (!isCareerJourney(journey) || referencesRetiredRace) && untouched(journey) && tierOfLevel(uma.level) === run.tier
-  return {
-    ...uma,
-    goalPlanVersion: SCENARIO_GOAL_VERSION,
-    scenarios: regenerate
-      ? uma.scenarios.map((entry) => entry.tier === run.tier ? { ...entry, journey: generateScenarioJourney(input) } : entry)
-      : uma.scenarios,
-  }
-}
-
-export interface EvaluateScenarioGoalsInput {
-  journey: ScenarioJourney
-  uma: UmaSave
-  race: RaceTemplate
-  resultId: string
-  result: RaceResultRecord
-  completedAt: number
-}
-
-export interface EvaluateScenarioGoalsResult {
-  journey: ScenarioJourney
-  newlyCompletedIds: string[]
-}
-
-export function evaluateScenarioGoals(input: EvaluateScenarioGoalsInput): EvaluateScenarioGoalsResult {
-  const uma = parseUmaSave(input.uma)
-  const result = parseRaceResultRecord(input.result)
-  if (!uma || !result || !SAVE_ID_PATTERN.test(input.resultId) || !Number.isSafeInteger(input.completedAt) || input.completedAt < 0) {
-    throw new Error('Scenario goal result input is malformed')
-  }
-  if (input.journey.tracking !== 'tracked' || input.journey.state !== 'active') return { journey: input.journey, newlyCompletedIds: [] }
-  if (input.journey.tier !== tierOfLevel(uma.level) || result.umaId !== uma.templateId || raceScenarioTier(result) !== input.journey.tier ||
-    result.raceId !== input.race.id) return { journey: input.journey, newlyCompletedIds: [] }
-  const player = result.field.find((runner) => runner.isPlayer)
-  if (!player || result.playerPlacement !== 1 || player.placement !== 1) return { journey: input.journey, newlyCompletedIds: [] }
-  const second = result.field.find((runner) => runner.placement === 2)
-  const newlyCompletedIds: string[] = []
-  const goals = input.journey.goals.map((goal): ScenarioGoal => {
-    if (goal.status !== 'active') return goal
-    if (goal.kind === 'win-series') {
-      const legIndex = goal.series!.legs.findIndex((leg) => leg.status === 'active' && leg.raceId === input.race.id)
-      if (legIndex < 0) return goal
-      const legs = goal.series!.legs.map((leg, index): ScenarioGoalLeg => index === legIndex ? {
-        ...leg,
-        status: 'completed',
-        completedRaceResultId: input.resultId,
-        completedAt: input.completedAt,
-      } : leg)
-      const completed = legs.every((leg) => leg.status === 'completed')
-      if (completed) newlyCompletedIds.push(goal.id)
-      return {
-        ...goal,
-        series: { ...goal.series!, legs },
-        status: completed ? 'completed' : 'active',
-        completedRaceResultId: completed ? input.resultId : null,
-        completedAt: completed ? input.completedAt : null,
-      }
-    }
-    if (goal.raceId !== input.race.id) return goal
-    if (goal.kind === 'win-by-margin' && (!second || second.marginLengths < goal.minimumMarginLengths)) return goal
-    newlyCompletedIds.push(goal.id)
-    return { ...goal, status: 'completed', completedRaceResultId: input.resultId, completedAt: input.completedAt }
-  })
-  return { journey: { ...input.journey, goals }, newlyCompletedIds }
-}
 
 export function closeScenarioJourney(journey: ScenarioJourney, completedAt: number): ScenarioJourney {
   if (!Number.isSafeInteger(completedAt) || completedAt < 0) throw new Error('Scenario journey completion time is invalid')

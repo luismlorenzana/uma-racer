@@ -1,15 +1,12 @@
 // Saved-Uma progression races and rewards (docs/design/racing.md).
 
-import { CARD_EFFECTS, cardRaceBonus } from './cards'
-import { cardStars } from './card-progression'
 import { FLAIR_SERIES_TAGS, parseFlairSeriesLegId, type FlairSeriesTag } from './badges'
-import type { RaceTemplate, SupportCardTemplate, UmaTemplate } from './content'
+import type { RaceTemplate, UmaTemplate } from './content'
 import type { RaceCourseLayout } from './course-layout'
-import { GATE_SHARD_REWARD, LEGACY_UMA_LEVEL_TICKET_REWARD, UMA_LEVEL_TICKET_REWARD, expToNextUmaLevel, raceExp } from './progression'
+import { GATE_SHARD_REWARD, expToNextUmaLevel, raceExp } from './progression'
 import { parseCompiledRaceSkill, type CompiledRaceSkill } from './race-skills'
 import { MAX_UMA_LEVEL, isGateLevel, tierOfLevel } from './scenarios'
-import type { CardSave, UmaSave } from './save'
-import { supportDeckIssueMessage, validateEquippedSupportDeck } from './support-deck'
+import type { UmaSave } from './save'
 import {
   DISTANCE_CATEGORIES,
   GRADES,
@@ -26,16 +23,11 @@ import {
 } from './types'
 
 const ID_PATTERN = /^[A-Za-z0-9_.:-]{1,120}$/
-export interface RaceCardInput {
-  save: CardSave
-  template: SupportCardTemplate
-}
 
 export interface UmaExperienceResult {
   uma: UmaSave
   expGained: number
   levelsGained: number[]
-  ticketReward: number
   reachedGate: number | null
   shardReward: number
 }
@@ -113,7 +105,6 @@ export interface RaceResultRecord {
   playerPlacement: number
   expGained: number
   levelsGained: number[]
-  ticketReward: number
   shardReward: number
   /** Snapshotted by T014; legacy records omit it. New records include an empty array when no goal completed. */
   completedGoalIds?: string[]
@@ -310,7 +301,6 @@ export function bestStrategy(template: UmaTemplate): Strategy {
   STRATEGIES[0])
 }
 
-/** Generated Race Bonus from the currently equipped and usable stat-card deck. */
 /**
  * The scenario a race was run in (D122, T055). A promotion raises an Uma's level and her scenario in one step, so her
  * current scenario is always the tier of her level, and a record's start level names it. A race run as one of her
@@ -318,24 +308,6 @@ export function bestStrategy(template: UmaTemplate): Strategy {
  */
 export const raceScenarioTier = (record: Pick<RaceResultRecord, 'startLevel' | 'tier'>): number =>
   record.tier ?? tierOfLevel(record.startLevel)
-
-export function equippedRaceBonus(tier: number, cards: readonly RaceCardInput[]): number {
-  const validation = validateEquippedSupportDeck(tier, cards)
-  const issue = validation.issues[0]
-  if (issue) throw new Error(supportDeckIssueMessage(issue))
-  let total = 0
-  for (const { save, template } of cards) {
-    if (
-      !Number.isSafeInteger(template.era) || template.era < 1 ||
-      !isRecord(template.effectProfile) || !hasExactKeys(template.effectProfile, CARD_EFFECTS) ||
-      CARD_EFFECTS.some((effect) => !isFiniteNonNegative(template.effectProfile[effect]))
-    ) {
-      throw new Error(`Card ${template.id} has invalid race effect data`)
-    }
-    total += cardRaceBonus(template, cardStars(save))
-  }
-  return total
-}
 
 /**
  * Apply race EXP, stopping at the next gate and banking at most one following level there. A career hold
@@ -380,7 +352,6 @@ export function addUmaRaceExp(uma: UmaSave, expGained: number, holdLevel: number
     uma: { ...uma, level, exp },
     expGained,
     levelsGained,
-    ticketReward: levelsGained.length * UMA_LEVEL_TICKET_REWARD,
     reachedGate,
     shardReward: reachedGate === null ? 0 : GATE_SHARD_REWARD,
   }
@@ -495,7 +466,7 @@ export function parseRaceResultRecord(value: unknown): RaceResultRecord | null {
     ...(hasEngineVersion ? ['course'] : []),
     ...(hasTier ? ['tier'] : []),
     'contentVersion', 'umaId', 'raceId', 'sequence', 'seed', 'strategy', 'startLevel', 'startExp', 'startStats',
-    'raceBonus', 'playerPlacement', 'expGained', 'levelsGained', 'ticketReward', 'shardReward',
+    'raceBonus', 'playerPlacement', 'expGained', 'levelsGained', 'shardReward',
     ...(hasCompletedGoalIds ? ['completedGoalIds'] : []),
     ...(hasAccomplishmentFacts ? ['accomplishmentFacts'] : []),
     ...(hasEarnedFlairEventIds ? ['earnedFlairEventIds'] : []),
@@ -518,13 +489,13 @@ export function parseRaceResultRecord(value: unknown): RaceResultRecord | null {
     !isFiniteNonNegative(value.raceBonus) || !isPositiveInt(value.playerPlacement) || value.playerPlacement > fieldSize ||
     !isNonNegativeInt(value.expGained) || !Array.isArray(value.levelsGained) ||
     value.levelsGained.some((level) => !isPositiveInt(level) || level > MAX_UMA_LEVEL) ||
-    !isNonNegativeInt(value.ticketReward) || !isNonNegativeInt(value.shardReward) || value.shardReward > 1 ||
+    !isNonNegativeInt(value.shardReward) || value.shardReward > 1 ||
     (hasCompletedGoalIds && (!Array.isArray(value.completedGoalIds) || value.completedGoalIds.some((id) => !isId(id)) ||
       new Set(value.completedGoalIds).size !== value.completedGoalIds.length)) ||
     !field || !isNonNegativeInt(value.createdAt) ||
     // A past scenario's race (D190) names a scenario before her current one and pays nothing.
     (hasTier && (!isPositiveInt(value.tier) || value.tier >= tierOfLevel(value.startLevel) || value.expGained !== 0 ||
-      value.levelsGained.length > 0 || value.ticketReward !== 0 || value.shardReward !== 0 ||
+      value.levelsGained.length > 0 || value.shardReward !== 0 ||
       (hasCompletedGoalIds && (value.completedGoalIds as unknown[]).length > 0)))
   ) return null
   const levels = value.levelsGained as number[]
@@ -543,9 +514,7 @@ export function parseRaceResultRecord(value: unknown): RaceResultRecord | null {
       value.earnedFlairEventIds.some((id) => !isId(id)) || new Set(value.earnedFlairEventIds).size !== value.earnedFlairEventIds.length)) ||
     player?.umaId !== value.umaId || player?.strategy !== value.strategy ||
     player?.placement !== value.playerPlacement ||
-    (value.shardReward === 1 && !isGateLevel(levels.at(-1) ?? -1)) ||
-    // A record keeps the reward of its day: five a level before save v7, one after (D148).
-    ![UMA_LEVEL_TICKET_REWARD, LEGACY_UMA_LEVEL_TICKET_REWARD].some((reward) => value.ticketReward === levels.length * reward)
+    (value.shardReward === 1 && !isGateLevel(levels.at(-1) ?? -1))
   ) return null
   return {
     ...(hasEngineVersion ? { engineVersion: version! } : {}),
@@ -564,7 +533,6 @@ export function parseRaceResultRecord(value: unknown): RaceResultRecord | null {
     playerPlacement: value.playerPlacement,
     expGained: value.expGained,
     levelsGained: [...value.levelsGained] as number[],
-    ticketReward: value.ticketReward,
     shardReward: value.shardReward,
     ...(hasCompletedGoalIds ? { completedGoalIds: [...value.completedGoalIds as string[]] } : {}),
     ...(hasAccomplishmentFacts ? { accomplishmentFacts: accomplishmentFacts! } : {}),

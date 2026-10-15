@@ -23,7 +23,6 @@ export function umaSaveOf(uma: UmaState): UmaSave {
     const unit: TrainingPreset = {
       cardSetIds: [...preset.cardSetIds],
       assignments: Object.fromEntries(Object.entries(preset.assignments).map(([node, cardId]) => [node, { kind: 'card', cardId }])),
-      activeExtraStats: [],
       loadoutSkillIds: [...preset.loadoutSkillIds],
     }
     return [distance, unit]
@@ -72,7 +71,6 @@ export function recordOf(row: RaceResultRow, sequence: number): RaceResultRecord
     playerPlacement: her.placement,
     expGained: commit.finish.expGained,
     levelsGained: commit.finish.levelsGained.map((level) => offset + level),
-    ticketReward: 0,
     shardReward: commit.finish.shardsPaid,
     completedGoalIds: [...commit.finish.completedGoalIds],
     ...(run.accomplishmentFacts === undefined ? {} : { accomplishmentFacts: run.accomplishmentFacts }),

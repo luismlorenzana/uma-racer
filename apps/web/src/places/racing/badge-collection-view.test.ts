@@ -40,7 +40,7 @@ const race: RaceTemplate = {
 const result = (sequence: number): RaceResultRecord => ({
   contentVersion: 'synthetic', umaId: 'alpha', raceId: race.id, sequence, seed: sequence, strategy: 'pace',
   startLevel: 1, startExp: 0, startStats: { speed: 100, stamina: 100, power: 100, guts: 100, wit: 100 }, raceBonus: 0,
-  playerPlacement: 1, expGained: 1, levelsGained: [], ticketReward: 1, shardReward: 0, field: [{
+  playerPlacement: 1, expGained: 1, levelsGained: [], shardReward: 0, field: [{
     umaId: 'alpha', isPlayer: true, strategy: 'pace', gate: 1,
     stats: { speed: 100, stamina: 100, power: 100, guts: 100, wit: 100 },
     aptitude: { distance: 'A', surface: 'A', strategy: 'A' }, placement: 1, finishTime: 100, marginLengths: 0,

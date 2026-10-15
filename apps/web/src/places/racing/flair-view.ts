@@ -11,7 +11,6 @@ import {
   type FlairEventV1,
   type UmaBadgeStateV1,
   type TrainerBadgeStateV1,
-  type FlairGeneration,
 } from '@racer/domain'
 import type { LoadedContent } from '../../content/runtime'
 import { badgeFrameStyle, type BadgeFrameStyle } from './badge-frame'
@@ -76,9 +75,8 @@ function viewRows(
   state: UmaBadgeStateV1,
   rows: readonly FlairEventRecord[],
   deltaRows: readonly FlairEventRecord[] = rows,
-  generation: FlairGeneration = 1,
 ): FlairEventView[] {
-  const catalog = buildUmaFlairCatalog({ state, races: content.races.items, generation })
+  const catalog = buildUmaFlairCatalog({ state, races: content.races.items })
   const definitions = new Map(catalog.definitions.map((definition) => [definition.awardKey, definition]))
   const firstNewTier = new Map<string, number>()
   for (const row of deltaRows) {
@@ -115,12 +113,10 @@ export function buildFlairFanfare(
   state: UmaBadgeStateV1,
   events: readonly (FlairEventV1 & { id: string })[],
   eventIds: readonly string[],
-  /** Today's catalogue (1) or generation 2's (T141). */
-  generation: FlairGeneration = 1,
 ): FlairEventView[] {
   const ids = new Set(eventIds)
   const selected = eventRows(events).filter((event) => ids.has(event.id))
-  return viewRows(content, state, orderFlairEventsForFanfare(selected), selected, generation)
+  return viewRows(content, state, orderFlairEventsForFanfare(selected), selected)
 }
 
 export function buildTrainerFlairFanfare(
@@ -128,14 +124,12 @@ export function buildTrainerFlairFanfare(
   state: TrainerBadgeStateV1,
   events: readonly (FlairEventV1 & { id: string })[],
   eventIds: readonly string[],
-  generation: FlairGeneration = 1,
 ): FlairEventView[] {
   const ids = new Set(eventIds)
   const definitions = new Map(buildTrainerAchievementCatalog({
     umas: content.umas.items,
     cards: content.cards.items,
     races: content.races.items,
-    generation,
   }).definitions.map((definition) => [definition.awardKey, definition]))
   return orderFlairEventsForFanfare(eventRows(events).filter((event) =>
     ids.has(event.id) && event.data.scope === 'trainer')).map((event) => {
@@ -160,12 +154,11 @@ export function buildUmaFlairSummary(
   content: LoadedContent,
   state: UmaBadgeStateV1,
   events: readonly (FlairEventV1 & { id: string })[],
-  generation: FlairGeneration = 1,
 ): UmaFlairSummary {
   const own = orderFlairEventsForFanfare(eventRows(events)
     .filter((event) => event.data.scope === 'uma' && event.data.umaId === state.umaId))
     .sort((left, right) => right.data.earnedAt - left.data.earnedAt || right.id.localeCompare(left.id))
-  const catalog = buildUmaFlairCatalog({ state, races: content.races.items, generation })
+  const catalog = buildUmaFlairCatalog({ state, races: content.races.items })
   const prestige = prestigeForState(catalog, state)
   const activeTitle = state.preferences.activeTitleId === null
     ? null
@@ -178,6 +171,6 @@ export function buildUmaFlairSummary(
     badgeCount: new Set(state.awards.badges.map((entry) => entry.awardKey)).size,
     titleCount: state.awards.titles.length,
     trophyCount: state.awards.trophies.length,
-    recent: viewRows(content, state, own.slice(0, 3), own.slice(0, 3), generation),
+    recent: viewRows(content, state, own.slice(0, 3), own.slice(0, 3)),
   }
 }

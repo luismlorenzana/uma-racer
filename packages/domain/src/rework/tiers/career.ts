@@ -72,9 +72,8 @@ export function freezeCareer(uma: CareerSubject, T: number, content: TierContent
 
 /**
  * Settle a won race against her career: a single goal on that race is won, and so is an open leg of a set, which
- * completes the set with its last leg. Today's `evaluateScenarioGoals` restated for the rework's state, since today's
- * reads a whole today's save and race record; a parity test holds them together. Careers since goal plan v3 hold
- * only `win` and `win-series` goals (D137), so a legacy margin goal is left as it is.
+ * completes the set with its last leg. Careers since goal plan v3 hold only `win` and `win-series` goals (D137), so a
+ * legacy margin goal is left as it is.
  */
 export function settleGoalWin(
   career: ScenarioJourney,

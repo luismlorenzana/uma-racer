@@ -20,7 +20,7 @@ import { PlaceHeader } from '../../ui/PlaceHeader'
 import { UmaFace } from '../../ui/UmaArt'
 import type { PageProps } from '../registry'
 import { useRaceContent } from './content'
-import { deviceRows, FLAIR_GENERATION, reconcileFlair } from './flair'
+import { deviceRows, reconcileFlair } from './flair'
 import { readLogs, useRecords } from './records'
 import { stripOrder } from './view'
 import { badgeRow, eventList, raceRecords, recentFlair, savesOf, trainerBadge, umaBadge, writeSeen } from './trophy'
@@ -141,7 +141,7 @@ function UmaScope({ umaId }: { umaId: string }) {
     .sort((a, b) => b.lifetime - a.lifetime || a.name.localeCompare(b.name))
   const races = raceRecords(state, records)
   const events = eventList(records)
-  const collection = badge ? buildUmaBadgeCollection(content, badge, events, races, FLAIR_GENERATION) : null
+  const collection = badge ? buildUmaBadgeCollection(content, badge, events, races) : null
   const refs = new Set(badge ? awardRefsForState(badge) : [])
   const write = (next: UmaBadgeStateV1) => void game.writeDevice?.({ badges: badgeRow(next) })
   const togglePin = (item: BadgeCollectionItem) => {
@@ -237,7 +237,7 @@ function Timeline({ badge }: { badge: UmaBadgeStateV1 }) {
   const state = useGame((snapshot) => snapshot.state)!
   const records = useContext(RecordsContext)
   const content = useRaceContent()!
-  const items = buildTimelineItems(content, badge, eventList(records), raceRecords(state, records), FLAIR_GENERATION).slice(0, 20)
+  const items = buildTimelineItems(content, badge, eventList(records), raceRecords(state, records)).slice(0, 20)
   if (items.length === 0) return null
   return (
     <section aria-label={racingWords('timeline')} className="flex flex-col gap-1">
@@ -260,7 +260,7 @@ function StableScope() {
   const content = useRaceContent()!
   const saves = savesOf(state)
   const owned = Object.values(saves).map((save) => ({ save, state: umaBadge(records, save.templateId) }))
-  const collection = buildStableBadgeCollection(content, owned, eventList(records), raceRecords(state, records), FLAIR_GENERATION)
+  const collection = buildStableBadgeCollection(content, owned, eventList(records), raceRecords(state, records))
   return (
     <div className="flex flex-col gap-3">
       <p className="text-[13px] font-semibold text-ink-soft">{racingWords('earned-count', { earned: collection.earnedCount, total: collection.visibleCount })}</p>
@@ -277,12 +277,12 @@ function TrainerScope({ profile }: { profile: boolean }) {
   if (!trainer) return <p className="py-6 text-center text-[13px] text-ink-soft">{racingWords('no-flair')}</p>
   const saves = savesOf(state)
   const races = raceRecords(state, records)
-  const collection = buildTrainerBadgeCollection(content, trainer, saves, races, FLAIR_GENERATION)
+  const collection = buildTrainerBadgeCollection(content, trainer, saves, races)
   const meters = [
     { label: racingWords('cards-bonded', { n: collection.counts.bondedCards, of: collection.counts.catalogCards }), value: collection.counts.bondedCards / Math.max(1, collection.counts.catalogCards) },
     { label: racingWords('umas-owned', { n: collection.counts.ownedUmas, of: collection.counts.catalogUmas }), value: collection.counts.ownedUmas / Math.max(1, collection.counts.catalogUmas) },
   ]
-  const showcase = buildTrainerShowcase(content, trainer, records.badges, saves, eventList(records), races, FLAIR_GENERATION)
+  const showcase = buildTrainerShowcase(content, trainer, records.badges, saves, eventList(records), races)
   const recent = recentFlair(content, records)
   return (
     <div className="flex flex-col gap-3" data-g2={profile ? 'trainer-profile' : 'trainer-scope'}>

@@ -216,7 +216,7 @@ export interface CardSetReceipt {
 }
 
 /**
- * D129's hand-over, as today's `withCardSet` does it: a card replaced in its slot by a card new to the set hands its
+ * D129's hand-over: a card replaced in its slot by a card new to the set hands its
  * nodes to it; a card removed outright empties its nodes.
  */
 export function handOverNodes(

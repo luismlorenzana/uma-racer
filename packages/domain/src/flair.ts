@@ -1,7 +1,6 @@
-// Catalog-v1 award evaluation and Prestige projection (docs/design/badges.md#catalog-v1). Generation 2's catalogue sits
-// beside today's behind `generation: 2` (docs/rework/04-tiers-and-promotion.md §9, 06-cards-and-bonds.md §7,
-// 13-removals-and-plan-changes.md §1, 05-training-hub.md §11; T141): the same entities and evaluator, with Diligent
-// retired, the scenario and level awards redefined, and the tier awards added. The default stays today's until T143.
+// Catalog-v1 award evaluation and Prestige projection (docs/design/badges.md#catalog-v1), on generation 2's catalogue
+// (docs/rework/04-tiers-and-promotion.md §9, 06-cards-and-bonds.md §7, 13-removals-and-plan-changes.md §1,
+// 05-training-hub.md §11; T141): Diligent retired, the scenario and level awards redefined, and the tier awards added.
 
 import {
   BADGE_CATALOG_VERSION,
@@ -38,17 +37,14 @@ import { DISTANCE_CATEGORIES, STATS, STRATEGIES, SURFACES, type StatKey } from '
 
 export const UMA_FLAIR_EVALUATOR_VERSION = 1 as const
 
-/** Which game's catalogue: 1 is today's (the default until T143), 2 the rebuild's (T141). */
-export type FlairGeneration = 1 | 2
-
 /**
- * Generation 2's promotions (04 §9): the tier she is promoted to → the scenario that closes the tier before it,
+ * The promotions (04 §9): the tier she is promoted to → the scenario that closes the tier before it,
  * T = 5t (`rework/tiers`' SCENARIOS_PER_TIER). That scenario graduates only at promotion, so "Promoted · Tier t + 1" is
  * its Graduate fact and needs no fact of its own.
  */
 export const FLAIR_PROMOTION_SCENARIOS: Readonly<Record<2 | 3, number>> = Object.freeze({ 2: 5, 3: 10 })
 
-/** Generation 2's Hall of Fame (04 §10): the catalogue's last scenario, which graduates only at induction. */
+/** The Hall of Fame (04 §10): the catalogue's last scenario, which graduates only at induction. */
 export const FLAIR_HALL_OF_FAME_SCENARIO: number = SCENARIOS.length
 
 export const FLAIR_CATEGORIES = BADGE_FILTER_CATEGORIES
@@ -56,7 +52,7 @@ export type FlairCategory = (typeof FLAIR_CATEGORIES)[number]
 export type FlairDefinitionKind = 'tiered' | 'one-off' | 'goal-ribbon' | 'honors' | 'title' | 'trophy'
 
 export type FlairCriterion =
-  | { kind: 'fact'; fact: 'wins' | 'starts' | 'longestWinStreak' | 'lifetimeTrainingTurns' | 'friendshipTrainings' | 'fullHouseCount' | 'levelPeak' | 'distinctSkills' | 'legacy' | 'dynasty' }
+  | { kind: 'fact'; fact: 'wins' | 'starts' | 'longestWinStreak' | 'fullHouseCount' | 'levelPeak' | 'distinctSkills' | 'legacy' | 'dynasty' }
   | { kind: 'count'; fact: 'gradeWins' | 'surfaceWins' | 'distanceWins' | 'strategyWins' | 'venueWins' | 'lowAptitudeSurfaceWins' | 'lowAptitudeDistanceWins' | 'maxSkillsByTier'; key: string }
   | { kind: 'minimum-count'; fact: 'surfaceWins' | 'distanceWins' | 'strategyWins' | 'venueWins'; keys: string[] }
   | { kind: 'race-feat'; key: keyof UmaBadgeStateV1['facts']['raceFeats'] }
@@ -203,7 +199,7 @@ function definition(input: Omit<FlairDefinition, 'thresholds' | 'points' | 'hidd
   }
 }
 
-function fixedDefinitions(state: UmaBadgeStateV1, generation: FlairGeneration): FlairDefinition[] {
+function fixedDefinitions(state: UmaBadgeStateV1): FlairDefinition[] {
   const raceHistory = state.history.race
   const detailHistory = raceDetailHistory(state)
   const trainingHistory = state.history.training
@@ -260,11 +256,9 @@ function fixedDefinitions(state: UmaBadgeStateV1, generation: FlairGeneration): 
   for (const stat of STATS) rows.push(definition({ awardKey: `badge:stat:${stat}`, kind: 'tiered', label: `${statLabels[stat]} Peak`, description: `Reach higher saved ${statLabels[stat]}.`, category: 'stats', criterion: { kind: 'stat-peak', stat }, thresholds: BADGE_THRESHOLDS.statPeak, points: 0, tags: ['stats', stat] }))
   rows.push(
     definition({ awardKey: 'badge:balanced', kind: 'tiered', label: 'Balanced', description: 'Raise the minimum of all five stats.', category: 'stats', criterion: { kind: 'stat-peak', stat: 'balanced' }, thresholds: BADGE_THRESHOLDS.balanced, points: 0, tags: ['stats'] }),
-    // Generation 2's level badges read the lifetime level, which the device writes as `levelPeak` (03 §2).
-    definition({ awardKey: 'badge:level', kind: 'tiered', label: 'Level Milestones', description: generation === 2 ? 'Raise her lifetime level: 50 for each tier before hers, plus her Racing Level.' : 'Raise Uma level.', category: 'scenario', criterion: { kind: 'fact', fact: 'levelPeak' }, thresholds: BADGE_THRESHOLDS.level, points: 0, tags: ['level'] }),
-    // Generation 2 retires Diligent with the minigame runs it counted (13 §1).
-    ...(generation === 2 ? [] : [definition({ awardKey: 'badge:diligent', kind: 'tiered', label: 'Diligent', description: 'Play Spark Match runs.', category: 'training', criterion: { kind: 'fact', fact: 'lifetimeTrainingTurns' }, thresholds: BADGE_THRESHOLDS.diligent, points: 0, history: trainingHistory, tags: ['training'] })]),
-    definition({ awardKey: 'badge:full-house', kind: 'one-off', label: 'Full House', description: generation === 2 ? 'Fill every card node of one constellation.' : 'Fill every card and Produce node of a constellation.', category: 'training', criterion: { kind: 'fact', fact: 'fullHouseCount' }, hidden: true, history: trainingHistory, tags: ['training'] }),
+    // The level badges read the lifetime level, which the device writes as `levelPeak` (03 §2).
+    definition({ awardKey: 'badge:level', kind: 'tiered', label: 'Level Milestones', description: 'Raise her lifetime level: 50 for each tier before hers, plus her Racing Level.', category: 'scenario', criterion: { kind: 'fact', fact: 'levelPeak' }, thresholds: BADGE_THRESHOLDS.level, points: 0, tags: ['level'] }),
+    definition({ awardKey: 'badge:full-house', kind: 'one-off', label: 'Full House', description: 'Fill every card node of one constellation.', category: 'training', criterion: { kind: 'fact', fact: 'fullHouseCount' }, hidden: true, history: trainingHistory, tags: ['training'] }),
     definition({ awardKey: 'badge:skill-collector', kind: 'tiered', label: 'Skill Collector', description: 'Learn distinct skills across the Uma’s lifetime.', category: 'skills', criterion: { kind: 'fact', fact: 'distinctSkills' }, thresholds: BADGE_THRESHOLDS.lifetimeSkills, points: 0, tags: ['skills'] }),
     definition({ awardKey: 'badge:full-kit', kind: 'tiered', label: 'Full Kit', description: 'Learn distinct skills in one scenario.', category: 'skills', criterion: { kind: 'count', fact: 'maxSkillsByTier', key: '*' }, thresholds: BADGE_THRESHOLDS.scenarioSkills, points: 0, tags: ['skills', 'scenario'] }),
     definition({ awardKey: 'badge:destiny', kind: 'tiered', label: 'Destiny', description: 'Complete tracked Journey goals.', category: 'goals', criterion: { kind: 'destiny' }, thresholds: BADGE_THRESHOLDS.destiny, points: 0, tags: ['goals'] }),
@@ -280,14 +274,14 @@ function completionHistoryOf(state: UmaBadgeStateV1, tier: number): HistoryGrade
   return state.facts.completions.some((entry) => entry.tier === tier) ? 'exact' : state.history['scenario-completion']
 }
 
-/** How she leaves scenario `tier` in generation 2 (04 §9): by the advance, by promotion, or into the Hall of Fame. */
+/** How she leaves scenario `tier` (04 §9): by the advance, by promotion, or into the Hall of Fame. */
 function graduateDescription(label: string, tier: number): string {
   if (tier === FLAIR_HALL_OF_FAME_SCENARIO) return `Leave ${label} by entering the Hall of Fame.`
   if (Object.values(FLAIR_PROMOTION_SCENARIOS).includes(tier)) return `Leave ${label} by promotion to the next tier.`
   return `Leave ${label} by advancing to the next scenario.`
 }
 
-/** Generation 2's tier awards (04 §9–§10): each reads the Graduate fact of the scenario that closes it. */
+/** The tier awards (04 §9–§10): each reads the Graduate fact of the scenario that closes it. */
 function tierAwardDefinitions(state: UmaBadgeStateV1): FlairDefinition[] {
   const rows = Object.entries(FLAIR_PROMOTION_SCENARIOS).map(([to, tier]) => definition({
     awardKey: `badge:promoted:${to}`, kind: 'one-off', label: `Promoted · Tier ${to}`, description: `Be promoted from tier ${Number(to) - 1} to tier ${to}.`,
@@ -315,12 +309,9 @@ export function buildUmaFlairCatalog(input: {
   races: readonly RaceTemplate[]
   courseRecordIds?: ReadonlySet<string>
   courseRecordSources?: ReadonlyMap<string, { resultId: string; achievedAt: number }>
-  /** Today's catalogue (1, the default) or the rebuild's (2). */
-  generation?: FlairGeneration
 }): UmaFlairCatalogV1 {
   const { state } = input
-  const generation = input.generation ?? 1
-  const definitions = fixedDefinitions(state, generation)
+  const definitions = fixedDefinitions(state)
   const detailHistory = raceDetailHistory(state)
   const venues = new Map<string, string>()
   const familyRows = new Map<string, { grade: RaceTemplate['grade']; name: string }>()
@@ -403,27 +394,23 @@ export function buildUmaFlairCatalog(input: {
       : state.facts.completedScenarioTiers.includes(tier)
         ? state.history.race === 'exact' ? completionHistory : 'untracked'
         : completionHistory
-    // Generation 2 keeps every criterion and rewords what changed meaning: the cap is the scenario's, Graduate is
-    // leaving it, Fully Trained is its layer done (05 §11, D344), and Era Loyalist reads the sets of every race she ran
-    // in it (06 §7), which the device writes into the completion's deck.
-    const g2 = generation === 2
+    // The cap is the scenario's, Graduate is leaving it, Fully Trained is its layer done (05 §11, D344), and Era
+    // Loyalist reads the sets of every race she ran in it (06 §7), which the device writes into the completion's deck.
     definitions.push(
-      definition({ awardKey: `badge:scenario:${tier}:capped`, kind: 'one-off', label: `${label} Capped`, description: g2 ? `Complete ${label} with a stat at its cap.` : `Complete ${label} with a stat at its TL10 cap.`, category: 'scenario', criterion: { kind: 'scenario', rule: 'capped', tier }, history: snapshotHistory, tags: ['scenario', `tier:${tier}`] }),
-      definition({ awardKey: `badge:scenario:${tier}:perfect`, kind: 'one-off', label: `${label} Perfect Form`, description: g2 ? `Complete ${label} with every stat at its cap.` : `Complete ${label} with every stat at its TL10 cap.`, category: 'scenario', criterion: { kind: 'scenario', rule: 'perfect', tier }, history: snapshotHistory, tags: ['scenario', `tier:${tier}`] }),
-      definition({ awardKey: `badge:scenario:${tier}:graduate`, kind: 'one-off', label: `${label} Graduate`, description: g2 ? graduateDescription(label, tier) : `Complete ${label}.`, category: 'scenario', criterion: { kind: 'scenario', rule: 'graduate', tier }, history: completionHistory, tags: ['scenario', `tier:${tier}`] }),
+      definition({ awardKey: `badge:scenario:${tier}:capped`, kind: 'one-off', label: `${label} Capped`, description: `Complete ${label} with a stat at its cap.`, category: 'scenario', criterion: { kind: 'scenario', rule: 'capped', tier }, history: snapshotHistory, tags: ['scenario', `tier:${tier}`] }),
+      definition({ awardKey: `badge:scenario:${tier}:perfect`, kind: 'one-off', label: `${label} Perfect Form`, description: `Complete ${label} with every stat at its cap.`, category: 'scenario', criterion: { kind: 'scenario', rule: 'perfect', tier }, history: snapshotHistory, tags: ['scenario', `tier:${tier}`] }),
+      definition({ awardKey: `badge:scenario:${tier}:graduate`, kind: 'one-off', label: `${label} Graduate`, description: graduateDescription(label, tier), category: 'scenario', criterion: { kind: 'scenario', rule: 'graduate', tier }, history: completionHistory, tags: ['scenario', `tier:${tier}`] }),
       definition({ awardKey: `badge:scenario:${tier}:speedrun`, kind: 'one-off', label: `${label} Speedrun`, description: `Complete ${label} in 15 or fewer race starts.`, category: 'scenario', criterion: { kind: 'scenario', rule: 'speedrun', tier }, history: speedrunHistory, tags: ['scenario', `tier:${tier}`] }),
-      definition({ awardKey: `badge:scenario:${tier}:fully-trained`, kind: 'one-off', label: `${label} Fully Trained`, description: g2 ? `Open every unlock of ${label}'s layer.` : `Reach Training Level 10 during ${label}.`, category: 'training', criterion: { kind: 'scenario', rule: 'fully-trained', tier }, history: state.history.training, tags: ['training', 'scenario', `tier:${tier}`] }),
-      definition({ awardKey: `badge:scenario:${tier}:era-loyalist`, kind: 'one-off', label: `${label} Era Loyalist`, description: g2 ? `Complete ${label} with only era-${tier} cards in the set of every race she ran in it.` : `Complete ${label} using only era-${tier} cards.`, category: 'training', criterion: { kind: 'scenario', rule: 'era-loyalist', tier }, history: snapshotHistory, tags: ['training', 'scenario', `tier:${tier}`] }),
+      definition({ awardKey: `badge:scenario:${tier}:fully-trained`, kind: 'one-off', label: `${label} Fully Trained`, description: `Open every unlock of ${label}'s layer.`, category: 'training', criterion: { kind: 'scenario', rule: 'fully-trained', tier }, history: state.history.training, tags: ['training', 'scenario', `tier:${tier}`] }),
+      definition({ awardKey: `badge:scenario:${tier}:era-loyalist`, kind: 'one-off', label: `${label} Era Loyalist`, description: `Complete ${label} with only era-${tier} cards in the set of every race she ran in it.`, category: 'training', criterion: { kind: 'scenario', rule: 'era-loyalist', tier }, history: snapshotHistory, tags: ['training', 'scenario', `tier:${tier}`] }),
       definition({ awardKey: `honors:${tier}`, kind: 'honors', label: `${label} Honors`, description: `Complete all three tracked goals in ${label}.`, category: 'goals', criterion: { kind: 'scenario', rule: 'honors', tier }, history: 'exact', tags: ['goals', 'scenario', `tier:${tier}`] }),
     )
   }
   const scenarioTiers = Array.from({ length: SCENARIOS.length }, (_, index) => index + 1)
-  // Generation 2's last scenario graduates only at induction, so Living Legend comes only through the Hall of Fame (04 §9).
-  const livingLegend = generation === 2
-    ? 'Complete every scenario in this catalog: the last one only by entering the Hall of Fame.'
-    : 'Complete every scenario in this catalog.'
+  // The last scenario graduates only at induction, so Living Legend comes only through the Hall of Fame (04 §9).
+  const livingLegend = 'Complete every scenario in this catalog: the last one only by entering the Hall of Fame.'
   definitions.push(definition({ awardKey: 'badge:living-legend', kind: 'one-off', label: 'Living Legend', description: livingLegend, category: 'scenario', criterion: { kind: 'all-scenarios', tiers: scenarioTiers }, history: state.history['scenario-completion'], tags: ['scenario'], frozenKeys: sorted(scenarioTiers.map(String)) }))
-  if (generation === 2) definitions.push(...tierAwardDefinitions(state))
+  definitions.push(...tierAwardDefinitions(state))
   for (const goal of state.facts.goals) definitions.push(definition({
     awardKey: flairDynamicKey('ribbon', goal.goalId), kind: 'goal-ribbon', label: `Goal Ribbon · Tier ${goal.tier}`, description: 'Complete this tracked Journey goal.',
     category: 'goals', criterion: { kind: 'goal', goalId: goal.goalId }, history: 'exact', tags: ['goals', `tier:${goal.tier}`], frozenKeys: [goal.goalId],

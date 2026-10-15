@@ -22,7 +22,7 @@ import { placeName, TapNoteLine, useTap } from '../../ui/work'
 import { UmaArt, UmaFace } from '../../ui/UmaArt'
 import type { PageProps } from '../registry'
 import { useRaceContent } from './content'
-import { deviceRows, eventsOfCommit, FLAIR_GENERATION, leaveFlair } from './flair'
+import { deviceRows, eventsOfCommit, leaveFlair } from './flair'
 import { advanceSheet, careerRow, careerRows, promoteInput, promoteSheet, type AdvanceSheet as AdvanceView, type CareerRow } from './gate'
 import { useRecords } from './records'
 import { rowsOf } from './today'
@@ -284,9 +284,9 @@ function Ceremony({ umaId }: { umaId: string }) {
   const uma = state.umas[umaId]
   const events = eventsOfCommit(records, umaId, op.at)
   const badge = records.badges[badgeStateId(umaId)]
-  const flair = badge?.scope === 'uma' ? buildFlairFanfare(content, badge, events, events.filter((event) => event.scope === 'uma').map((event) => event.id), FLAIR_GENERATION) : []
+  const flair = badge?.scope === 'uma' ? buildFlairFanfare(content, badge, events, events.filter((event) => event.scope === 'uma').map((event) => event.id)) : []
   const trainer = records.badges.trainer
-  const trainerFlair = trainer?.scope === 'trainer' ? buildTrainerFlairFanfare(content, trainer, events, events.map((event) => event.id), FLAIR_GENERATION) : []
+  const trainerFlair = trainer?.scope === 'trainer' ? buildTrainerFlairFanfare(content, trainer, events, events.map((event) => event.id)) : []
   const promoted = op.name === 'promote'
   const receipt = op.receipt as { readonly from?: unknown; readonly to?: unknown; readonly ticketsPaid?: number }
   const fromTier = promoted ? Number(receipt.from) : null

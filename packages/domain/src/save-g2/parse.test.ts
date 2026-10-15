@@ -115,12 +115,12 @@ describe('the row parsers', () => {
     for (const [n, bad] of BAD[kind].entries()) expect(parse(edited(row, bad)), `${kind} #${n}`).toBeNull()
   })
 
-  it('refuses every retired kind: cards, the Farm, the Puzzles, the RPG', () => {
+  it('refuses every retired kind: cards, the old Farm, the Inspiration bank', () => {
     const profile = fixture('profile')
-    for (const kind of ['cards', 'farm', 'farmWorkers', 'farmRecipes', 'farmExtra', 'puzzleOutfits', 'puzzleBank', 'rpgOutfits', 'inspirationBank']) {
+    for (const kind of ['cards', 'farm', 'farmWorkers', 'farmRecipes', 'farmExtra', 'inspirationBank']) {
       expect(parseEntityRow({ ...profile, kind }), kind).toBeNull()
     }
-    for (const kind of ['farmOperations', 'puzzleResults', 'puzzleOperations', 'rpgResults', 'rpgReceipts']) {
+    for (const kind of ['farmOperations']) {
       expect(parseLogRow({ ...fixture('ledger'), kind }), kind).toBeNull()
     }
     expect(parseEntityData('cards' as never, { templateId: 'x', stars: 3 })).toBeNull()

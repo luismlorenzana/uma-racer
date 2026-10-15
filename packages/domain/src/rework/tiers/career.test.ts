@@ -1,12 +1,10 @@
 // Careers per scenario (docs/rework/03-uma-progression.md §4): today's planner on the rework's Uma, and the goal
-// settlement restated for the rework's state, held to today's by parity.
+// settlement on the rework's state.
 import { describe, expect, it } from 'vitest'
 import { CONTENT, COLT, DIRT_PARENT_A, DIRT_PARENT_B, DIRT_PARENT_C, RACES, SPRINTER, placeUma } from '../../__fixtures__/rework-tiers'
-import type { RaceTemplate } from '../../content'
 import { lineageAptitudes } from '../../lineage'
-import type { RaceResultRecord } from '../../progression-race'
 import { createScenarioTraining, createUmaSave, type ScenarioGoal, type ScenarioJourney, type UmaSave } from '../../save'
-import { evaluateScenarioGoals, planScenarioCareer } from '../../scenario-goals'
+import { planScenarioCareer } from '../../scenario-goals'
 import { isRefusal, type UmaState } from '../types'
 import { careerAptitudes, careerView, freezeCareer, settleGoalWin } from './career'
 import { firstLevel, tierAndScenario } from './map'
@@ -74,7 +72,7 @@ describe('careers', () => {
   })
 })
 
-// ---- settleGoalWin against evaluateScenarioGoals --------------------------------------------------------------------
+// ---- settleGoalWin ---------------------------------------------------------------------------------------------------
 
 const goal = (id: string, slot: ScenarioGoal['slot'], raceId: string): ScenarioGoal => ({
   id, slot, raceId, kind: 'win', series: null, minimumMarginLengths: 0, status: 'active', completedRaceResultId: null, completedAt: null,
@@ -92,33 +90,23 @@ const SERIES: ScenarioJourney = { tier: 1, tracking: 'tracked', state: 'active',
   seriesGoal('goal:1:main:1', ['satsuki-sho', 'tokyo-yushun']), goal('goal:1:main:2', 'main', 'g1-a'),
 ] }
 
-const stats = { speed: 500, stamina: 500, power: 500, guts: 500, wit: 500 }
-function winRecord(umaId: string, raceId: string): RaceResultRecord {
-  return {
-    contentVersion: 'synthetic', umaId, raceId, sequence: 1, seed: 7, strategy: 'pace', startLevel: 1, startExp: 0, startStats: stats,
-    raceBonus: 0, playerPlacement: 1, expGained: 0, levelsGained: [], ticketReward: 0, shardReward: 0, createdAt: 1,
-    field: Array.from({ length: 8 }, (_, index) => ({
-      umaId: index === 0 ? umaId : `rival-${index}`, isPlayer: index === 0, strategy: 'pace' as const, gate: index, stats,
-      aptitude: { distance: 'A' as const, surface: 'A' as const, strategy: 'A' as const }, placement: index + 1,
-      finishTime: 100 + index, marginLengths: index === 1 ? 1.5 : 0,
-    })),
-  }
-}
-
 describe('settleGoalWin', () => {
-  it.each([['single goals', SINGLE], ['a two-leg set', SERIES]])('equals evaluateScenarioGoals on %s', (_, career) => {
-    const uma = createUmaSave(COLT)
-    const wins = ['g2-b', 'unrelated', 'satsuki-sho', 'g3-a', 'g1-a', 'satsuki-sho', 'tokyo-yushun', 'g2-a', 'g1-c', 'g1-b', 'g3-a']
-    let today = career
-    let rework = career
-    wins.forEach((raceId, index) => {
+  // A win completes an active single goal on that race, or an active leg of a set, which completes the set with its last
+  // leg; a race no goal names, or a goal already won, changes nothing (D137).
+  const WINS = ['g2-b', 'unrelated', 'satsuki-sho', 'g3-a', 'g1-a', 'satsuki-sho', 'tokyo-yushun', 'g2-a', 'g1-c', 'g1-b', 'g3-a']
+  it.each([
+    ['single goals', SINGLE, [['goal:1:trials:2'], [], [], ['goal:1:maiden'], ['goal:1:main:1'], [], [], ['goal:1:trials:1'], ['goal:1:main:3'], ['goal:1:main:2'], []]],
+    ['a two-leg set', SERIES, [['goal:1:trials:2'], [], [], ['goal:1:maiden'], ['goal:1:main:2'], [], ['goal:1:main:1'], ['goal:1:trials:1'], [], [], []]],
+  ] as const)('settles %s win by win', (_, career, completed) => {
+    let rework: ScenarioJourney = career
+    WINS.forEach((raceId, index) => {
       const at = 1000 + index
       const resultId = `race:colt:${index}`
-      const expected = evaluateScenarioGoals({ journey: today, uma, race: { id: raceId } as RaceTemplate, resultId, result: winRecord('colt', raceId), completedAt: at })
       const actual = settleGoalWin(rework, raceId, resultId, at)
-      expect(actual.career).toEqual(expected.journey)
-      expect(actual.completedGoalIds).toEqual(expected.newlyCompletedIds)
-      today = expected.journey
+      expect(actual.completedGoalIds).toEqual(completed[index])
+      for (const id of completed[index]!) {
+        expect(actual.career.goals.find((entry) => entry.id === id)).toMatchObject({ status: 'completed', completedRaceResultId: resultId, completedAt: at })
+      }
       rework = actual.career
     })
     expect(rework.goals.every((entry) => entry.status === 'completed')).toBe(true)

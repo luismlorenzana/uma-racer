@@ -14,8 +14,6 @@ import {
 
 export interface RunOverrides {
   started?: boolean
-  trainingLevel?: number
-  trainingExp?: number
   cardSetIds?: string[]
   assignments?: Record<string, NodeAssignment>
   loadoutSkillIds?: string[]
@@ -49,7 +47,6 @@ export function withRun(uma: UmaSave, over: RunOverrides): UmaSave {
 /** A derived badge subject for tests that do not need real content. */
 export const emptySubject = (over: Partial<BadgeSubject> = {}): BadgeSubject => ({
   tier: 1,
-  trainingLevel: 1,
   stats: { speed: 0, stamina: 0, power: 0, guts: 0, wit: 0 },
   library: [],
   ...over,

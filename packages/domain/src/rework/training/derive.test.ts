@@ -4,7 +4,7 @@
 import { describe, expect, it } from 'vitest'
 import { COLT } from '../../__fixtures__/rework-tiers'
 import { DAD, GRAN, GROWER, MOM, TRAINING_CONTENT, cardOf } from '../../__fixtures__/rework-training'
-import { MAX_STARS, cardRaceBonus } from '../../cards'
+import { cardRaceBonus } from '../../cards'
 import { CARD_TYPE_SHARES, eraPct } from '../../constellation'
 import { treeCardNodesAt, perCardCap } from '../constellation/sizes'
 import { tierAndScenario } from '../tiers/map'
@@ -278,7 +278,7 @@ describe('skills and Race Bonus', () => {
   it('pay each node its card\'s next gold and white, and the full Race Bonus of every set card', () => {
     const derived = derive({ T: 1, cards: ['speed-e1', 'wit-e1'], nodes: ['speed-e1', 'wit-e1', 'speed-e1'] })
     expect(derived.cardSkillIds).toEqual(['gold-speed-e1', 'hint1-speed-e1', 'gold-wit-e1', 'hint1-wit-e1', 'hint2-speed-e1'])
-    expect(derived.raceBonus).toBe(cardRaceBonus(cardOf('speed-e1'), MAX_STARS) + cardRaceBonus(cardOf('wit-e1'), MAX_STARS))
+    expect(derived.raceBonus).toBe(cardRaceBonus(cardOf('speed-e1')) + cardRaceBonus(cardOf('wit-e1')))
     expect(derived.raceBonus).toBeGreaterThan(0)
     expect(derived.library.slice(0, 1)).toEqual([{ skillId: 'unique-colt', origin: 'own-unique', sourceId: COLT.id }])
   })
@@ -344,7 +344,7 @@ describe('cardPay: one card at a scenario, for the Card Library (06 §1, §4, §
 
   it('carries the full Race Bonus, its eligibility, and the eraPct it keeps in each later playable scenario of the tier', () => {
     const pay = cardPay(cardOf('wit-e3'), 3)
-    expect(pay.raceBonus).toBe(cardRaceBonus(cardOf('wit-e3'), MAX_STARS))
+    expect(pay.raceBonus).toBe(cardRaceBonus(cardOf('wit-e3')))
     expect(pay.eligible).toBe(true)
     expect(pay.later).toEqual([{ T: 4, eraPct: 95 }, { T: 5, eraPct: 90 }])
     expect(cardPay(cardOf('wit-e3'), 2).eligible).toBe(false)

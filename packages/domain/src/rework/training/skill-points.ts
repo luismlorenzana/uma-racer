@@ -1,6 +1,5 @@
-// Skill Points without Constellation Level (docs/rework/03-uma-progression.md §8, docs/rework/05-training-hub.md §4,
-// D133): the 40% baseline follows the open card nodes of her current tree instead of CL, and a Friend or Group card on
-// its fair share pays the other 60%. The shares are today's; the SP cap is T125's; N and the fair share are T129's.
+// Skill Points (docs/rework/03-uma-progression.md §8, docs/rework/05-training-hub.md §4, D133): the 40% baseline
+// follows the open card nodes of her current tree, and a Friend or Group card on its fair share pays the other 60%. The shares are today's; the SP cap is T125's; N and the fair share are T129's.
 import { SP_CARD_SHARE } from '../../constellation'
 import { BASELINE_SP_SHARE } from '../../scenarios'
 import { fairShare, treeCardNodesAt } from '../constellation/sizes'

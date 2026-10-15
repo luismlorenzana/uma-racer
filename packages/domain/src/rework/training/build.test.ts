@@ -3,9 +3,6 @@
 import { describe, expect, it } from 'vitest'
 import { CONTENT, COLT, SPRINTER, placeUma } from '../../__fixtures__/rework-tiers'
 import { DAD, GRAMPS, GRAN, MOM, MOM_ALT, STRANGER, GROWER, TIER_AND_TRAINING, TRAINING_CONTENT, cardOf } from '../../__fixtures__/rework-training'
-import type { NodeAssignment } from '../../constellation'
-import type { ScenarioTraining } from '../../save'
-import { withCardSet } from '../../support-deck'
 import { DISTANCE_CATEGORIES, type DistanceCategory } from '../../types'
 import { newAccount, unlockUma } from '../tiers/roster'
 import { emptyBuild, isRefusal, type OpResult, type Preset, type ReworkState, type ScenarioAt, type UmaBuild, type UmaState } from '../types'
@@ -197,18 +194,15 @@ describe('preset edits', () => {
       expect(replaced.receipt).toMatchObject({ handedOver: { 'wit-e1': 'power-e2' }, emptied: ['n3', 'n6', 'n9'] })
     })
 
-    it("hands nodes over exactly as today's `withCardSet`", () => {
-      const cases: [string[], string[], Record<string, string>][] = [
-        [['a', 'b', 'c'], ['a', 'd', 'c'], { n1: 'a', n2: 'b', n3: 'c', n4: 'b' }],
-        [['a', 'b', 'c'], ['a', 'c'], { n1: 'b', n2: 'c' }],
-        [['a', 'b'], ['c', 'd', 'e'], { n1: 'a', n2: 'b', n5: 'a' }],
-        [['a', 'b', 'c'], ['b', 'a'], { n1: 'a', n2: 'c' }],
-        [[], ['a'], {}],
+    it('hands nodes over as D129 does: a slot replaced by a card new to the set hands its nodes over', () => {
+      const cases: [string[], string[], Record<string, string>, Record<string, string>][] = [
+        [['a', 'b', 'c'], ['a', 'd', 'c'], { n1: 'a', n2: 'b', n3: 'c', n4: 'b' }, { n1: 'a', n2: 'd', n3: 'c', n4: 'd' }],
+        [['a', 'b', 'c'], ['a', 'c'], { n1: 'b', n2: 'c' }, { n2: 'c' }],
+        [['a', 'b'], ['c', 'd', 'e'], { n1: 'a', n2: 'b', n5: 'a' }, { n1: 'c', n2: 'd', n5: 'c' }],
+        [['a', 'b', 'c'], ['b', 'a'], { n1: 'a', n2: 'c' }, { n1: 'a' }],
+        [[], ['a'], {}, {}],
       ]
-      for (const [before, after, assignments] of cases) {
-        const today = withCardSet({ cardSetIds: before, assignments: Object.fromEntries(Object.entries(assignments).map(([id, cardId]) =>
-          [id, { kind: 'card', cardId } satisfies NodeAssignment])) } as unknown as ScenarioTraining, after)
-        const expected = Object.fromEntries(Object.entries(today.assignments).map(([id, held]) => [id, (held as { cardId: string }).cardId]))
+      for (const [before, after, assignments, expected] of cases) {
         expect(handOverNodes(before, after, assignments).assignments).toEqual(expected)
       }
     })

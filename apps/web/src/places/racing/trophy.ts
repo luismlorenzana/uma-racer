@@ -7,7 +7,7 @@ import type { WorkState } from '@racer/domain/rework/work'
 import type { RaceResultRecord } from '@racer/domain'
 import type { LoadedContent } from '../../content/runtime'
 import type { G2Records } from '../../app/game'
-import { FLAIR_GENERATION, TRAINER_BADGE_ID } from './flair'
+import { TRAINER_BADGE_ID } from './flair'
 import { historyOf, umaSaveOf } from './today'
 export { readSeen, TROPHY_HALL_SEEN_KEY, writeSeen } from './seen'
 
@@ -52,7 +52,7 @@ export function recentFlair(content: LoadedContent, records: G2Records, limit = 
     if (event.scope === 'trainer') {
       let labels = catalogs.get(TRAINER_BADGE_ID)
       if (!labels) {
-        labels = new Map(buildTrainerAchievementCatalog({ umas: content.umas.items, cards: content.cards.items, races: content.races.items, generation: FLAIR_GENERATION })
+        labels = new Map(buildTrainerAchievementCatalog({ umas: content.umas.items, cards: content.cards.items, races: content.races.items })
           .definitions.map((row) => [row.awardKey, row.label]))
         catalogs.set(TRAINER_BADGE_ID, labels)
       }
@@ -62,7 +62,7 @@ export function recentFlair(content: LoadedContent, records: G2Records, limit = 
     if (!state) return event.awardKey
     let labels = catalogs.get(state.umaId)
     if (!labels) {
-      labels = new Map(buildUmaFlairCatalog({ state, races: content.races.items, generation: FLAIR_GENERATION }).definitions.map((row) => [row.awardKey, row.label]))
+      labels = new Map(buildUmaFlairCatalog({ state, races: content.races.items }).definitions.map((row) => [row.awardKey, row.label]))
       catalogs.set(state.umaId, labels)
     }
     return labels.get(event.awardKey) ?? (event.kind === 'trophy-earned' ? event.awardKey.replace(/^trophy:/, '') : event.awardKey)

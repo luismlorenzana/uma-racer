@@ -77,7 +77,7 @@ function accomplishedState(): UmaBadgeStateV1 {
   })).sort((left, right) => left.key.localeCompare(right.key))
   return {
     ...base,
-    sourceWatermarks: { raceSequence: 24, trainingTurns: 50, scenarioCompletions: 1, lineageEvidence: 4 },
+    sourceWatermarks: { raceSequence: 24, scenarioCompletions: 1, lineageEvidence: 4 },
     history: { ...base.history, race: 'exact', training: 'since-tracking', 'scenario-completion': 'exact' },
     facts: {
       ...base.facts,
@@ -107,10 +107,7 @@ function accomplishedState(): UmaBadgeStateV1 {
       balancedPeak: 600,
       levelPeak: 25,
       distinctSkillIds: Array.from({ length: 15 }, (_, index) => `synthetic-skill-${String(index).padStart(2, '0')}`),
-      lifetimeTrainingTurns: 50,
-      friendshipTrainings: 10,
       fullHouseCount: 1,
-      trainingByTier: [{ tier: 1, turns: 50, friendshipTrainings: 10, fullHouseCount: 1, reachedTl10: true }],
       fullyTrainedTiers: [1],
       maxSkillsByTier: [{ key: '1', count: 10 }],
       goals: [0, 1, 2].map((index) => ({ goalId: `goal:synthetic-uma:1:${index}`, resultId: `race:synthetic-uma:${index}`, tier: 1, completedAt: 100 + index })),
@@ -120,12 +117,9 @@ function accomplishedState(): UmaBadgeStateV1 {
       completions: [{
         tier: 1,
         completedAt: 600,
-        trainingLevel: 10,
         stats: { speed: cap, stamina: cap, power: cap, guts: cap, wit: cap },
         deckCardIds: ['synthetic-card'],
         deckEras: [1],
-        trainingTurns: 50,
-        friendshipTrainings: 10,
         raceStarts: 15,
         completedGoalIds: ['goal:synthetic-uma:1:0', 'goal:synthetic-uma:1:1', 'goal:synthetic-uma:1:2'],
         honors: true,
@@ -326,8 +320,8 @@ describe('flair projections', () => {
     const catalog = buildUmaFlairCatalog({ state, races, courseRecordIds: new Set(['synthetic-course-0']) })
     const hidden = catalog.definitions.find((entry) => entry.awardKey === 'badge:wire-to-wire')!
     expect(projectFlairProgress(hidden, state)).toMatchObject({ status: 'hidden', value: null, percentage: null })
-    const diligent = catalog.definitions.find((entry) => entry.awardKey === 'badge:diligent')!
-    expect(projectFlairProgress(diligent, state)).toMatchObject({ status: 'progress', progressLabel: 'at least 50 / 60' })
+    const legacy = catalog.definitions.find((entry) => entry.awardKey === 'badge:legacy')!
+    expect(projectFlairProgress(legacy, state)).toMatchObject({ status: 'progress', progressLabel: 'at least 3 / 5' })
 
     const evaluated = evaluateUmaFlair(catalog, state, { source: { kind: 'migration', id: null, tier: null }, earnedAt: 1_000, retroactive: true })
     const winnerOnly = { ...catalog, definitions: catalog.definitions.filter((entry) => entry.awardKey === 'badge:winner') }

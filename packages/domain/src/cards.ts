@@ -1,14 +1,8 @@
-// SSR support cards: stars, and the generated effect profile that still feeds Race Bonus
-// (docs/design/support-cards.md). The rest of the effect model died with the training turn (D125).
+// SSR support cards: the generated effect profile that still feeds Race Bonus (docs/design/support-cards.md). The rest
+// of the effect model died with the training turn (D125), and every card pays 100%: no stars (D329).
 
-import { CARD_SET_SIZE, starNodePct } from './constellation'
+import { CARD_SET_SIZE } from './constellation'
 import type { SkillTemplate, SupportCardTemplate } from './content'
-
-/**
- * A card holds 0★–3★ in each scenario; 3★ is max, with every bonus at full strength (D200). The three stars are the old
- * 1★ · 3★ · 5★ (D147), so a maxed card pays what a 5★ card paid.
- */
-export const MAX_STARS = 3
 
 export const eraMult = (era: number): number => 1 + 0.08 * (era - 1)
 
@@ -74,21 +68,17 @@ export function cardUniqueEffectKinds(template: SupportCardTemplate): ReadonlySe
 }
 
 /**
- * Race Bonus at max stars for an era-1 card whose profile weight is 1. It is the value the old model reached at max limit
- * break and level 25 (0.03 × 1.5 × 1.08), so a maxed card races exactly as it did before stars (D147).
+ * Race Bonus for an era-1 card whose profile weight is 1: the value the old model reached at max limit break and level
+ * 25 (0.03 × 1.5 × 1.08), so a card races exactly as a maxed card did (D147, D329).
  */
 const RACE_BONUS_AT_MAX = 0.03 * 1.5 * 1.08
 
 /**
- * What one card adds to race EXP at its global stars, the one generated effect that outlived the training turn
- * (D125). Nothing at 0★; from 1★ it follows the same star curve as a card node (68% · 84% · 100%, D200), so no migration
- * ever lowered a card's Race Bonus. At 3★ the card's unique effect adds its bonus if
- * Race Bonus is one of its kinds.
+ * What one card adds to race EXP, the one generated effect that outlived the training turn (D125): its full value, and
+ * its unique effect's bonus on top when Race Bonus is one of its kinds.
  */
-export function cardRaceBonus(template: SupportCardTemplate, stars: number): number {
-  const held = Math.min(MAX_STARS, Math.max(0, Math.trunc(stars)))
-  if (held === 0) return 0
+export function cardRaceBonus(template: SupportCardTemplate): number {
   const full = RACE_BONUS_AT_MAX * eraMult(template.era) * (template.effectProfile.raceBonus ?? 0)
-  const signature = held === MAX_STARS && cardUniqueEffectKinds(template).has('raceBonus') ? CARD_UNIQUE_BONUS_MULTIPLIER : 0
-  return full * (starNodePct(held) / 100) * (1 + signature)
+  const signature = cardUniqueEffectKinds(template).has('raceBonus') ? CARD_UNIQUE_BONUS_MULTIPLIER : 0
+  return full * (1 + signature)
 }

@@ -23,7 +23,7 @@ import { AnimatedNumber } from '../../../ui/AnimatedNumber'
 import { CoinIcon } from '../../../ui/icons'
 import { UmaFace } from '../../../ui/UmaArt'
 import { useRaceContent } from '../content'
-import { eventsOfCommit, FLAIR_GENERATION } from '../flair'
+import { eventsOfCommit } from '../flair'
 import { replayOf, simulate } from '../prepare'
 import { useRecords } from '../records'
 import { startRace, takeFanfare } from '../race'
@@ -174,9 +174,9 @@ export default function RunPage() {
   const goals = uma ? buildResultGoalView(record, umaSaveOf(uma), content, fresh) : null
   const events = eventsOfCommit(records, row.umaId, row.at)
   const badge = records.badges[badgeStateId(row.umaId)]
-  const flair = badge?.scope === 'uma' ? buildFlairFanfare(content, badge, events, events.filter((event) => event.scope === 'uma').map((event) => event.id), FLAIR_GENERATION) : []
+  const flair = badge?.scope === 'uma' ? buildFlairFanfare(content, badge, events, events.filter((event) => event.scope === 'uma').map((event) => event.id)) : []
   const trainer = records.badges.trainer
-  const trainerFlair = trainer?.scope === 'trainer' ? buildTrainerFlairFanfare(content, trainer, events, events.map((event) => event.id), FLAIR_GENERATION) : []
+  const trainerFlair = trainer?.scope === 'trainer' ? buildTrainerFlairFanfare(content, trainer, events, events.map((event) => event.id)) : []
   const balance = state.profile.prizeMoney
   const animate = fresh && !reducedMotion
   const name = (umaId: string) => content.umas.byId.get(umaId)?.name ?? umaId

@@ -17,7 +17,6 @@ import {
   type TrainerRecord,
   type UmaBadgeStateV1,
   type UmaSave,
-  type FlairGeneration,
 } from '@racer/domain'
 import type { LoadedContent } from '../../content/runtime'
 import { buildUmaBadgeCollection, type BadgeCollectionItem, type BadgeSourceView } from './badge-collection-view'
@@ -106,10 +105,8 @@ export function buildTrainerBadgeCollection(
   state: TrainerBadgeStateV1,
   saves: Readonly<Record<string, UmaSave>>,
   raceHistory: readonly RaceResultRecord[] = [],
-  /** Today's catalogue (1) or generation 2's (T141). */
-  generation: FlairGeneration = 1,
 ): TrainerBadgeCollection {
-  const catalog = buildTrainerAchievementCatalog({ umas: content.umas.items, cards: content.cards.items, races: content.races.items, generation })
+  const catalog = buildTrainerAchievementCatalog({ umas: content.umas.items, cards: content.cards.items, races: content.races.items })
   const progress = projectTrainerAchievementProgress(catalog, state)
   const items: BadgeCollectionItem[] = progress.map((row) => {
     const groupId = groupIdFor(state, row.definition.awardKey)
@@ -184,9 +181,8 @@ export function buildTrainerShowcase(
   saves: Readonly<Record<string, UmaSave>>,
   events: readonly (FlairEventV1 & { id: string })[],
   races: readonly RaceResultRecord[] = [],
-  generation: FlairGeneration = 1,
 ): TrainerShowcaseView[] {
-  const collection = buildTrainerBadgeCollection(content, trainer, saves, races, generation)
+  const collection = buildTrainerBadgeCollection(content, trainer, saves, races)
   const trainerItems = new Map(collection.items.map((item) => [item.awardKey, item]))
   return flattenShowcase(trainer.preferences.showcaseGroups).map((ref) => {
     const direct = trainerItems.get(ref)
@@ -194,7 +190,7 @@ export function buildTrainerShowcase(
     const parsed = parseTrainerUmaAwardRef(ref)
     const state = parsed ? states[badgeStateId(parsed.umaId)] : null
     if (parsed && state?.scope === 'uma') {
-      const item = buildUmaBadgeCollection(content, state, events, races, generation).items.find((candidate) => candidate.awardKey === parsed.awardKey)
+      const item = buildUmaBadgeCollection(content, state, events, races).items.find((candidate) => candidate.awardKey === parsed.awardKey)
       if (item) return { ref, label: item.label, ownerLabel: content.umas.byId.get(parsed.umaId)?.name ?? parsed.umaId, tier: item.tier, missing: false }
     }
     return { ref, label: ref, ownerLabel: parsed?.umaId ?? 'Unknown', tier: null, missing: true }

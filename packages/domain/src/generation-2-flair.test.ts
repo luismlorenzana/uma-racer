@@ -1,8 +1,7 @@
 // Generation 2's award catalogue (T141; docs/rework/04-tiers-and-promotion.md §9–§10, 06-cards-and-bonds.md §7,
-// 13-removals-and-plan-changes.md §1, 05-training-hub.md §11): beside today's behind `generation: 2`, whose default
-// stays today's. Retired awards are absent, redefined ones read what generation 2 writes, the tier awards and the
-// Trainer's bonded meters are added, and Card Partners survives a promotion, since the ever-bonded set is a projection
-// of every Uma's bonds and tier histories. Synthetic content only.
+// 13-removals-and-plan-changes.md §1, 05-training-hub.md §11): retired awards are absent, redefined ones read what
+// generation 2 writes, the tier awards and the Trainer's bonded meters are added, and Card Partners survives a
+// promotion, since the ever-bonded set is a projection of every Uma's bonds and tier histories. Synthetic content only.
 import { describe, expect, it } from 'vitest'
 import { subject } from './__fixtures__/subject'
 import {
@@ -26,30 +25,20 @@ const fresh = (): UmaBadgeStateV1 => createUmaBadgeState(createUmaSave(template)
 
 function completion(tier: number, over: Partial<ScenarioCompletionFact> = {}): ScenarioCompletionFact {
   return {
-    tier, completedAt: NOW, trainingLevel: 1, stats: { speed: 500, stamina: 500, power: 500, guts: 500, wit: 500 },
-    deckCardIds: [], deckEras: [], trainingTurns: 0, friendshipTrainings: 0, raceStarts: 20, completedGoalIds: [], honors: false,
+    tier, completedAt: NOW, stats: { speed: 500, stamina: 500, power: 500, guts: 500, wit: 500 },
+    deckCardIds: [], deckEras: [], raceStarts: 20, completedGoalIds: [], honors: false,
     parentUmaIds: [], grandparentUmaIds: [], ...over,
   }
 }
 
-const keys = (generation?: 1 | 2) => buildUmaFlairCatalog({ state: fresh(), races, ...(generation ? { generation } : {}) }).definitions.map((row) => row.awardKey)
+const keys = () => buildUmaFlairCatalog({ state: fresh(), races }).definitions.map((row) => row.awardKey)
 const definition = (awardKey: string, state = fresh()) =>
-  buildUmaFlairCatalog({ state, races, generation: 2 }).definitions.find((row) => row.awardKey === awardKey)
+  buildUmaFlairCatalog({ state, races }).definitions.find((row) => row.awardKey === awardKey)
 
 describe("generation 2's Uma catalogue", () => {
-  it('leaves the default today’s, byte for byte', () => {
-    const state = fresh()
-    expect(buildUmaFlairCatalog({ state, races, generation: 1 })).toEqual(buildUmaFlairCatalog({ state, races }))
-    expect(keys()).toContain('badge:diligent')
-    expect(keys()).not.toContain('badge:hall-of-fame')
-  })
-
-  it('retires Diligent and reads no training-turn fact', () => {
-    expect(keys(2)).not.toContain('badge:diligent')
-    const facts = buildUmaFlairCatalog({ state: fresh(), races, generation: 2 }).definitions
-      .flatMap((row) => (row.criterion.kind === 'fact' ? [row.criterion.fact] : []))
-    expect(facts).not.toContain('lifetimeTrainingTurns')
-    expect(facts).not.toContain('friendshipTrainings')
+  it('retires Diligent', () => {
+    expect(keys()).not.toContain('badge:diligent')
+    expect(keys()).toContain('badge:hall-of-fame')
   })
 
   it('redefines Fully Trained, Graduate, the level badges, Living Legend and Era Loyalist in its words', () => {
@@ -63,8 +52,8 @@ describe("generation 2's Uma catalogue", () => {
     expect(definition('badge:living-legend')!.description).toContain('Hall of Fame')
     expect(definition('badge:scenario:3:era-loyalist')!.description).toContain('every race she ran')
     expect(definition('badge:full-house')!.description).toBe('Fill every card node of one constellation.')
-    for (const row of buildUmaFlairCatalog({ state: fresh(), races, generation: 2 }).definitions) {
-      expect(row.description, row.awardKey).not.toMatch(/Training Level|TL10|Spark Match|Produce|coupon|Puzzle|Friendship/i)
+    for (const row of buildUmaFlairCatalog({ state: fresh(), races }).definitions) {
+      expect(row.description, row.awardKey).not.toMatch(/Training Level|TL10|Spark Match|Produce|coupon/i)
     }
   })
 
@@ -78,7 +67,7 @@ describe("generation 2's Uma catalogue", () => {
   it('awards a promotion from the tier’s last scenario, and the Hall of Fame and Living Legend only from the last one', () => {
     let state = fresh()
     for (let tier = 1; tier <= 5; tier += 1) state = applyScenarioCompletionFact(state, completion(tier))
-    const promoted = evaluateUmaFlair(buildUmaFlairCatalog({ state, races, generation: 2 }), state, trigger)
+    const promoted = evaluateUmaFlair(buildUmaFlairCatalog({ state, races }), state, trigger)
     const earned = promoted.events.map((event) => event.data.awardKey)
     expect(earned).toContain('badge:promoted:2')
     expect(earned).toContain('badge:scenario:5:graduate')
@@ -86,67 +75,63 @@ describe("generation 2's Uma catalogue", () => {
     expect(earned).not.toContain('badge:living-legend')
     let all = promoted.state
     for (let tier = 6; tier < SCENARIOS.length; tier += 1) all = applyScenarioCompletionFact(all, completion(tier))
-    const beforeHall = evaluateUmaFlair(buildUmaFlairCatalog({ state: all, races, generation: 2 }), all, trigger)
+    const beforeHall = evaluateUmaFlair(buildUmaFlairCatalog({ state: all, races }), all, trigger)
     expect(beforeHall.events.map((event) => event.data.awardKey)).toContain('badge:promoted:3')
     expect(beforeHall.events.map((event) => event.data.awardKey)).not.toContain('badge:living-legend')
     const inducted = applyScenarioCompletionFact(beforeHall.state, completion(SCENARIOS.length))
-    const hall = evaluateUmaFlair(buildUmaFlairCatalog({ state: inducted, races, generation: 2 }), inducted, trigger)
+    const hall = evaluateUmaFlair(buildUmaFlairCatalog({ state: inducted, races }), inducted, trigger)
     expect(hall.events.map((event) => event.data.awardKey)).toEqual(expect.arrayContaining(['badge:hall-of-fame', 'title:hall-of-famer', 'badge:living-legend']))
-    const catalog = buildUmaFlairCatalog({ state: hall.state, races, generation: 2 })
+    const catalog = buildUmaFlairCatalog({ state: hall.state, races })
     expect(prestigeForState(catalog, hall.state) - prestigeForState(catalog, beforeHall.state)).toBe(HALL_OF_FAME_POINTS + TITLE_POINTS + BADGE_ONE_OFF_POINTS * 2)
   })
 
   it('reads Era Loyalist from the completion’s deck: only era-T cards in the set of every race she ran there', () => {
     const loyal = applyScenarioCompletionFact(fresh(), completion(2, { deckCardIds: ['a', 'b'], deckEras: [2, 2] }))
     const mixed = applyScenarioCompletionFact(fresh(), completion(2, { deckCardIds: ['a', 'b'], deckEras: [2, 1] }))
-    const award = (state: UmaBadgeStateV1) => evaluateUmaFlair(buildUmaFlairCatalog({ state, races, generation: 2 }), state, trigger)
+    const award = (state: UmaBadgeStateV1) => evaluateUmaFlair(buildUmaFlairCatalog({ state, races }), state, trigger)
       .events.some((event) => event.data.awardKey === 'badge:scenario:2:era-loyalist')
     expect([award(loyal), award(mixed)]).toEqual([true, false])
   })
 
   it('takes a Full House with no training turns', () => {
     const state = { ...fresh(), facts: { ...fresh().facts, fullHouseCount: 1 } }
-    const earned = evaluateUmaFlair(buildUmaFlairCatalog({ state, races, generation: 2 }), state, trigger)
+    const earned = evaluateUmaFlair(buildUmaFlairCatalog({ state, races }), state, trigger)
     expect(earned.events.map((event) => event.data.awardKey)).toContain('badge:full-house')
   })
 })
 
 const cards: SupportCardTemplate[] = [...SIM_CONTENT.cards.values()].slice(0, 30)
 
-function trainerCatalogKeys(generation?: 1 | 2): string[] {
-  return buildTrainerAchievementCatalog({ umas: SIM_UMAS, cards, races, ...(generation ? { generation } : {}) }).definitions.map((row) => row.awardKey)
+function trainerCatalogKeys(): string[] {
+  return buildTrainerAchievementCatalog({ umas: SIM_UMAS, cards, races }).definitions.map((row) => row.awardKey)
 }
 
 describe("generation 2's Trainer catalogue", () => {
   it('retires cards owned, stars, coupons and Era/Type Complete, and adds Card Partners, the Bonded one-offs, Promotions and Hall of Fame', () => {
-    const today = trainerCatalogKeys()
-    expect(buildTrainerAchievementCatalog({ umas: SIM_UMAS, cards, races, generation: 1 })).toEqual(buildTrainerAchievementCatalog({ umas: SIM_UMAS, cards, races }))
-    expect(today).toEqual(expect.arrayContaining(['trainer:card-collector', 'trainer:maxed-out', 'trainer:coupon-clipper', 'trainer:era-complete:1']))
-    const g2 = trainerCatalogKeys(2)
+    const g2 = trainerCatalogKeys()
     for (const key of ['trainer:card-collector', 'trainer:maxed-out', 'trainer:coupon-clipper']) expect(g2).not.toContain(key)
     expect(g2.some((key) => key.startsWith('trainer:era-complete') || key.startsWith('trainer:type-complete'))).toBe(false)
     expect(g2).toEqual(expect.arrayContaining(['trainer:card-partners', 'trainer:promotions', 'trainer:hall-of-fame', 'trainer:era-bonded:1']))
     expect(g2.some((key) => key.startsWith('trainer:type-bonded'))).toBe(true)
-    const rows = buildTrainerAchievementCatalog({ umas: SIM_UMAS, cards, races, generation: 2 }).definitions
+    const rows = buildTrainerAchievementCatalog({ umas: SIM_UMAS, cards, races }).definitions
     expect(rows.find((row) => row.awardKey === 'trainer:card-partners')!.thresholds).toEqual([10, 25, 50, 100, 200])
     expect(rows.find((row) => row.awardKey === 'trainer:promotions')!.thresholds).toEqual([1, 5, 15, 30, 50])
     expect(rows.find((row) => row.awardKey === 'trainer:hall-of-fame')!.thresholds).toEqual([1, 3, 10, 25, 50])
     expect(rows.find((row) => row.awardKey === 'trainer:veteran-stable')!.description).toContain('lifetime level')
   })
 
-  it('needs the ever-bonded set to reconcile generation 2', () => {
+  it('reconciles the ever-bonded set', () => {
     const uma = createUmaSave(template)
     const base = {
-      state: createTrainerBadgeState(NOW), contentVersion: 'synthetic', umas: SIM_UMAS, cards, races, ownedUmas: [uma], ownedCards: [],
-      contributors: [fresh()], ledger: [], raceResults: [], now: NOW, retroactive: false, generation: 2 as const,
+      state: createTrainerBadgeState(NOW), contentVersion: 'synthetic', umas: SIM_UMAS, cards, races, ownedUmas: [uma],
+      contributors: [fresh()], raceResults: [], now: NOW, retroactive: false,
     }
-    expect(() => reconcileTrainerState(base)).toThrow(RangeError)
     const result = reconcileTrainerState({ ...base, bondedCardIds: cards.slice(0, 12).map((card) => card.id) })
     const aggregate = (key: string) => result.state.aggregates.find((row) => row.key === key)?.count
     expect(aggregate('bonded-cards')).toBe(12)
     expect(aggregate('owned-cards')).toBeUndefined()
     expect(result.events.map((event) => event.data.awardKey)).toContain('trainer:card-partners')
-    const progress = projectTrainerAchievementProgress(buildTrainerAchievementCatalog({ umas: SIM_UMAS, cards, races, generation: 2 }), result.state)
+    const progress = projectTrainerAchievementProgress(buildTrainerAchievementCatalog({ umas: SIM_UMAS, cards, races }), result.state)
     expect(progress.find((row) => row.definition.awardKey === 'trainer:card-partners')).toMatchObject({ value: 12, highestStage: 'bronze', nextThreshold: 25 })
   })
 
@@ -156,7 +141,7 @@ describe("generation 2's Trainer catalogue", () => {
     const eraOne = cards.filter((card) => card.era === 1).map((card) => card.id)
     const result = reconcileTrainerState({
       state: createTrainerBadgeState(NOW), contentVersion: 'synthetic', umas: SIM_UMAS, cards, races, ownedUmas: [createUmaSave(template)],
-      ownedCards: [], contributors: [state], ledger: [], raceResults: [], now: NOW, retroactive: false, generation: 2, bondedCardIds: eraOne,
+      contributors: [state], raceResults: [], now: NOW, retroactive: false, bondedCardIds: eraOne,
     })
     const aggregate = (key: string) => result.state.aggregates.find((row) => row.key === key)?.count
     expect([aggregate('promotions'), aggregate('hall-of-fame')]).toEqual([2, 1])
@@ -199,7 +184,7 @@ describe('the ever-bonded set (06 §7, §9)', () => {
     expect(before).toEqual([...bonds].sort())
     const reconcile = (bondedCardIds: string[]) => reconcileTrainerState({
       state: createTrainerBadgeState(NOW), contentVersion: 'synthetic', umas: SIM_UMAS, cards, races, ownedUmas: [createUmaSave(template)],
-      ownedCards: [], contributors: [fresh()], ledger: [], raceResults: [], now: NOW, retroactive: false, generation: 2, bondedCardIds,
+      contributors: [fresh()], raceResults: [], now: NOW, retroactive: false, bondedCardIds,
     })
     const partners = (result: ReturnType<typeof reconcile>) => result.state.awards.achievements.filter((row) => row.awardKey === 'trainer:card-partners').map((row) => row.stage)
     expect(partners(reconcile(everBondedCardIds(Object.values(promoted.state.umas))))).toEqual(partners(reconcile(before)))

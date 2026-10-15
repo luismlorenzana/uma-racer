@@ -1,7 +1,6 @@
 import { umaFixture, emptySubject } from './__fixtures__/save'
 import {
   CARD_EFFECTS,
-  createCardSave,
   createTrainerBadgeState,
   createUmaBadgeState,
   createUmaSave,
@@ -77,7 +76,7 @@ function raceResult(): RaceResultRecord {
   return {
     engineVersion: 3, contentVersion: content.manifest.version, umaId: uma.id, raceId: 'synthetic-race', sequence: 0, seed: 1,
     strategy: 'pace', startLevel: 1, startExp: 0, startStats: stats, raceBonus: 0, playerPlacement: 1,
-    expGained: 0, levelsGained: [], ticketReward: 0, shardReward: 0, completedGoalIds: [],
+    expGained: 0, levelsGained: [], shardReward: 0, completedGoalIds: [],
     course: { distance: 1_600, surface: 'turf', season: 1 }, createdAt: 180,
     field: [
       { umaId: uma.id, isPlayer: true, strategy: 'pace', gate: 0, stats, aptitude, placement: 1, finishTime: 100, marginLengths: 0 },
@@ -94,7 +93,7 @@ describe('Trainer profile projections', () => {
     const reconciled = reconcileTrainerState({
       state: createTrainerBadgeState(1), contentVersion: content.manifest.version,
       umas: content.umas.items, cards: content.cards.items, races: [], ownedUmas: [save, orphan],
-      ownedCards: [createCardSave(card)], contributors: [badge], ledger: [], raceResults: [raceResult()], now: 200, retroactive: false,
+      contributors: [badge], bondedCardIds: [card.id], raceResults: [raceResult()], now: 200, retroactive: false,
     })
     const mixedRef = trainerUmaAwardRef(uma.id, 'badge:winner')
     const trainer = replaceTrainerPreferences(reconciled.state, {

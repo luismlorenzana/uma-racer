@@ -8,8 +8,8 @@ import { EXPEDITION_WINS } from './expedition'
 import { PROMOTION_UMA_TICKETS } from './promotion'
 import { recommendedRacePreferences } from '../../scenario-goals'
 import {
-  INITIAL_UMA_TICKETS, UMA_SHARDS_PER_TICKET, UMA_UNLOCK_TICKET_COST, exchangeShards, featureUma, newAccount, racePreferencesOf, setRaceDefaults,
-  unlockUma,
+  INITIAL_UMA_TICKETS, UMA_SHARDS_PER_TICKET, UMA_UNLOCK_TICKET_COST, exchangeShards, featureUma, newAccount, nextUmaShardExchangeSequence,
+  racePreferencesOf, setRaceDefaults, unlockUma,
 } from './roster'
 
 function ok<R>(result: { state: ReworkState; receipt: R } | { refused: true; reason: string }): { state: ReworkState; receipt: R } {
@@ -101,6 +101,7 @@ describe('exchangeShards', () => {
   it('numbers its rows after the highest one, as today', () => {
     const old = withShards(5, [{ id: 'uma-shard-exchange:7:shards', resource: 'uma-shards', delta: -5, reason: 'uma-shard-exchange', at: 1 }])
     expect(ok(exchangeShards(old, {}, 2)).receipt.sequence).toBe(8)
+    expect(nextUmaShardExchangeSequence(['other:1', 'uma-shard-exchange:2:coupon', 'uma-shard-exchange:7:shards'])).toBe(8)
   })
 })
 
