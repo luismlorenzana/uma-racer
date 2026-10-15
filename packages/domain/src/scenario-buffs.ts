@@ -1,5 +1,5 @@
 // Scenario buffs (T053–T054, D165): the one declared way each scenario bends its constellation's rules
-// (docs/design/scenarios.md#scenario-buffs). Every buff is deterministic, visible on the constellation, never random,
+// (docs/game/04-tiers-and-promotion.md §8). Every buff is deterministic, visible on the constellation, never random,
 // and reaches a race only through the stats and skill points the tree pays. None depends on which node a card sits
 // on, so moving a card never changes a total; some reward which cards you bring or how many nodes each fills.
 

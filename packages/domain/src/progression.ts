@@ -1,4 +1,4 @@
-// Uma Level: permanent, earned only from racing (docs/design/uma-progression.md).
+// The level curve and race EXP, earned only from racing, that Racing Level reads (docs/game/03-uma-progression.md §2).
 import { levelsIntoScenario } from './scenarios'
 import type { RaceGrade } from './types'
 

@@ -1,4 +1,4 @@
-// Aggregate-only source freshness guard for the scenario ladder (docs/design/scenarios.md#timeline-and-tiers).
+// Aggregate-only source freshness guard for the scenario ladder (docs/game/scenarios.md "Keeping the list current").
 
 function releaseDateFromSeconds(value: unknown): string | null {
   if (!Number.isSafeInteger(value) || (value as number) <= 0) return null

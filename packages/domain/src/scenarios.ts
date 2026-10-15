@@ -1,4 +1,4 @@
-// Scenarios are 10-level progression tiers in JP release order (docs/design/scenarios.md).
+// Scenarios are 10-level steps of a tier, in JP release order (docs/game/scenarios.md).
 
 export interface ScenarioDef {
   /** 1-based tier index. */

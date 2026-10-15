@@ -1,4 +1,4 @@
-// Shared test fixture for building Uma saves (docs/design/uma-progression.md).
+// Shared test fixture for building Uma saves (docs/game/03-uma-progression.md).
 
 import {
   DISTANCE_CATEGORIES,

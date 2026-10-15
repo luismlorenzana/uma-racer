@@ -1,4 +1,4 @@
-// The re-authored trees' drawing rules (docs/game/05-training-hub.md §4, docs/design/constellations.md "The screen"):
+// The re-authored trees' drawing rules (docs/game/05-training-hub.md §4):
 // one root `n0`, exactly N card nodes numbered n1 … nN breadth-first, each hanging from a node that opens before it,
 // inside the tree's box, 40 pt apart on the smallest phone, and no crossing edges. Every refusal names the nodes.
 import { TREE_BOX } from '../../constellation'

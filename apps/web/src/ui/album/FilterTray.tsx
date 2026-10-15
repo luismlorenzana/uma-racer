@@ -21,7 +21,7 @@ const asRange = (selection: FacetSelection | undefined): RangeSelection =>
 
 /**
  * Faceted tray: grouped sections, per-option counts, and no zero-result dead ends — an option that
- * would return nothing is disabled rather than a trapdoor (docs/design/collection.md#shared-browsing-chrome).
+ * would return nothing is disabled rather than a trapdoor (docs/design/ux.md#shared-browsing-chrome).
  * Selections apply on Apply, not on every tap.
  */
 export function FilterTray({

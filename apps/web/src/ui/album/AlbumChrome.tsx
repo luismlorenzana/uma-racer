@@ -21,7 +21,7 @@ import { SortSheet } from './SortSheet'
  * The browsing chrome every album shares, kept small so the list starts near the top (D176): a title line with the
  * count, one sticky toolbar (search, Sort, a badged Filters button, and the album's segments), and removable chips
  * for active filters. Quick picks and saved views live in the Filters sheet
- * (docs/design/collection.md#shared-browsing-chrome).
+ * (docs/design/ux.md#shared-browsing-chrome).
  */
 const VIEW_GLYPHS = { icons: ViewGridIcon, cards: ViewCardsIcon, list: ViewListIcon } as const
 

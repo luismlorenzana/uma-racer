@@ -81,7 +81,7 @@ export default function Profile({ place, rest, umaId, tab: routeTab }: PageProps
   const content = env?.content ?? null
   const tab: Tab = routeTab ?? (new URLSearchParams(location.search).get('tab') === 'racing' ? 'racing' : 'overview')
 
-  // Opening her profile is what clears her NEW mark (Collection "NEW markers").
+  // Opening her profile is what clears her NEW mark (ux "Shared behaviours").
   useEffect(() => {
     if (uma !== null) prefs.see([umaId])
     // Once per Uma.

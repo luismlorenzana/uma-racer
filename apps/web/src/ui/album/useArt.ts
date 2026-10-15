@@ -3,7 +3,7 @@ import type { ArtKind, LoadedContent } from '../../content/runtime'
 
 /**
  * Resolves an entry's large private art, or `null` until it arrives. Callers keep showing the icon
- * meanwhile, so a grid never waits on a download (docs/design/collection.md#art-tiers).
+ * meanwhile, so a grid never waits on a download (docs/design/ux.md#art-tiers).
  */
 export function useArt(content: LoadedContent | null, kind: ArtKind, id: string | null): string | null {
   const [url, setUrl] = useState<string | null>(null)

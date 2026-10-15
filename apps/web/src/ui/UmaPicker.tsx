@@ -1,4 +1,4 @@
-// The one Uma picker (D181; docs/design/collection.md "Default sorts"; T138): a sheet on the Stable's album over the Umas a
+// The one Uma picker (D181; docs/design/ux.md "Default sorts"; T138): a sheet on the Stable's album over the Umas a
 // caller offers, with its search, filters, sorts and three views, opening on the level order unless the caller leads
 // with a sort of its own. Today's `UmaPickerSheet` props on the new game's store: the caller's sorts, `describe`,
 // `disabledReason` and `candidateIds`. An Uma that can't be picked stays listed, after the ones that can, with her

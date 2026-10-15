@@ -1,4 +1,4 @@
-// Trainer achievement catalog and deterministic reconciliation (docs/design/collection.md#trainer-achievements-account-wide),
+// Trainer achievement catalog and deterministic reconciliation (docs/design/badges.md#trainer-achievements),
 // on generation 2's catalogue (docs/game/06-cards-and-bonds.md §7, §9; 04-tiers-and-promotion.md §9;
 // 13-removals-and-plan-changes.md §1; T141): the ever-bonded set stands in for card ownership, and promotions and the
 // Hall of Fame are counted.

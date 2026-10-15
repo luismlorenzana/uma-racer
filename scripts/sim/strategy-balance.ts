@@ -1,4 +1,4 @@
-// Synthetic race-engine balance harness (docs/design/racing.md#presentation-straight-line-real-time-view).
+// Synthetic race-engine balance harness (docs/design/racing.md#presentation-the-race-on-its-own-course).
 // No imported ids, source rows, or original-game data belong in this file.
 //
 //   pnpm sim:balance                 quick 2,400-race strategy regression

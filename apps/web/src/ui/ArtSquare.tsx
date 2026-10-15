@@ -1,4 +1,4 @@
-// An Uma's or a card's square tile art (docs/design/collection.md "Art tiers", "Icon overlays"; T138): today's ArtTile
+// An Uma's or a card's square tile art (docs/design/ux.md "Art tiers", "Icon overlays"; T138): today's ArtTile
 // over the private content's icon atlas, with an Uma's bust or a card's art once it loads. Without content (the dev
 // mount) it is ArtTile's labelled placeholder. The four corners carry what the album puts there.
 import type { ReactNode } from 'react'

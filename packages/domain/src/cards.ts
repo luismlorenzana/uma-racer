@@ -1,4 +1,4 @@
-// SSR support cards: the generated effect profile that still feeds Race Bonus (docs/design/support-cards.md). The rest
+// SSR support cards: the generated effect profile that still feeds Race Bonus (docs/game/06-cards-and-bonds.md). The rest
 // of the effect model died with the training turn (D125), and every card pays 100%: no stars (D329).
 
 import type { SkillTemplate, SupportCardTemplate } from './content'

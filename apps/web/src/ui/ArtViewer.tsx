@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom'
 import { CloseIcon } from './icons'
 
 /**
- * One piece of art at full size over a dark stage (docs/design/collection.md#art-tiers). Detail surfaces open it from
+ * One piece of art at full size over a dark stage (docs/design/ux.md#art-tiers). Detail surfaces open it from
  * their art; lists never do. A tap anywhere, the close button or Escape closes it. It renders into the body, because
  * the surfaces that open it sit inside stacking contexts (an album's detail area, sticky filter bars) it must cover.
  * Portraits are cut-outs, so the art sits on its own stage rather than letting the page show through.

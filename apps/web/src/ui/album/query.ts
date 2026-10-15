@@ -1,5 +1,5 @@
 // Generic album browsing engine: search, facets with counts, sorts, grouping
-// (docs/design/collection.md#shared-browsing-chrome). Pure — no React, no Dexie, no content imports.
+// (docs/design/ux.md#shared-browsing-chrome). Pure — no React, no Dexie, no content imports.
 
 export type FacetValue = readonly string[] | number | boolean | null
 
@@ -47,7 +47,7 @@ export type SortDirection = 'asc' | 'desc'
 
 /**
  * How the grid draws each entry. `icons` is the dense, image-only default the real game uses for
- * hundreds of entries (docs/design/collection.md#view-modes).
+ * hundreds of entries (docs/design/ux.md#view-modes).
  */
 export const ALBUM_VIEWS = ['icons', 'cards', 'list'] as const
 export type AlbumView = (typeof ALBUM_VIEWS)[number]
@@ -230,7 +230,7 @@ export interface EmptyStateHint {
 
 /**
  * When a query returns nothing, name the single facet worth dropping — "remove Dirt to see 12" —
- * instead of leaving a dead end (docs/design/collection.md#shared-behaviours).
+ * instead of leaving a dead end (docs/design/ux.md#shared-behaviours).
  */
 export function emptyStateHint(
   rows: readonly AlbumRow[],

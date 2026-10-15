@@ -1,4 +1,4 @@
-// What a race pays in Prize Money (docs/game/09-racing-rewards-and-exchange.md §2.1, the rework README "Money",
+// What a race pays in Prize Money (docs/game/09-racing-rewards-and-exchange.md §2.1, the manual README's "Money",
 // docs/rework/10-expeditions.md): its grade's win prize times its place's share, at the Expedition rate for a family
 // she hasn't won yet on her run. Integers only: one rounding down, after every multiplier. No Race Bonus and no tier
 // multiplier touch Prize Money (09 §2.1).

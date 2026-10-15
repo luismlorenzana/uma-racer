@@ -221,7 +221,7 @@ describe('scenarios', () => {
 })
 
 describe('trees', () => {
-  it('pins the cap profiles and tree budgets from docs/design/scenarios.md', () => {
+  it('pins the cap profiles and tree budgets from docs/game/04-tiers-and-promotion.md §7', () => {
     expect(capProfile(2).stamina).toBe(1300)
     expect(capProfile(3).power).toBe(1350)
     expect([1, 2, 3, 4].map(capBudget)).toEqual([6000, 6250, 6500, 6750])

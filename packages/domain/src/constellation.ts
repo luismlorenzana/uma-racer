@@ -1,4 +1,5 @@
-// Per-scenario trees: caps, budgets, node values and the drawn silhouettes (docs/design/constellations.md). The rework's
+// Per-scenario trees: caps, budgets, node values and the drawn silhouettes (docs/game/04-tiers-and-promotion.md §7,
+// docs/game/05-training-hub.md §4). The rework's
 // re-authored trees (`training/trees`) and rivals build on these.
 
 import { SHAPE_ART, cellKey, parseShapeArt, type ShapeCell } from './constellation-shapes'
@@ -51,7 +52,7 @@ export interface ShapeDef {
  */
 export const DRAWN_TIPS = 6
 
-/** Slot counts and silhouettes per scenario (docs/design/scenarios.md#constellation-shapes). */
+/** Slot counts and silhouettes per scenario; the re-authored trees keep the silhouettes (docs/game/05-training-hub.md §4). */
 export const CONSTELLATION_SHAPES: readonly ShapeDef[] = [
   { shape: 'single-trunk', cardNodes: 18 },
   { shape: 'three-branch', cardNodes: 20 },

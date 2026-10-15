@@ -1,4 +1,4 @@
-// Album preferences on this device (docs/design/collection.md "Shared browsing chrome", D112, D176; T138): the query,
+// Album preferences on this device (docs/design/ux.md "Shared browsing chrome", D112, D176; T138): the query,
 // saved views and the seen set behind NEW, in `uma-racer:g2:album:<album>`, bounded as today's `game/album/prefs.ts`
 // (20 views, 40-character names, 4,000 seen ids). Device conveniences only, never synced (rearchitecture/01 §4.2): today's
 // live in today's Dexie, which the generation-2 wipe removes. A stored row is untrusted: anything unknown falls back.

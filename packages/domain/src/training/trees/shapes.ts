@@ -1,5 +1,5 @@
 // The re-authored silhouettes (docs/game/05-training-hub.md §4): every scenario keeps its motif
-// (docs/design/scenarios.md#constellation-shapes) at its rework size, 12, 16, 20, 24 or 28 card nodes, with exactly that
+// (docs/game/05-training-hub.md §4) at its rework size, 12, 16, 20, 24 or 28 card nodes, with exactly that
 // many drawn (D235's six pruned tips are gone).
 //
 // Today's notation (constellation-shapes.ts): `R` is the root and `o` a card node, on even columns and lines; `-` and
