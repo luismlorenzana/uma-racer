@@ -2,9 +2,9 @@
 // what it proves), at `/dev/seeds/dev/check-in` in dev builds only, on T137's seeds: the size chips for a grade-1 gather,
 // craft, cook and session from the seed's clock (`?at=09:00` marks "Fits 13:00", `?at=23:00` "Overnight"), every queue
 // with its finish times and warnings, every stopped queue's card, and the ways into the summary. Synthetic seeds only.
-import { clockTime, nextCheckIn, queueStopped } from '@racer/domain/rework/check-in'
-import { farmItemSeconds } from '@racer/domain/rework/farm'
-import { sessionSeconds } from '@racer/domain/rework/training'
+import { clockTime, nextCheckIn, queueStopped } from '@racer/domain/check-in'
+import { farmItemSeconds } from '@racer/domain/farm'
+import { sessionSeconds } from '@racer/domain/training'
 import { useState } from 'react'
 import { Link } from 'react-router'
 import { useGame, useHub } from '../app/game'

@@ -3,7 +3,7 @@
 // family tabs, one row per stocked grade with its price, Warehouse count and the planner's badge, a quantity sheet of
 // 1–99, and the next grade's lock. The purse bar is T141's view (09 §3.5). Buy is off with "Need 120 more" when short and asks once at 1,000 or more. Deep
 // links: `?row=speed-tickets`, `?family=:id&grade=:g`.
-import { FAMILIES, FAMILY_IDS, SPEED_TICKET_ID, type FamilyId } from '@racer/domain/rework/items'
+import { FAMILIES, FAMILY_IDS, SPEED_TICKET_ID, type FamilyId } from '@racer/domain/items'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { BottomSheet } from '../../ui/BottomSheet'

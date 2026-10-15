@@ -4,8 +4,8 @@
 // same transaction. The run page then plays the committed row (`?result=`), so quitting can't change the prize or the
 // purse and a reopen lands on the same race. A refused or failed commit starts nothing (02 §9).
 import type { Strategy } from '@racer/domain'
-import type { OperationEnv } from '@racer/domain/rework/check-in'
-import type { WorkState } from '@racer/domain/rework/work'
+import type { OperationEnv } from '@racer/domain/check-in'
+import type { WorkState } from '@racer/domain/work'
 import type { LoadedContent } from '../../content/runtime'
 import type { G2Applied, G2Game } from '../../app/game'
 import { deviceRows, raceFlair } from './flair'

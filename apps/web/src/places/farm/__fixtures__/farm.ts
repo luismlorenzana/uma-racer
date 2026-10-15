@@ -1,10 +1,10 @@
 // Synthetic Farm accounts for T140's tests, built with the rework's own operations on `rework/sim`'s invented content
 // (T137's `fresh` seed, a new account at day 0, 08:00 UTC), never from the private packs. Imported by tests only.
-import { OPERATIONS, runOnce, type OperationEnv, type OperationInput, type OperationName, type OperationReceipt } from '@racer/domain/rework/check-in'
-import { farmExpAtLevel, QUARTERS_PER_EXP } from '@racer/domain/rework/farm'
-import { simUmaId } from '@racer/domain/rework/sim'
-import { isRefusal } from '@racer/domain/rework/tiers'
-import type { WorkState } from '@racer/domain/rework/work'
+import { OPERATIONS, runOnce, type OperationEnv, type OperationInput, type OperationName, type OperationReceipt } from '@racer/domain/check-in'
+import { farmExpAtLevel, QUARTERS_PER_EXP } from '@racer/domain/farm'
+import { simUmaId } from '@racer/domain/sim'
+import { isRefusal } from '@racer/domain/tiers'
+import type { WorkState } from '@racer/domain/work'
 import { SEED_ENV, SEEDS, type G2Seed } from '../../../dev/seed'
 
 /** The env with `dev-grant` allowed, as a dev build's is (M034). */

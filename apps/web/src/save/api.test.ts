@@ -1,6 +1,6 @@
 // The save's fetch (T136; T135's routes as built, rework/13 §6): the stamp on every call, the token, T134's parsers on
 // every answer, and each failure as one of seven kinds. After a 426 it asks nothing more.
-import { STAMP } from '@racer/domain/save-g2'
+import { STAMP } from '@racer/domain/save'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createSaveApi, failureOf, SaveApiError, setSaveTokenProvider, type SaveFailure } from './api'
 

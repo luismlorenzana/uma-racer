@@ -2,9 +2,9 @@
 // The check-in's dev proof (T142) at `/dev/check-in` in dev builds: the size chips from the seed's clock, marked
 // "Fits 13:00" at 09:00 and "Overnight" at 23:00 and preselected with nothing confirmed; each queue's finish times as
 // `projectWork` projects them, with the warning before a short entry would start; and every stopped queue's card.
-import { clockTime } from '@racer/domain/rework/check-in'
-import { endsAt } from '@racer/domain/rework/work'
-import { projectWork } from '@racer/domain/rework/planner'
+import { clockTime } from '@racer/domain/check-in'
+import { endsAt } from '@racer/domain/work'
+import { projectWork } from '@racer/domain/planner'
 import { cleanup, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { G2Game } from '../app/game'

@@ -2,9 +2,9 @@
 // the running entry, then each queued request in order with its projected end ("then Carrot ×6 → 08:20") and
 // `queueWarnings`' mark where the stock won't cover it ("Short 2 Honey."). Each can move earlier or be removed (`queue`
 // with `move` or `remove`). A queue that already stopped is the check-in's (T142).
-import { SESSION_KIND, type WorkRequest } from '@racer/domain/rework/work'
+import { SESSION_KIND, type WorkRequest } from '@racer/domain/work'
 import { ArrowUpIcon, CloseIcon, WarningIcon } from '../icons'
-import { clockTime } from '@racer/domain/rework/check-in'
+import { clockTime } from '@racer/domain/check-in'
 import { queueChips } from './model'
 import { TapNoteLine } from './TapNote'
 import { useTap, useWordsContext } from './useTap'

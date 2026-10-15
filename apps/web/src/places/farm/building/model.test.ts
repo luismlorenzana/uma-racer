@@ -3,8 +3,8 @@
 // Hub counts it, the targets' lines in 02 §6's words with the gate and the Exchange link only when stocked, a line's
 // sheet filled in, and a site's stock by open grade. Every template passes 02 §9's banned words.
 import { hubView } from '@racer/domain/hub'
-import { CHECK_IN_WORDS, hasBannedWord } from '@racer/domain/rework/check-in'
-import { FARM_BUILDING_IDS } from '@racer/domain/rework/farm'
+import { CHECK_IN_WORDS, hasBannedWord } from '@racer/domain/check-in'
+import { FARM_BUILDING_IDS } from '@racer/domain/farm'
 import { describe, expect, it } from 'vitest'
 import { seed } from '../../../__fixtures__/testing'
 import { workView } from '../../../ui/work/view'

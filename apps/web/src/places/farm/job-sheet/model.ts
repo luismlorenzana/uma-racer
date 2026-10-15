@@ -8,22 +8,22 @@
 //    against free stock.
 // 4. **Start**, **Add to queue** or **Recall and start here**: each run on the current state first, so a disabled
 //    button says why in the rule's own words, and a shortfall links to the building that makes it.
-import { buyFor, say, type OperationEnv, type Words } from '@racer/domain/rework/check-in'
+import { buyFor, say, type OperationEnv, type Words } from '@racer/domain/check-in'
 import {
   bestExpTenths, BUILDINGS, expFamilies, FAMILY_APTITUDE, familyAptitude, FARM_BUILDING_IDS, farmExpMultiplier, farmItemSeconds, makesHere,
   QUARTERS_PER_EXP, TENTHS, type FarmAptitude, type FarmBuildingId,
-} from '@racer/domain/rework/farm'
+} from '@racer/domain/farm'
 import {
   craftedItem, DUOS, FAMILIES, FAMILY_RING, familyFor, FEASTS, gradeOpensAtFarmLevel, highestOpenGrade, ITEM_GRADE_LIST, itemById, planetDish,
   rawItem, recipeOf, type Destination, type DishDef, type FamilyId, type ItemDef, type ItemId,
-} from '@racer/domain/rework/items'
-import { planFrom, remainingFor, targetsOf, type Plan } from '@racer/domain/rework/planner'
-import { isRefusal } from '@racer/domain/rework/tiers'
+} from '@racer/domain/items'
+import { planFrom, remainingFor, targetsOf, type Plan } from '@racer/domain/planner'
+import { isRefusal } from '@racer/domain/tiers'
 import {
   freeAt, holdsSlot, kindRules, largestCoverable, MAX_ITEMS_PER_ENTRY, MAX_QUEUE, queue, recall, shortfall, slotHolder, slotsOf, speedAt,
   start, statusOf, stockOf, sumInputs, SESSION_KIND, WORK_REFUSALS, type FarmKind, type FarmRequest, type PlannedItem, type QueueInput,
   type SlotRef, type StartInput, type WorkState,
-} from '@racer/domain/rework/work'
+} from '@racer/domain/work'
 import type { WorkView } from '../../../ui/work/view'
 import { placeName } from '../../../ui/work/words'
 import { exchangeRow, farmKindOf, sheetQuery } from '../building/model'

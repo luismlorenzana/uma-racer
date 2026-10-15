@@ -2,15 +2,15 @@
 // dish in words, where an unlock stands for her now (open, in her work, available with its stock, waiting on what it
 // names, or in a later layer), the line a locked item shows with what it needs, and the session sheet's link. Pure:
 // the states are the domain's `unlockStatus`, `dependenciesOf` and the work timeline, read, never restated.
-import { clockTime, type OperationEnv, type Words } from '@racer/domain/rework/check-in'
-import { BUILDINGS, type FacilityId, type RoomId } from '@racer/domain/rework/farm'
-import { itemById, type ItemId } from '@racer/domain/rework/items'
-import { workAhead } from '@racer/domain/rework/planner'
-import { isRefusal, scenarioRow, type UmaState } from '@racer/domain/rework/tiers'
+import { clockTime, type OperationEnv, type Words } from '@racer/domain/check-in'
+import { BUILDINGS, type FacilityId, type RoomId } from '@racer/domain/farm'
+import { itemById, type ItemId } from '@racer/domain/items'
+import { workAhead } from '@racer/domain/planner'
+import { isRefusal, scenarioRow, type UmaState } from '@racer/domain/tiers'
 import {
   dependenciesOf, facilityOf, isOpen, isRoomOf, roomsFor, unlockKey, unlockLabel, unlockStatus, type Unlock, type UnlockRef,
-} from '@racer/domain/rework/training'
-import { itemEnds, SESSION_KIND, stockOf, type ItemStock, type WorkRow } from '@racer/domain/rework/work'
+} from '@racer/domain/training'
+import { itemEnds, SESSION_KIND, stockOf, type ItemStock, type WorkRow } from '@racer/domain/work'
 import { showWords, type WordsContext } from '../../ui/work/words'
 import { cardName } from '../../ui/words'
 import { trainingWords } from './words'

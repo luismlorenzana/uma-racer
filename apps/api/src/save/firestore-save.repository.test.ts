@@ -2,8 +2,8 @@
 // first write, the read set, atomicity, the pull's queries and the purge.
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { createTrainerBadgeState } from '@racer/domain'
-import { rawItem } from '@racer/domain/rework/items'
-import { parseSyncRequestV2, type SyncRequestV2 } from '@racer/domain/save-g2'
+import { rawItem } from '@racer/domain/items'
+import { parseSyncRequestV2, type SyncRequestV2 } from '@racer/domain/save'
 import { FirestoreSaveRepository } from './firestore-save.repository'
 import { NO_SAVE } from './resolve'
 import { FakeFirestore, saveG2Fixtures, type SaveG2Fixtures } from './save.test-support'

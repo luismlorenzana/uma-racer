@@ -5,15 +5,15 @@
 // shows; the roster line; and what an Uma is doing. Pure: the screens draw what this returns. The Uma picker (D181) and
 // the profile's previous and next order read the same album.
 import { placeById, type PlaceId } from '@racer/domain/hub'
-import { clockTime, type OperationEnv } from '@racer/domain/rework/check-in'
-import { farmExpAtLevel, farmExpToNext, FARM_LEVEL_CAP, QUARTERS_PER_EXP } from '@racer/domain/rework/farm'
+import { clockTime, type OperationEnv } from '@racer/domain/check-in'
+import { farmExpAtLevel, farmExpToNext, FARM_LEVEL_CAP, QUARTERS_PER_EXP } from '@racer/domain/farm'
 import {
   advanceReadiness, isRefusal, lifetimeLevel, promotionReadiness, racingExpToNext, scenarioNumber, scenarioRow, TIER_REFUSALS,
   UMA_SHARDS_PER_TICKET, type Tier, type UmaState,
-} from '@racer/domain/rework/tiers'
-import { deriveUmaPreset, loadoutSummary } from '@racer/domain/rework/training'
-import { endsAt, finishedCount, settle, statusOf, type WorkState } from '@racer/domain/rework/work'
-import type { RaceResultRow } from '@racer/domain/save-g2'
+} from '@racer/domain/tiers'
+import { deriveUmaPreset, loadoutSummary } from '@racer/domain/training'
+import { endsAt, finishedCount, settle, statusOf, type WorkState } from '@racer/domain/work'
+import type { RaceResultRow } from '@racer/domain/save'
 import type { DistanceCategory, UmaTemplate } from '@racer/domain'
 import {
   emptyStateHint, runAlbumQuery, type AlbumQuery, type AlbumResult, type AlbumRow, type FacetDef, type SortDef, type SortDirection,

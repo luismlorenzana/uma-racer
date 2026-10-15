@@ -4,15 +4,15 @@
 // a bond mark, the grade she needs (`bondGrade`) or a lock. The card page's pay (`cardPay`), skills by node, bond cost
 // per tier (`bondDishId`, `sessionSeconds`), who is bonded and where, and who could bond it now; the Bond picker's rows
 // and reasons. Pure.
-import { clockTime, fill, type OperationEnv } from '@racer/domain/rework/check-in'
-import { itemById } from '@racer/domain/rework/items'
-import { workAhead } from '@racer/domain/rework/planner'
-import { isRefusal, scenarioNumber, scenarioPlayable, scenarioRow, type Tier, type UmaState } from '@racer/domain/rework/tiers'
+import { clockTime, fill, type OperationEnv } from '@racer/domain/check-in'
+import { itemById } from '@racer/domain/items'
+import { workAhead } from '@racer/domain/planner'
+import { isRefusal, scenarioNumber, scenarioPlayable, scenarioRow, type Tier, type UmaState } from '@racer/domain/tiers'
 import {
   bondDishId, bondGrade, bondStatus, cardFocus, cardNodeSkills, cardPay, dojoRoomOf, sessionSeconds, type BondStatus, type CardFocus,
   type CardPay,
-} from '@racer/domain/rework/training'
-import { endsAt, freeAt, itemEnds, speedAt, statusOf, type WorkRow, type WorkState } from '@racer/domain/rework/work'
+} from '@racer/domain/training'
+import { endsAt, freeAt, itemEnds, speedAt, statusOf, type WorkRow, type WorkState } from '@racer/domain/work'
 import type { DistanceCategory, SupportCardTemplate } from '@racer/domain'
 import type { AlbumQuery, AlbumRow, FacetDef, SortDef, SortDirection } from '../../ui/album/query'
 import { DISTANCE_LABEL, duration, STAT_LABEL, STYLE_LABEL } from '../../ui/labels'

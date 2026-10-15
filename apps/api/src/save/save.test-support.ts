@@ -3,11 +3,11 @@
 import { createHash } from 'node:crypto'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
-import type { OperationEnv, OperationPacks } from '@racer/domain/save-g2'
+import type { OperationEnv, OperationPacks } from '@racer/domain/save'
 
 // --- Synthetic fixtures ---------------------------------------------------------------------------------------------
 
-/** `packages/domain/src/__fixtures__/save-g2.ts`: invented Umas, cards, skills and races, and their envs. */
+/** `packages/domain/src/__fixtures__/save.ts`: invented Umas, cards, skills and races, and their envs. */
 export interface SaveG2Fixtures {
   readonly PACKS: OperationPacks
   readonly ENV: OperationEnv
@@ -20,7 +20,7 @@ export interface SaveG2Fixtures {
 
 /** The domain's synthetic save fixtures, read from source as today's API tests read theirs. */
 export async function saveG2Fixtures(): Promise<SaveG2Fixtures> {
-  return (await import(resolve(process.cwd(), '../../packages/domain/src/__fixtures__/save-g2.ts'))) as SaveG2Fixtures
+  return (await import(resolve(process.cwd(), '../../packages/domain/src/__fixtures__/save.ts'))) as SaveG2Fixtures
 }
 
 /** A content folder as the importer writes it: the four packs, content-addressed, and a manifest at `version`. */

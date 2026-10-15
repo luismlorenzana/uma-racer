@@ -1,7 +1,7 @@
 // The planner's views' own sentences (docs/rework/02-check-ins-and-notifications.md §6; T142): her Needs tab, the
 // roster view and the target toggle. The plan's lines speak 02 §6's words (`lineWords`, T140's) and the rules' templates
 // (`CHECK_IN_WORDS`, `CHECK_IN_REFUSALS`). 02 §9's banned words never appear here (`needs.test.tsx` holds them).
-import { fill } from '@racer/domain/rework/check-in'
+import { fill } from '@racer/domain/check-in'
 
 export const NEEDS_WORDS = Object.freeze({
   title: '{uma} · Needs',

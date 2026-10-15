@@ -3,8 +3,8 @@
 // in T138's profile shows `needsFor`'s lines, its estimate and its startable lines; the target toggle in her header
 // marks and removes, refusing past five; the roster view orders, moves and removes targets, or reads automatic, and
 // shows `rosterTotals`; a gated line names its gate and the Exchange's row when `buyFor` sells it.
-import { CHECK_IN_REFUSALS, hasBannedWord } from '@racer/domain/rework/check-in'
-import { automaticTargets, layerProgress, needsFor, rosterTotals, type PlanLine } from '@racer/domain/rework/planner'
+import { CHECK_IN_REFUSALS, hasBannedWord } from '@racer/domain/check-in'
+import { automaticTargets, layerProgress, needsFor, rosterTotals, type PlanLine } from '@racer/domain/planner'
 import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { G2Game } from '../../app/game'

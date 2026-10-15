@@ -7,12 +7,12 @@ import {
   checkInSummary, CHECK_IN_WORDS, clockTime, fill, makeThem, nextCheckIn, say, speedUpAll, speedUpAllPlan, SPEED_UP_SPANS,
   type BuyLine, type CheckInSummary, type CollectAllReceipt, type OperationEnv, type RepeatReceipt, type SpeedUpSpan,
   type SummarySection, type Words,
-} from '@racer/domain/rework/check-in'
+} from '@racer/domain/check-in'
 import { placeById } from '@racer/domain/hub'
-import { bestUse, planFrom, targetsOf, type Suggestion } from '@racer/domain/rework/planner'
-import { isRefusal } from '@racer/domain/rework/tiers'
-import { facilityOf, UNLOCK_KINDS, unlockKey, unlockLabel, type UnlockKind, type UnlockRef } from '@racer/domain/rework/training'
-import { SESSION_KIND, type FarmRequest, type SlotRef, type UnlockRef as WorkUnlockRef, type WorkRequest, type WorkState } from '@racer/domain/rework/work'
+import { bestUse, planFrom, targetsOf, type Suggestion } from '@racer/domain/planner'
+import { isRefusal } from '@racer/domain/tiers'
+import { facilityOf, UNLOCK_KINDS, unlockKey, unlockLabel, type UnlockKind, type UnlockRef } from '@racer/domain/training'
+import { SESSION_KIND, type FarmRequest, type SlotRef, type UnlockRef as WorkUnlockRef, type WorkRequest, type WorkState } from '@racer/domain/work'
 import { lineLabel, sheetQuery } from '../farm/building/model'
 import { requestWords } from '../../ui/work/QueueChips'
 import type { WorkView } from '../../ui/work/view'

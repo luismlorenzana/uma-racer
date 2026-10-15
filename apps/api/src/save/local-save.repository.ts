@@ -4,7 +4,7 @@
 // Firestore. Its purge clears the uid's entry from the old dev file, at a fixed path and never an env var.
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
-import { rowKey, SAVE_GENERATION, type PurgeResponse, type SaveSnapshotV2, type SyncRequestV2, type SyncResponseV2 } from '@racer/domain/save-g2'
+import { rowKey, SAVE_GENERATION, type PurgeResponse, type SaveSnapshotV2, type SyncRequestV2, type SyncResponseV2 } from '@racer/domain/save'
 import { needsOperationEnv, NO_SAVE, resolveSync, selectReadSet, snapshotPage, syncReadSet, type NoSave, type SaveRow } from './resolve'
 import { parsePurgeMarker, purgeResponse, type OperationEnvLoader, type PurgeMarker, type SaveRepository } from './save.repository'
 

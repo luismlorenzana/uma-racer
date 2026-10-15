@@ -6,11 +6,11 @@ import {
   encodeCursor, NO_SAVE, resolveSync, selectReadSet, snapshotPage, syncReadSet, type SaveRow,
 } from '../../../../api/src/save/resolve'
 import type { BadgeStateV1, FlairEventV1 } from '@racer/domain'
-import { SIM_CONTENT, SIM_UMAS } from '@racer/domain/rework/sim'
+import { SIM_CONTENT, SIM_UMAS } from '@racer/domain/sim'
 import {
   flairEventId, isCurrentStamp, parsePurgeRequest, parseSnapshotQuery, parseSyncRequestV2, rowKey, STAMP, type OperationEnv, type SyncChange,
   type SyncRequestV2,
-} from '@racer/domain/save-g2'
+} from '@racer/domain/save'
 import { vi } from 'vitest'
 import { createSaveApi } from '../api'
 import { bootSave, type SaveBootOptions, type SaveSession } from '../boot'

@@ -3,12 +3,12 @@
 // from `slotsOf` and `slotHolder`, speed, the next upgrade with what it adds); one card per slot, by room at the Gym and
 // Dojo, a busy one naming her current unlock and its dish; **Needs here**, the planner's `facilityLines` in 02 §6's
 // words with Start when she can and the Kitchen for a short dish; Collect here's slots; and the Peek's lines. Pure.
-import { hasReady } from '@racer/domain/rework/check-in'
-import { BUILDINGS, buildingSpeed, type BuildingLevel, type FacilityId, type RoomId } from '@racer/domain/rework/farm'
-import { FAMILIES, itemById, ITEM_GRADE_LIST, planetDish, DUOS, FEASTS, type ItemId } from '@racer/domain/rework/items'
-import { facilityLines, layerProgress, planFrom, targetsOf, type PlannedUnlock } from '@racer/domain/rework/planner'
-import { FACILITY_DISH_FAMILY, ROOM_NAMES, type UnlockRef } from '@racer/domain/rework/training'
-import { buildingLevel, holdsSlot, SESSION_KIND, stockOf, type SlotRef, type WorkRequest, type WorkRow } from '@racer/domain/rework/work'
+import { hasReady } from '@racer/domain/check-in'
+import { BUILDINGS, buildingSpeed, type BuildingLevel, type FacilityId, type RoomId } from '@racer/domain/farm'
+import { FAMILIES, itemById, ITEM_GRADE_LIST, planetDish, DUOS, FEASTS, type ItemId } from '@racer/domain/items'
+import { facilityLines, layerProgress, planFrom, targetsOf, type PlannedUnlock } from '@racer/domain/planner'
+import { FACILITY_DISH_FAMILY, ROOM_NAMES, type UnlockRef } from '@racer/domain/training'
+import { buildingLevel, holdsSlot, SESSION_KIND, stockOf, type SlotRef, type WorkRequest, type WorkRow } from '@racer/domain/work'
 import { slotCards, upgradeView, type HeldSlotCard, type SlotCardModel, type UpgradeView } from '../../../ui/work/model'
 import type { WorkView } from '../../../ui/work/view'
 import type { WordsContext } from '../../../ui/work/words'

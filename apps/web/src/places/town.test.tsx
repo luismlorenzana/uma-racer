@@ -6,7 +6,7 @@
 // Dojo session; Feature another Uma changes the plaza; Account's dev section runs `dev-grant`; and an offline phone and
 // a reload keep every change.
 import 'fake-indexeddb/auto'
-import { SPEED_TICKET_PRICE } from '@racer/domain/rework/exchange'
+import { SPEED_TICKET_PRICE } from '@racer/domain/economy'
 import { act, cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { G2Game } from '../app/game'

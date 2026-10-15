@@ -4,11 +4,11 @@
 // under the per-card cap, each run through `set-assignments` on the current state so a refused one says why. The List
 // carries the same nodes and the next layer's, which the tree can't draw (its size is her scenario's). Pure.
 import type { DistanceCategory, SupportCardType } from '@racer/domain'
-import { say } from '@racer/domain/rework/check-in'
-import { cardNodeId, nodeOrder, perCardCap, treeCardNodesAt, treeEdges, treeFor, type Tree, type TreeEdge } from '@racer/domain/rework/constellation'
-import { isRefusal, scenarioNumber, type UmaState } from '@racer/domain/rework/tiers'
-import { fixedUnlock, layerUnlocks, setAssignments, type DerivedBuild, type Unlock } from '@racer/domain/rework/training'
-import type { WorkState } from '@racer/domain/rework/work'
+import { say } from '@racer/domain/check-in'
+import { cardNodeId, nodeOrder, perCardCap, treeCardNodesAt, treeEdges, treeFor, type Tree, type TreeEdge } from '@racer/domain/training'
+import { isRefusal, scenarioNumber, type UmaState } from '@racer/domain/tiers'
+import { fixedUnlock, layerUnlocks, setAssignments, type DerivedBuild, type Unlock } from '@racer/domain/training'
+import type { WorkState } from '@racer/domain/work'
 import type { WordsContext } from '../../../ui/work/words'
 import { itemState, itemWords, ruleWords, type Content, type ItemState } from '../common'
 import { trainingWords } from '../words'

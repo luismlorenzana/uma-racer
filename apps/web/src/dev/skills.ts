@@ -4,7 +4,7 @@
 // each card two white hints and one gold, all with invented names and the race engine's plain Speed boost, so
 // `set-loadout` prices and accepts them. Skills change no stat, so the seeds' rules read exactly as the sim's.
 import type { SkillKind, SkillTemplate, SupportCardTemplate, UmaTemplate } from '@racer/domain'
-import type { OperationEnv } from '@racer/domain/rework/check-in'
+import type { OperationEnv } from '@racer/domain/check-in'
 
 /** Today's white and gold prices, near enough for a dev account (D188's shapes; the numbers are invented). */
 const COST: Readonly<Record<SkillKind, number | null>> = { white: 160, gold: 360, unique: null, 'unique-upgraded': null, 'inherited-unique': 180 }

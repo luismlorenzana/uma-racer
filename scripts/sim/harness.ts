@@ -21,10 +21,10 @@ import {
   type SupportCardTemplate,
   type UmaTemplate,
 } from '../../packages/domain/src/index'
-import { cardNodeId, fairShare as treeFairShare, perCardCap, treeCardNodesAt } from '../../packages/domain/src/rework/constellation/index'
-import type { TypicalRow } from '../../packages/domain/src/rework/builds/types'
-import { EXTRA_NODE_VALUES_TIER_1, REWORK_BUFF_TYPICAL, rollRivalFieldAt, tierAndScenario, type Preset, type ScenarioOfTier, type UmaBuild } from '../../packages/domain/src/rework/tiers/index'
-import { EXTRA_NODES, LAYERS, deriveBuild, extraCapacity, layerUnlocks, reworkBuff, type DerivedBuild, type TrainingContent } from '../../packages/domain/src/rework/training/index'
+import { cardNodeId, fairShare as treeFairShare, perCardCap, treeCardNodesAt } from '../../packages/domain/src/training/trees/index'
+import type { TypicalRow } from '../../packages/domain/src/builds/types'
+import { EXTRA_NODE_VALUES_TIER_1, REWORK_BUFF_TYPICAL, rollRivalFieldAt, tierAndScenario, type Preset, type ScenarioOfTier, type UmaBuild } from '../../packages/domain/src/tiers/index'
+import { EXTRA_NODES, LAYERS, deriveBuild, extraCapacity, layerUnlocks, reworkBuff, type DerivedBuild, type TrainingContent } from '../../packages/domain/src/training/index'
 import { V8_TUNING, createRng } from '../../packages/race/src/index'
 
 // Every sim can try an engine v8 tuning change without editing the engine: V8='{"railDrift":0.5}' pnpm sim:…

@@ -7,7 +7,7 @@
 //   pnpm sim:rework-careers -- 60                races per win-rate cell (default 20)
 //   pnpm sim:rework-careers -- --tiers=1,5,9     the game's scenarios T to race (default 1–14)
 //   pnpm sim:rework-careers -- --coverage-only   skip the win rates
-//   pnpm sim:rework-careers -- --write-report    also rewrite packages/domain/src/rework/builds/careers-report.ts, which
+//   pnpm sim:rework-careers -- --write-report    also rewrite packages/domain/src/builds/careers-report.ts, which
 //                                                the rework pages' live blocks render (every T; rates only)
 //
 // Coverage freezes every Uma's career at every T with the rework's `freezeCareer` (today's planner), reading the local,
@@ -30,9 +30,9 @@ import {
   type Stats,
   type UmaTemplate,
 } from '../../packages/domain/src/index'
-import { CAREER_TARGETS, meetsCareerTarget } from '../../packages/domain/src/rework/builds/targets'
-import type { CareerRow, RateCell } from '../../packages/domain/src/rework/builds/types'
-import { emptyBuild, freezeCareer, type CareerSubject, type TierContent } from '../../packages/domain/src/rework/tiers/index'
+import { CAREER_TARGETS, meetsCareerTarget } from '../../packages/domain/src/builds/targets'
+import type { CareerRow, RateCell } from '../../packages/domain/src/builds/types'
+import { emptyBuild, freezeCareer, type CareerSubject, type TierContent } from '../../packages/domain/src/tiers/index'
 import { simulateRace } from '../../packages/race/src/index'
 import {
   FIELD_STRATEGIES, LONG, PLAYER_KIT, STAYER, STAYER_POWER, goldRecovery, reworkFairShare, reworkStats, reworkTypicalRows, rivalRunnersAt,
@@ -48,7 +48,7 @@ const tiersArg = args.find((value) => value.startsWith('--tiers='))?.split('=')[
 const SCENARIOS = Array.from({ length: 14 }, (_, index) => index + 1)
 const SAMPLED = tiersArg ? tiersArg.split(',').map(Number) : SCENARIOS
 /** Run from the repo root, as `pnpm sim:…` does. */
-const REPORT = 'packages/domain/src/rework/builds/careers-report.ts'
+const REPORT = 'packages/domain/src/builds/careers-report.ts'
 if (WRITE_REPORT && (tiersArg || COVERAGE_ONLY || process.env.V8 || process.env.BASE_STAMINA || process.env.BASE_GUTS)) {
   console.error('--write-report races every T on the default engine and base stats')
   process.exit(2)

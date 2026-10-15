@@ -3,8 +3,8 @@
 // outbox row, a flush's answer and a pull's page are written first, and the store refolds or takes the tap's result
 // after. Every change to it runs through the session's one `serial` queue, so a tap and a reconcile never interleave.
 import type { BadgeStateV1 } from '@racer/domain'
-import type { Words } from '@racer/domain/rework/check-in'
-import type { EntityRow, LogDraft, OperationEnv, SaveState } from '@racer/domain/save-g2'
+import type { Words } from '@racer/domain/check-in'
+import type { EntityRow, LogDraft, OperationEnv, SaveState } from '@racer/domain/save'
 import { create } from 'zustand'
 import { readConfirmed, readOutbox, type OutboxRow, type SaveDb } from './db'
 import { fold } from './fold'

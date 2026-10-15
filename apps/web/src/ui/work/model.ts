@@ -2,18 +2,18 @@
 // docs/rework/09-racing-rewards-and-exchange.md §5.1; docs/rework/02-check-ins-and-notifications.md §3; T140). Pure
 // readings of the domain's state and rules for one slot's card, its Speed Ticket controls, a Recall's preview, a queue's
 // chips, the size chips and a building's upgrade. Every number comes from a domain function; nothing here restates a rule.
-import { chipWords, clockTime, fill, fitWords, say, sizeChips, type OperationEnv, type Words } from '@racer/domain/rework/check-in'
-import { buy as buyOperation, buyPrice } from '@racer/domain/rework/exchange'
-import { isRefusal } from '@racer/domain/rework/tiers'
-import { buildingSpeed, MAX_BUILDING_LEVEL, totalSlots, upgradeCost, type BuildingId } from '@racer/domain/rework/farm'
-import { SPEED_TICKET_ID, type ItemId, type RecipeInput } from '@racer/domain/rework/items'
-import type { Projection, QueueWarning } from '@racer/domain/rework/planner'
+import { chipWords, clockTime, fill, fitWords, say, sizeChips, type OperationEnv, type Words } from '@racer/domain/check-in'
+import { buy as buyOperation, buyPrice } from '@racer/domain/economy'
+import { isRefusal } from '@racer/domain/tiers'
+import { buildingSpeed, MAX_BUILDING_LEVEL, totalSlots, upgradeCost, type BuildingId } from '@racer/domain/farm'
+import { SPEED_TICKET_ID, type ItemId, type RecipeInput } from '@racer/domain/items'
+import type { Projection, QueueWarning } from '@racer/domain/planner'
 import type { WorkView } from './view'
 import { workWords } from './words'
 import {
   applyTickets, buildingLevel, endsAt, finishedCount, holdsSlot, itemEnds, itemProgress, recall, remainingMs, sameSlot, slotsOf, stockOf,
   sumInputs, ticketsToFinish, upgrade, SESSION_KIND, SPEED_TICKET_MS, type Entry, type SlotRef, type WorkRequest, type WorkRow, type WorkState,
-} from '@racer/domain/rework/work'
+} from '@racer/domain/work'
 
 const MS_PER_MINUTE = 60_000
 

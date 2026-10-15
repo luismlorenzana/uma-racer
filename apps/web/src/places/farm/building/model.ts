@@ -3,19 +3,19 @@
 // use, speed and the next upgrade against stock; "For your targets", the planner's lines here in 02 §6's words, each
 // opening the job sheet filled in; one card per slot; the Umas with finished outputs here (the Counter), and who Repeat
 // here would take. Pure: every number is the domain's.
-import { CHECK_IN_WORDS, buyFor, clockTime, fill, fitSize, hasReady, repeatable, say } from '@racer/domain/rework/check-in'
+import { CHECK_IN_WORDS, buyFor, clockTime, fill, fitSize, hasReady, repeatable, say } from '@racer/domain/check-in'
 import {
   BUILDINGS, buildingSpeed, farmItemSeconds, type BuildingLevel, type FarmBuildingId,
-} from '@racer/domain/rework/farm'
+} from '@racer/domain/farm'
 import {
   canWorkGrade, FAMILIES, highestOpenGrade, itemById, rawItem, type FamilyId, type ItemGrade, type ItemId,
-} from '@racer/domain/rework/items'
+} from '@racer/domain/items'
 import {
   Bench, freeUmas, jobFor, placeLines, planFrom, suggestFrom, targetsOf, type Plan, type PlanLine, type Suggestion, type Timing,
-} from '@racer/domain/rework/planner'
+} from '@racer/domain/planner'
 import {
   buildingLevel, holdsSlot, MAX_ITEMS_PER_ENTRY, speedAt, stockOf, type FarmKind, type SlotRef, type WorkState,
-} from '@racer/domain/rework/work'
+} from '@racer/domain/work'
 import { slotCards, upgradeView, type SlotCardModel, type UpgradeView } from '../../../ui/work/model'
 import type { WorkView } from '../../../ui/work/view'
 import { grouped, type WordsContext } from '../../../ui/work/words'

@@ -4,10 +4,10 @@
 // layer already done is committed with the Training Hub's own `commitUnlocks`, as a finished session's Collect does.
 // Imported by tests only.
 import type { DistanceCategory } from '@racer/domain'
-import { simCardId } from '@racer/domain/rework/sim'
-import { bondUnlock, commitUnlocks, layerUnlocks, type Unlock } from '@racer/domain/rework/training'
-import { isRefusal } from '@racer/domain/rework/tiers'
-import type { WorkState } from '@racer/domain/rework/work'
+import { simCardId } from '@racer/domain/sim'
+import { bondUnlock, commitUnlocks, layerUnlocks, type Unlock } from '@racer/domain/training'
+import { isRefusal } from '@racer/domain/tiers'
+import type { WorkState } from '@racer/domain/work'
 import { workView, type WorkView } from '../../../ui/work/view'
 import type { WordsContext } from '../../../ui/work/words'
 import { apply, DEV_ENV, farmAccount, farmSeed, uma } from '../../farm/__fixtures__/farm'

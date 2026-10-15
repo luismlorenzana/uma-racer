@@ -2,7 +2,7 @@
 // T140): the building page, its Peek and the job sheet. Rules speak through the domain's refusal tables and templates;
 // these are labels and headings around them. 02 §9's banned words never appear here (`model.test.ts` holds every
 // template to `hasBannedWord`).
-import { fill } from '@racer/domain/rework/check-in'
+import { fill } from '@racer/domain/check-in'
 
 export const FARM_WORDS = Object.freeze({
   /** The building page's header (07 §10). */

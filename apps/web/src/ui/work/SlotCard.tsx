@@ -5,9 +5,9 @@
 // slot: **Start a job**, or a facility's **Start a session** (`startLabel`). VoiceOver reads the card as one line:
 // "Special Week. Potato, 3 of 10 made, next at 11:10".
 // The ring redraws on the shell's 30-second clock, never per frame.
-import { clockTime } from '@racer/domain/rework/check-in'
-import { itemById } from '@racer/domain/rework/items'
-import { MAX_QUEUE, SESSION_KIND, WORK_REFUSALS, type WorkRequest } from '@racer/domain/rework/work'
+import { clockTime } from '@racer/domain/check-in'
+import { itemById } from '@racer/domain/items'
+import { MAX_QUEUE, SESSION_KIND, WORK_REFUSALS, type WorkRequest } from '@racer/domain/work'
 import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
 import { useGame } from '../../app/game'

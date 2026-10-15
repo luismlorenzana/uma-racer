@@ -7,7 +7,7 @@
 // - **Make them: Vegetable Garden ×2**: the `start` of `makeThem`'s suggestion, by another Free Uma;
 // - **Dismiss**: `queue { outfitId, dismiss: true }`.
 // Each answer shows beside the buttons in plain words. A summary passes its own `tap`, so one tap is in flight at once.
-import type { StoppedQueue } from '@racer/domain/rework/check-in'
+import type { StoppedQueue } from '@racer/domain/check-in'
 import { useState } from 'react'
 import { useGame } from '../../app/game'
 import { UmaFace } from '../UmaArt'

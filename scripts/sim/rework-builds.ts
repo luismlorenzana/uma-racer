@@ -9,7 +9,7 @@
 //   pnpm sim:rework-builds -- --ladder-only
 //   pnpm sim:rework-builds -- --rates-only
 //   pnpm sim:rework-builds -- --tiers=1,5,9   the game's scenarios T to race (default 1–14)
-//   pnpm sim:rework-builds -- --write-report  also rewrite packages/domain/src/rework/builds/builds-report.ts, which the
+//   pnpm sim:rework-builds -- --write-report  also rewrite packages/domain/src/builds/builds-report.ts, which the
 //                                             rework pages' live blocks render (every T, ladder and rates)
 //
 // A build is a full layer at scenario T (T128's `deriveBuild`): every card node of the re-authored tree open, current-era
@@ -18,8 +18,8 @@
 // accepted by design (`LADDER_ACCEPTED_MISSES`, D350, reported as ACCEPTED): a regression gate.
 import { writeFileSync } from 'node:fs'
 import type { DistanceCategory, Stats, Strategy } from '../../packages/domain/src/index'
-import { LADDER_ACCEPTED_MISSES, isAcceptedLadderMiss } from '../../packages/domain/src/rework/builds/targets'
-import type { G1Row, LadderRow } from '../../packages/domain/src/rework/builds/types'
+import { LADDER_ACCEPTED_MISSES, isAcceptedLadderMiss } from '../../packages/domain/src/builds/targets'
+import type { G1Row, LadderRow } from '../../packages/domain/src/builds/types'
 import { SPURT_BUFFER_METERS, simulateRace } from '../../packages/race/src/index'
 import {
   FIELD_STRATEGIES,
@@ -46,7 +46,7 @@ const tiersArg = args.find((value) => value.startsWith('--tiers='))?.split('=')[
 const TIERS = tiersArg ? tiersArg.split(',').map(Number) : Array.from({ length: 14 }, (_, index) => index + 1)
 const LADDER_RACES = 30
 /** Run from the repo root, as `pnpm sim:…` does. */
-const REPORT = 'packages/domain/src/rework/builds/builds-report.ts'
+const REPORT = 'packages/domain/src/builds/builds-report.ts'
 if (WRITE_REPORT && (tiersArg || LADDER_ONLY || RATES_ONLY || process.env.V8 || process.env.BASE_STAMINA || process.env.BASE_GUTS)) {
   console.error('--write-report runs every T, both parts, on the default engine and base stats')
   process.exit(2)

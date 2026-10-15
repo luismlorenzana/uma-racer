@@ -2,8 +2,8 @@
 // entry that couldn't start, where and when ("Pantry ×10 at 06:00"), what came behind it, what was short in the rule's
 // words, and the fixes `queueStopped` offers at today's stock and prices: Restart, Buy and restart, Start ×N, Make them
 // and Dismiss. Every number is the domain's.
-import { clockTime, type StoppedQueue, type Words } from '@racer/domain/rework/check-in'
-import { SESSION_KIND } from '@racer/domain/rework/work'
+import { clockTime, type StoppedQueue, type Words } from '@racer/domain/check-in'
+import { SESSION_KIND } from '@racer/domain/work'
 import { requestWords } from './QueueChips'
 import { itemsList, placeName, workWords, type WordsContext } from './words'
 

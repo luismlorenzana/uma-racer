@@ -3,10 +3,10 @@
 // in-memory port on synthetic accounts, its clock held and moved by hand: gather, queue, Collect, −30m and the queued
 // start; cook, reserve and Recall with its preview; an upgrade's slots at once; a fresh account's shortfall and its
 // link; a Make more link returning to `back`; twelve hours away; a reopen; and offline taps.
-import { CHECK_IN_WORDS, clockTime, say, type OperationInput } from '@racer/domain/rework/check-in'
-import { farmItemSeconds } from '@racer/domain/rework/farm'
-import { craftedItem, FAMILY_IDS } from '@racer/domain/rework/items'
-import { endsAt, finishedCount } from '@racer/domain/rework/work'
+import { CHECK_IN_WORDS, clockTime, say, type OperationInput } from '@racer/domain/check-in'
+import { farmItemSeconds } from '@racer/domain/farm'
+import { craftedItem, FAMILY_IDS } from '@racer/domain/items'
+import { endsAt, finishedCount } from '@racer/domain/work'
 import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { G2Answer, G2Game } from '../../app/game'

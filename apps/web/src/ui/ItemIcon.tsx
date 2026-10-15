@@ -3,7 +3,7 @@
 // its pixels kept crisp, named for VoiceOver ("Carrot Salad, grade 1"). The Speed Ticket has no frame in the pinned
 // release (08 §9), so until one ships it is its name on a plain tile. Imported only by lazy chunks, so neither atlas
 // weighs on the entry.
-import { itemById, type ItemDef } from '@racer/domain/rework/items'
+import { itemById, type ItemDef } from '@racer/domain/items'
 import dishesUrl from '@luismlorenzana/uma-art/dishes/atlas.png?url'
 import dishes from '@luismlorenzana/uma-art/dishes/atlas.json'
 import itemsUrl from '@luismlorenzana/uma-art/items/atlas.png?url'

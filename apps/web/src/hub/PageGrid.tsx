@@ -5,7 +5,7 @@
 import {
   hubWords, pageRows, pillWords, PLAZA_CELL, placesOn, tileLabel, type HubPage, type HubView, type Place,
 } from '@racer/domain/hub'
-import type { BuildingId } from '@racer/domain/rework/farm'
+import type { BuildingId } from '@racer/domain/farm'
 import { m } from 'motion/react'
 import { Suspense, useCallback, useEffect, useId, useRef, useState } from 'react'
 import { Link, Navigate, useLocation, useSearchParams } from 'react-router'

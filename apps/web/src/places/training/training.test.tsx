@@ -4,9 +4,9 @@
 // accounts, its clock held and moved by hand: a three-node session from the sheet, its Collect chip and fill, Recall;
 // −30m and "Buy N and finish"; an upgrade's slot at once; the Card Library's Dojo link and Queue; the Extra Stats
 // switches over capacity; and a reopen keeping every change.
-import { clockTime } from '@racer/domain/rework/check-in'
-import { craftedItem } from '@racer/domain/rework/items'
-import { sessionSeconds } from '@racer/domain/rework/training'
+import { clockTime } from '@racer/domain/check-in'
+import { craftedItem } from '@racer/domain/items'
+import { sessionSeconds } from '@racer/domain/training'
 import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { G2Game } from '../../app/game'
@@ -14,7 +14,7 @@ import { createMemoryGame } from '../../dev/memory'
 import type { G2Seed } from '../../dev/seed'
 import { renderG2, stubStorage } from '../../__fixtures__/testing'
 import { advanced, apply, content, farmSeed, granted, MINUTE, trainingAccount, uma, withCommitted, withLayers, withSetCard } from './__fixtures__/training'
-import { layerUnlocks } from '@racer/domain/rework/training'
+import { layerUnlocks } from '@racer/domain/training'
 
 afterEach(() => {
   cleanup()

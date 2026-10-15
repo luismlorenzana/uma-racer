@@ -3,8 +3,8 @@
 // and `&slot=n` (a slot card's Start a session). `session` present opens it, empty when the sheet picks her; `back` is an
 // in-app path only. Every place reaches the sheet by this link: a slot, a locked item's Unlock, a Needs line, the
 // planner and the Card Library's Bond.
-import { BUILDINGS, type FacilityId, type RoomId } from '@racer/domain/rework/farm'
-import { FACILITY_UNLOCKS, fixedUnlock, isRoomOf, unlockKey, type UnlockKind, type UnlockRef } from '@racer/domain/rework/training'
+import { BUILDINGS, type FacilityId, type RoomId } from '@racer/domain/farm'
+import { FACILITY_UNLOCKS, fixedUnlock, isRoomOf, unlockKey, type UnlockKind, type UnlockRef } from '@racer/domain/training'
 import { inAppPath } from '../../farm/job-sheet/model'
 
 export interface SessionQuery {

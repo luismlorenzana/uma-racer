@@ -11,8 +11,8 @@
 // - `since` is this device's last showing, written when the sheet closes. Offline, the footer says so in one line; the
 //   save's refused taps show there too, until dismissed.
 import { hubWords } from '@racer/domain/hub'
-import { CHECK_IN_WORDS, type CollectAllReceipt, type RepeatReceipt, type Words } from '@racer/domain/rework/check-in'
-import { isFree, type WorkState } from '@racer/domain/rework/work'
+import { CHECK_IN_WORDS, type CollectAllReceipt, type RepeatReceipt, type Words } from '@racer/domain/check-in'
+import { isFree, type WorkState } from '@racer/domain/work'
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router'
 import { ChevronDownIcon } from '../../ui/icons'

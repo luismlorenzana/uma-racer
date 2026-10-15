@@ -22,15 +22,15 @@
 //   opens at 13:05: the three queues dropped at 12:30 and 12:48, so Queue stopped offers Buy and restart, Start ×6 and
 //   Make them, and Prize Money and Speed Tickets are on hand for Speed up.
 // `?at=HH:MM` moves any seed's clock to that time of its own day, forward or back (T142).
-import { devGrant, localMinute, nextCheckIn, OPERATIONS, repeat, type OperationEnv } from '@racer/domain/rework/check-in'
-import { buy, sell, sellPrice, SPEED_TICKET_PRICE } from '@racer/domain/rework/exchange'
-import type { BuildingId } from '@racer/domain/rework/farm'
-import { SPEED_TICKET_ID } from '@racer/domain/rework/items'
+import { devGrant, localMinute, nextCheckIn, OPERATIONS, repeat, type OperationEnv } from '@racer/domain/check-in'
+import { buy, sell, sellPrice, SPEED_TICKET_PRICE } from '@racer/domain/economy'
+import type { BuildingId } from '@racer/domain/farm'
+import { SPEED_TICKET_ID } from '@racer/domain/items'
 import {
   BASELINE, checkInsOn, createLoop, dayStart, loopRng, MS_PER_HOUR, MS_PER_MINUTE, SIM_CONTENT, SIM_UMAS, UTC_OFFSET_MIN, type LoopConfig,
-} from '@racer/domain/rework/sim'
-import { EXPEDITION_WINS, isLastScenario, isRefusal, newAccount, recordExpeditionRace, type Refusal } from '@racer/domain/rework/tiers'
-import { collect, newWorkState, queue, type WorkRequest, type WorkState } from '@racer/domain/rework/work'
+} from '@racer/domain/sim'
+import { EXPEDITION_WINS, isLastScenario, isRefusal, newAccount, recordExpeditionRace, type Refusal } from '@racer/domain/tiers'
+import { collect, newWorkState, queue, type WorkRequest, type WorkState } from '@racer/domain/work'
 import type { G2Records, G2Sync } from '../app/game'
 import { withSyntheticSkills } from './skills'
 

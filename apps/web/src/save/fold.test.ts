@@ -1,7 +1,7 @@
 // The fold (T136; docs/rework/02-check-ins-and-notifications.md §9): the confirmed rows, then each queued operation,
 // with the server's own `commitOperation`. A lost answer folds as repeated, a refused or broken tap is skipped and stays
 // queued, and the same rows and outbox always fold to the same state.
-import { isEntityKind, type EntityRow, type LogRow, type OperationEnvelope } from '@racer/domain/save-g2'
+import { isEntityKind, type EntityRow, type LogRow, type OperationEnvelope } from '@racer/domain/save'
 import { describe, expect, it } from 'vitest'
 import { CREATE_KEY, operationKey, type ConfirmedRows, type OutboxRow } from './db'
 import { fold } from './fold'

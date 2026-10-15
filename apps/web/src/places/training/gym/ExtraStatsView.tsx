@@ -16,7 +16,7 @@ import { unlockPath } from '../common'
 import type { BuildViewProps } from '../Page'
 import { trainingWords } from '../words'
 import { extraView, switched, type ExtraCell } from './model'
-import { EXTRA_STATS } from '@racer/domain/rework/training'
+import { EXTRA_STATS } from '@racer/domain/training'
 
 const COLUMNS = EXTRA_STATS.length + 1
 

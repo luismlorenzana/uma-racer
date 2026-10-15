@@ -1,16 +1,16 @@
 // The rework's live blocks (docs/game/architecture.md#the-rework-modules): each area under packages/domain/src/rework renders its
 // tables into the rework pages. An area exports `LIVE_BLOCKS: Record<key, () => string>` from its `docs.ts`, and one
 // import plus one argument below joins it. A key used twice fails at load, so two areas can't fight over a block.
-import { LIVE_BLOCKS as EXCHANGE_BLOCKS } from '../rework/exchange/docs'
-import { LIVE_BLOCKS as FARM_BLOCKS } from '../rework/farm/docs'
-import { LIVE_BLOCKS as ITEM_BLOCKS } from '../rework/items/docs'
-import { LIVE_BLOCKS as TIER_BLOCKS } from '../rework/tiers/docs'
-import { LIVE_BLOCKS as CONSTELLATION_BLOCKS } from '../rework/constellation/docs'
-import { LIVE_BLOCKS as TRAINING_BLOCKS } from '../rework/training/docs'
-import { LIVE_BLOCKS as PLANNER_BLOCKS } from '../rework/planner/docs'
-import { LIVE_BLOCKS as BUILDS_BLOCKS } from '../rework/builds/docs'
-import { LIVE_BLOCKS as LOOP_BLOCKS } from '../rework/sim/docs'
-import { LIVE_BLOCKS as CHECK_IN_BLOCKS } from '../rework/check-in/docs'
+import { LIVE_BLOCKS as EXCHANGE_BLOCKS } from '../economy/docs'
+import { LIVE_BLOCKS as FARM_BLOCKS } from '../farm/docs'
+import { LIVE_BLOCKS as ITEM_BLOCKS } from '../items/docs'
+import { LIVE_BLOCKS as TIER_BLOCKS } from '../tiers/docs'
+import { LIVE_BLOCKS as CONSTELLATION_BLOCKS } from '../training/trees/docs'
+import { LIVE_BLOCKS as TRAINING_BLOCKS } from '../training/docs'
+import { LIVE_BLOCKS as PLANNER_BLOCKS } from '../planner/docs'
+import { LIVE_BLOCKS as BUILDS_BLOCKS } from '../builds/docs'
+import { LIVE_BLOCKS as LOOP_BLOCKS } from '../sim/docs'
+import { LIVE_BLOCKS as CHECK_IN_BLOCKS } from '../check-in/docs'
 import { LIVE_BLOCKS as HUB_BLOCKS } from '../hub/docs'
 
 export type LiveBlocks = Readonly<Record<string, () => string>>

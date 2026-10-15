@@ -2,8 +2,8 @@
 // Umas with unlocks left here in their open layers; and the facility's dishes in the Warehouse (Vegetables, Mushrooms,
 // or the Gym's stat, Duo and Feast dishes), or at the Dojo the bonds left this layer (`layerProgress`). Display only:
 // the Peek's Enter opens the page.
-import { clockTime } from '@racer/domain/rework/check-in'
-import type { FacilityId } from '@racer/domain/rework/farm'
+import { clockTime } from '@racer/domain/check-in'
+import type { FacilityId } from '@racer/domain/farm'
 import { useMemo } from 'react'
 import type { PeekProps } from '../registry'
 import { ItemIcon } from '../../ui/ItemIcon'

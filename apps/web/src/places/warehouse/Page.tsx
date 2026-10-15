@@ -2,7 +2,7 @@
 // · Dishes · Tickets shelves, family and grade filters, a row per stack with what's held, reserved, coming and needed,
 // and the stock sheet: what it is, the recipes that use it, Make more (T140's job sheet), and Sell ×1 / ×10 / Surplus /
 // All free at the live price, asking the one question 09 §6.1 asks before it sells.
-import { FAMILIES, FAMILY_IDS, itemById, type FamilyId } from '@racer/domain/rework/items'
+import { FAMILIES, FAMILY_IDS, itemById, type FamilyId } from '@racer/domain/items'
 import { useMemo, useState } from 'react'
 import { Link, useLocation } from 'react-router'
 import { BottomSheet } from '../../ui/BottomSheet'

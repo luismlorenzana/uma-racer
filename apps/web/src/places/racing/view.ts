@@ -3,15 +3,15 @@
 // result's lines. Pure: the rules give every number (`purseFor`, `bandAt`, `PURSE_BANDS`, `featuredBoard`,
 // `grossPrize`, `payFromPurse`, the race finish's receipt), and the words are `words.ts`'s.
 import { careerComplete, careerHoldLevel, CAREER_STAGE_LABELS, careerStage, regularRaceCatalog, type RaceGrade, type RaceTemplate } from '@racer/domain'
-import { clockTime, hasReady } from '@racer/domain/rework/check-in'
+import { clockTime, hasReady } from '@racer/domain/check-in'
 import {
   bandAt, boardDay, featuredBoard, featuredSeed, grossPrize, payFromPurse, purseFor, PURSE_BANDS, PURSE_SHARE_DENOMINATOR, WIN_PRIZE,
   type LocalDay, type PurseBand, type RacePrize,
-} from '@racer/domain/rework/exchange'
-import { BUILDINGS } from '@racer/domain/rework/farm'
-import { advanceReadiness, isRefusal, lifetimeLevel, type AccountProfile, type DailyPurse, type UmaState } from '@racer/domain/rework/tiers'
-import { endsAt, type WorkRow, type WorkState } from '@racer/domain/rework/work'
-import type { FinishRaceReceipt } from '@racer/domain/rework/check-in'
+} from '@racer/domain/economy'
+import { BUILDINGS } from '@racer/domain/farm'
+import { advanceReadiness, isRefusal, lifetimeLevel, type AccountProfile, type DailyPurse, type UmaState } from '@racer/domain/tiers'
+import { endsAt, type WorkRow, type WorkState } from '@racer/domain/work'
+import type { FinishRaceReceipt } from '@racer/domain/check-in'
 import { createRng } from '@racer/race'
 import { amount, ordinal, racingWords } from './words'
 

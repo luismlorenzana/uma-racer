@@ -5,13 +5,13 @@
 // never herself, a refused pick reading the rule's words, sorted by what each pick would add (`deriveBuild` with it).
 // Lineage picks are made here only (T139). Pure.
 import type { Aptitudes, DistanceCategory } from '@racer/domain'
-import { say } from '@racer/domain/rework/check-in'
-import { isRefusal, type UmaState } from '@racer/domain/rework/tiers'
+import { say } from '@racer/domain/check-in'
+import { isRefusal, type UmaState } from '@racer/domain/tiers'
 import {
   deriveBuild, FIXED_UNLOCKS, fixedUnlock, goalsWon, goldPosition, isGrandparentSlot, lineagePays, setLineage, SLOT_LETTER, trainingTemplate,
   type DerivedBuild, type Unlock,
-} from '@racer/domain/rework/training'
-import type { WorkState } from '@racer/domain/rework/work'
+} from '@racer/domain/training'
+import type { WorkState } from '@racer/domain/work'
 import type { WordsContext } from '../../../ui/work/words'
 import { itemState, itemWords, ruleWords, type Content, type ItemState } from '../common'
 import { trainingWords } from '../words'

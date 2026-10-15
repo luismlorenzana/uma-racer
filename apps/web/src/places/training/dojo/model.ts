@@ -4,11 +4,11 @@
 // slot (`set-card-set` checks it); the receipt's hand-over and emptied nodes in one line; and which cards she can bond
 // now (`bondStatus`), for **Bond more** in T138's Library. Pure.
 import type { DistanceCategory, SupportCardType } from '@racer/domain'
-import { cardNodeId } from '@racer/domain/rework/constellation'
-import { workAhead } from '@racer/domain/rework/planner'
-import { isRefusal, scenarioNumber, type UmaState } from '@racer/domain/rework/tiers'
-import { bondsThrough, bondStatus, CARD_SET_SIZE, cardPay, type CardSetReceipt } from '@racer/domain/rework/training'
-import type { WorkState } from '@racer/domain/rework/work'
+import { cardNodeId } from '@racer/domain/training'
+import { workAhead } from '@racer/domain/planner'
+import { isRefusal, scenarioNumber, type UmaState } from '@racer/domain/tiers'
+import { bondsThrough, bondStatus, CARD_SET_SIZE, cardPay, type CardSetReceipt } from '@racer/domain/training'
+import type { WorkState } from '@racer/domain/work'
 import { payWords } from '../../card-library/model'
 import { cardName } from '../../../ui/words'
 import type { Content } from '../common'

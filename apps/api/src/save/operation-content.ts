@@ -2,7 +2,7 @@
 // `races`, `cards` and `skills` packs, verified against the manifest and built into T134's `buildOperationEnv`, as the
 // web builds its own, so the device's numbers and the server's come from one function. The server runs on its current
 // content, not the device's version. Never logs or returns a path, a row or a private value.
-import { buildOperationEnv, type OperationEnv, type OperationPacks } from '@racer/domain/save-g2'
+import { buildOperationEnv, type OperationEnv, type OperationPacks } from '@racer/domain/save'
 import type { ContentManifest, ContentService } from '../content/content.service'
 
 /** Each pack the operations read, by the web's patterns (`apps/web/src/content/runtime.ts`). */

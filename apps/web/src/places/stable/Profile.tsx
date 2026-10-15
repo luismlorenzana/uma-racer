@@ -5,11 +5,11 @@
 // layer progress until it lands), Skills (library and loadout) and Racing (race defaults, career record, latest
 // results, the Trophy Hall). An unknown or locked id says `unknown-uma`'s words with a way back.
 import { hubWords } from '@racer/domain/hub'
-import { layerProgress } from '@racer/domain/rework/planner'
-import { racePreferencesOf, TIER_REFUSALS } from '@racer/domain/rework/tiers'
-import { deriveUmaPreset } from '@racer/domain/rework/training'
+import { layerProgress } from '@racer/domain/planner'
+import { racePreferencesOf, TIER_REFUSALS } from '@racer/domain/tiers'
+import { deriveUmaPreset } from '@racer/domain/training'
 import type { DistanceCategory, Grade } from '@racer/domain'
-import type { RaceResultRow } from '@racer/domain/save-g2'
+import type { RaceResultRow } from '@racer/domain/save'
 import { Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router'
 import { Button } from '../../ui/Button'

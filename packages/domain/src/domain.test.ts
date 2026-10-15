@@ -75,7 +75,7 @@ import {
   TYPICAL_CARD_STARS,
   starNodePct,
 } from './index'
-import { UMA_SHARDS_PER_TICKET } from './rework/tiers'
+import { UMA_SHARDS_PER_TICKET } from './tiers'
 
 describe('Inspiration (D250)', () => {
   it('pins two golds a slot and the doubled grandparent SP', () => {

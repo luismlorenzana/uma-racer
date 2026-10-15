@@ -1,15 +1,15 @@
 // The Warehouse's view model (07 §10; 09 §6, §6.1, §8; 08 §10): a running three-dish Kitchen job and one target give
 // each row's held, reserved, coming and needed; the sell sizes, each confirmation's words, the Surplus total, the empty
 // line and the shelves.
-import { hasBannedWord } from '@racer/domain/rework/check-in'
-import { sellPrice, stackCounts } from '@racer/domain/rework/exchange'
-import { neededFromStock, plan, targetsOf } from '@racer/domain/rework/planner'
+import { hasBannedWord } from '@racer/domain/check-in'
+import { sellPrice, stackCounts } from '@racer/domain/economy'
+import { neededFromStock, plan, targetsOf } from '@racer/domain/planner'
 import { describe, expect, it } from 'vitest'
 import { account, umaIds } from '../../__fixtures__/testing-ops'
 import {
   biggestStacks, EMPTY_WORDS, filterRows, itemLine, largestShortfalls, recipesUsing, sellQuestion, sellSheet, sizeOffWords, surplusWorth, warehouse,
 } from './model'
-import { itemById } from '@racer/domain/rework/items'
+import { itemById } from '@racer/domain/items'
 
 function kitchen() {
   const acc = account('fresh')

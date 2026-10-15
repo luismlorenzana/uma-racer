@@ -3,10 +3,10 @@
 // targets**, each line opening the job sheet filled in; a card per slot; and **Collect here** and **Repeat here** in
 // the thumb zone, whose receipt lists every line and every skip with its reason. The job sheet opens over the page from
 // its query (`?job=…`), so the Warehouse, the planner and the session sheet reach it by a link.
-import type { CollectAllReceipt, RepeatReceipt } from '@racer/domain/rework/check-in'
-import { clockTime } from '@racer/domain/rework/check-in'
-import type { FarmBuildingId } from '@racer/domain/rework/farm'
-import { MAX_ITEMS_PER_ENTRY, MAX_QUEUE, MIN_ITEMS_PER_ENTRY, SESSION_KIND } from '@racer/domain/rework/work'
+import type { CollectAllReceipt, RepeatReceipt } from '@racer/domain/check-in'
+import { clockTime } from '@racer/domain/check-in'
+import type { FarmBuildingId } from '@racer/domain/farm'
+import { MAX_ITEMS_PER_ENTRY, MAX_QUEUE, MIN_ITEMS_PER_ENTRY, SESSION_KIND } from '@racer/domain/work'
 import { lazy, Suspense, useMemo, useState } from 'react'
 import { Link, Navigate, useLocation, useNavigate, useSearchParams } from 'react-router'
 import { navState } from '../../../hub/nav'

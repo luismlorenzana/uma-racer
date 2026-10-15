@@ -2,7 +2,7 @@
 // the auth provider's token; Account's Sign in and Sign out are the provider's, absent with auth off; and a tap holds the
 // update prompt's restart until it has committed.
 import 'fake-indexeddb/auto'
-import { SIM_CARDS, SIM_RACES, SIM_UMAS } from '@racer/domain/rework/sim'
+import { SIM_CARDS, SIM_RACES, SIM_UMAS } from '@racer/domain/sim'
 import Dexie from 'dexie'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { SaveGame } from '../save'

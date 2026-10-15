@@ -2,11 +2,11 @@
 // devices, the device rows' rules, coalesced writes and the pages. Synthetic content only (the domain's fixtures).
 import { beforeAll, describe, expect, it } from 'vitest'
 import { createTrainerBadgeState, flairEventId, type FlairEventV1 } from '@racer/domain'
-import { rawItem } from '@racer/domain/rework/items'
+import { rawItem } from '@racer/domain/items'
 import {
   answersRequest, KIND_ORDER, logDraft, stampLog, OPERATIONS_WINDOW_MS, parseSaveSnapshotV2, parseSyncRequestV2, parseSyncResponseV2, rowKey, SAVE_LIMITS,
   type EntityRow, type LogRow, type OperationEnv, type SyncChange, type SyncRequestV2, type SyncResponseV2,
-} from '@racer/domain/save-g2'
+} from '@racer/domain/save'
 import {
   comparePulled, encodeCursor, NO_SAVE, parseCursor, resolveSync, selectReadSet, snapshotPage, syncReadSet, type SaveRow,
 } from './resolve'

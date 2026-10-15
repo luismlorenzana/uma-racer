@@ -13,12 +13,12 @@
 //   result with the tap's own, every flair event) and written in the tap's transaction, behind its outbox row; a
 //   callback that throws writes nothing, the tap included.
 import type { BadgeStateV1, FlairEventV1 } from '@racer/domain'
-import { recheck, type Answer, type OperationInput, type OperationName } from '@racer/domain/rework/check-in'
-import type { LedgerEntry } from '@racer/domain/rework/tiers'
+import { recheck, type Answer, type OperationInput, type OperationName } from '@racer/domain/check-in'
+import type { LedgerEntry } from '@racer/domain/tiers'
 import {
   commitOperation, entityDraft, flairEventId, logDraft, parseEntityData, parseLogData, parseLogRow, stampEntity, stampLog, type ItemLedgerRow, type LogDraft,
   type Commit, type LogKind, type LogRow, type OperationEnv, type OperationEnvelope, type RaceResultRow, type SaveState,
-} from '@racer/domain/save-g2'
+} from '@racer/domain/save'
 import type { G2DeviceRows, G2Records, G2RunOptions } from '../app/game'
 import { flairKeyOf } from '../app/game'
 import { badgeKey, flairKey, operationKey, UnreadableRow, type SaveDb } from './db'

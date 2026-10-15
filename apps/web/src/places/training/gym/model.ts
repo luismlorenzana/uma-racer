@@ -4,11 +4,11 @@
 // against `extraCapacity`. A switch runs `set-active-nodes`, whose `over-capacity` reads in its own words. A Duo sits
 // between its two columns; a Duo's or Sun's Unlock opens the first room `roomsFor` lists. Pure.
 import type { DistanceCategory, StatKey } from '@racer/domain'
-import { scenarioNumber, type UmaState } from '@racer/domain/rework/tiers'
+import { scenarioNumber, type UmaState } from '@racer/domain/tiers'
 import {
   EXTRA_NODES, EXTRA_STATS, extraCapacity, extraNodeStats, fixedUnlock, unlockLabel, type DerivedBuild, type ExtraNode, type Unlock,
-} from '@racer/domain/rework/training'
-import type { WorkState } from '@racer/domain/rework/work'
+} from '@racer/domain/training'
+import type { WorkState } from '@racer/domain/work'
 import type { WordsContext } from '../../../ui/work/words'
 import { itemState, itemWords, type Content, type ItemState } from '../common'
 import { trainingWords } from '../words'

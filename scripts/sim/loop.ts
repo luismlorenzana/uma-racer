@@ -13,7 +13,7 @@ import { createRng } from '../../packages/race/src/rng'
 import {
   BASELINE, LOOP_VARIANTS, evaluateChecks, farmLevelProbes, firstUnlockProbe, formatChecks, formatMatrix, formatReport, loopRng,
   matrixRow, simulateLoop, type LoopConfig, type LoopResult,
-} from '../../packages/domain/src/rework/sim/index'
+} from '../../packages/domain/src/sim/index'
 
 const args = process.argv.slice(2)
 const flag = (name: string) => args.includes(`--${name}`)
@@ -32,7 +32,7 @@ async function main(): Promise<number> {
     const { generateWinTable, writeWinTable } = await import('./loop-wins')
     const races = Number(option('races') ?? 200)
     writeWinTable(generateWinTable(races, 132, (line) => console.log(line)))
-    console.log('Wrote packages/domain/src/rework/sim/win-table.ts. Run `pnpm docs:update` next.')
+    console.log('Wrote packages/domain/src/sim/win-table.ts. Run `pnpm docs:update` next.')
     return 0
   }
   if (flag('matrix')) {

@@ -6,7 +6,7 @@
 // A later schema change that must keep data adds a version (uma-rpg's rule); until then there is one.
 import {
   parseEntityRow, parseLogRow, RULE_LEDGER_REASONS, type EntityKind, type EntityRow, type LogKind, type LogRow, type OperationEnvelope,
-} from '@racer/domain/save-g2'
+} from '@racer/domain/save'
 import Dexie, { type Table } from 'dexie'
 
 export const SAVE_DB_NAME = 'uma-racer-g2'

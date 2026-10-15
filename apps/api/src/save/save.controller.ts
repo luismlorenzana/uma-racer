@@ -7,7 +7,7 @@ import { BadRequestException, Body, Controller, Get, HttpCode, HttpException, In
 import {
   isCurrentStamp, parsePurgeRequest, parseSnapshotQuery, parseSyncRequestV2, SAVE_GENERATION, SAVE_PROTOCOL, type PurgeResponse,
   type SaveSnapshotV2, type SyncResponseV2,
-} from '@racer/domain/save-g2'
+} from '@racer/domain/save'
 import { AuthGuard, CurrentUid } from '../auth/auth.guard'
 import { ContentUnavailable, OperationContent } from './operation-content'
 import { NO_SAVE, parseCursor } from './resolve'

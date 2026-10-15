@@ -3,7 +3,7 @@
 // only Collected and Repeat all; the totals line; suggestions' words and preselected links; each skip's fixes; Speed up
 // all's counts and refusal; Best use; 02 §3's check-in-fits table, cell by cell, as size chips from base-minute items;
 // and every template held to the banned words.
-import { collectAll, DEFAULT_CHECK_INS, hasBannedWord, repeat, SUMMARY_SECTIONS, speedUpAllPlan } from '@racer/domain/rework/check-in'
+import { collectAll, DEFAULT_CHECK_INS, hasBannedWord, repeat, SUMMARY_SECTIONS, speedUpAllPlan } from '@racer/domain/check-in'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'

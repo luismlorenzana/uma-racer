@@ -4,9 +4,9 @@
 import { readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { describe, expect, it } from 'vitest'
-import { BUILDING_IDS, BUILDINGS, FACILITY_IDS, FARM_BUILDING_IDS, type BuildingId } from '../rework/farm/buildings'
-import { FAMILY_SITE } from '../rework/farm/jobs'
-import { FAMILY_RING } from '../rework/items/families'
+import { BUILDING_IDS, BUILDINGS, FACILITY_IDS, FARM_BUILDING_IDS, type BuildingId } from '../farm/buildings'
+import { FAMILY_SITE } from '../farm/jobs'
+import { FAMILY_RING } from '../items/families'
 import {
   buildingOf, HUB_PAGE_NAMES, HUB_PAGES, isHubPage, isPlaceId, pageRows, PLACE_IDS, PLACES, placeById, placeOnPage, placesOn, PLAZA_CELL, type Place,
 } from './places'

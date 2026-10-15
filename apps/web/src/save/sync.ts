@@ -16,7 +16,7 @@
 import {
   answersRequest, KIND_ORDER, parseLogRow, SAVE_LIMITS, type EntityRow, type LogRow, type OperationEnv, type SaveKind, type SaveSnapshotV2,
   type SyncChange, type SyncResponseV2,
-} from '@racer/domain/save-g2'
+} from '@racer/domain/save'
 import { failureOf, SaveApiError, type SaveApi, type SaveFailure } from './api'
 import { badgeKey, parseStoredEntity, UnreadableRow, type OutboxRow, type SaveDb } from './db'
 import { refold, setSync, useSave, type Answered, type SaveNotice, type Serial } from './store'

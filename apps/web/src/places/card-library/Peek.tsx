@@ -6,7 +6,7 @@ import { useGame, useHub } from '../../app/game'
 import { umaName } from '../../ui/words'
 import type { PeekProps } from '../registry'
 import { bondOf, cardName } from './model'
-import { isRefusal } from '@racer/domain/rework/tiers'
+import { isRefusal } from '@racer/domain/tiers'
 
 export default function CardLibraryPeek(_: PeekProps) {
   const state = useGame((snapshot) => snapshot.state)

@@ -8,7 +8,7 @@ import {
   rowKey, SAVE_LIMITS, stampEntity, stampLog, STAMP, toSaveState,
   type EntityDraft, type EntityKind, type EntityRow, type LogDraft, type LogRow, type OperationEnv, type SaveKind, type SaveSnapshotV2,
   type SaveState, type SyncRequestV2, type SyncResponseV2, type SyncResult,
-} from '@racer/domain/save-g2'
+} from '@racer/domain/save'
 
 /** A stored row of either shape. */
 export type SaveRow = EntityRow | LogRow

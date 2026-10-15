@@ -1,6 +1,6 @@
 // The loop simulation's win table, generated offline (T132's "The win table"): `pnpm sim:loop --
 // --refresh-wins` races the engine for every scenario T, grade (G3, G2, G1) and build share (0, 50, 100% of her layer)
-// and writes packages/domain/src/rework/sim/win-table.ts. The domain can't import the race engine, and 200 races a cell
+// and writes packages/domain/src/sim/win-table.ts. The domain can't import the race engine, and 200 races a cell
 // would break CI's budget, so the table is committed and the loop only reads it. Synthetic only, seeded, no Math.random.
 //
 // The Uma is T133's: harness's rework build of the ladder's Medium set (STAYER_POWER, the stamina card one node past
@@ -10,18 +10,18 @@
 import { writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { INSPIRATION_SLOTS, STRATEGIES, type Aptitudes, type InspirationSlot, type Strategy, type UmaTemplate } from '../../packages/domain/src/index'
-import { cardNodeId, treeCardNodesAt } from '../../packages/domain/src/rework/constellation/index'
-import { layerPart, WIN_SHARES } from '../../packages/domain/src/rework/sim/build'
-import { WIN_GRADES, WIN_PLACES, type WinCell, type WinGrade, type WinTable } from '../../packages/domain/src/rework/sim/places'
-import { tierAndScenario, type Preset, type ScenarioOfTier, type UmaBuild } from '../../packages/domain/src/rework/tiers/index'
-import { deriveBuild, extraCapacity, LAYERS, layerUnlocks, type DerivedBuild, type TrainingContent } from '../../packages/domain/src/rework/training/index'
+import { cardNodeId, treeCardNodesAt } from '../../packages/domain/src/training/trees/index'
+import { layerPart, WIN_SHARES } from '../../packages/domain/src/sim/build'
+import { WIN_GRADES, WIN_PLACES, type WinCell, type WinGrade, type WinTable } from '../../packages/domain/src/sim/places'
+import { tierAndScenario, type Preset, type ScenarioOfTier, type UmaBuild } from '../../packages/domain/src/tiers/index'
+import { deriveBuild, extraCapacity, LAYERS, layerUnlocks, type DerivedBuild, type TrainingContent } from '../../packages/domain/src/training/index'
 import { simulateRace } from '../../packages/race/src/index'
 import {
   PLAYER_KIT, REWORK_UMA, STAYER_POWER, allocateNodes, dealNodes, leanExtraNodes, reworkBuild, reworkCard, reworkCardCap, reworkFairShare,
   rivalRunnersAt, typicalCourse,
 } from './harness'
 
-export const WIN_TABLE_FILE = fileURLToPath(new URL('../../packages/domain/src/rework/sim/win-table.ts', import.meta.url))
+export const WIN_TABLE_FILE = fileURLToPath(new URL('../../packages/domain/src/sim/win-table.ts', import.meta.url))
 /** Every cell races the Medium set's distance: 2,000 m, 12 runners. */
 const METERS = 2000
 const FIELD = 12

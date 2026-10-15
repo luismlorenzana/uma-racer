@@ -3,7 +3,7 @@
 // and the device's `badges/…` and `flairEvents`. The counter is flair newer than this device's last visit, a device
 // convenience under `uma-racer:g2:trophy-hall-seen` (01 §4.2).
 import { badgeStateId, buildTrainerAchievementCatalog, buildUmaFlairCatalog, type BadgeStateV1, type FlairEventV1, type UmaBadgeStateV1, type UmaSave } from '@racer/domain'
-import type { WorkState } from '@racer/domain/rework/work'
+import type { WorkState } from '@racer/domain/work'
 import type { RaceResultRecord } from '@racer/domain'
 import type { LoadedContent } from '../../content/runtime'
 import type { G2Records } from '../../app/game'

@@ -4,7 +4,7 @@
 // input that answers yes, and anything unexpected reads "That didn't work. Try again." (the outbox retries by itself).
 // `useTap` serves one button or one card; `useTaps` (T142) serves a list whose lines each keep their own answer, as the
 // check-in summary's Free, Queue stopped and Couldn't repeat lines do, with one tap in flight for the whole list.
-import type { OperationInput, OperationName, Words } from '@racer/domain/rework/check-in'
+import type { OperationInput, OperationName, Words } from '@racer/domain/check-in'
 import { useCallback, useMemo, useState } from 'react'
 import { useGame, useNow, useRun, useRuntime, type G2Answer } from '../../app/game'
 import type { WordsContext } from './words'

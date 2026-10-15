@@ -3,7 +3,7 @@
 // on the current state, so a disabled button says why in the rule's own words (`prize-money`, `short`). It asks once
 // with its whole cost, then runs `upgrade`. With `adds`, it also says what the level brings (`totalSlots`,
 // `buildingSpeed`), as a Training facility's header does (05 §8). Nothing shows at Lv 3: there is nothing to buy.
-import type { BuildingId } from '@racer/domain/rework/farm'
+import type { BuildingId } from '@racer/domain/farm'
 import { useState } from 'react'
 import { TapNoteLine } from './TapNote'
 import { useTap, useWordsContext } from './useTap'

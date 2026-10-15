@@ -4,7 +4,7 @@
 // span, utcOffsetMin }`; when the tickets run short the option reads `speedUpAll`'s own refusal ("Needs 12 Speed
 // Tickets.") with the Exchange's row. Below, **Best use**: up to three running entries from today's plan, each with
 // T140's −30m and Finish.
-import type { SpeedUpSpan } from '@racer/domain/rework/check-in'
+import type { SpeedUpSpan } from '@racer/domain/check-in'
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router'
 import { useGame, useNow } from '../../app/game'

@@ -2,12 +2,12 @@
 // §3; docs/rework/11-hub-and-places.md §3.2; T139) on synthetic accounts built with the rework's own operations: slots by
 // level and room, a session card's words and times, the Counter, Needs here, the session sheet's list, statuses, pre-pick
 // and Start, each build view's states, and every template against 02 §9's banned words.
-import { clockTime, fitSize, hasBannedWord } from '@racer/domain/rework/check-in'
+import { clockTime, fitSize, hasBannedWord } from '@racer/domain/check-in'
 import { hubView } from '@racer/domain/hub'
-import { nextUnlocks, sessionRequest, sessionSeconds, TRAINING_REFUSALS } from '@racer/domain/rework/training'
-import { workAhead } from '@racer/domain/rework/planner'
-import { speedAt, type WorkState } from '@racer/domain/rework/work'
-import { craftedItem } from '@racer/domain/rework/items'
+import { nextUnlocks, sessionRequest, sessionSeconds, TRAINING_REFUSALS } from '@racer/domain/training'
+import { workAhead } from '@racer/domain/planner'
+import { speedAt, type WorkState } from '@racer/domain/work'
+import { craftedItem } from '@racer/domain/items'
 import { describe, expect, it } from 'vitest'
 import { TRAINING_WORDS } from './words'
 import { observatoryView, nodeChoices } from './observatory/model'
@@ -17,7 +17,7 @@ import { dojoView, receiptLine, setWith } from './dojo/model'
 import { currentUnlock, facilityView, unlockLine } from './facility/model'
 import { prePick, sessionView, type SessionInput } from './session/model'
 import { parseUnlocks, readSessionQuery } from './session/query'
-import { deriveUmaPreset } from '@racer/domain/rework/training'
+import { deriveUmaPreset } from '@racer/domain/training'
 import { slotCards } from '../../ui/work/model'
 import {
   advanced, apply, CONTEXT, content, DEV_ENV, granted, trainingAccount, uma, viewAt, withLayers, withSetCard,

@@ -1,9 +1,9 @@
 // One reading of the work at the clock's `now` (docs/rework/02-check-ins-and-notifications.md §3, §8; rework/11 §4):
 // the domain's projection (the state settled to `now`, and to the end of every chain) and its queue warnings, made
 // once per state and 30-second tick and shared by every card on a page, so a page of eight cards settles once.
-import type { OperationEnv } from '@racer/domain/rework/check-in'
-import { projectWork, queueWarnings, type Projection, type QueueWarning } from '@racer/domain/rework/planner'
-import type { WorkState } from '@racer/domain/rework/work'
+import type { OperationEnv } from '@racer/domain/check-in'
+import { projectWork, queueWarnings, type Projection, type QueueWarning } from '@racer/domain/planner'
+import type { WorkState } from '@racer/domain/work'
 import { useMemo } from 'react'
 import { useGame, useNow } from '../../app/game'
 

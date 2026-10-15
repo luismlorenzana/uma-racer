@@ -1,7 +1,7 @@
 // Account's view model and the Town Hall's copy (02 §3, §9; D157; M034): check-in times as clock times, the sync row's
 // words, the dev grants, the reveal's queue and save words, and every player-facing string in the Town Hall's places
 // held to 02 §9's banned words.
-import { BANNED_WORDS, hasBannedWord } from '@racer/domain/rework/check-in'
+import { BANNED_WORDS, hasBannedWord } from '@racer/domain/check-in'
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'

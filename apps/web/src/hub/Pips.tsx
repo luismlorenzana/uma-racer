@@ -4,7 +4,7 @@
 // small bounce (none with reduced motion). Free: a hollow ring. The Gym's and Dojo's rings take their room's stat or
 // card-type colour. Past eight slots the eighth pip is "+N".
 import type { HubBuilding, HubPip } from '@racer/domain/hub'
-import type { RoomId } from '@racer/domain/rework/farm'
+import type { RoomId } from '@racer/domain/farm'
 import { UmaFace } from '../ui/UmaArt'
 
 const ROOM_TONE: Readonly<Record<RoomId, string>> = {

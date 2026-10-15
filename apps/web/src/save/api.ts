@@ -10,7 +10,7 @@
 import {
   parsePurgeResponse, parseSaveSnapshotV2, parseSyncResponseV2, snapshotQuery, STAMP, type PurgeResponse, type SaveSnapshotV2, type SyncChange,
   type SyncRequestV2, type SyncResponseV2,
-} from '@racer/domain/save-g2'
+} from '@racer/domain/save'
 
 export type SaveFailure = 'offline' | 'auth' | 'upgrade' | 'no-save' | 'unavailable' | 'server' | 'invalid'
 

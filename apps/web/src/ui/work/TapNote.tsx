@@ -1,7 +1,7 @@
 // A tap's answer beside its button (docs/rework/02-check-ins-and-notifications.md §9): a rule in plain words ("Needs Farm
 // Lv 16."), or one question with the new numbers and its yes ("Only 3 left now. Start ×3?"), or the unexpected. Never an
 // instruction to reload or retry.
-import { CHECK_IN_WORDS } from '@racer/domain/rework/check-in'
+import { CHECK_IN_WORDS } from '@racer/domain/check-in'
 import type { G2Answer } from '../../app/game'
 import { useWordsContext, type Tap } from './useTap'
 import { showWords, workWords } from './words'

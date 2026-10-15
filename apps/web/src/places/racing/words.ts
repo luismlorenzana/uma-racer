@@ -2,7 +2,7 @@
 // docs/rework/02-check-ins-and-notifications.md §9): every sentence the four places show, as templates whose numbers
 // come in as `{name}` data from the rules' exports, so no screen restates one. `words.test.ts` holds every template to
 // 02 §9's banned words (which also catch a bare three-digit number).
-import { fill, say } from '@racer/domain/rework/check-in'
+import { fill, say } from '@racer/domain/check-in'
 
 export const RACING_WORDS = Object.freeze({
   // The Racecourse header (09 §3.5).

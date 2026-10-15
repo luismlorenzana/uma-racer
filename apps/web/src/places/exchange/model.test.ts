@@ -1,7 +1,7 @@
 // The Exchange's view model (09 §5, §5.3, §5.5): raw rows stop at `stockedGrade` with `buyPrice`'s prices and the next
 // grade's lock, the planner's badge, "Need N more", the one question at 1,000 or more, and the Peek's top shortage.
-import { buyPrice, SPEED_TICKET_PRICE } from '@racer/domain/rework/exchange'
-import { hasBannedWord } from '@racer/domain/rework/check-in'
+import { buyPrice, SPEED_TICKET_PRICE } from '@racer/domain/economy'
+import { hasBannedWord } from '@racer/domain/check-in'
 import { describe, expect, it } from 'vitest'
 import { account, umaIds } from '../../__fixtures__/testing-ops'
 import { buyCheck, buyQuestion, exchangeView, rawFamily, speedTicketPrice, topShortage, typedQty } from './model'

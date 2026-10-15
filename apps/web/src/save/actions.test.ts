@@ -3,7 +3,7 @@
 // same state and receipts. Badges and flair are written with their outbox key in one transaction, and the read helpers
 // merge Dexie's logs with the queued taps' own.
 import 'fake-indexeddb/auto'
-import { fill } from '@racer/domain/rework/check-in'
+import { fill } from '@racer/domain/check-in'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { badgeKey, flairKey, operationKey } from './db'
 import { useSave } from './store'

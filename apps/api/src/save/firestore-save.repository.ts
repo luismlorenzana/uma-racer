@@ -4,7 +4,7 @@
 // deletes `players/{uid}` and writes `saves/{uid}/meta/purge`; `meta` is no save kind, so no pull returns it.
 import * as admin from 'firebase-admin'
 import { KIND_ORDER, rowKey, RULE_LEDGER_REASONS, SAVE_GENERATION, SAVE_LIMITS, type PurgeResponse, type SaveSnapshotV2,
-  type SyncRequestV2, type SyncResponseV2 } from '@racer/domain/save-g2'
+  type SyncRequestV2, type SyncResponseV2 } from '@racer/domain/save'
 import { fromStored, toStored } from './firestore-codec'
 import { needsOperationEnv, NO_SAVE, parseCursor, pullFloor, resolveSync, selectReadSet, snapshotPage, syncReadSet, type NoSave,
   type SaveRow } from './resolve'

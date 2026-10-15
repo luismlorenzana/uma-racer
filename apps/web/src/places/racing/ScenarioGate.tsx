@@ -5,7 +5,7 @@
 // transaction; a refused or stale tap redraws the sheet under "Her build changed." and keeps the button.
 import { badgeStateId, STATS, type DistanceCategory } from '@racer/domain'
 import type { Place } from '@racer/domain/hub'
-import { scenarioNumber, type UmaState } from '@racer/domain/rework/tiers'
+import { scenarioNumber, type UmaState } from '@racer/domain/tiers'
 import { m, useReducedMotion } from 'motion/react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router'
@@ -28,9 +28,9 @@ import { useRecords } from './records'
 import { rowsOf } from './today'
 import { amount, racingWords } from './words'
 import type { LoadedContent } from '../../content/runtime'
-import type { OperationEnv } from '@racer/domain/rework/check-in'
-import { clockTime } from '@racer/domain/rework/check-in'
-import { endsAt, type WorkRow } from '@racer/domain/rework/work'
+import type { OperationEnv } from '@racer/domain/check-in'
+import { clockTime } from '@racer/domain/check-in'
+import { endsAt, type WorkRow } from '@racer/domain/work'
 
 const PRESET_NAME: Record<DistanceCategory, string> = { sprint: 'Sprint', mile: 'Mile', medium: 'Medium', long: 'Long' }
 const STAT_SHORT = { speed: 'Spd', stamina: 'Sta', power: 'Pow', guts: 'Gut', wit: 'Wit' } as const

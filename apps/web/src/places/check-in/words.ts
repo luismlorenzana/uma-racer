@@ -2,7 +2,7 @@
 // lines and buttons around the rules' words, which come from the domain's tables (`CHECK_IN_WORDS`, the refusals) and
 // are filled with `showWords`. 02 §9's banned words never appear here (`check-in.test.tsx` holds every template, and
 // every filled one, to `hasBannedWord`).
-import { fill } from '@racer/domain/rework/check-in'
+import { fill } from '@racer/domain/check-in'
 
 export const SUMMARY_WORDS = Object.freeze({
   /** The header (02 §4). */

@@ -1,8 +1,8 @@
 // A Farm building's Peek (docs/rework/11-hub-and-places.md §3.4; T140): its slots with faces and the next output's
 // time; a site's stock by open grade; the planner's lines here (the Pantry's crafted items and the Kitchen's dishes
 // short for the targets). Display only: the Peek's Enter opens the page.
-import { clockTime } from '@racer/domain/rework/check-in'
-import type { FarmBuildingId } from '@racer/domain/rework/farm'
+import { clockTime } from '@racer/domain/check-in'
+import type { FarmBuildingId } from '@racer/domain/farm'
 import { useMemo } from 'react'
 import type { PeekProps } from '../../registry'
 import { ItemIcon } from '../../../ui/ItemIcon'

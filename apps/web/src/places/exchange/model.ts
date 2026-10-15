@@ -2,13 +2,13 @@
 // `buyPrice`, raw ingredients by family up to `stockedGrade` with the next grade's lock, each row's Warehouse count and
 // the planner's badge ("Vegetables G3 · short 6"), Buy off with `prize-money`'s words when short, the one question at
 // 1,000 or more (`buyNeedsConfirm`), and the Peek's top shortage priced by `buyFor`. Pure.
-import { buyFor, type OperationEnv } from '@racer/domain/rework/check-in'
+import { buyFor, type OperationEnv } from '@racer/domain/check-in'
 import {
   buyNeedsConfirm, buyPrice, EXCHANGE_REFUSALS, farmLevelsOf, RAW_PER_PURCHASE, stockedGrade,
-} from '@racer/domain/rework/exchange'
-import { FAMILIES, gradeOpensAtFarmLevel, rawItem, SPEED_TICKET_ID, type FamilyId, type ItemGrade, type RawItemDef } from '@racer/domain/rework/items'
-import { planFrom, projectWork, targetsOf, type Plan, type PlanLine } from '@racer/domain/rework/planner'
-import type { WorkState } from '@racer/domain/rework/work'
+} from '@racer/domain/economy'
+import { FAMILIES, gradeOpensAtFarmLevel, rawItem, SPEED_TICKET_ID, type FamilyId, type ItemGrade, type RawItemDef } from '@racer/domain/items'
+import { planFrom, projectWork, targetsOf, type Plan, type PlanLine } from '@racer/domain/planner'
+import type { WorkState } from '@racer/domain/work'
 
 export const SPEED_TICKET_STEPS = [1, 10, 50] as const
 export { RAW_PER_PURCHASE }

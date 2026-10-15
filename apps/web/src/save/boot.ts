@@ -10,7 +10,7 @@
 //      and the history keeps loading behind it. With none, `initialSave(now)` is queued as the create, and it opens;
 //    - empty and offline (or signed out, or any failed pull): the device creates the save too. A later `exists`
 //      adopts the server's save and pulls it from 0.
-import type { OperationEnv } from '@racer/domain/save-g2'
+import type { OperationEnv } from '@racer/domain/save'
 import { createSaveApi, type SaveApi } from './api'
 import { createActions, type SaveActions } from './actions'
 import { CREATE_KEY, holdsSave, SaveDb, UnreadableRow } from './db'

@@ -2,8 +2,8 @@
 // T140): the query (`back` in-app only); a site's ten raw grades, locked above her Farm Level; the Pantry's family tabs
 // in the ring's order; the Kitchen's eleven tabs with Can cook now; Cook Carrot Salad × 3's inputs; the preview's size
 // chips, minutes, end and whole Farm EXP; the aptitude line and the Uma order; and each button's rule in its own words.
-import { farmExpMultiplier, farmItemSeconds, QUARTERS_PER_EXP } from '@racer/domain/rework/farm'
-import { craftedItem, FAMILIES, FAMILY_RING } from '@racer/domain/rework/items'
+import { farmExpMultiplier, farmItemSeconds, QUARTERS_PER_EXP } from '@racer/domain/farm'
+import { craftedItem, FAMILIES, FAMILY_RING } from '@racer/domain/items'
 import { describe, expect, it } from 'vitest'
 import { seed } from '../../../__fixtures__/testing'
 import { workView } from '../../../ui/work/view'

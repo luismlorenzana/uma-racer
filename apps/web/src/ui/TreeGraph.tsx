@@ -4,7 +4,7 @@
 // and a drag pans (transform only). Edges are SVG; each node is a DOM button, coloured by its card's type once open.
 // Nodes are 36 pt, under the 44 pt rule: the List view carries every node's action at 44 pt (T139). The old
 // app's constellation graph read its retired levels and templates, so it wasn't reused (T143 deleted it).
-import { PHONE_GRAPH_BOX_PT } from '@racer/domain/rework/constellation'
+import { PHONE_GRAPH_BOX_PT } from '@racer/domain/training'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 
 export type TreeNodeLook = 'open' | 'empty' | 'next' | 'locked' | 'session' | 'finished'

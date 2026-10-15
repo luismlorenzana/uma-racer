@@ -2,7 +2,7 @@
 // refusal says its rule's own words, and no sentence in `save/` holds a banned word, a code or a status number.
 import { readdirSync, readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
-import { CHECK_IN_WORDS, fill, hasBannedWord, say } from '@racer/domain/rework/check-in'
+import { CHECK_IN_WORDS, fill, hasBannedWord, say } from '@racer/domain/check-in'
 import { describe, expect, it } from 'vitest'
 import type { SaveFailure } from './api'
 import { failureWords, refusalWords, SAVE_WORDS, sentence, unexpectedWords } from './words'

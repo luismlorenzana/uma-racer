@@ -23,7 +23,7 @@ import {
   buildLibrary, LENS_MODES, lensMode, lensOf, LIBRARY_ALBUM, LIBRARY_DEFAULT_QUERY, LIBRARY_FACETS, LIBRARY_SORTS, LIBRARY_TIE_BREAK, payWords,
   PLAYABLE, TYPE_COLOR, TYPE_LABEL, type CardEntry, type Pill,
 } from './model'
-import { scenarioRow } from '@racer/domain/rework/tiers'
+import { scenarioRow } from '@racer/domain/tiers'
 
 export interface CardLibraryProps {
   readonly mode: 'browse' | 'pick'

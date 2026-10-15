@@ -3,14 +3,14 @@
 // with what's held, reserved (`reservedStock`), coming (`projectWork(...).coming`) and needed (`neededFromStock` over
 // the plan for `targetsOf`); the stock sheet's recipes, sell sizes (`stackCounts`), prices (`sellPrice`) and the one
 // question a sale asks (`sellConfirmations`); and the Peek's biggest stacks, shortfalls and surplus. Pure.
-import type { OperationEnv } from '@racer/domain/rework/check-in'
-import { EXCHANGE_REFUSALS, sellConfirmations, sellPrice, stackCounts, type StackCounts } from '@racer/domain/rework/exchange'
-import { FAMILY_SITE } from '@racer/domain/rework/farm'
+import type { OperationEnv } from '@racer/domain/check-in'
+import { EXCHANGE_REFUSALS, sellConfirmations, sellPrice, stackCounts, type StackCounts } from '@racer/domain/economy'
+import { FAMILY_SITE } from '@racer/domain/farm'
 import {
   FAMILIES, ITEMS, recipeOf, SPEED_TICKET_ID, workValueSeconds, type Destination, type FamilyId, type ItemDef, type ItemId,
-} from '@racer/domain/rework/items'
-import { neededFromStock, planFrom, projectWork, targetsOf, type Plan, type PlanLine } from '@racer/domain/rework/planner'
-import { reservedStock, type WorkState } from '@racer/domain/rework/work'
+} from '@racer/domain/items'
+import { neededFromStock, planFrom, projectWork, targetsOf, type Plan, type PlanLine } from '@racer/domain/planner'
+import { reservedStock, type WorkState } from '@racer/domain/work'
 
 export type Shelf = 'raw' | 'crafted' | 'dishes' | 'tickets'
 export const SHELVES: readonly Shelf[] = ['raw', 'crafted', 'dishes', 'tickets']

@@ -1,8 +1,8 @@
 // The Card Library's view model (06 §2, §6, §10): a tier-1 scenario-1 Uma and synthetic cards of eras 1–5 give pills from
 // `bondStatus` and `bondGrade`, the lens follows her, the card page's pay and bond cost lines for tiers 1–3, who is
 // bonded where, and the Bond picker's rows, reasons and the Dojo session URL.
-import { bondGrade, cardPay } from '@racer/domain/rework/training'
-import { hasBannedWord } from '@racer/domain/rework/check-in'
+import { bondGrade, cardPay } from '@racer/domain/training'
+import { hasBannedWord } from '@racer/domain/check-in'
 import { describe, expect, it } from 'vitest'
 import { account, umaIds } from '../../__fixtures__/testing-ops'
 import {

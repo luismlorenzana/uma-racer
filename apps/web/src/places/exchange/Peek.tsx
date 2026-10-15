@@ -1,6 +1,6 @@
 // The Exchange's Peek (docs/rework/11-hub-and-places.md §3.1; T138): Prize Money, Speed Tickets held, and the planner's top
 // shortage with its price, linking to its row.
-import { itemById, SPEED_TICKET_ID } from '@racer/domain/rework/items'
+import { itemById, SPEED_TICKET_ID } from '@racer/domain/items'
 import { useMemo } from 'react'
 import { Link } from 'react-router'
 import { TicketIcon } from '../../ui/icons'

@@ -1,6 +1,6 @@
 // The device's operation env (T136): T134's `buildOperationEnv` from today's four packs, cached per content version,
 // with `dev` only in dev builds (M034).
-import { SIM_CARDS, SIM_RACES, SIM_UMAS } from '@racer/domain/rework/sim'
+import { SIM_CARDS, SIM_RACES, SIM_UMAS } from '@racer/domain/sim'
 import { describe, expect, it } from 'vitest'
 import { operationEnv, type OperationContent } from './env'
 

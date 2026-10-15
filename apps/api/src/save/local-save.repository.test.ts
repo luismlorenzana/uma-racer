@@ -4,7 +4,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
-import { parseSyncRequestV2, type SyncRequestV2 } from '@racer/domain/save-g2'
+import { parseSyncRequestV2, type SyncRequestV2 } from '@racer/domain/save'
 import { LEGACY_LOCAL_SAVE_FILE, LocalSaveRepository } from './local-save.repository'
 import { saveG2Fixtures, type SaveG2Fixtures } from './save.test-support'
 

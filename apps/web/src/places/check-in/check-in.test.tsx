@@ -5,8 +5,8 @@
 // skip's fixes; Start suggestions line by line; Queue stopped's buttons; Speed up all and Best use; stale screens,
 // double taps, offline and plain words; and the clock moved either way.
 import { hubView } from '@racer/domain/hub'
-import { sellPrice } from '@racer/domain/rework/exchange'
-import { CHECK_IN_WORDS, hasBannedWord, repeatable, type CollectAllReceipt, type OperationName } from '@racer/domain/rework/check-in'
+import { sellPrice } from '@racer/domain/economy'
+import { CHECK_IN_WORDS, hasBannedWord, repeatable, type CollectAllReceipt, type OperationName } from '@racer/domain/check-in'
 import { act, cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { G2Answer, G2Game, G2Snapshot } from '../../app/game'

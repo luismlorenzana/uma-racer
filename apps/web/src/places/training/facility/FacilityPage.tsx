@@ -3,9 +3,9 @@
 // **Needs here**; a card per slot, by room under its stat or card-type icon at the Gym and Dojo; and **Collect here** in
 // the thumb zone. The session sheet opens over the page from its query (`?session=…`), so a slot, a build view's
 // Unlock, a Needs line, the planner and the Card Library's Bond all reach it by a link.
-import type { CollectAllReceipt } from '@racer/domain/rework/check-in'
-import type { FacilityId } from '@racer/domain/rework/farm'
-import { SESSION_MAX_UNLOCKS, sessionSeconds } from '@racer/domain/rework/training'
+import type { CollectAllReceipt } from '@racer/domain/check-in'
+import type { FacilityId } from '@racer/domain/farm'
+import { SESSION_MAX_UNLOCKS, sessionSeconds } from '@racer/domain/training'
 import type { Place } from '@racer/domain/hub'
 import { lazy, Suspense, useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router'

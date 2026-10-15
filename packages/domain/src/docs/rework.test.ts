@@ -1,6 +1,6 @@
 // The rework's live-block registry never lets two areas render the same key (M033).
 import { beforeAll, expect, it } from 'vitest'
-import { loopReport } from '../rework/sim/report'
+import { loopReport } from '../sim/report'
 import { joinBlocks, REWORK_BLOCKS } from './rework'
 import { renderBlock } from './render'
 

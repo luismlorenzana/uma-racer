@@ -15,10 +15,10 @@
 // Only types come from the domain here, so this file costs the entry chunk nothing but the hooks.
 import type { BadgeStateV1, FlairEventV1 } from '@racer/domain'
 import type { HubView, hubView } from '@racer/domain/hub'
-import type { Answer, OperationEnv, OperationInput, OperationName, OperationReceipt, Words } from '@racer/domain/rework/check-in'
-import type { LedgerEntry } from '@racer/domain/rework/tiers'
-import type { WorkState } from '@racer/domain/rework/work'
-import type { ItemLedgerRow, RaceResultRow } from '@racer/domain/save-g2'
+import type { Answer, OperationEnv, OperationInput, OperationName, OperationReceipt, Words } from '@racer/domain/check-in'
+import type { LedgerEntry } from '@racer/domain/tiers'
+import type { WorkState } from '@racer/domain/work'
+import type { ItemLedgerRow, RaceResultRow } from '@racer/domain/save'
 import { createContext, useContext, useMemo, useSyncExternalStore } from 'react'
 import type { Clock } from './clock'
 

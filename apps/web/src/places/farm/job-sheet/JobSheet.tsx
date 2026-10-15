@@ -3,10 +3,10 @@
 // plan, then **Start**, **Add to queue** or **Recall and start here**. A disabled button always says why in the rule's
 // words, a shortfall links to the building that makes it (and the Exchange's row for a stocked raw item), an `ask`
 // re-offers the covered size, and Start returns to `back` when the link gave one.
-import { clockTime } from '@racer/domain/rework/check-in'
-import type { FarmBuildingId } from '@racer/domain/rework/farm'
-import { itemById, type ItemId } from '@racer/domain/rework/items'
-import { slotsOf } from '@racer/domain/rework/work'
+import { clockTime } from '@racer/domain/check-in'
+import type { FarmBuildingId } from '@racer/domain/farm'
+import { itemById, type ItemId } from '@racer/domain/items'
+import { slotsOf } from '@racer/domain/work'
 import type { Place } from '@racer/domain/hub'
 import { useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router'

@@ -1,7 +1,7 @@
 // Synthetic accounts for the place view models' tests (T138): a dev seed's account moved by the rework's own operations
 // through `recheck`, at the seed's clock or a later one, so every number a test reads is the rules'. Synthetic only.
-import { recheck, type OperationInput, type OperationName, type OperationReceipt } from '@racer/domain/rework/check-in'
-import type { WorkState } from '@racer/domain/rework/work'
+import { recheck, type OperationInput, type OperationName, type OperationReceipt } from '@racer/domain/check-in'
+import type { WorkState } from '@racer/domain/work'
 import { seed } from './testing'
 
 export interface Account {

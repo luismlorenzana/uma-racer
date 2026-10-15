@@ -12,10 +12,10 @@ import {
   type CompiledRaceSkill, type DistanceCategory, type RaceResultRunner, type RaceRun, type RaceTemplate, type SkillTemplate,
   type Stats, type Strategy, type UmaTemplate,
 } from '@racer/domain'
-import type { OperationEnv } from '@racer/domain/rework/check-in'
-import { rollRivalFieldAt, scenarioNumber, type ScenarioAt } from '@racer/domain/rework/tiers'
-import { deriveUmaPreset, type DerivedBuild } from '@racer/domain/rework/training'
-import { collectBeforeRace, type WorkState } from '@racer/domain/rework/work'
+import type { OperationEnv } from '@racer/domain/check-in'
+import { rollRivalFieldAt, scenarioNumber, type ScenarioAt } from '@racer/domain/tiers'
+import { deriveUmaPreset, type DerivedBuild } from '@racer/domain/training'
+import { collectBeforeRace, type WorkState } from '@racer/domain/work'
 import { createRng, simulateRace, type RaceInput, type RaceTimeline } from '@racer/race'
 import type { LoadedContent } from '../../content/runtime'
 import { accomplishmentFactsFromTimeline } from './race-facts'

@@ -2,7 +2,7 @@
 // table per kind and the outbox and nothing else, rows read back through T134's parsers, and an unreadable row left
 // where it is.
 import 'fake-indexeddb/auto'
-import { ENTITY_KINDS, LOG_KINDS } from '@racer/domain/save-g2'
+import { ENTITY_KINDS, LOG_KINDS } from '@racer/domain/save'
 import Dexie from 'dexie'
 import { describe, expect, it } from 'vitest'
 import { parseStoredEntity, readConfirmed, SAVE_DB_NAME, SaveDb, UnreadableRow } from './db'

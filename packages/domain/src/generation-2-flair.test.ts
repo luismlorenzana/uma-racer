@@ -10,11 +10,11 @@ import {
   reconcileTrainerState, applyScenarioCompletionFact,
   type FlairTrigger, type ScenarioCompletionFact, type SupportCardTemplate, type UmaBadgeStateV1,
 } from './index'
-import { devGrant, OPERATIONS } from './rework/check-in'
-import { SIM_CONTENT, SIM_RACES, SIM_UMAS } from './rework/sim'
-import { EXPEDITION_WINS, isLastScenario, isRefusal, newAccount, promote, recordExpeditionRace, unlockUma } from './rework/tiers'
-import { everBondedCardIds, promotionPresetStats } from './rework/training'
-import { newWorkState, type WorkState } from './rework/work'
+import { devGrant, OPERATIONS } from './check-in'
+import { SIM_CONTENT, SIM_RACES, SIM_UMAS } from './sim'
+import { EXPEDITION_WINS, isLastScenario, isRefusal, newAccount, promote, recordExpeditionRace, unlockUma } from './tiers'
+import { everBondedCardIds, promotionPresetStats } from './training'
+import { newWorkState, type WorkState } from './work'
 
 const template = SIM_UMAS[0]!
 const races = SIM_RACES

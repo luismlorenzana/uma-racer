@@ -2,7 +2,7 @@
 // facility page (with the session sheet over it from its query), and `/training/:facility/:umaId` her build view
 // there: the Observatory's tree and the Gym's Extra Stats map full screen, the Lineage Hall's map and the Dojo's bonds
 // in the shell. Each view is its own lazy chunk.
-import type { FacilityId } from '@racer/domain/rework/farm'
+import type { FacilityId } from '@racer/domain/farm'
 import { lazy, Suspense, type ComponentType, type LazyExoticComponent } from 'react'
 import { Navigate } from 'react-router'
 import type { PageProps } from '../registry'

@@ -9,7 +9,7 @@
 //   `logs` the read helpers, so a screen reads race results or the ledger without the store holding them;
 // - `badges` the badge rows (T141), a tap's `device` rows ride in its transaction, and `writeDevice` writes them alone.
 // Loaded lazily by `app/boot.ts`, so none of it, Dexie and Zustand included, reaches the entry chunk.
-import type { OperationEnv } from '@racer/domain/save-g2'
+import type { OperationEnv } from '@racer/domain/save'
 import type { G2Game, G2Snapshot, G2Sync } from '../app/game'
 import { bootSave, type SaveBootOptions, type SaveSession } from './boot'
 import { useSave, type SaveStore } from './store'

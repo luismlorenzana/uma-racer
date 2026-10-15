@@ -5,8 +5,8 @@
 // in one step or not at all, the snapshot carries the badges, and `logs` read the race results and flair events. On the
 // seeds' mount, Account can load another of the synthetic seeds in place (T138).
 import type { FlairEventV1 } from '@racer/domain'
-import { recheck, type FinishRaceInput, type OperationInput, type OperationName, type OperationReceipt } from '@racer/domain/rework/check-in'
-import { raceResultRow, type RaceResultRow } from '@racer/domain/save-g2'
+import { recheck, type FinishRaceInput, type OperationInput, type OperationName, type OperationReceipt } from '@racer/domain/check-in'
+import { raceResultRow, type RaceResultRow } from '@racer/domain/save'
 import { flairKeyOf, NO_RECORDS, type G2Answer, type G2DeviceRows, type G2Game, type G2Receipt, type G2Records, type G2RunOptions, type G2Snapshot } from '../app/game'
 import type { G2Seed } from './seed'
 

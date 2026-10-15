@@ -3,17 +3,17 @@
 // "After" comes from running the operation itself on a copy of the state (`advance-scenario`, `promote`), so the sheet
 // shows exactly what the tap will do; the layer and the buff come from rework/training's tables.
 import { careerComplete, goalRaceIds, scenarioJourneySummary, CAREER_STAGE_LABELS, careerStage, DISTANCE_CATEGORIES, STATS, type DistanceCategory, type RaceTemplate, type Stats } from '@racer/domain'
-import { OPERATIONS, type OperationEnv } from '@racer/domain/rework/check-in'
+import { OPERATIONS, type OperationEnv } from '@racer/domain/check-in'
 import {
   advanceReadiness, canStartExpedition, capProfileAt, gateLevel, isRefusal, lifetimeLevel, promotionReadiness,
   scenarioNumber, scenarioRow, spCapAt, PROMOTION_UMA_TICKETS, type ScenarioOfTier, type UmaState,
-} from '@racer/domain/rework/tiers'
+} from '@racer/domain/tiers'
 import {
   BONDS_BY_SCENARIO, LAYER_SIZES, bondsThrough, deriveUmaPreset, isOpen, layerUnlocks, promotionPresetStats, reworkBuff,
   type UnlockKind,
-} from '@racer/domain/rework/training'
-import type { WorkState } from '@racer/domain/rework/work'
-import type { RaceResultRow } from '@racer/domain/save-g2'
+} from '@racer/domain/training'
+import type { WorkState } from '@racer/domain/work'
+import type { RaceResultRow } from '@racer/domain/save'
 import { holdLevel } from './view'
 import { racingWords } from './words'
 

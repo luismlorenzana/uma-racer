@@ -3,7 +3,7 @@
 // feeds the private content (T143); the seeds' mount has none, so it reads the seed's synthetic content, with an invented
 // course for any race whose course it lacks and no art. Nothing here is original-game content.
 import type { CourseTemplate, RaceTemplate } from '@racer/domain'
-import type { OperationEnv } from '@racer/domain/rework/check-in'
+import type { OperationEnv } from '@racer/domain/check-in'
 import { useMemo } from 'react'
 import type { ContentAtlas } from '@racer/domain'
 import type { LoadedContent } from '../../content/runtime'

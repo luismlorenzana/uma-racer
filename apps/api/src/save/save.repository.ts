@@ -1,6 +1,6 @@
 // Generation 2's persistence (docs/rework/13-removals-and-plan-changes.md §6; docs/rearchitecture/07-data-reset.md §3; T135):
 // one interface, a Firestore implementation at `saves/{uid}` and a local JSON one for dev, both on `resolve.ts`.
-import type { OperationEnv, PurgeResponse, SaveSnapshotV2, SyncRequestV2, SyncResponseV2 } from '@racer/domain/save-g2'
+import type { OperationEnv, PurgeResponse, SaveSnapshotV2, SyncRequestV2, SyncResponseV2 } from '@racer/domain/save'
 import type { NoSave } from './resolve'
 
 /** Loads the operation env (T135's `OperationContent`); a repository calls it once, and only for a request with an operation. */

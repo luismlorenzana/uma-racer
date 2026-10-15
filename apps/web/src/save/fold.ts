@@ -11,7 +11,7 @@
 // 4. The log rows the queued operations made (an offline race's result, say) come back as `pendingLogs`.
 import {
   commitOperation, initialSave, toSaveState, type EntityRow, type LogDraft, type LogRow, type OperationEnv, type SaveState,
-} from '@racer/domain/save-g2'
+} from '@racer/domain/save'
 import type { ConfirmedRows, OutboxRow } from './db'
 
 export interface FoldResult {

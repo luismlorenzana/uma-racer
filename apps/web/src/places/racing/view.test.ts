@@ -2,9 +2,9 @@
 // edge, the featured board and its counter, the pre-race prize per band, the result's lines (featured, tired, spent,
 // Shard, hold), Next Uma, the Advance sheet's "after" against the operation's, the Map's placeholder rows, the
 // leaving flair (Graduate, Promoted), and 02 §9's banned words over every template. Synthetic seeds only.
-import { hasBannedWord, OPERATIONS } from '@racer/domain/rework/check-in'
-import { PURSE_BANDS, WIN_PRIZE, type RacePrize } from '@racer/domain/rework/exchange'
-import { canStartExpedition, isRefusal, type UmaState } from '@racer/domain/rework/tiers'
+import { hasBannedWord, OPERATIONS } from '@racer/domain/check-in'
+import { PURSE_BANDS, WIN_PRIZE, type RacePrize } from '@racer/domain/economy'
+import { canStartExpedition, isRefusal, type UmaState } from '@racer/domain/tiers'
 import { describe, expect, it } from 'vitest'
 import { seed } from '../../__fixtures__/testing'
 import { devRaceContent } from './content'

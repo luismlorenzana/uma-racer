@@ -2,10 +2,10 @@
 // collected; the device's receipt equals the server's; a retried Start pays once; a second device's same-day race
 // shows the server's re-priced prize after sync; a featured first win pays its bonus once; and the committed row
 // replays the same race. Synthetic seeds only.
-import { deriveUmaPreset } from '@racer/domain/rework/training'
-import { collectBeforeRace } from '@racer/domain/rework/work'
+import { deriveUmaPreset } from '@racer/domain/training'
+import { collectBeforeRace } from '@racer/domain/work'
 import type { RaceRun } from '@racer/domain'
-import { commitOperation, type OperationEnvelope } from '@racer/domain/save-g2'
+import { commitOperation, type OperationEnvelope } from '@racer/domain/save'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { G2Game } from '../../app/game'
 import { createMemoryGame } from '../../dev/memory'

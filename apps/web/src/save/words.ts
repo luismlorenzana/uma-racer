@@ -2,8 +2,8 @@
 // on a screen comes from 02 §9 through the check-in's own table: offline, anything unexpected, and "Already collected."
 // for a line the other device collected. A refusal is said in its rule's words. No code, number or protocol word
 // reaches a screen: a failure kind is for the lane, and only its sentence leaves this module.
-import { CHECK_IN_WORDS, fill, say, type Words } from '@racer/domain/rework/check-in'
-import type { Refusal } from '@racer/domain/rework/tiers'
+import { CHECK_IN_WORDS, fill, say, type Words } from '@racer/domain/check-in'
+import type { Refusal } from '@racer/domain/tiers'
 import type { SaveFailure } from './api'
 
 export const SAVE_WORDS = Object.freeze({

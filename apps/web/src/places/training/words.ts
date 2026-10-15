@@ -3,7 +3,7 @@
 // the build views. Rules speak through the domain's refusal tables (filled by `ruleWords`); these are labels and
 // headings around them. 02 §9's banned words never appear here (`model.test.ts` holds every template to
 // `hasBannedWord`).
-import { fill } from '@racer/domain/rework/check-in'
+import { fill } from '@racer/domain/check-in'
 
 export const TRAINING_WORDS = Object.freeze({
   /** A facility page's header (05 §8). */

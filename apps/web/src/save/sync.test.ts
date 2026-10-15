@@ -3,8 +3,8 @@
 // one lane in outbox order 100 at a time, its timing (the debounce, hidden, visible, online, the backoff), no retry
 // after a 426, a fresh boot after a 409, and pulls that overlap by five minutes and resume from their cursor.
 import 'fake-indexeddb/auto'
-import { fill } from '@racer/domain/rework/check-in'
-import { commitOperation, toSaveState, type EntityRow, type LogRow, type OperationEnvelope } from '@racer/domain/save-g2'
+import { fill } from '@racer/domain/check-in'
+import { commitOperation, toSaveState, type EntityRow, type LogRow, type OperationEnvelope } from '@racer/domain/save'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { badgeKey } from './db'
 import { useSave } from './store'

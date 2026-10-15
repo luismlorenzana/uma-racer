@@ -12,19 +12,19 @@
 // 3. **Confirm**: the dishes to reserve, the minutes and each finish time; then `start` on the slot (the slot card's,
 //    else hers, else the first free one of the room in `slotsOf` order) or `queue` behind her running session here,
 //    each run on the current state first so a disabled button says why in the rule's own words.
-import { clockTime, fitSize, hasReady, say, type Words } from '@racer/domain/rework/check-in'
-import { BUILDINGS, type FacilityId, type RoomId } from '@racer/domain/rework/farm'
-import type { ItemId } from '@racer/domain/rework/items'
-import { remainingFor, workAhead } from '@racer/domain/rework/planner'
-import { isRefusal, TIER_REFUSALS, type UmaState } from '@racer/domain/rework/tiers'
+import { clockTime, fitSize, hasReady, say, type Words } from '@racer/domain/check-in'
+import { BUILDINGS, type FacilityId, type RoomId } from '@racer/domain/farm'
+import type { ItemId } from '@racer/domain/items'
+import { remainingFor, workAhead } from '@racer/domain/planner'
+import { isRefusal, TIER_REFUSALS, type UmaState } from '@racer/domain/tiers'
 import {
   facilityOf, isOpen, isRoomOf, layerUnlocks, nextUnlocks, resolveUnlock, roomAccepts, roomsFor, sessionRequest, sessionSeconds,
   SESSION_MAX_UNLOCKS, TRAINING_REFUSALS, unlockKey, unlockStatus, type Unlock, type UnlockRef,
-} from '@racer/domain/rework/training'
+} from '@racer/domain/training'
 import {
   chainEnd, holdsSlot, MAX_QUEUE, queue, SESSION_KIND, slotHolder, slotsOf, speedAt, start, statusOf, stockOf, type QueueInput, type SlotRef,
   type StartInput, type WorkState,
-} from '@racer/domain/rework/work'
+} from '@racer/domain/work'
 import type { WorkView } from '../../../ui/work/view'
 import { duration } from '../../../ui/labels'
 import type { WordsContext } from '../../../ui/work/words'

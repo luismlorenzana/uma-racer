@@ -2,9 +2,9 @@
 // template from the domain filled for the screen, `{uma}` with her template's name, `{item}` with the item's,
 // `{place}` with the building's and `{time}` as a clock time, numbers grouped ("1,200"); and the shared pieces' own
 // copy. 02 §9's banned words never appear here (`work.test.ts` holds every template to `hasBannedWord`).
-import { clockTime, fill, type Words } from '@racer/domain/rework/check-in'
-import { BUILDINGS, isBuildingId } from '@racer/domain/rework/farm'
-import { itemById } from '@racer/domain/rework/items'
+import { clockTime, fill, type Words } from '@racer/domain/check-in'
+import { BUILDINGS, isBuildingId } from '@racer/domain/farm'
+import { itemById } from '@racer/domain/items'
 
 /** What filling a template reads beyond its data. */
 export interface WordsContext {

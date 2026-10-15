@@ -3,7 +3,7 @@
 // it keeps later in the tier, the full Race Bonus); its skills by node, golds first; the bond's dish and real time per
 // tier; who is bonded and where, then who could bond it now; and Bond in the thumb zone, which opens the Uma picker and
 // goes on to T139's Dojo session with her, this card and its room. A bond in progress reads "In session · bonds 01:30".
-import { scenarioRow } from '@racer/domain/rework/tiers'
+import { scenarioRow } from '@racer/domain/tiers'
 import { useMemo, useState, type ReactNode } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router'
 import { ArtViewer } from '../../ui/ArtViewer'
@@ -25,7 +25,7 @@ import {
   bondChoice, bondCosts, bondedTo, bondSessionPath, cardName, cardSkills, cookPath, eraLabel, LENS_MODES, lensOf, LIBRARY_ALBUM,
   LIBRARY_DEFAULT_QUERY, LIBRARY_FACETS, LIBRARY_SORTS, payWords, pendingBond, PLAYABLE, raceBonusWords, TYPE_LABEL,
 } from './model'
-import { cardFocus, cardPay } from '@racer/domain/rework/training'
+import { cardFocus, cardPay } from '@racer/domain/training'
 
 function Block({ title, children }: { title: string; children: ReactNode }) {
   return (

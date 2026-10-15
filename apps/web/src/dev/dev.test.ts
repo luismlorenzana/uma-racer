@@ -2,7 +2,7 @@
 // Umas; `fresh` is a new account; `quiet` has every Uma Working and nothing to collect. The port runs every tap through
 // `recheck`, keeps its receipt, applies a busy key's tap once, saves nothing, and its clock runs from the seed's time.
 import { hubView } from '@racer/domain/hub'
-import { readyCount } from '@racer/domain/rework/check-in'
+import { readyCount } from '@racer/domain/check-in'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { seed, stubStorage } from '../__fixtures__/testing'
 import { createMemoryGame } from './memory'

@@ -3,9 +3,9 @@
 // §2's Potato job reads "3 / 10 made" with its times from `itemEnds` and `endsAt`; SpeedUpControls' four states; a
 // Recall's preview equals the receipt `recall` gives; queue chips' ends and warnings; the size chips in `sizeChips`'
 // words; and every template passes 02 §9's banned words.
-import { chipWords, fill, fitWords, hasBannedWord, sizeChips } from '@racer/domain/rework/check-in'
-import { FARM_BUILDING_IDS, farmItemSeconds, totalSlots, type BuildingLevel } from '@racer/domain/rework/farm'
-import { endsAt, itemEnds, recall, type WorkState } from '@racer/domain/rework/work'
+import { chipWords, fill, fitWords, hasBannedWord, sizeChips } from '@racer/domain/check-in'
+import { FARM_BUILDING_IDS, farmItemSeconds, totalSlots, type BuildingLevel } from '@racer/domain/farm'
+import { endsAt, itemEnds, recall, type WorkState } from '@racer/domain/work'
 import { describe, expect, it } from 'vitest'
 import { apply, farmAccount, HOUR, MINUTE, uma, withFarmLevel } from '../../places/farm/__fixtures__/farm'
 import { recallLines } from './RecallSheet'

@@ -3,8 +3,8 @@
 // **Finish · N** is `finish`, N being `ticketsToFinish` of what remains. With too few tickets Finish reads "Buy 3 and
 // finish · 90", asks once, then runs `buy` and `finish` as two operations in order. Under 30 minutes left, it shows the
 // minutes the ticket wastes before it confirms. Nothing shows on a queued, finished or empty slot.
-import { SPEED_TICKET_PRICE } from '@racer/domain/rework/exchange'
-import { SPEED_TICKET_ID } from '@racer/domain/rework/items'
+import { SPEED_TICKET_PRICE } from '@racer/domain/economy'
+import { SPEED_TICKET_ID } from '@racer/domain/items'
 import { useState } from 'react'
 import { speedUpModel, type SpeedUpModel } from './model'
 import { TapNoteLine } from './TapNote'

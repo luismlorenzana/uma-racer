@@ -2,12 +2,12 @@
 // Needs tab (`needsFor`), the roster view (`rosterTotals`) and the targets, as pure readings in 02 §6's words. The
 // planner runs with `chosen = {}`: bond picks aren't saved in phase 3, so an unchosen bond reads "N bonds: pick cards"
 // and links to her Dojo sheet. Every number is the domain's.
-import { buyFor, CHECK_IN_WORDS, fill, say, type OperationEnv } from '@racer/domain/rework/check-in'
-import { itemById } from '@racer/domain/rework/items'
+import { buyFor, CHECK_IN_WORDS, fill, say, type OperationEnv } from '@racer/domain/check-in'
+import { itemById } from '@racer/domain/items'
 import {
   automaticTargets, LINE_LEVELS, needsFor, rosterTotals, type LineLevel, type PlanLine, type Suggestion,
-} from '@racer/domain/rework/planner'
-import type { WorkState } from '@racer/domain/rework/work'
+} from '@racer/domain/planner'
+import type { WorkState } from '@racer/domain/work'
 import { exchangeRow, lineLabel, lineWords } from '../farm/building/model'
 import { sessionLink, startWords } from '../check-in/model'
 import { grouped, placeName, type WordsContext } from '../../ui/work/words'

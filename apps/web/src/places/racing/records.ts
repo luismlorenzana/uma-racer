@@ -2,7 +2,7 @@
 // and flair event read through the port's `logs` (T136 never loads logs into its store), re-read whenever the port
 // publishes. Null until the first read lands, so a screen draws nothing rather than a wrong count.
 import type { FlairEventV1 } from '@racer/domain'
-import type { RaceResultRow } from '@racer/domain/save-g2'
+import type { RaceResultRow } from '@racer/domain/save'
 import { useEffect, useMemo, useState } from 'react'
 import { flairKeyOf, type G2Game, type G2Records, useRuntime, useSnapshot } from '../../app/game'
 

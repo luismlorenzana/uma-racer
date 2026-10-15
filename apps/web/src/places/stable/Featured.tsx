@@ -3,7 +3,7 @@
 // ("Kitchen · 2 of 4 · 16:40"); Train (her Needs), Race (the Racecourse with her picked), Profile, and Feature another
 // Uma through the one Uma picker, which runs `feature-uma`. The plaza's chibi and its animation are phase 6 (§11).
 import { hubWords } from '@racer/domain/hub'
-import { scenarioNumber, scenarioRow } from '@racer/domain/rework/tiers'
+import { scenarioNumber, scenarioRow } from '@racer/domain/tiers'
 import { useMemo, useState } from 'react'
 import { Link, useLocation } from 'react-router'
 import { Button } from '../../ui/Button'

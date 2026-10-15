@@ -1,7 +1,7 @@
 // What this device remembers about the check-in sheet (docs/rework/02-check-ins-and-notifications.md §10; T142), in
 // `uma-racer:g2:` keys, each read and written in try/catch so a blocked storage only forgets: when it last showed the
 // summary (`since`, written when the sheet closes), and which sections are collapsed. Never synced.
-import { SUMMARY_SECTIONS, type SummarySectionKind } from '@racer/domain/rework/check-in'
+import { SUMMARY_SECTIONS, type SummarySectionKind } from '@racer/domain/check-in'
 
 export const SHOWN_AT_KEY = 'uma-racer:g2:check-in:shown-at'
 export const COLLAPSED_KEY = 'uma-racer:g2:check-in:collapsed'
