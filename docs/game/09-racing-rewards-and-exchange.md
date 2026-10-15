@@ -353,7 +353,8 @@ the total. It asks once when the sale:
 No undo: a confirmed sale is final, and buying back costs three times as much, so the confirmations are the guard.
 
 **As built (T138).** Reserved is `reservedStock` (`work`), what Recall would return; the sizes are `stackCounts`'s,
-each priced by `sellPrice` with its total, a size of 0 off with its reason. `sellConfirmations` decides the one question,
+each priced by `sellPrice` with its total, a size of 0 off with its reason. ×1 and ×10 are capped at what is held, and
+each button says what it sells: with 9 held, ×10 reads "Sell ×9" (`sellLabel`). `sellConfirmations` decides the one question,
 which reads all that apply in one sentence at live prices: "Sell 2 Cabbage Salad (grade 3) for 698? Each took about 17
 hours of work. This leaves the planner 4 short for Hishi Akebono's Observatory layer." (hours from `workValueSeconds`; the
 target is the first in the plan's order whose unlocks take the stack, as a dish or inside one). The sale carries the

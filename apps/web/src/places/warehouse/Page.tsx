@@ -18,7 +18,7 @@ import { umaName } from '../../ui/words'
 import type { PageProps } from '../registry'
 import { ItemIcon } from '../../ui/ItemIcon'
 import {
-  EMPTY_WORDS, filterRows, makeAt, recipesUsing, SELL_LABEL, sellQuestion, sellSheet, SHELF_LABEL, SHELVES, sizeOffWords, warehouse,
+  EMPTY_WORDS, filterRows, makeAt, recipesUsing, sellLabel, sellQuestion, sellSheet, SHELF_LABEL, SHELVES, sizeOffWords, warehouse,
   type SellOption, type Shelf, type StockRow, type Warehouse,
 } from './model'
 
@@ -104,9 +104,9 @@ function StockSheet({ row, house, onClose }: { row: StockRow | null; house: Ware
             {sheet.options.map((option) => (
               <div key={option.size}>
                 <Button className="w-full" variant={option.size === 'surplus' ? 'primary' : 'secondary'} disabled={option.qty === 0 || tap.pending !== null}
-                  onClick={() => choose(option)} aria-label={`${SELL_LABEL[option.size]}: ${option.qty} for ${amount(option.total)}`}>
+                  onClick={() => choose(option)} aria-label={`${sellLabel(option)}: ${option.qty} for ${amount(option.total)}`}>
                   <span className="flex flex-col items-center leading-tight">
-                    <span>{SELL_LABEL[option.size]}{option.size === 'surplus' || option.size === 'allFree' ? ` ×${option.qty}` : ''}</span>
+                    <span>{sellLabel(option)}</span>
                     <span className="flex items-center gap-1 text-[12px] font-normal"><CoinIcon size={16} variant="duotone" />{amount(option.total)}</span>
                   </span>
                 </Button>

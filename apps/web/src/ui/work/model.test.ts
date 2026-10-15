@@ -73,6 +73,9 @@ describe("SpeedUpControls' four states (07 §8, 09 §5.1)", () => {
     expect(model).toMatchObject({ state: 'buy', finish: 8, have: 5, buy: 3, price: 90 })
     expect(workWords('buy-finish', { n: model.buy, price: model.price })).toBe('Buy 3 and finish · 90')
     expect(speedUpQuestion(model)).toBe('Buy 3 Speed Tickets for 90 Prize Money and finish now?')
+    // One ticket is singular, in the question and in Finish's label.
+    expect(speedUpQuestion({ ...model, buy: 1, price: 30 })).toBe('Buy 1 Speed Ticket for 30 Prize Money and finish now?')
+    expect(workWords('finish-label-one')).toBe('Finish now with 1 Speed Ticket')
     expect(model.buyRefusal).toEqual({ text: 'Need {n} more.', data: { n: 90 } })
     const rich = apply(running(5), 'dev-grant', { prizeMoney: 1_000 }, at).state
     expect(speedUpModel(rich, uma(1), at).buyRefusal).toBeNull()

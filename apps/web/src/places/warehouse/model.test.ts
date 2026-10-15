@@ -7,7 +7,8 @@ import { neededFromStock, plan, targetsOf } from '@racer/domain/planner'
 import { describe, expect, it } from 'vitest'
 import { account, umaIds } from '../../__fixtures__/testing-ops'
 import {
-  biggestStacks, EMPTY_WORDS, filterRows, itemLine, largestShortfalls, recipesUsing, sellQuestion, sellSheet, sizeOffWords, surplusWorth, warehouse,
+  biggestStacks, EMPTY_WORDS, filterRows, itemLine, largestShortfalls, recipesUsing, sellLabel, sellQuestion, sellSheet, sizeOffWords, surplusWorth,
+  warehouse,
 } from './model'
 import { itemById } from '@racer/domain/items'
 
@@ -51,6 +52,15 @@ describe("a stack's counts", () => {
 })
 
 describe('the stock sheet (09 §6.1)', () => {
+  it('labels each size with what it sells: ×10 reads "Sell ×9" when 9 are held', () => {
+    expect(sellLabel({ size: 'one', qty: 1 })).toBe('Sell ×1')
+    expect(sellLabel({ size: 'ten', qty: 10 })).toBe('Sell ×10')
+    expect(sellLabel({ size: 'ten', qty: 9 })).toBe('Sell ×9')
+    expect(sellLabel({ size: 'ten', qty: 0 })).toBe('Sell ×10')
+    expect(sellLabel({ size: 'surplus', qty: 4 })).toBe('Surplus ×4')
+    expect(sellLabel({ size: 'allFree', qty: 9 })).toBe('All free ×9')
+  })
+
   it('offers ×1, ×10, Surplus and All free from stackCounts at sellPrice, a size of 0 off, and no Sell for Speed Tickets', () => {
     const acc = kitchen()
     acc.run('dev-grant', { items: { 'speed-ticket': 2 } })

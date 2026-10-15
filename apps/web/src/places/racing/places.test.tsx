@@ -8,6 +8,7 @@
 // ends the race as soon as it mounts.
 import { act, cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { hasBannedWord } from '@racer/domain/check-in'
 import { renderG2, seedGame, stubStorage } from '../../__fixtures__/testing'
 import { raceTurns, timelineDuration } from '@racer/race'
 import { hudTurn, TURN_RACE_RATE } from '../../scenes/race/presentation'
@@ -213,6 +214,17 @@ describe('the Scenario Gate', () => {
 })
 
 describe('the Expedition Map, a placeholder', () => {
+  it('says in its Peek that no Uma is ready yet, and lists nobody there', async () => {
+    renderG2('/racing?peek=expedition-map', seedGame('busy'))
+    const peek = await waitFor(() => {
+      const element = document.querySelector('[data-g2="map-peek"]')
+      expect(element).not.toBeNull()
+      return element!
+    })
+    expect(peek.textContent).toBe('No Uma is ready for an Expedition yet. The Map shows how far each one has to go.')
+    expect(hasBannedWord(peek.textContent!)).toBe(false)
+  })
+
   it('offers no Start and sends an Expedition’s route back to the Map', async () => {
     const { where } = renderG2('/racing/expedition-map/us-speed', seedGame('busy'))
     await screen.findByText('No Uma has finished her tier yet')

@@ -20,14 +20,17 @@ import { Sheet } from '../../ui/Sheet'
 import { ItemIcon } from '../../ui/ItemIcon'
 import { localDayAt, purseBar } from '../racing/view'
 import type { PageProps } from '../registry'
-import { buyCheck, buyQuestion, exchangeView, rawFamily, RAW_PER_PURCHASE, SPEED_TICKET_STEPS, speedTicketPrice, typedQty, type RawRow } from './model'
+import {
+  boughtWords, buyCheck, buyQuestion, exchangeView, rawFamily, RAW_PER_PURCHASE, SPEED_TICKET_STEPS, SPEED_TICKETS, speedTicketPrice, typedQty,
+  type CountedName, type RawRow,
+} from './model'
 
 const isFamily = (value: string | null): value is FamilyId => FAMILY_IDS.includes(value as FamilyId)
 
 /** Buy with its rule: off with `prize-money`'s words, and one question at 1,000 or more. */
 function BuyButton({ sku, name, qty, unitPrice, prizeMoney, label = 'Buy' }: {
   sku: string
-  name: string
+  name: CountedName
   qty: number | null
   unitPrice: number
   prizeMoney: number
@@ -43,7 +46,7 @@ function BuyButton({ sku, name, qty, unitPrice, prizeMoney, label = 'Buy' }: {
     if (qty === null) return
     setSaid(null)
     const answer = await tap.run('buy', { sku, qty, unitPrice }, key)
-    if (answer?.kind === 'done') setSaid(`Bought ${answer.receipt.qty} ${name} for ${amount(answer.receipt.total)}.`)
+    if (answer?.kind === 'done') setSaid(boughtWords(answer.receipt.qty, name, answer.receipt.total))
   }
   return (
     <div>
@@ -163,7 +166,7 @@ export default function ExchangePage({ place, rest }: PageProps) {
                 onChange={(event) => { setTyped(event.target.value); setStep(null) }}
                 className="min-h-11 w-20 min-w-0 flex-1 rounded-full border border-hairline-strong bg-panel px-3 text-[14px]" />
             </div>
-            <BuyButton sku={SPEED_TICKET_ID} name="Speed Tickets" qty={qty} unitPrice={price} prizeMoney={prizeMoney} />
+            <BuyButton sku={SPEED_TICKET_ID} name={SPEED_TICKETS} qty={qty} unitPrice={price} prizeMoney={prizeMoney} />
           </Panel>
         </section>
         <section aria-label="Raw ingredients" className="space-y-2">

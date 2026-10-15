@@ -68,8 +68,20 @@ export function buyCheck(prizeMoney: number, unitPrice: number, qty: number): Bu
 }
 
 /** The question a large purchase asks once. */
-export const buyQuestion = (qty: number, name: string, total: number): string =>
-  `Buy ${qty} ${name} for ${total.toLocaleString('en-US')}?`
+/** What a Buy names, for its count: a raw item's name reads the same for any ("10 Carrot"), a Speed Ticket doesn't. */
+export type CountedName = string | ((qty: number) => string)
+
+/** "1 Speed Ticket", "10 Speed Tickets". */
+export const SPEED_TICKETS = (qty: number): string => (qty === 1 ? 'Speed Ticket' : 'Speed Tickets')
+
+const named = (name: CountedName, qty: number): string => (typeof name === 'string' ? name : name(qty))
+
+export const buyQuestion = (qty: number, name: CountedName, total: number): string =>
+  `Buy ${qty} ${named(name, qty)} for ${total.toLocaleString('en-US')}?`
+
+/** The line after a Buy: "Bought 1 Speed Ticket for 30." */
+export const boughtWords = (qty: number, name: CountedName, total: number): string =>
+  `Bought ${qty} ${named(name, qty)} for ${total.toLocaleString('en-US')}.`
 
 /** A typed amount as a whole quantity from 1, or null. Speed Tickets have no upper limit (09 §5). */
 export function typedQty(text: string): number | null {
