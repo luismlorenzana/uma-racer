@@ -59,7 +59,9 @@ jobs:
         run: pnpm lint
 
       - name: Run tests
-        run: pnpm test
+        # One package at a time: the domain's simulations (sim:loop, the balance reports) are CPU-heavy, and running
+        # beside them starves the web suite's timed tests on a 4-core runner.
+        run: pnpm test:ci
 
       - name: Build production artifacts
         run: pnpm build

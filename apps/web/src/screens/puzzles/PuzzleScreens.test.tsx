@@ -178,7 +178,7 @@ describe('Puzzle guarded screens on the real isolated host', () => {
     const after = (await environment.host.account()).checkpoints[1]!.open!
     expect(after.input.seed).toBe(initial.input.seed); expect(after.ownerEpoch).toBe(initial.ownerEpoch + 1); expect(begin).not.toHaveBeenCalled()
     const restored = await environment.host.loadBattle(after.input.battleId); if (restored.kind !== 'battle') throw new Error('Expected restored proof'); expect(puzzleBattleStateHash(restored.state)).toHaveLength(16); restored.lease.release()
-  })
+  }, 15_000) // room for the 5 s restore wait above on a busy CI runner
   it('account selectors ignore equal reads / journal writes, and holding/releasing a preview is balanced', async () => {
     const store = createPuzzleAccountStore(), a = await environment.host.account(), subscriber = vi.fn(); store.store.subscribe(subscriber)
     store.publish(a); store.publish(structuredClone(a)); expect(subscriber).toHaveBeenCalledOnce()
