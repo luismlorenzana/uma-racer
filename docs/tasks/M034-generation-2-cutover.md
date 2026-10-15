@@ -1,7 +1,7 @@
 # M034 — The generation-2 cutover and the new game
 
 **Re-architecture phase 3** ([08](../rearchitecture/08-phases.md), [rework/13](../rework/13-removals-and-plan-changes.md) §4).
-**State: specified 2026-10-15; implementation not started.**
+**State: specified 2026-10-15; T134–T142 landed on `cutover/g2` 2026-10-15; T143 next.**
 
 ## Outcome
 
@@ -71,7 +71,7 @@ A new account has 20 Uma Tickets and nothing else ([rework/13](../rework/13-remo
 | T136 — The web save layer ✅ (D355) | `g2/save/`: Dexie `uma-racer-g2` (one table per kind, the outbox), one Zustand store over the rework state, actions that apply an operation locally and queue it, one sync lane, local-first boot, and the first-boot wipe of every old database, key and cache plus the purge call | T134 | T135 |
 | T137 — The shell and the places ✅ (D353) | `@racer/domain/hub`'s place registry and `g2/app`: the route scheme with the redirects of rework/11 §7, the account bar, the bottom bar with the raised Race button, the menu, the floating pill, the four pages as DOM tile grids with uma-art building frames, every Peek and Page slot. `@luismlorenzana/uma-art` joins `@racer/web` | — | T134 |
 | T138 — Town Hall ✅ (D356) | The Stable (Uma Tickets, Shards to tickets, the reveal), the Uma profile, the Warehouse (stock, selling), the Exchange, the Card Library (every SSR, bonds per Uma) and Account | T136, T137 | T139–T142 |
-| T139 — Training | The Observatory, Lineage Hall, Gym and Dojo: session sheets, the build views (tree, Inspiration, Extra Stats map, bonds and card set, presets) | T136, T137 | T138, T140–T142 |
+| T139 — Training ✅ (D357) | The Observatory, Lineage Hall, Gym and Dojo: session sheets, the build views (tree, Inspiration, Extra Stats map, bonds and card set, presets) | T136, T137 | T138, T140–T142 |
 | T140 — The Farm ✅ (D358) | The eight family sites, the Pantry and the Kitchen: job sheets with sizes and queues, collect and recall, Speed Tickets, upgrades | T136, T137 | T138, T139, T141, T142 |
 | T141 — Racing ✅ (D359) | The Racecourse (race select, the Daily Purse, featured races), the run and the result with Racing EXP and Prize Money on today's race engine and scene, the Scenario Gate (careers, advance, promotion), the Trophy Hall; the Expedition Map as a placeholder until phase 9 | T136, T137 | T138–T140, T142 |
 | T142 — Check-ins ✅ (D360) | Collect all, Repeat, the check-in summary, the planner's needs and targets, queue warnings and stopped queues, and the pill's counts (rework/02) | T136, T137 | T138–T141 |
