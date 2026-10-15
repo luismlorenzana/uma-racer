@@ -28,6 +28,7 @@ import { deviceRows, eventsOfCommit, leaveFlair } from './flair'
 import { advanceSheet, careerRow, careerRows, promoteInput, promoteSheet, type AdvanceSheet as AdvanceView, type CareerRow } from './gate'
 import { useRecords } from './records'
 import { rowsOf } from './today'
+import { profilePath } from '../stable/model'
 import { amount, racingWords } from './words'
 import type { LoadedContent } from '../../content/runtime'
 import type { OperationEnv } from '@racer/domain/check-in'
@@ -36,9 +37,6 @@ import { endsAt, type WorkRow } from '@racer/domain/work'
 
 const PRESET_NAME: Record<DistanceCategory, string> = { sprint: 'Sprint', mile: 'Mile', medium: 'Medium', long: 'Long' }
 const STAT_SHORT = { speed: 'Spd', stamina: 'Sta', power: 'Pow', guts: 'Gut', wit: 'Wit' } as const
-
-/** The profile her advance or promotion lands on (T138's). */
-const profilePath = (umaId: string): string => `/town/stable/outfit/${encodeURIComponent(umaId)}`
 
 /** The device's flair for an Uma leaving her scenario (advance, promotion). */
 const leaveDevice = (content: LoadedContent, env: OperationEnv, umaId: string) => (applied: G2Applied) =>

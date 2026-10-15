@@ -22,6 +22,9 @@ export type StableTab = 'owned' | 'locked'
 export const STABLE_TABS: readonly StableTab[] = ['owned', 'locked']
 export const STABLE_ALBUM = 'stable'
 
+/** An Uma's profile: the Stable's `outfit/:umaId` (11 §7.1), its Overview tab with her career's goals. */
+export const profilePath = (umaId: string): string => `/town/stable/outfit/${encodeURIComponent(umaId)}`
+
 export interface StableEntry {
   readonly id: string
   readonly template: UmaTemplate

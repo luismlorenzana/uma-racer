@@ -15,6 +15,7 @@ import { setRaceSpeed, setReducedMotion, startingSpeed } from '../../ui/devicePr
 import { replayOf, simulate } from './prepare'
 import { readLogs } from './records'
 import { TROPHY_HALL_SEEN_KEY } from './seen'
+import { profilePath } from '../stable/model'
 import { resultPath } from './today'
 import { raceRecords } from './trophy'
 
@@ -208,6 +209,13 @@ describe('the Expedition Map, a placeholder', () => {
 })
 
 describe('the Trophy Hall', () => {
+  it("opens a goal's or a scenario's flair on her profile's live route, with no redirect on the way", async () => {
+    const { where } = renderG2(profilePath('sim-uma-01'), seedGame('busy'))
+    expect(await screen.findByRole('heading', { name: 'Amber Sprint' })).toBeTruthy()
+    expect(where()).toBe(profilePath('sim-uma-01'))
+    expect(document.querySelector('[data-g2="career-goals"]')).not.toBeNull()
+  })
+
   it('shows the three scopes and clears its counter on a visit', async () => {
     const game = seedGame('busy')
     const view = renderG2('/racing/trophy-hall', game)
