@@ -1,4 +1,4 @@
-// The seeds' boot (T137, T136; dev builds only, `dev/main.tsx`): the in-memory port over `rework/sim`'s synthetic seeds,
+// The seeds' boot (T137, T136; dev builds only, `dev/main.tsx`): the in-memory port over `@racer/domain/sim`'s synthetic seeds,
 // picked by `?seed=`. The device save is opt-in, so opening `/dev/seeds/` never touches a developer's data:
 // `?save=device` boots it on the seeds' content (kept for the tab until a `?seed=` asks for seeds again), and only
 // `&wipe` adds the wipe and the purge.

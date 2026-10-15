@@ -2,7 +2,7 @@
 // takes which unlock. The Observatory opens nodes with Vegetables and the Lineage Hall Inspiration with Mushrooms; the
 // Gym's rooms, one per stat in ring order, take their stat's singles, any Duo with their stat, and any Sun; the Dojo's
 // rooms take their card type's bonds, Friend and Group sharing one. The ids, rooms, slots, levels, speeds and upgrades
-// are T127's (`rework/farm/buildings.ts`).
+// are T127's (`farm/buildings.ts`).
 import type { StatKey } from '../types'
 import { BUILDINGS, DOJO_ROOMS, FACILITY_IDS, GYM_ROOMS, type FacilityId, type RoomId } from '../farm/buildings'
 import { itemById } from '../items/catalogue'

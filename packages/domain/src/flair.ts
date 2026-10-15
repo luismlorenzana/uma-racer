@@ -39,7 +39,7 @@ export const UMA_FLAIR_EVALUATOR_VERSION = 1 as const
 
 /**
  * The promotions (04 §9): the tier she is promoted to → the scenario that closes the tier before it,
- * T = 5t (`rework/tiers`' SCENARIOS_PER_TIER). That scenario graduates only at promotion, so "Promoted · Tier t + 1" is
+ * T = 5t (`tiers`' SCENARIOS_PER_TIER). That scenario graduates only at promotion, so "Promoted · Tier t + 1" is
  * its Graduate fact and needs no fact of its own.
  */
 export const FLAIR_PROMOTION_SCENARIOS: Readonly<Record<2 | 3, number>> = Object.freeze({ 2: 5, 3: 10 })

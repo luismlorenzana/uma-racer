@@ -42,7 +42,7 @@ export type OpResult<R, S extends ReworkState = ReworkState> = { readonly state:
 
 /**
  * The Daily Purse (docs/rework/09-racing-rewards-and-exchange.md §3.3, §9): the day's gross prizes and the featured
- * bonuses paid that day. T130's `rework/exchange` owns its rules.
+ * bonuses paid that day. T130's `economy` owns its rules.
  */
 export interface DailyPurse {
   /** The device's local date, `YYYY-MM-DD`, of the purse's day. It only moves forward. */
@@ -107,7 +107,7 @@ export interface LedgerEntry {
 
 /**
  * One distance preset (03 §6, 05 §9): who is in the card set, which card fills each open node, who sits in each open
- * Inspiration slot, which bought Extra Stats nodes are on, and the equipped skills (her unique first). `rework/training`
+ * Inspiration slot, which bought Extra Stats nodes are on, and the equipped skills (her unique first). `training`
  * owns its rules.
  */
 export interface Preset {
@@ -123,7 +123,7 @@ export interface Preset {
 
 /**
  * Her one build for the tier (03 §6, 05 §9): what her four presets share, and the presets. Everything here resets at
- * promotion (04 §4). Its rules are `rework/training`'s: commits, the advance's carry and the preset edits. Inspiration
+ * promotion (04 §4). Its rules are `training`'s: commits, the advance's carry and the preset edits. Inspiration
  * lists keep slot order; `extraNodes` keeps opening order.
  */
 export interface UmaBuild {

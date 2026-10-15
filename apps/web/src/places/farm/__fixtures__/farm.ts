@@ -1,4 +1,4 @@
-// Synthetic Farm accounts for T140's tests, built with the rework's own operations on `rework/sim`'s invented content
+// Synthetic Farm accounts for T140's tests, built with the rework's own operations on `@racer/domain/sim`'s invented content
 // (T137's `fresh` seed, a new account at day 0, 08:00 UTC), never from the private packs. Imported by tests only.
 import { OPERATIONS, runOnce, type OperationEnv, type OperationInput, type OperationName, type OperationReceipt } from '@racer/domain/check-in'
 import { farmExpAtLevel, QUARTERS_PER_EXP } from '@racer/domain/farm'

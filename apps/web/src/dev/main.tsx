@@ -1,7 +1,7 @@
 // The synthetic seeds' mount (T137, T143), dev builds only: `src/main.tsx` loads this module behind
 // `import.meta.env.DEV` for any path under `SEEDS_PATH` (`/dev/seeds/*`), so a production build holds none of it
 // (scripts/check-size.mjs refuses one that does). The app's own routes under that basename, over the in-memory port on
-// `rework/sim`'s invented seeds (`?seed=busy | fresh | quiet | gate | promote | tired | spent | stopped`, `?at=HH:MM`),
+// `@racer/domain/sim`'s invented seeds (`?seed=busy | fresh | quiet | gate | promote | tired | spent | stopped`, `?at=HH:MM`),
 // or the device save on the seeds' content with `?save=device` (`&wipe` adds the wipe and the purge). It mounts no auth,
 // content or service worker, so art falls back to each Uma's initial. The dev proofs sit under it too
 // (`/dev/seeds/dev/check-in`).

@@ -1,6 +1,6 @@
 // Training Hub sessions on T127's work engine (docs/rework/05-training-hub.md §2): 1–10 unlocks of one facility, one
 // room at the Gym and Dojo, one after another, each paid with its one exact dish and lasting 180 + 15(g − 1) base
-// minutes × TIME_FACTOR ÷ the facility's speed. The engine (`rework/work`) runs the slot, the dishes, the clock, queues,
+// minutes × TIME_FACTOR ÷ the facility's speed. The engine (`work`) runs the slot, the dishes, the clock, queues,
 // collect, recall and Speed Tickets; this is the `session` kind it registers: `plan` checks a request where its slot
 // is and lists each unlock's dish and seconds, and `pay` commits finished unlocks into her build.
 import { isFacility, type FacilityId } from '../farm/buildings'

@@ -1,6 +1,6 @@
 // The Farm's three kinds of work (docs/rework/07-farm.md §1–§4): gather raw items at their family's site, craft at the
 // Pantry (one raw into the crafted item of its family and grade), cook at the Kitchen. Step times are T126's base
-// minutes (`rework/items`), which T127 turns into seconds at the building's speed through `workSeconds`. Every step is
+// minutes (`items`), which T127 turns into seconds at the building's speed through `workSeconds`. Every step is
 // gated by her Farm Level (Lv 5g − 4, a dish by its own grade) and pays Farm EXP by the listed minute × her running
 // aptitude for the family: the site's, the crafted item's or the dish's, a Duo or Feast the best of its main families.
 import { workSeconds } from '../state/time'

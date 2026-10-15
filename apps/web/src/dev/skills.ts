@@ -1,4 +1,4 @@
-// Invented skills and card names for the dev seeds (T138): `rework/sim`'s content has no skill templates and names its
+// Invented skills and card names for the dev seeds (T138): `@racer/domain/sim`'s content has no skill templates and names its
 // cards by id, so a profile's Skills tab had nothing to equip and the Card Library nothing to search. Each Uma gets her
 // unique and two pairs of awakening skills (a white and a gold, the first pair open from her first scenario, D186), and
 // each card two white hints and one gold, all with invented names and the race engine's plain Speed boost, so

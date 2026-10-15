@@ -1,6 +1,6 @@
 // Step times and work values (docs/rework/08-item-catalogue-and-recipes.md §3, §8; docs/rework/12-economy-and-pacing.md
 // §4; README "Time model"; D338). Step times are base minutes per grade; every real duration goes through
-// `rework/time.ts`'s one conversion (× TIME_FACTOR, whole seconds, at speed 1). An item's work value is the work in it,
+// `state/time.ts`'s one conversion (× TIME_FACTOR, whole seconds, at speed 1). An item's work value is the work in it,
 // its inputs included; building speed and Speed Tickets never change it, and rounding a sale is the Exchange's.
 import { workSeconds } from '../state/time'
 import { ITEM_GRADES, isItemGrade, itemById, ITEMS, type ItemDef, type ItemGrade, type ItemId } from './catalogue'

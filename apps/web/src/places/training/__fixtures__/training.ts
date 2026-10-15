@@ -1,4 +1,4 @@
-// Synthetic Training accounts for T139's tests, built with the rework's own operations on `rework/sim`'s invented
+// Synthetic Training accounts for T139's tests, built with the rework's own operations on `@racer/domain/sim`'s invented
 // content (T140's `farmAccount`, a new account at day 0, 08:00 UTC), never from the private packs: Umas unlocked,
 // dishes and Prize Money by `dev-grant`, a scenario's gate and `advance-scenario`, a card set by `set-card-set`. A
 // layer already done is committed with the Training Hub's own `commitUnlocks`, as a finished session's Collect does.
