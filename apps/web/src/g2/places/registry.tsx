@@ -53,6 +53,11 @@ const FarmPage = lazy(() => import('./farm/building/BuildingPage'))
 const FarmPeek = lazy(() => import('./farm/building/BuildingPeek'))
 const FARM_UI: Readonly<Partial<Record<PlaceId, PlaceUi>>> = Object.fromEntries(placesOn('farm').map((place) => [place.id, { Page: FarmPage, Peek: FarmPeek }]))
 
+// T142: the planner's roster view lives under the Stable (11 §7.1); her Needs tab is the profile's `PROFILE_UI.Needs`.
+const NEEDS_PAGES: PlaceUi['subPages'] = {
+  needs: lazy(() => import('./needs/RosterNeeds')),
+}
+
 export const PLACE_UI: Readonly<Partial<Record<PlaceId, PlaceUi>>> = {
   // §6's full-screen flows inside place routes: the constellation tree and the Extra Stats map; the race run and result
   // and the Scenario Gate's ceremony are the Racing page's (T141).
@@ -61,8 +66,8 @@ export const PLACE_UI: Readonly<Partial<Record<PlaceId, PlaceUi>>> = {
   ...FARM_UI,
   ...RACING_UI, // T141
   // T138: the Town Hall's places. The Stable's Page holds the roster and each profile (`outfit/:umaId`, `/skills`,
-  // `/needs` until T142's sub-page takes it); the Card Library's holds each card page (`card/:cardId`).
-  stable: { Peek: lazy(() => import('./stable/Peek')), Page: lazy(() => import('./stable/Page')) },
+  // `/needs`, whose tab is T142's); T142's roster view is its `needs` sub-page. The Card Library's holds each card page.
+  stable: { Peek: lazy(() => import('./stable/Peek')), Page: lazy(() => import('./stable/Page')), subPages: NEEDS_PAGES },
   warehouse: { Peek: lazy(() => import('./warehouse/Peek')), Page: lazy(() => import('./warehouse/Page')) },
   exchange: { Peek: lazy(() => import('./exchange/Peek')), Page: lazy(() => import('./exchange/Page')) },
   'card-library': { Peek: lazy(() => import('./card-library/Peek')), Page: lazy(() => import('./card-library/Page')) },
@@ -109,12 +114,18 @@ export const FLOW_UI: { readonly reveal?: Lazy<FlowProps> } = {
   reveal: lazy(() => import('./reveal/Reveal')),
 }
 
-/** The Uma profile's header slot (T138's profile, 11 §3.1): T142 fills it with the planner's target toggle. */
+/**
+ * The Uma profile's slots (T138's profile, 11 §3.1): T142 fills its header's target toggle and its Needs tab
+ * (`/town/stable/outfit/:umaId/needs`) with the planner's views.
+ */
 export interface ProfileSlotProps {
   readonly umaId: string
 }
 
-export const PROFILE_UI: { readonly TargetToggle?: Lazy<ProfileSlotProps> } = {}
+export const PROFILE_UI: { readonly TargetToggle?: Lazy<ProfileSlotProps>; readonly Needs?: Lazy<ProfileSlotProps> } = {
+  TargetToggle: lazy(() => import('./needs/TargetToggle')), // T142
+  Needs: lazy(() => import('./needs/NeedsTab')), // T142
+}
 
 export type SlotId = PlaceId | 'sheet:check-in' | 'sheet:featured' | 'plaza' | 'flow:reveal'
 
