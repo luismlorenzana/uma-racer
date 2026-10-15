@@ -125,6 +125,12 @@ and the account bar's chips. The registry imports the rules for types only, so t
   generation 2's catalogue. Flair rides in the operation's transaction through the port's `device` rows, and race
   results and flair events are read through its `logs`. Dev seeds `gate`, `promote`, `tired` and `spent` show an Uma at
   her gate, the Promote sheet's proof and the purse past each edge.
+  Town Hall's five places (`g2/places/{stable,warehouse,exchange,card-library,account,reveal}/`, T138) fill
+  the Stable with each Uma's profile, the featured Uma's card and quick sheet, the full-screen reveal, the Warehouse, the
+  Exchange, the Card Library (whose `CardLibrary` also serves T139's picks) and Account; each screen draws a pure view
+  model (`model.ts`) over the rework state, and the one Uma picker (`g2/ui/UmaPicker`, D181) is the Stable's album in a
+  sheet. Album preferences are device keys (`uma-racer:g2:album:<album>`), and today's album chrome and query engine
+  are among the pieces `g2/` reuses.
 
 ## The API
 

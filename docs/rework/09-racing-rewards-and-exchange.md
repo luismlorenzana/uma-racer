@@ -353,6 +353,14 @@ the total. It asks once when the sale:
 
 No undo: a confirmed sale is final, and buying back costs three times as much, so the confirmations are the guard.
 
+**As built (T138).** Reserved is `reservedStock` (`rework/work`), what Recall would return; the sizes are `stackCounts`'s,
+each priced by `sellPrice` with its total, a size of 0 off with its reason. `sellConfirmations` decides the one question,
+which reads all that apply in one sentence at live prices: "Sell 2 Cabbage Salad (grade 3) for 698? Each took about 17
+hours of work. This leaves the planner 4 short for Hishi Akebono's Observatory layer." (hours from `workValueSeconds`; the
+target is the first in the plan's order whose unlocks take the stack, as a dish or inside one). The sale carries the
+price shown, so a stale one reads `price-changed`'s "Price changed." and the sheet reads the live price again. The
+Exchange's Buy is off with "Need 120 more" when short and asks once at 1,000 or more (`buyNeedsConfirm`).
+
 ## 7. The race result screen
 
 Today's sequence ([design/ux.md](../design/ux.md#results)) keeps its order; the ticket reward leaves and Prize Money

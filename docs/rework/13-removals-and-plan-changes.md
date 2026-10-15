@@ -174,8 +174,11 @@ Every change is an **operation** re-run by the API with the domain package. The 
 | `dev-grant` | Dev builds and a dev API only: items, Prize Money, Uma Tickets, finished work, a jump to her gate | M034 |
 <!-- /live -->
 
-M034's T138 adds `feature-uma` and `set-race-defaults`. A bond is an ordinary Dojo session, so it needs no operation of
-its own. A retried operation returns its first receipt and is never applied twice. **Gone from the plan's save:**
+T138 added `feature-uma` and `set-race-defaults` (`rework/tiers/roster.ts`): both fields were saved (`featuredUmaId` on
+the profile, `raceDefaults` on the Uma) and nothing wrote them after the first unlock. `feature-uma { outfitId }` takes
+any owned Uma; `set-race-defaults { umaId, selectedPreset?, preferences? }` sets either or both, `preferences: null`
+going back to the recommendation, and never refreezes her career. A bond is an ordinary Dojo session, so it needs no
+operation of its own. A retried operation returns its first receipt and is never applied twice. **Gone from the plan's save:**
 `cards/{cardId}`, the `puzzle*` kinds, `farm/main`, `farmWorkers`, `farmRecipes`, `farmExtra` and the item families for
 tokens, Puzzle materials and Energy.
 
