@@ -106,6 +106,9 @@ import {
   BADGE_THRESHOLDS,
   BADGE_TIER_POINTS,
   BADGE_ONE_OFF_POINTS,
+  FLAIR_HALL_OF_FAME_SCENARIO,
+  FLAIR_PROMOTION_SCENARIOS,
+  HALL_OF_FAME_POINTS,
   GOAL_RIBBON_POINTS,
   HONORS_POINTS,
   TITLE_POINTS,
@@ -410,7 +413,14 @@ describe('flair', () => {
       stableGoals: [5, 25, 100, 300, 1_000],
       honorsCollector: [1, 10, 30, 100, 300],
       familyTree: [2, 5, 10, 25, 50],
+      // Generation 2 (T141; 06 §7, 04 §9).
+      cardPartners: [10, 25, 50, 100, 200],
+      promotions: [1, 5, 15, 30, 50],
+      hallOfFame: [1, 3, 10, 25, 50],
     })
+    // Generation 2's tier awards (04 §9): the promoted badges are ordinary one-offs; the Hall of Fame is worth 16.
+    expect(HALL_OF_FAME_POINTS).toBe(16)
+    expect([FLAIR_PROMOTION_SCENARIOS, FLAIR_HALL_OF_FAME_SCENARIO]).toEqual([{ 2: 5, 3: 10 }, 14])
   })
 })
 

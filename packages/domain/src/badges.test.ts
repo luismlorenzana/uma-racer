@@ -106,6 +106,15 @@ describe('badge state v1', () => {
     expect(parseBadgeState({ ...state, facts: { ...state.facts, wins: 2, starts: 1 } })).toBeNull()
   })
 
+  it('takes a Full House with no training turns (generation 2 retires the turns), but still bounds each tier row', () => {
+    const state = createUmaBadgeState(createUmaSave(template), subject(), 100)
+    const fullHouse = { ...state, facts: { ...state.facts, fullHouseCount: 1, lifetimeTrainingTurns: 0 } }
+    expect(parseBadgeState(fullHouse)).toEqual(fullHouse)
+    const tierRow = { tier: 1, turns: 0, friendshipTrainings: 0, fullHouseCount: 1, reachedTl10: false }
+    expect(parseBadgeState({ ...fullHouse, facts: { ...fullHouse.facts, trainingByTier: [tierRow] } })).toBeNull()
+    expect(parseBadgeState({ ...state, facts: { ...state.facts, friendshipTrainings: 1 } })).toBeNull()
+  })
+
   it('aggregates ordered race facts once and resets a streak on a loss', () => {
     const base = createUmaBadgeState(createUmaSave(template), subject(), 100)
     const won = applyRaceBadgeFacts(base, 'race:synthetic-uma:0', result(), facts)
