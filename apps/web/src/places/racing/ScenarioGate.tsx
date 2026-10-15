@@ -6,6 +6,7 @@
 import { badgeStateId, STATS, type DistanceCategory } from '@racer/domain'
 import type { Place } from '@racer/domain/hub'
 import { scenarioNumber } from '@racer/domain/tiers'
+import { sameData } from '@racer/domain/save'
 import type { OperationRecord, UmaState } from '@racer/domain/state'
 import { m } from 'motion/react'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -112,7 +113,8 @@ function AdvancePanel({ uma, content, env, onClose }: { uma: UmaState; content: 
   const [preset, setPreset] = useState<DistanceCategory>(uma.raceDefaults.selectedPreset)
   const [busy, setBusy] = useState(false)
   const [changed, setChanged] = useState(false)
-  // The Uma the owner has seen: a race or session that changes her after this redraws the sheet first (03 §10.8).
+  // The Uma the owner has seen: a race or session that changes her after this redraws the sheet first (03 §10.8). It is
+  // compared by content: every sync or pull hands the store an equal copy of her, which is no change at all.
   const seen = useRef(uma)
   const sheet = useMemo(() => advanceSheet(state, uma.outfitId, env, now, names.race), [state, uma.outfitId, env, now, names])
   if (sheet === null) return <p className="py-6 text-center text-[13px] text-ink-soft">{racingWords('her-build-changed')}</p>
@@ -120,7 +122,7 @@ function AdvancePanel({ uma, content, env, onClose }: { uma: UmaState; content: 
   const advance = async () => {
     if (busy) return
     const current = game.getSnapshot().state?.umas[uma.outfitId]
-    if (current !== seen.current) {
+    if (!sameData(current, seen.current)) {
       seen.current = current ?? uma
       setChanged(true)
       return

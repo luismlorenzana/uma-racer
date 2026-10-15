@@ -157,7 +157,9 @@ describe('the Scenario Gate', () => {
     const { where } = renderG2(`/racing/scenario-gate/${umaId}?sheet=advance`, game)
     await screen.findByText('The new layer')
     const sheetButton = () => document.querySelector<HTMLButtonElement>('[data-advance]')!
-    await act(async () => { await game.run('set-active-nodes', { umaId, preset: 'medium', nodeIds: [] }) })
+    // A real change to her: an equal copy (any sync's) isn't one, and advances on the first tap (ceremony.test.tsx).
+    const preset = game.getSnapshot().state!.umas[umaId]!.raceDefaults.selectedPreset === 'sprint' ? 'mile' : 'sprint'
+    await act(async () => { await game.run('set-race-defaults', { umaId, selectedPreset: preset }) })
     fireEvent.click(sheetButton())
     expect(await screen.findByText('Her build changed.')).toBeTruthy()
     fireEvent.click(sheetButton())

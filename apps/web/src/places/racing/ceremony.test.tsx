@@ -3,9 +3,10 @@
 // rules), not the in-memory port: the save never folds a confirmed tap's `operations` row into the state, so the
 // ceremony reads it through the port's logs. Advance plays its ceremony while the tap is queued and after the server
 // confirms it, a reload of the ceremony reads the confirmed row, and each leaves for her profile; Promote takes the same
-// path; a ceremony whose tap the device can't find still offers its way out and leaves.
+// path; a ceremony whose tap the device can't find still offers its way out and leaves. The Advance sheet takes a sync's
+// equal copy of her as no change, so Advance works on the first tap, and still redraws first after a real change.
 import 'fake-indexeddb/auto'
-import { initialSave, type SaveState } from '@racer/domain/save'
+import { initialSave, sameData, type SaveState } from '@racer/domain/save'
 import { devGrant, OPERATIONS } from '@racer/domain/check-in'
 import { isRefusal, type OpResult } from '@racer/domain/state'
 import { EXPEDITION_WINS, isLastScenario, recordExpeditionRace } from '@racer/domain/tiers'
@@ -75,6 +76,46 @@ function promoteReady(at: number): SaveState {
   for (let win = 0; win < EXPEDITION_WINS; win += 1) state = done(recordExpeditionRace(state, { umaId: UMA, expeditionId: 'dev-stand-in', won: true }, at))
   return state
 }
+
+/** A device with her unlocked and at her gate, every tap confirmed, on the Advance sheet. */
+async function onAdvanceSheet() {
+  const game = await deviceOn(new FakeServer())
+  for (const [name, input] of [['unlock-uma', { outfitId: UMA }], ['dev-grant', { gate: UMA }]] as const) {
+    expect((await game.run(name, input as never)).kind).toBe('done')
+  }
+  await synced(game)
+  const view = renderG2(`/racing/scenario-gate/${UMA}?sheet=advance`, game)
+  const button = await rendered<HTMLButtonElement>('[data-advance]')
+  return { game, view, button }
+}
+
+const CEREMONY = new RegExp(`^/racing/scenario-gate/${UMA}/ceremony\\?op=`)
+
+describe('the Advance sheet after a sync (03 §10.8)', () => {
+  it('advances on the first tap when a sync hands the store an equal copy of her', async () => {
+    const { game, view, button } = await onAdvanceSheet()
+    const before = game.getSnapshot().state!.umas[UMA]!
+    await synced(game)
+    const after = game.getSnapshot().state!.umas[UMA]!
+    // A pull folds her afresh: another object, the same data.
+    expect(after).not.toBe(before)
+    expect(sameData(after, before)).toBe(true)
+    fireEvent.click(button)
+    await waitFor(() => expect(view.where()).toMatch(CEREMONY))
+    expect(screen.queryByText('Her build changed.')).toBeNull()
+  })
+
+  it('still redraws under "Her build changed." after a real change, and advances on the next tap', async () => {
+    const { game, view, button } = await onAdvanceSheet()
+    const preset = game.getSnapshot().state!.umas[UMA]!.raceDefaults.selectedPreset === 'sprint' ? 'mile' : 'sprint'
+    await act(async () => { await game.run('set-race-defaults', { umaId: UMA, selectedPreset: preset }) })
+    fireEvent.click(button)
+    expect(await screen.findByText('Her build changed.')).toBeTruthy()
+    expect(view.where()).toBe(`/racing/scenario-gate/${UMA}?sheet=advance`)
+    fireEvent.click(button)
+    await waitFor(() => expect(view.where()).toMatch(CEREMONY))
+  })
+})
 
 describe("the ceremony on the device save (03 §5, 04 §9)", () => {
   it('plays after Advance while queued and once confirmed, then leaves for her profile; a reload reads the confirmed tap', async () => {
