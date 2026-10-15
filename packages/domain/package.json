@@ -58,6 +58,16 @@
         "default": "./src/rework/*/index.ts"
       }
     },
+    "./save-g2": {
+      "require": {
+        "types": "./dist/cjs/save-g2/index.d.ts",
+        "default": "./dist/cjs/save-g2/index.js"
+      },
+      "default": {
+        "types": "./src/save-g2/index.ts",
+        "default": "./src/save-g2/index.ts"
+      }
+    },
     "./puzzles-content-fixtures": "./src/minigames/uma-puzzles/content.synthetic.ts",
     "./puzzles-preservation-fixtures": "./src/minigames/uma-puzzles/preservation.synthetic.ts"
   },
