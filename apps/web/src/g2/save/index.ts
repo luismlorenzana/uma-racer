@@ -6,7 +6,8 @@
 // - `sync` is the chip: `paused` while signed out, `offline`, `failing` (red) on `error`, `waiting` (amber, D157) once the
 //   oldest waiting row is over a day old, else `synced`;
 // - `receipts` and `notices` as the store keeps them; `run` is the actions' tap; `syncNow` a flush and a pull;
-//   `logs` the read helpers, so a screen reads race results or the ledger without the store holding them.
+//   `logs` the read helpers, so a screen reads race results or the ledger without the store holding them;
+// - `badges` the badge rows (T141), a tap's `device` rows ride in its transaction, and `writeDevice` writes them alone.
 // Loaded lazily by `app/boot.ts`, so none of it, Dexie and Zustand included, reaches the entry chunk.
 import type { OperationEnv } from '@racer/domain/save-g2'
 import type { G2Game, G2Snapshot, G2Sync } from '../app/game'
@@ -51,11 +52,12 @@ function snapshotOf(store: SaveStore, env: OperationEnv, now: number): G2Snapsho
     sync: chipOf(store, now),
     receipts: store.receipts,
     notices: store.notices,
+    badges: store.badges,
     ...(store.lifecycle === 'error' && store.words !== null ? { words: store.words } : {}),
   })
 }
 
-const SNAPSHOT_FIELDS = ['status', 'state', 'env', 'trainerName', 'sync', 'receipts', 'notices', 'words'] as const satisfies readonly (keyof G2Snapshot)[]
+const SNAPSHOT_FIELDS = ['status', 'state', 'env', 'trainerName', 'sync', 'receipts', 'notices', 'words', 'badges'] as const satisfies readonly (keyof G2Snapshot)[]
 
 const sameSnapshot = (a: G2Snapshot, b: G2Snapshot): boolean => SNAPSHOT_FIELDS.every((field) => a[field] === b[field])
 
@@ -99,11 +101,14 @@ export function createSaveGame(options: SaveBootOptions): SaveGame {
     getSnapshot: () => snapshot,
     now: clock,
     utcOffsetMin: (now) => -new Date(now).getTimezoneOffset(),
-    run: (name, input, busyKey) => session.actions.run(name, input, busyKey),
+    run: (name, input, busyKey, options) => session.actions.run(name, input, busyKey, options),
+    writeDevice: (rows) => session.actions.writeDevice(rows),
     dismissNotice: (id) => session.actions.dismissNotice(id),
     syncNow: () => session.lane.request({ pull: true }),
     logs: {
       raceResults: (umaId) => session.actions.raceResults(umaId),
+      allRaceResults: () => session.actions.allRaceResults(),
+      flairEvents: () => session.actions.flairEvents(),
       ledgerRows: () => session.actions.ledgerRows(),
       itemLedgerRows: () => session.actions.itemLedgerRows(),
       receipt: (id) => session.actions.receipt(id),

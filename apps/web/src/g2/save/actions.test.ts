@@ -152,3 +152,40 @@ describe('the read helpers', () => {
     phone.session.stop()
   })
 })
+
+describe("a tap's device rows (T141)", () => {
+  it("writes them in the tap's own transaction, behind its outbox row, with the records they were computed from", async () => {
+    const phone = await offlineDevice()
+    const { run, writeDevice, allRaceResults, flairEvents } = phone.session.actions
+    const event = flairEvent(2, Date.now())
+    const seen: unknown[] = []
+    const answer = await run('unlock-uma', { outfitId: umaId(1) }, undefined, {
+      device: (applied) => {
+        seen.push(applied.records)
+        return { badges: { trainer: trainerBadge('Hana') }, flairEvents: [event] }
+      },
+    })
+    expect(answer.kind).toBe('done')
+    expect(seen).toEqual([{ badges: {}, raceResults: {}, flairEvents: {} }])
+    const keys = (await phone.db.outbox.toArray()).map((row) => row.key)
+    expect(keys).toEqual(['create', operationKey(answer.id), badgeKey('trainer'), flairKey(flairId(event))])
+    expect(useSave.getState().badges.trainer).toEqual(trainerBadge('Hana'))
+    expect(useSave.getState().sync.pending).toBe(4)
+    expect(await flairEvents()).toEqual([event])
+    expect(await allRaceResults()).toEqual([])
+    await writeDevice({ flairEvents: [event, flairEvent(3, Date.now())] })
+    expect((await flairEvents()).map((row) => row.awardKey)).toEqual(['achievement-2', 'achievement-3'])
+    phone.session.stop()
+  })
+
+  it('writes nothing, the tap included, when the device callback throws', async () => {
+    const phone = await offlineDevice()
+    const before = await phone.db.outbox.count()
+    const state = useSave.getState().state
+    const failing = { device: () => { throw new Error('flair') } }
+    await expect(phone.session.actions.run('unlock-uma', { outfitId: umaId(1) }, undefined, failing)).rejects.toThrow('flair')
+    expect(await phone.db.outbox.count()).toBe(before)
+    expect(useSave.getState().state).toBe(state)
+    phone.session.stop()
+  })
+})
