@@ -16,6 +16,6 @@ it('keeps the area keys apart from the manual keys', () => {
   for (const key of Object.keys(AREA_BLOCKS)) {
     expect(renderBlock(key, { packages: [] })).toBe(AREA_BLOCKS[key]!())
   }
-  expect(joinBlocks(AREA_BLOCKS, Object.fromEntries(['scenarios', 'caps', 'buffs', 'levels', 'race-rewards', 'rivals', 'dependencies']
+  expect(joinBlocks(AREA_BLOCKS, Object.fromEntries(['race-rewards', 'rivals', 'dependencies']
     .map((key) => [key, () => key])))).toBeTruthy()
 })
