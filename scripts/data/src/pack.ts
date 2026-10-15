@@ -29,6 +29,9 @@ export const DEFAULT_CONTENT_DIR = resolve(repoRoot, 'content')
  */
 const ASSET_FILE = /^(?:atlases\/(?:uma-icons|card-icons|scenario-icons|skill-icons)[.-]|art\/(?:uma|card|bust|chibi|dress|face)\/)/
 
+/** A source entry whose value names a content file, rather than a dataset's hash. */
+const CONTENT_PATH = /^(?:data|atlases|art)\//
+
 export function sha256(value: string | Buffer): string {
   return createHash('sha256').update(value).digest('hex')
 }
@@ -68,7 +71,12 @@ export async function writeContentPacks(options: WriteContentPacksOptions): Prom
 
   files.sort((left, right) => left.path.localeCompare(right.path))
   const version = sha256(files.map((file) => file.sha256).sort().join('')).slice(0, 12)
-  const source = Object.fromEntries(Object.entries({ ...previous?.source, ...options.source }).sort(([left], [right]) => left.localeCompare(right)))
+  // A source entry that names a content file stays only while the manifest holds that file, so a retired family's
+  // inputs leave the record with its files (T144).
+  const paths = new Set(files.map((file) => file.path))
+  const source = Object.fromEntries(Object.entries({ ...previous?.source, ...options.source })
+    .filter(([, value]) => !CONTENT_PATH.test(value) || paths.has(value))
+    .sort(([left], [right]) => left.localeCompare(right)))
   const manifest: ContentManifest = {
     version,
     generatedAt: options.generatedAt ?? new Date().toISOString(),

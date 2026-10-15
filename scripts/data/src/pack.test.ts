@@ -23,7 +23,8 @@ describe('writeContentPacks', () => {
       JSON.stringify({
         version: 'old',
         generatedAt: '2000-01-01T00:00:00.000Z',
-        source: {},
+        // A retired family's input names a file that leaves; a kept file's input and a dataset's hash stay (T144).
+        source: { 'retired-art:x': 'art/retired/x.abcd1234.webp', 'uma-art:1': 'art/bust/uma-1.abcd1234.webp', races: 'r1' },
         files: [
           { path: 'atlases/uma-icons.abcd1234.json', bytes: 2, sha256: 'a'.repeat(64) },
           { path: 'art/bust/uma-1.abcd1234.webp', bytes: 3, sha256: 'b'.repeat(64) },
@@ -60,10 +61,12 @@ describe('writeContentPacks', () => {
       .update(manifest.files.map((file) => file.sha256).sort().join(''))
       .digest('hex')
       .slice(0, 12)
-    expect(manifest).toMatchObject({
-      version: expectedVersion,
-      generatedAt,
-      source: { 'character-cards': 'v1', characters: 'v2' },
+    expect(manifest).toMatchObject({ version: expectedVersion, generatedAt })
+    expect(manifest.source).toEqual({
+      'character-cards': 'v1',
+      characters: 'v2',
+      races: 'r1',
+      'uma-art:1': 'art/bust/uma-1.abcd1234.webp',
     })
     expect(manifest.files.map((file) => file.path)).toEqual([...manifest.files.map((file) => file.path)].sort())
     expect(manifest.files).toContainEqual({
