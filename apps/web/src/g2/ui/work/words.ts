@@ -82,6 +82,17 @@ export const WORK_WORDS = Object.freeze({
   'queue-up': 'Move {what} earlier',
   'queue-remove': 'Remove {what} from the queue',
   'queue-title': 'Queued behind',
+  /** StoppedQueueCard (02 §3, §4; T142). */
+  'stopped-label': '{uma}’s queue stopped: {line}',
+  'stopped-line': '{place} ×{n} at {time}',
+  restart: 'Restart',
+  'buy-restart': 'Buy {n} and restart · {price}',
+  'buy-restart-ask': 'Buy {items} for {price} Prize Money and restart her queue?',
+  'start-smaller': 'Start ×{n}',
+  'make-them': 'Make them: {place} ×{n}',
+  'make-them-label': 'Make them: {place} ×{n}, by {uma}',
+  dismiss: 'Dismiss',
+  'dismiss-label': 'Dismiss {uma}’s stopped queue',
   /** SizeChips (02 §3). */
   'size-label': 'How many',
   'size-chip': '×{n}',
