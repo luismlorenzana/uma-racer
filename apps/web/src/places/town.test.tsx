@@ -65,6 +65,34 @@ describe('the Stable (04 §6, 11 §2.4, §6)', () => {
     await waitFor(() => expect(where()).toBe('/town/stable?tab=owned'))
   })
 
+  it("clears her NEW mark on her profile, and only hers", async () => {
+    const game = await freshWith(3)
+    // A phone that has opened the Stable before and hasn't seen these three since they arrived.
+    localStorage.setItem(`${ALBUM_KEY_PREFIX}stable`, JSON.stringify({ seen: [] }))
+    const tile = (umaId: string) => document.querySelector(`[data-uma="${umaId}"]`) as HTMLElement | null
+    const first = renderG2('/town/stable?tab=owned', game)
+    await waitFor(() => expect(tile('sim-uma-01')).not.toBeNull())
+    for (const umaId of ['sim-uma-01', 'sim-uma-02', 'sim-uma-03']) expect(within(tile(umaId)!).queryByText('NEW'), umaId).not.toBeNull()
+    click(tile('sim-uma-01')!)
+    expect(await screen.findByRole('heading', { name: 'Amber Sprint' })).toBeTruthy()
+    first.unmount()
+    renderG2('/town/stable?tab=owned', game)
+    await waitFor(() => expect(tile('sim-uma-01')).not.toBeNull())
+    expect(within(tile('sim-uma-01')!).queryByText('NEW')).toBeNull()
+    for (const umaId of ['sim-uma-02', 'sim-uma-03']) expect(within(tile(umaId)!).queryByText('NEW'), umaId).not.toBeNull()
+  })
+
+  it('takes every owned Uma as seen when a phone opens a profile before the Stable, as the Stable would', async () => {
+    const game = await freshWith(3)
+    const { unmount } = renderG2('/town/stable/outfit/sim-uma-01', game)
+    expect(await screen.findByRole('heading', { name: 'Amber Sprint' })).toBeTruthy()
+    await waitFor(() => expect(localStorage.getItem(`${ALBUM_KEY_PREFIX}stable`)).toContain('sim-uma-03'))
+    unmount()
+    renderG2('/town/stable?tab=owned', game)
+    await waitFor(() => expect(document.querySelectorAll('[data-uma]').length).toBe(3))
+    expect(screen.queryByText('NEW')).toBeNull()
+  })
+
   it("drops the reveal's flip under Account's reduced motion", async () => {
     const game = await freshWith(1)
     const { unmount } = renderG2('/collection/reveal/uma/sim-uma-01', game)

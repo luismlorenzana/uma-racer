@@ -127,6 +127,11 @@ describe('Badge collection projections', () => {
     expect(view.items.find((item) => item.awardKey === 'badge:removed-content')).toMatchObject({ status: 'missing', pinned: true })
     expect(buildTrophyWall(loaded, state, history)[0]).toMatchObject({ label: 'Synthetic Grand Prix', count: 2, lastSource: { to: '/racing/racecourse/run?result=op-alpha-1' } })
     expect(buildTimelineItems(loaded, state, won.events, history)[0]).toMatchObject({ source: { to: '/racing/racecourse/run?result=op-alpha-0' } })
+    // A goal's or a scenario's flair opens her profile on its live route, whose Overview holds her career's goals.
+    const sourced = (source: { kind: 'goal' | 'scenario'; id: string; tier: number }) =>
+      buildTimelineItems(loaded, state, [{ ...won.events[0]!, source }], history)[0]!.source
+    expect(sourced({ kind: 'goal', id: 'goal:alpha:1', tier: 1 })).toMatchObject({ to: '/town/stable/outfit/alpha' })
+    expect(sourced({ kind: 'scenario', id: 'scenario:alpha:1', tier: 1 })).toMatchObject({ to: '/town/stable/outfit/alpha' })
   })
 
   it('round-trips valid URL state, reports rejected values, and resolves an owned fallback', () => {

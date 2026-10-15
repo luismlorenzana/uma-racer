@@ -9,6 +9,7 @@ import {
   TURN_RACE_RATE,
   buildRaceCues,
   coursePositionLabel,
+  hudTurn,
   isPhotoFinish,
   liveRaceCues,
   staminaStory,
@@ -168,5 +169,17 @@ describe('race position presentation', () => {
     const cues = buildRaceCues(timeline({ events: [{ tick: 40, runner: 0, type: 'duel', value: 1, targetRunner: 2 }] }), 0)
     expect(cues).toEqual([expect.objectContaining({ kind: 'duel', runner: 2, isPlayer: true })])
     expect(buildRaceCues(timeline({ events: [{ tick: 40, runner: 0, type: 'duel', value: 0 }] }), 0)).toEqual([])
+  })
+})
+
+describe('the turn HUD', () => {
+  it("counts turns from 1 and holds at the course's count while the last runners finish", () => {
+    expect(hudTurn(0, 100)).toBe(1)
+    expect(hudTurn(0.5, 100)).toBe(1)
+    expect(hudTurn(1, 100)).toBe(1)
+    expect(hudTurn(1.01, 100)).toBe(2)
+    expect(hudTurn(99.5, 100)).toBe(100)
+    expect(hudTurn(100, 100)).toBe(100)
+    expect(hudTurn(106, 100)).toBe(100)
   })
 })

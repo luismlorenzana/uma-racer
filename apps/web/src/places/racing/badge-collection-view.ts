@@ -22,6 +22,7 @@ import {
   type StableBadgeRarity,
 } from '@racer/domain'
 import type { LoadedContent } from '../../content/runtime'
+import { profilePath } from '../stable/model'
 import { badgeFrameStyle, type BadgeFrameStyle } from './badge-frame'
 import { resultPath, type LinkedRaceRecord } from './today'
 
@@ -156,9 +157,9 @@ function sourceView(source: FlairSource | null, umaId: string, raceResults: read
       ? { label: 'View race result', to: resultPath(record.resultId), safeId: source.id }
       : { label: 'Race result unavailable', to: null, safeId: source.id }
   }
-  if (source.kind === 'goal') return { label: 'View Journey', to: `/stable/${encodeURIComponent(umaId)}#journey`, safeId: source.id }
+  if (source.kind === 'goal') return { label: 'View Journey', to: profilePath(umaId), safeId: source.id }
   if (source.kind === 'training') return { label: 'Training milestone', to: null, safeId: source.id }
-  if (source.kind === 'scenario') return { label: `Scenario ${source.tier ?? ''} completion`.trim(), to: `/stable/${encodeURIComponent(umaId)}#journey`, safeId: source.id }
+  if (source.kind === 'scenario') return { label: `Scenario ${source.tier ?? ''} completion`.trim(), to: profilePath(umaId), safeId: source.id }
   if (source.kind === 'migration') return { label: 'Imported history', to: null, safeId: source.id }
   return { label: 'Collection award', to: null, safeId: source.id }
 }

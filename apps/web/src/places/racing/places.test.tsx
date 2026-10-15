@@ -3,15 +3,19 @@
 // is four taps from the Racing page, its result reads the committed row and a reopen shows it without fanfare; the
 // Racecourse and Trophy Hall counters; a stale Advance redraws under "Her build changed." and keeps the button; the
 // Promote sheet waits for her to be free; the Map offers no Start and sends its sub-routes back; the three scopes. A run
-// starts at Account's race speed and follows Account's reduced motion, and a badge's race link opens that result. The
-// PixiJS scene is stubbed: jsdom has no WebGL, and it ends the race as soon as it mounts.
+// starts at Account's race speed and follows Account's reduced motion, a badge's race link opens that result, and a turn
+// race that runs past its turn count holds the HUD at the count. The PixiJS scene is stubbed: jsdom has no WebGL, and it
+// ends the race as soon as it mounts.
 import { act, cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderG2, seedGame, stubStorage } from '../../__fixtures__/testing'
-import { TURN_RACE_RATE } from '../../scenes/race/presentation'
+import { raceTurns, timelineDuration } from '@racer/race'
+import { hudTurn, TURN_RACE_RATE } from '../../scenes/race/presentation'
 import { setRaceSpeed, setReducedMotion, startingSpeed } from '../../ui/devicePrefs'
+import { replayOf, simulate } from './prepare'
 import { readLogs } from './records'
 import { TROPHY_HALL_SEEN_KEY } from './seen'
+import { profilePath } from '../stable/model'
 import { resultPath } from './today'
 import { raceRecords } from './trophy'
 
@@ -125,6 +129,18 @@ describe('the Racecourse', () => {
     expect(view.where()).toBe(`/racing/racecourse/run?result=${id}`)
   })
 
+  it("runs a turn race past the course's turn count in normal play, and the HUD holds at the count", async () => {
+    const game = seedGame('busy')
+    const { where } = renderG2('/racing/racecourse?uma=sim-uma-01&race=sim-g1-medium-a', game)
+    const id = await startRace(where)
+    const timeline = simulate(replayOf((await readLogs(game)).raceResults[id]!))
+    const total = raceTurns(timeline.courseDistance)
+    expect(timeline.tickRate).toBe(1)
+    // The field takes turns until its last runner finishes: here past the 2,000 m course's 100.
+    expect(timelineDuration(timeline)).toBeGreaterThan(total)
+    expect(hudTurn(timelineDuration(timeline), total)).toBe(total)
+  })
+
   it('says nothing more than "That didn\'t work. Try again." when the commit fails', async () => {
     const game = seedGame('busy')
     const failing = { ...game, run: () => Promise.reject(new Error('down')) }
@@ -148,6 +164,24 @@ describe('the Scenario Gate', () => {
     await waitFor(() => expect(where()).toMatch(new RegExp(`^/racing/scenario-gate/${umaId}/ceremony\\?op=`)))
     expect(game.getSnapshot().state!.umas[umaId]!.scenario).toBe(2)
     expect(await screen.findByRole('heading', { name: 'URA Finale Graduate' })).toBeTruthy()
+  })
+
+  it("goes on to her profile after 2.5 s, not 6 s, under Account's reduced motion", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    try {
+      const game = seedGame('gate')
+      const umaId = Object.values(game.getSnapshot().state!.umas).find((uma) => uma.racing.level === 10)!.outfitId
+      setReducedMotion(true)
+      const { where } = renderG2(`/racing/scenario-gate/${umaId}?sheet=advance`, game)
+      await screen.findByText('The new layer')
+      fireEvent.click(document.querySelector<HTMLButtonElement>('[data-advance]')!)
+      expect(await screen.findByRole('heading', { name: 'URA Finale Graduate' })).toBeTruthy()
+      await act(async () => { await vi.advanceTimersByTimeAsync(2_600) })
+      await waitFor(() => expect(where()).toBe(`/town/stable/outfit/${umaId}`))
+    } finally {
+      act(() => setReducedMotion(false))
+      vi.useRealTimers()
+    }
   })
 
   it('opens Promote only while she is free, and offers her work actions first', async () => {
@@ -175,6 +209,13 @@ describe('the Expedition Map, a placeholder', () => {
 })
 
 describe('the Trophy Hall', () => {
+  it("opens a goal's or a scenario's flair on her profile's live route, with no redirect on the way", async () => {
+    const { where } = renderG2(profilePath('sim-uma-01'), seedGame('busy'))
+    expect(await screen.findByRole('heading', { name: 'Amber Sprint' })).toBeTruthy()
+    expect(where()).toBe(profilePath('sim-uma-01'))
+    expect(document.querySelector('[data-g2="career-goals"]')).not.toBeNull()
+  })
+
   it('shows the three scopes and clears its counter on a visit', async () => {
     const game = seedGame('busy')
     const view = renderG2('/racing/trophy-hall', game)

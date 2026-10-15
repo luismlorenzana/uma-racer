@@ -1,15 +1,17 @@
-import { AnimatePresence, m, useDragControls, useReducedMotion } from 'motion/react'
+import { AnimatePresence, m, useDragControls } from 'motion/react'
 import type { ReactNode } from 'react'
+import { useReducedMotionSetting } from '../app/motion'
 import { CloseIcon } from './icons'
 
 /**
  * Bottom sheet for pickers and confirmations (docs/design/ux.md#navigation). Dragging starts only from the grab
  * handle, so taps on buttons inside the sheet are never swallowed by the drag gesture. The sheet never grows past the
- * screen: its content scrolls under a fixed header whose close button and handle are always in reach.
+ * screen: its content scrolls under a fixed header whose close button and handle are always in reach. Under reduced
+ * motion (the system setting or Account's switch, `app/motion.tsx`) it appears and goes without sliding.
  */
 export function BottomSheet({ open, onClose, children, label }: { open: boolean; onClose: () => void; children: ReactNode; label?: string }) {
   const dragControls = useDragControls()
-  const reducedMotion = useReducedMotion()
+  const reducedMotion = useReducedMotionSetting()
 
   return (
     <AnimatePresence>

@@ -1,6 +1,7 @@
-import { AnimatePresence, m, useReducedMotion } from 'motion/react'
+import { AnimatePresence, m } from 'motion/react'
 import { useEffect } from 'react'
 import { createPortal } from 'react-dom'
+import { useReducedMotionSetting } from '../app/motion'
 import { CloseIcon } from './icons'
 
 /**
@@ -21,7 +22,8 @@ export function ArtViewer({
   subtitle?: string
   onClose: () => void
 }) {
-  const reducedMotion = useReducedMotion()
+  // The app's rule (`app/motion.tsx`): the system setting or Account's switch.
+  const reducedMotion = useReducedMotionSetting()
 
   useEffect(() => {
     if (!src) return

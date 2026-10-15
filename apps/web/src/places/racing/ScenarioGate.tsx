@@ -7,7 +7,7 @@ import { badgeStateId, STATS, type DistanceCategory } from '@racer/domain'
 import type { Place } from '@racer/domain/hub'
 import { scenarioNumber } from '@racer/domain/tiers'
 import type { UmaState } from '@racer/domain/state'
-import { m, useReducedMotion } from 'motion/react'
+import { m } from 'motion/react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router'
 import { buildFlairFanfare, buildTrainerFlairFanfare } from './flair-view'
@@ -18,6 +18,7 @@ import { FlairCards } from '../../ui/FlairCards'
 import { RaceMarkIcon } from '../../ui/RaceMarkIcon'
 import { SegmentedControl } from '../../ui/SegmentedControl'
 import { NO_RECORDS, useGame, useNow, useRuntime, type G2Applied } from '../../app/game'
+import { useReducedMotionSetting } from '../../app/motion'
 import { PlaceHeader } from '../../ui/PlaceHeader'
 import { placeName, TapNoteLine, useTap } from '../../ui/work'
 import { UmaArt, UmaFace } from '../../ui/UmaArt'
@@ -27,6 +28,7 @@ import { deviceRows, eventsOfCommit, leaveFlair } from './flair'
 import { advanceSheet, careerRow, careerRows, promoteInput, promoteSheet, type AdvanceSheet as AdvanceView, type CareerRow } from './gate'
 import { useRecords } from './records'
 import { rowsOf } from './today'
+import { profilePath } from '../stable/model'
 import { amount, racingWords } from './words'
 import type { LoadedContent } from '../../content/runtime'
 import type { OperationEnv } from '@racer/domain/check-in'
@@ -35,9 +37,6 @@ import { endsAt, type WorkRow } from '@racer/domain/work'
 
 const PRESET_NAME: Record<DistanceCategory, string> = { sprint: 'Sprint', mile: 'Mile', medium: 'Medium', long: 'Long' }
 const STAT_SHORT = { speed: 'Spd', stamina: 'Sta', power: 'Pow', guts: 'Gut', wit: 'Wit' } as const
-
-/** The profile her advance or promotion lands on (T138's). */
-const profilePath = (umaId: string): string => `/town/stable/outfit/${encodeURIComponent(umaId)}`
 
 /** The device's flair for an Uma leaving her scenario (advance, promotion). */
 const leaveDevice = (content: LoadedContent, env: OperationEnv, umaId: string) => (applied: G2Applied) =>
@@ -270,7 +269,8 @@ function PromotePanel({ uma, content, env, onClose }: { uma: UmaState; content: 
 function Ceremony({ umaId }: { umaId: string }) {
   const navigate = useNavigate()
   const [params] = useSearchParams()
-  const reduced = Boolean(useReducedMotion())
+  // The app's rule (`app/motion.tsx`): the system setting or Account's switch, as the run's result reads it.
+  const reduced = useReducedMotionSetting()
   const state = useGame((snapshot) => snapshot.state)
   const records = useRecords()
   const content = useRaceContent()

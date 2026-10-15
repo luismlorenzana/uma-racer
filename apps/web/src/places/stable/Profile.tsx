@@ -81,9 +81,11 @@ export default function Profile({ place, rest, umaId, tab: routeTab }: PageProps
   const content = env?.content ?? null
   const tab: Tab = routeTab ?? (new URLSearchParams(location.search).get('tab') === 'racing' ? 'racing' : 'overview')
 
-  // Opening her profile is what clears her NEW mark (ux "Shared behaviours").
+  // Opening her profile is what clears her NEW mark (ux "Shared behaviours"). A phone that has never opened the Stable
+  // first takes every Uma it owns as seen, as the Stable would, so only later arrivals read NEW there.
   useEffect(() => {
-    if (uma !== null) prefs.see([umaId])
+    if (uma === null || state === null) return
+    prefs.see(prefs.fresh ? Object.keys(state.umas) : [umaId])
     // Once per Uma.
   }, [umaId, uma !== null])
 
