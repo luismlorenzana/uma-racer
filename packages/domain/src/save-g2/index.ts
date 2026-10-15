@@ -11,5 +11,8 @@ export * from './state'
 export * from './commit'
 export * from './wire'
 export * from './env'
+// The ids of the device's own rows (T136): a badge row and a flair event are named as the parsers check them.
+export { badgeStateId } from '../badges'
+export { flairEventId } from '../flair'
 // The operation table's types, so a caller of `commitOperation` names them from one place.
 export type { OperationEnv, OperationInput, OperationName, OperationReceipt } from '../rework/check-in/once'

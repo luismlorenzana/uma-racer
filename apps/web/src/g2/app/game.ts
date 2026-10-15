@@ -1,15 +1,19 @@
 // The game port (T137; docs/rework/11-hub-and-places.md §2; docs/rework/02-check-ins-and-notifications.md §8–§9): the
 // shell and every place read the game only through `G2Game`. `boot.ts` creates it lazily: the in-memory port over
-// synthetic seeds until T136, whose `useSave` store adapts to it one to one:
+// synthetic seeds on the dev mount, or T136's device save (`g2/save`), whose `useSave` store adapts to it one to one:
 // - `status` is the store's `lifecycle` (`booting`, `ready`, `error`, with its `words`), `trainerName` the trainer
 //   badge row's display name;
 // - `sync` is the chip's state: `paused` while signed out (today's `useAuth`), `offline`, `failing` (red) on `error`,
 //   `waiting` (amber, D157) when `oldestQueuedAt` is over a day old, else `synced`;
-// - `run` builds the operation's id, runs the domain's `recheck` and answers with it, the id riding along.
+// - `run` builds the operation's id, runs the domain's `recheck` and answers with it, the id riding along;
+// - `notices` are the taps the server refused or couldn't run, in plain words, until a screen dismisses them (T136;
+//   09 §8: "the local purchase rolls back with a notice"); `syncNow` and `logs` are the save's too.
 // Only types come from the domain here, so this file costs the entry chunk nothing but the hooks.
 import type { HubView, hubView } from '@racer/domain/hub'
-import type { Answer, OperationEnv, OperationInput, OperationName } from '@racer/domain/rework/check-in'
+import type { Answer, OperationEnv, OperationInput, OperationName, Words } from '@racer/domain/rework/check-in'
+import type { LedgerEntry } from '@racer/domain/rework/tiers'
 import type { WorkState } from '@racer/domain/rework/work'
+import type { ItemLedgerRow, RaceResultRow } from '@racer/domain/save-g2'
 import { createContext, useContext, useMemo, useSyncExternalStore } from 'react'
 import type { Clock } from './clock'
 
@@ -24,6 +28,13 @@ export interface G2Receipt {
   readonly server?: unknown
 }
 
+/** A tap the server refused or couldn't run (T136): the tap's id, its words for the screen to fill, and the filled text. */
+export interface G2Notice {
+  readonly id: string
+  readonly words: Words
+  readonly text: string
+}
+
 export interface G2Snapshot {
   readonly status: G2Status
   /** The rework state; null until the save opens. */
@@ -36,6 +47,8 @@ export interface G2Snapshot {
   readonly receipts: Readonly<Record<string, G2Receipt>>
   /** Why the save can't open, in plain words, when `status` is `error`. */
   readonly words?: string
+  /** Refused or failed taps, oldest first; absent on a port that saves nothing. */
+  readonly notices?: readonly G2Notice[]
 }
 
 /** `recheck`'s answer (T131: done, ask or say), with the operation's id so a sheet can find its receipt again. */
@@ -50,6 +63,24 @@ export interface G2Game {
   utcOffsetMin(now: number): number
   /** One tap: applied at once through `recheck`, never twice; a second tap while `busyKey` is held gets the first's answer. */
   run<N extends OperationName>(name: N, input: OperationInput<N>, busyKey?: string): Promise<G2Answer<N>>
+  /** Clears a notice once the screen has shown it. */
+  dismissNotice?(id: string): void
+  /** Account's Sync now: a flush and a pull at once (T136); absent on a port that saves nothing. */
+  syncNow?(): Promise<void>
+  /** The logs the store doesn't hold, read on demand with the queued taps' own rows (T136). */
+  readonly logs?: G2Logs
+}
+
+/** The save's logs, read when a screen needs them: never loaded into the snapshot. */
+export interface G2Logs {
+  /** One Uma's race results, oldest first. */
+  raceResults(umaId: string): Promise<RaceResultRow[]>
+  /** The whole ledger, by time. */
+  ledgerRows(): Promise<LedgerEntry[]>
+  /** The Warehouse's movements, by time. */
+  itemLedgerRows(): Promise<ItemLedgerRow[]>
+  /** An operation's receipt: the snapshot's latest, else the server's from the operations log. */
+  receipt(id: string): Promise<unknown>
 }
 
 /** The rules the shell runs, loaded with the port so the entry chunk holds none of them. */

@@ -418,6 +418,24 @@ The planner, suggestions, finish times and the badge count are **derived on read
 | A slot whose collect fails keeps "That didn't work. Try again." and the others are collected | §2: one slot never blocks the others; §9's words for the unexpected |
 | A refused operation changes nothing and stores nothing in the `operations` log; only a receipt is kept | A refused tap applied nothing, so a retry may run once the rule allows it |
 | The new operation inputs: `start` from a stopped queue, `queue` dismiss, `speed-up` all, `set-targets`, `set-check-in-times`, `set-repeat-sizing` | §10 saves and syncs these ([13](13-removals-and-plan-changes.md) §6) |
+| **The device's save (T136):** Dexie `uma-racer-g2` holds what the server confirmed plus the outbox; the store is a fold of the outbox over it | A refused or changed answer rolls back by refolding ([09](09-racing-rewards-and-exchange.md) §8: "the local purchase rolls back"), and a reload rebuilds the same state |
+| No device-only tables; the device's markers are `uma-racer:g2:` keys | The journals [rearchitecture/01](../rearchitecture/01-target-architecture.md) §4.2 names left with the minigames and Puzzles |
+| One lane: a 1.5 s debounce, a flush when hidden, a flush and pull when visible or online, and again after a flush that left rows | uma-rpg's timing, with today's flush on hidden so a tap reaches the server before iOS suspends the app |
+| A pull starts 5 minutes before the last pull's `serverTime` (`PULL_OVERLAP_MS`), and rows are adopted by version | A sync stamps `savedAt` inside its transaction and commits a moment later, so a row can land after a pull that read past its time (T135). Adopting a row twice changes nothing |
+| A pull's place (its `since`, cursor and first `serverTime`) is kept in `uma-racer:g2:pull`; an interrupted pull resumes from its cursor, and an empty database always pulls from 0 | Months of history aren't read again after one dropped page |
+| An empty device that can't reach the save (offline, signed out, or any failed first pull) creates its own | §8: everything works offline. A later `exists` gives the server's save back, and the taps made meanwhile run on it |
+| An empty device opens once the pages have brought the rule kinds (up to `operations`); history loads behind it | A second device plays at once, with no wait for months of race results |
+| A tap's state comes from `commitOperation`, and `recheck` words a refusal (`ask` or `say`). An input the server's own parser would refuse answers "That didn't work. Try again." and queues nothing | The tap, the fold and the server run one function, so they agree; a tap the server would call `invalid` never waits in the outbox |
+| An operation that refuses or throws during a fold stays queued | The server is the authority; its answer settles the tap |
+| A refused or invalid answer is a notice in plain words (the refusal's `fill(say(reason, data))`, else "That didn't work. Try again."), kept until a screen dismisses it | [09](09-racing-rewards-and-exchange.md) §8's notice, with the words of §9 |
+| The store keeps the latest 100 receipts, local and server; older ones are read from Dexie's `operations` log | The summary compares them for "Already collected" (§9) |
+| A badge with a write waiting is never overwritten by a pull; its own answer settles it. A conflict takes the server's copy; a conflict with no copy sends it again as a create | One answer per write, and a server that lost the row gets it back |
+| A failure retries after 5 s, 30 s and 2 minutes, then every 5 minutes while visible with rows waiting; offline waits for a trigger; no answer within a minute is offline | Quick recovery from a blip without a phone polling in a pocket |
+| After a 426 the client asks nothing more until the app restarts | The update prompt brings the new app (rearchitecture/07 §4); retrying can't help |
+| A 409 drops the device's save and outbox, and it boots as a new device | Only a deliberately deleted server save causes it (a dev reset, the rehearsal), and the taps it held were on that save |
+| Signed out, the lane waits ("Sync paused", T137) and the game plays on the device; signing in flushes and pulls | Sync needs a token; play doesn't |
+| One device save per page: a second boot gets the first one's port | One database connection and one lane; React's development double effect must not start two |
+| The port also carries `notices`, `dismissNotice`, `syncNow` (Account's Sync now) and `logs` (race results, the ledger, the Warehouse's movements, a receipt), read on demand | The places read the game only through `G2Game`, and logs other than the rule ledger never load into the store |
 
 ## 12. Done when
 

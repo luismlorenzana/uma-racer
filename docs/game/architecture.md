@@ -114,10 +114,12 @@ and the account bar's chips. The registry imports the rules for types only, so t
 - **The new game beside it** (`src/g2/`, M034): its own entry `g2.html`, served only by the dev server at `/dev/g2/*`
   over synthetic seeds (`?seed=busy | fresh | quiet`), with no auth, content or service worker. It imports only today's
   generic pieces (the `ui/` primitives and icons, `content/`, `auth/`, `scenes/race/`), held by a test both ways, and
-  reads the game through one port (`g2/app/game.ts`) that T136's store fills. Places fill the registry's slots
-  (`g2/places/registry.tsx`): the Farm's ten share one building page and one job sheet (`g2/places/farm/`, T140), and
-  every timed thing shares `g2/ui/work/` (slot cards, Speed Tickets, Recall, queue chips, size chips) and
-  `g2/ui/ItemIcon`, each a view over one projection of the work per 30-second tick, every tap through `recheck`.
+  reads the game through one port (`g2/app/game.ts`). `?save=device` fills it from the device save (`g2/save`, T136:
+  Dexie `uma-racer-g2`, one store, one sync lane) on the seeds' content; only `&wipe` adds the first-boot wipe and purge.
+  Places fill the registry's slots (`g2/places/registry.tsx`): the Farm's ten share one building page and one job sheet
+  (`g2/places/farm/`, T140), and every timed thing shares `g2/ui/work/` (slot cards, Speed Tickets, Recall, queue chips,
+  size chips) and `g2/ui/ItemIcon`, each a view over one projection of the work per 30-second tick, every tap through
+  `recheck`.
 
 ## The API
 

@@ -57,6 +57,25 @@ document stays as a record.
 > entry from `.data/save.json`. That path is fixed, never an env var, and is refused if it resolves to the
 > generation-2 file.
 
+> **As built on the device (T136, [rework/02](../rework/02-check-ins-and-notifications.md) §11).** The app's boot runs
+> in this order:
+> 1. **The wipe**, unless `uma-racer:g2:wiped` is set: `Dexie.delete('uma-racer')`; in dev builds every
+>    `farm-kitchen-proof-*` and `puzzle-proof-*` database; every localStorage key that starts with `uma-racer:` and not
+>    `uma-racer:g2:`; and `caches.delete('racer-content')`, which the service worker refills. Each step tolerates
+>    absence and never reads old data. The marker is set only when every step succeeded, so a failed step is tried
+>    again at the next boot. Firebase's databases and the Workbox precache are left alone (§2).
+> 2. **The purge**, unless `uma-racer:g2:purged` is set: in the background once signed in, so it never blocks play.
+>    Its request goes out before the save's first one (§3's order). `purged` or `already` sets the marker; a failure is
+>    tried again back online or at the next boot.
+> 3. **Open, local first:** a device holding a save opens at once, then flushes and pulls. An empty device pulls from 0
+>    and opens once the rule kinds are in; with an empty server, no answer, or no sign-in, it queues `initialSave(now)`
+>    as the create and opens on it. A later `exists` adopts the server's save and pulls it from 0.
+>
+> Then **one lane** carries the outbox in order, 100 rows a batch, with the create always first. A 426 stops it until
+> the app restarts, and a 409 drops the device's save and outbox so it boots as a new device. Only the new game's own
+> boot wipes and purges. The dev mount (`/dev/g2/`) opens the seeds by default, the device save with `?save=device`, and
+> wipes and purges only with `&wipe` too, so a developer's own data is never touched by opening it.
+
 For checking: Claude can list `players/` before and after with the scoped gcloud configuration
 (`CLOUDSDK_ACTIVE_CONFIG_NAME=default CLOUDSDK_CORE_PROJECT=uma-racer`). Nothing in this plan changes the active
 gcloud account.
