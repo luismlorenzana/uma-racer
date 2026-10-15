@@ -1,10 +1,9 @@
 # 08 · Item catalogue and recipes
 
-> **Status: approved design, 2026-10-14; first written 2026-10-13 (D326, D330, D331).** The catalogue, recipes, grade
-> gate, step times and work values are built as rules in `@racer/domain/rework/items` (T126, D341), and the tables
-> marked live are rendered from them; nothing is in the game yet. Recipes, times and the side rotation are **drafts**:
-> the loop simulation ([12](12-economy-and-pacing.md) §12) checks demand per family and per building, and its checks
-> pin them.
+> **Status: as built, phase 3 (generation 2, D361); first written 2026-10-13 (D326, D330, D331).** The catalogue,
+> recipes, grade gate, step times and work values are the rules in `@racer/domain/items` (T126, D341), and the tables
+> marked live are rendered from them. The loop simulation ([12](12-economy-and-pacing.md) §12) checks demand per family
+> and per building, and its checks pin the recipes, times and side rotation.
 
 Every item the Farm makes, every recipe, and where each dish goes. The catalogue is **uma-rpg's farming half** (D330):
 its eight farming families, ten grades each, raw and crafted, and its dishes, with uma-art's icons and names. uma-rpg's
@@ -453,7 +452,7 @@ The value is the same for every family at a grade. Building speed and Speed Tick
 | **Prize Money** | A profile currency | Races and sales ([09](09-racing-rewards-and-exchange.md)) |
 
 There are **no** tokens of any kind, no Energy, no Puzzle materials, no Training Tickets, no Card Coupons and no RPG
-items ([13](13-removals-and-plan-changes.md)).
+items ([13](../rework/13-removals-and-plan-changes.md)).
 
 ## 10. Ids, names and art
 
@@ -472,7 +471,7 @@ items ([13](13-removals-and-plan-changes.md)).
 
 Today's catalogue (M031, D304): 490 raw and 630 processed definitions across 14 scenario flavour rows, 48 meals (16
 signatures × 3 blocks) and Energy, 1,169 in all, drawn as original SVG marks. All of it goes with today's Farm
-([07](07-farm.md) §13, [13](13-removals-and-plan-changes.md)). The Speed Ticket replaces Energy.
+([07](07-farm.md) §13, [13](../rework/13-removals-and-plan-changes.md)). The Speed Ticket replaces Energy.
 
 ## 12. Decided here
 
@@ -488,7 +487,7 @@ signatures × 3 blocks) and Energy, 1,169 in all, drawn as original SVG marks. A
 | **Keep uma-rpg's names; "crafted" on screen, `refined` in data** | No renaming drift from the art package |
 | **Representative deck: 3 bonds of each type** | A neutral basis for the balance; other decks move ~2% |
 | **Work value = real minutes (base × *k*, D338); selling a third** | One number per item for [09](09-racing-rewards-and-exchange.md), independent of building speed |
-| **Durations go through `rework/time.ts`'s one conversion** (T126) | M033 gave the items no dependency on T125, which owns `TIME_FACTOR` and the docs check over `docs/rework/`. Phase 2's groundwork landed both first, so the item rules import `workSeconds` and add neither |
+| **Durations go through `state/time.ts`'s one conversion** (T126) | M033 gave the items no dependency on T125, which owned `TIME_FACTOR` and the docs check over the rework's pages. Phase 2's groundwork landed both first, so the item rules import `workSeconds` and add neither |
 | **§7 is checked here and owned by `sim:loop`** (T126) | §7's dish counts come from the layers and the deck, which the item rules don't hold, and T132 rewrites this page's Farm tables from its run (T128's draft found §7's bond grades can't all come from [06](06-cards-and-bonds.md)'s era rule). So the items export no demand constant and render no §7 block; their test checks only that the recipes turn §7's dish table into §7's crafted table. §13's "from the layer definitions" lands with T132 |
 | **Step times and the grade gate live with the items** (T126) | [07](07-farm.md) §2, §4 and §3 here all state them, work values need them and the items are upstream, so the Farm's jobs (T127) import them, rather than keeping their own copies, and divide by building speed |
 | **§8's "A third" column renders as work value ÷ the Exchange's `SELL_DIVISOR`** (T126, T130) | D331's sell rule, owned by the Exchange; shown unrounded here, since [09](09-racing-rewards-and-exchange.md) §6 owns the rounding |
@@ -504,7 +503,7 @@ signatures × 3 blocks) and Energy, 1,169 in all, drawn as original SVG marks. A
   539 crafted items a tier, the stat families at 50–53, Grains 75, Mushrooms 96 and Vegetables 112 (D338).
 - `pnpm sim:loop` reports Warehouse stock by family and grade over a tier, and no site is the bottleneck for more than
   [12](12-economy-and-pacing.md) §12's tolerance.
-- §3's family tables and §4's matrix are live blocks rendered from the domain constants, in this page until phase 3
-  moves it into the manual (`docs/game/`, [M033](../game/architecture.md#the-rework-modules)).
+- §3's family tables and §4's matrix are live blocks rendered from the domain constants
+  ([the rework modules](architecture.md#the-rework-modules)).
 - In the app, every item, dish and the Speed Ticket shows its icon, name, grade and destination, at 32 × 32 and its
   whole-number scales.

@@ -1,7 +1,7 @@
 # 12 · Economy and pacing
 
-> **Status: approved design, 2026-10-14 (D326, D331, D334, D336, D338); measured by `pnpm sim:loop` (D348).** The
-> model of §4 sized the first draft; the loop simulation (§12) now measures the pace on the rules themselves, and its
+> **Status: as built, phase 3 (generation 2, D361); first written 2026-10-13 (D326, D331, D334, D336, D338); measured by
+> `pnpm sim:loop` (D348).** The model of §4 sized the first draft; the loop simulation (§12) now measures the pace on the rules themselves, and its
 > tables here are live blocks rendered from that run. Every check passes since the owner's pacing calls (D351): the
 > Pantry's fifth slot, a new account's first scenario read as its ramp, and tiers 2–3 at 18–28 days a scenario.
 > If a page elsewhere quotes a number from here and the sim later moves it, this page and the sim win.
@@ -35,7 +35,7 @@ and the career races fit after it. Racing difficulty is tuned for a fully traine
 
 ## 2. Currencies and stocks
 
-After the rework the account has **three currencies and one inventory**. Everything else is gone ([13](13-removals-and-plan-changes.md)).
+After the rework the account has **three currencies and one inventory**. Everything else is gone ([13](../rework/13-removals-and-plan-changes.md)).
 
 | Thing | Earned | Spent | At promotion |
 |---|---|---|---|
@@ -305,7 +305,7 @@ roster is about 25.
 
 **Tiers overlap.** Promotions are per Uma, so the account soon has Umas in two tiers. The Farm and Training Hub serve
 both: grades are the same in every tier, and tier 2 asks for the same dishes. Tier 2 is harder in **races and
-Expeditions** (stronger fields, higher caps, mechanics; [04](04-tiers-and-promotion.md), [10](10-expeditions.md)), not
+Expeditions** (stronger fields, higher caps, mechanics; [04](04-tiers-and-promotion.md), [10](../rework/10-expeditions.md)), not
 in Farm time. The placeholder Expedition (18, 20 and 23 races at three a day, until phase 9's) takes about a week, so
 promotions follow about a week after the cohort's last careers.
 
@@ -371,8 +371,8 @@ Duos +20/+20 and Suns +8 to all five, active capacity halved to 7–15, so the E
 ## 12. The loop simulation
 
 `pnpm sim:loop` (D348), a deterministic, seeded, headless run of the whole economy from a fresh account, on the
-domain's rules only: every change of state is an operation of `@racer/domain/rework/*`. Its pure core is
-`@racer/domain/rework/sim`; `scripts/sim/loop.ts` prints the report, with `--variant=<name>`, `--matrix` and `--json`.
+domain's rules only: every change of state is an operation of `@racer/domain/<area>`. Its pure core is
+`@racer/domain/sim`; `scripts/sim/loop.ts` prints the report, with `--variant=<name>`, `--matrix` and `--json`.
 The loop test runs it in CI.
 
 **What it simulates (the baseline):**
@@ -405,7 +405,7 @@ races a day; the roster, tickets and upgrade dates. Two probes stand beside it: 
 Lv 1 building working without a break, Lv 1 to 21) and **the first unlock** (a fresh account, the owner checking in at
 every finish on day 0).
 
-**Its partner, `pnpm sim:expeditions`** ([10](10-expeditions.md)), runs fully trained Umas through every Expedition in
+**Its partner, `pnpm sim:expeditions`** ([10](../rework/10-expeditions.md)), runs fully trained Umas through every Expedition in
 every tier with real race engine runs. It will pin how many races an Expedition takes and the win rate per tier, and
 the loop sim will read its median race count instead of the placeholder.
 
@@ -470,7 +470,7 @@ weeks, while a later tier-1 scenario can dip to about 20 days, so the committed 
 
 - `pnpm sim:loop` runs on a fresh synthetic account with the domain's real rules and reports §12's metrics.
 - CI fails if any §12 check leaves its range.
-- This page's tables are live blocks rendered from the domain constants (in this page until phase 3 moves it into the
-  manual, `docs/game/`), so the numbers here can't drift from the code.
+- This page's tables are live blocks rendered from the domain constants and the loop's run, so the numbers here can't
+  drift from the code.
 - After four weeks of the owner's real play on the new game, the measured pace (scenario 1's completion across the
   roster) is within 25% of the sim. If it isn't, the time factor is retuned and logged as a decision.

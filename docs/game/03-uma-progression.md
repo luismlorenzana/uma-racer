@@ -1,8 +1,9 @@
 # 03 · Uma progression
 
-> **Status: approved design, 2026-10-14; first written 2026-10-13 (D327, D328).** How one Uma progresses inside a tier: her Racing Level,
-> the five scenarios she climbs, her career in each, advancing, her one build per tier, and the stats she races with.
-> Every number is a **draft**; the sims named in each section pin it.
+> **Status: as built, phase 3 (generation 2, D361); first written 2026-10-13 (D327, D328).** How one Uma progresses
+> inside a tier: her Racing Level, the five scenarios she climbs, her career in each, advancing, her one build per tier,
+> and the stats she races with. The tables marked live are rendered from the rules; the sims named in each section pin
+> their numbers.
 
 Tiers, promotion and the per-scenario numbers (caps, node values, Extra Stats values, buffs) are on
 [04](04-tiers-and-promotion.md). What a session unlocks and the layer contents are on [05](05-training-hub.md), bonds on
@@ -87,9 +88,9 @@ Her career ([§4](#4-her-career-in-each-scenario)) holds two levels of each scen
 - **At the gate** she banks up to 100 EXP, the next scenario's first step, which applies when she advances. Past that,
   race EXP is not counted.
 - **At Racing Level 50** (the tier's last gate) there is no next scenario. EXP stops and nothing banks. Her next step
-  is the World Expedition ([10](10-expeditions.md)).
+  is the World Expedition ([10](../rework/10-expeditions.md)).
 - **Level-ups pay nothing of their own,** except the gate: D148's Training Ticket per level is gone
-  ([13](13-removals-and-plan-changes.md)), and each scenario gate an Uma reaches still pays 1 Uma Shard (D336,
+  ([13](../rework/13-removals-and-plan-changes.md)), and each scenario gate an Uma reaches still pays 1 Uma Shard (D336,
   [04](04-tiers-and-promotion.md) §6). Races pay Prize Money ([09](09-racing-rewards-and-exchange.md)).
 
 ### Lifetime level, for lists and badges
@@ -149,10 +150,10 @@ her a fresh career written for her profile:
   scenarios brings different races, as today's "tier *n* starts *n* places in".
 - **Goals can be won early.** A G1 won at level 1 counts. Retries are free.
 - **Goals pay nothing of their own.** No tickets, no stats, and no Inspiration tokens: D322's goal-paid tokens are
-  superseded by D326 ([13](13-removals-and-plan-changes.md)).
+  superseded by D326 ([13](../rework/13-removals-and-plan-changes.md)).
 - **Closed on leaving.** Advancing closes the career. Its goals are complete by then, because the advance requires it.
   At the tier's last scenario the career closes when she is promoted ([04](04-tiers-and-promotion.md)).
-- `pnpm sim:rework-careers` keeps generating a career for every Uma at every T (14 until the 15th ships) and checks
+- `pnpm sim:careers` keeps generating a career for every Uma at every T (14 until the 15th ships) and checks
   every stage is winnable by a build with that scenario's full layer (§9).
 
 ## 5. Advancing to the next scenario
@@ -162,7 +163,7 @@ her a fresh career written for her profile:
 She can advance when **all three** hold:
 1. her Racing Level is at the scenario's gate (10*s*);
 2. every goal of her career is won;
-3. she is not in the tier's last scenario (there the next step is the Expedition, [10](10-expeditions.md)).
+3. she is not in the tier's last scenario (there the next step is the Expedition, [10](../rework/10-expeditions.md)).
 
 Then:
 - **The Stable tile** shows its "ready" dot, and the Scenario Gate ([11](11-hub-and-places.md)) lists her.
@@ -193,7 +194,7 @@ Her unlocks carry, but each card node is worth less in the bigger tree:
 The new layer is what makes her strong again. This is today's "a scenario is a career run" (D121), much gentler: she
 arrives with 73–88% of the new scenario's full build instead of a fresh CL1 tree ([04](04-tiers-and-promotion.md) §7).
 
-**Worked example (draft numbers).** Base 100 in every stat, growth +10% Speed and Stamina. A Medium preset with a
+**Worked example.** Base 100 in every stat, growth +10% Speed and Stamina. A Medium preset with a
 Speed, Stamina, Power, Guts and Wit card and one Friend card, two nodes each. Her two parent slots are filled, and her
 five Extra Stats singles are one per stat (+40 each, D338).
 
@@ -224,7 +225,7 @@ After Advance:
 
 ### What is saved
 
-`advance-scenario` is one operation ([13](13-removals-and-plan-changes.md) §6) on `umas/{outfitId}`:
+`advance-scenario` is one operation ([13](../rework/13-removals-and-plan-changes.md) §6) on `umas/{outfitId}`:
 - scenario + 1 and Racing Level 10*s* + 1, with the bank applied;
 - the old career closed;
 - the new career frozen;
@@ -302,7 +303,7 @@ and D288):
 ## 7. What an Uma is made of
 
 Her save in plain words. It maps to `umas/{outfitId}` and `work/{outfitId}`
-([13](13-removals-and-plan-changes.md) §6).
+([13](../rework/13-removals-and-plan-changes.md) §6).
 
 | Part | In plain words | At promotion | Owner |
 |---|---|---|---|
@@ -313,7 +314,7 @@ Her save in plain words. It maps to `umas/{outfitId}` and `work/{outfitId}`
 | **Bonds** | Which cards are bonded to her in this tier | Cleared (kept in promotion history) | [06](06-cards-and-bonds.md) |
 | **Presets** | Four builds: card set, card-node assignments, lineage picks, active Extra Stats, loadout | Emptied (her unique stays) | 03 |
 | **Career** | This scenario's frozen goals and their outcomes; earlier careers closed, as history | A new one; history kept | 03 |
-| **Expedition** | Her progress in the tier's World Expedition | A new tier's, empty | [10](10-expeditions.md) |
+| **Expedition** | Her progress in the tier's World Expedition | A new tier's, empty | [10](../rework/10-expeditions.md) |
 | **Work** | Her running job or session and its queue, with reserved inputs | See [04](04-tiers-and-promotion.md) §5 | [02](02-check-ins-and-notifications.md), [05](05-training-hub.md), [07](07-farm.md) |
 | **Promotion history** | One entry per tier left: when, which Expedition, her final build in brief | Grows | [04](04-tiers-and-promotion.md) |
 | **Race defaults** | Preferred distance, surface and running style; the selected preset | Kept | 03 |
@@ -373,7 +374,7 @@ In URA Finale, 12 open nodes give 800 SP, and a Friend card on two nodes adds 1,
 percentages, and the stat rounds once at the end, so the invariance rule still holds exactly: moving a card between
 nodes never changes a total (D126).
 
-`pnpm sim:rework-builds` re-runs the stamina ladder on the new trees: every distance's deck must still hold a full
+`pnpm sim:builds` re-runs the stamina ladder on the new trees: every distance's deck must still hold a full
 spurt at every T ([05](05-training-hub.md) §12). The Extra Stats now carry 200–900 points instead of 240, which is more
 room for stamina from a tier's second scenario on. A tier's first Gym layer holds one single per stat, so there they
 can't lean.
@@ -401,7 +402,7 @@ typical trained Uma of her scenario**, handicapped by the race's grade.
 - **Difficulty assumes a fully trained Uma.** The owner finishes the passive layer first and then races the career,
   so the game is tuned for that and not for any timetable. An Uma can race at any point with whatever she has
   unlocked. A brand-new or just-promoted Uma mostly loses until her first unlocks land, and that's expected.
-- `pnpm sim:rework-careers` re-measures the typical Uma on the new trees and checks today's target: a fully trained
+- `pnpm sim:careers` re-measures the typical Uma on the new trees and checks today's target: a fully trained
   build wins the Maiden G3 and Trials G2s and is favoured in her G1s. The handicaps stay the owner's one-line lever
   (D159), as today.
 
@@ -434,7 +435,7 @@ card factor, so her trained stat grows faster late in each tier than today's: 64
 650 → 689. It doesn't cost a fully trained Uma her edge. Her G1s at scenarios 4 and 5 of each tier are won 80–100% of
 the time, best case, as everywhere else, so the formula stays as it is (D336).
 
-The G1 grid of the stamina ladder's sets (`pnpm sim:rework-builds`, 200 races a cell), the pace rate and the best
+The G1 grid of the stamina ladder's sets (`pnpm sim:builds`, 200 races a cell), the pace rate and the best
 running style's:
 
 <!-- live:rework-g1-rates -->
@@ -485,7 +486,7 @@ running style's:
    - a race that was a goal earlier can be run again, but counts in the current scenario: a new win, and maybe a
      Two-Time title;
    - an old result replays from its own stored inputs (scenario, build snapshot, engine version), unchanged;
-   - Expedition races run as her current (last) scenario, tagged as the Expedition ([10](10-expeditions.md)).
+   - Expedition races run as her current (last) scenario, tagged as the Expedition ([10](../rework/10-expeditions.md)).
 5. **Waiting at the gate.** Allowed, without limit:
    - she keeps racing her current scenario's fields with her finished build, which she may out-class;
    - EXP banks to 100 and stops;
@@ -521,10 +522,10 @@ running style's:
 | Lineage picks stay per preset | A sprint preset's parents lift sprint aptitudes (D253) |
 | New Extra Stats capacity fills with bought-but-off nodes, oldest first | The advance never leaves capacity idle; switching stays free |
 | Baseline SP = 40% of the SP cap × open nodes ÷ tree nodes | Replaces CL's baseline; the Observatory pays SP as CL did |
-| Rivals and grade handicaps exactly as today, including the rivals' 84% card factor; D191's minimum over 15 scenarios | The owner's rule (D336); a fully trained Uma keeps today's edge, and the same typical Uma serves the Expeditions ([10](10-expeditions.md)) |
+| Rivals and grade handicaps exactly as today, including the rivals' 84% card factor; D191's minimum over 15 scenarios | The owner's rule (D336); a fully trained Uma keeps today's edge, and the same typical Uma serves the Expeditions ([10](../rework/10-expeditions.md)) |
 | Difficulty assumes a fully trained Uma; no special fields for new Umas | The owner trains first, then races (D336) |
 | The rivals' Extra Stats stay the scenario's full capacity, not discounted by their 84% card factor (D349) | Measured on full-layer builds, every career cell meets §12's targets at T = 1–14, scenarios 4 and 5 included; D336 fixes the formula |
-| Each gate pays 1 Uma Shard, once per Uma per gate per tier (D340) | D336, [04](04-tiers-and-promotion.md) §6 and [13](13-removals-and-plan-changes.md) §2 over the first draft, which removed it |
+| Each gate pays 1 Uma Shard, once per Uma per gate per tier (D340) | D336, [04](04-tiers-and-promotion.md) §6 and [13](../rework/13-removals-and-plan-changes.md) §2 over the first draft, which removed it |
 | The gate's bank applies at the advance, through the new career's holds (D340) | Today's advance sets EXP to 0; the rework's gate banks the next scenario's first step for this |
 | The rules are ports, each held to today's by a parity test: Racing EXP restates `addUmaRaceExp`, goal settlement `evaluateScenarioGoals`; career generation and every constant are imported (D340) | Today's functions take today's whole save and stop at Uma Level 140, not at each tier's last gate |
 | A career's aptitudes come from the selected preset's lineage, its filled open slots (D340) | As from today's active preset (D252): lineage carried from the scenario before shapes her next career |
@@ -548,7 +549,7 @@ running style's:
 - There is no scenario picker anywhere, and a new race result records her current scenario.
 - `deriveStats` has no star or CL input. A domain test pins §8's worked example, URA Finale's 800 + 1,200 SP, and the
   exact invariance (moving a card between nodes never changes a total).
-- `pnpm sim:rework-careers` generates every career at all 15 scenarios (14 until the 15th ships). With full-layer
+- `pnpm sim:careers` generates every career at all 15 scenarios (14 until the 15th ships). With full-layer
   builds, every Maiden G3 is won, the Trials G2s at 90% or more, the Main G1s at 60–100% best case, with today's
   handicaps unchanged (§9).
-- `pnpm sim:rework-builds`' stamina ladder holds at every T on the new trees ([05](05-training-hub.md) §12).
+- `pnpm sim:builds`' stamina ladder holds at every T on the new trees ([05](05-training-hub.md) §12).

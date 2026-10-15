@@ -1,9 +1,9 @@
 # 01 · Game loop
 
-> **Status: approved design, 2026-10-14; first written 2026-10-13 (D326–D328, D331, D334).** How the new game plays from minute to
-> month: the loop, one Uma's scenario, the roster in rotation and a week in both modes. Every number is a **draft**
-> from the README's time model and [12](12-economy-and-pacing.md)'s first-pass model. `pnpm sim:loop`
-> ([12](12-economy-and-pacing.md) §12) replaces them and pins them in tests.
+> **Status: as built, phase 3 (generation 2, D361); first written 2026-10-13 (D326–D328, D331, D334).** How the game
+> plays from minute to month: the loop, one Uma's scenario, the roster in rotation and a week in both modes. The worked
+> numbers follow the [README](README.md)'s time model; `pnpm sim:loop` ([12](12-economy-and-pacing.md) §12) measures
+> them on the rules, and its checks pin them in tests.
 
 This page tells the story and owns the **activity rule** (D328). The pages it links to own the parts:
 - check-ins and queues: [02](02-check-ins-and-notifications.md);
@@ -78,14 +78,14 @@ Every Uma is in exactly one of three work states. Racing is never one of them.
 | Queue a session behind a Farm job | **Not possible.** A queue stays in one slot at one place ([02](02-check-ins-and-notifications.md) §3) | A queue that moved her between buildings would need a second slot held for her |
 | She advances to the next scenario mid-job or mid-session | **Allowed; running work continues.** A session making a previous-layer unlock still pays it, because layers last the whole tier | Advancing changes her career, not her work |
 | She is promoted while working | Promotion needs her free ([04](04-tiers-and-promotion.md) §5). The Promote sheet offers Collect for finished work, and Recall or Speed Tickets for a running job or session, or says when she'll be free | No job or session spans two tiers, so no Farm EXP or unlock lands in the wrong one |
-| She races in a World Expedition | Allowed at any work state | Expedition races are races ([10](10-expeditions.md)) |
+| She races in a World Expedition | Allowed at any work state | Expedition races are races ([10](../rework/10-expeditions.md)) |
 
 The rule in one line for the screens: **a busy Uma's card shows her job and its finish time, and a Race button that
 always works.**
 
 ## 3. One Uma, one scenario
 
-A worked example with the draft numbers. Kitasan Black is in tier 1, scenario 1, on an account working at the target
+A worked example with the game's numbers. Kitasan Black is in tier 1, scenario 1, on an account working at the target
 pace: three check-ins a day and no Speed Tickets ([12](12-economy-and-pacing.md)). She's played the way the owner
 plays (D336): **train the layer first, then race the career.** Timings are rough on purpose; nothing in the game
 needs the owner to play at set times.
@@ -138,7 +138,7 @@ Her day: working most of it, waiting a little for check-ins, one unlock and two 
 ### Advancing
 
 When her career is complete she sits at Racing Level 10, and her card shows **Ready to advance**. Advancing is free
-and explicit ([03](03-uma-progression.md), [13](13-removals-and-plan-changes.md)): she becomes Racing Level 11 in
+and explicit ([03](03-uma-progression.md), [13](../rework/13-removals-and-plan-changes.md)): she becomes Racing Level 11 in
 scenario 2, and its layer (23 unlocks, grades 3–4) opens. Her scenario-1 unlocks stay for the whole tier (D328).
 
 - **Advancing needs her career, not her full layer.** If she wins her G1s before every unlock is done, she can
@@ -185,7 +185,7 @@ The owner chooses; the planner suggests ([02](02-check-ins-and-notifications.md)
 
 ## 5. A week of play
 
-The owner plays in two modes ([README](README.md)). The numbers are drafts from [12](12-economy-and-pacing.md) §8;
+The owner plays in two modes ([README](README.md)). The numbers are [12](12-economy-and-pacing.md) §8's;
 [09](09-racing-rewards-and-exchange.md) owns prizes and the anti-grind rule.
 
 ### A busy day
@@ -212,7 +212,7 @@ the last session of a layer ([02](02-check-ins-and-notifications.md) §4). **Spe
 
 ### The week
 
-| Day | Check-ins | Races | Prize Money (draft) | Speed Tickets' worth | Roster time saved |
+| Day | Check-ins | Races | Prize Money | Speed Tickets' worth | Roster time saved |
 |---|---|---|---|---|---|
 | Mon–Fri, each | 3 | ~8 | ~1,200 | ~40 | ~20 h (4%) |
 | Saturday (free evening) | 3 | ~40 | ~5,000 | ~165 | ~80 h (18%) |
@@ -238,11 +238,11 @@ A tier is five scenarios, a World Expedition and a promotion. For a roster of 25
 | 8–12 | **Scenario 3** | 5–6 | 21 | The last grandparents and two of their uniques; more Duos (grade 5) and a Sun (grade 6). The build takes its shape |
 | 12–16 | **Scenario 4** | 7–8 | 19 | Fewer, dearer unlocks; the last uniques and the first grandparent golds; Extra Stats capacity 13 |
 | 16–20 | **Scenario 5** | 9–10 | 17 | The full tier build: 107 unlocks, 28 nodes, 24 Inspiration, 37 Extra Stats nodes, 18 bonds |
-| ~17–21 | **World Expedition** | — | — | Abroad: **8 distinct wins** from one region's race pool, about 15–25 races per Uma ([10](10-expeditions.md)). The Farm keeps running at home |
+| ~17–21 | **World Expedition** | — | — | Abroad: **8 distinct wins** from one region's race pool, about 15–25 races per Uma ([10](../rework/10-expeditions.md)). The Farm keeps running at home |
 | ~20 on | **Promotion** | 1 again | 27 | She moves to tier 2 and starts over. In tier 1, each promotion pays one Uma Ticket ([04](04-tiers-and-promotion.md)) |
 
 **Tier 2 is the same loop in a stronger world.** Node values are ×1.25 (×1.5 in tier 3), fields are stronger and
-Expeditions add mechanics ([04](04-tiers-and-promotion.md), [10](10-expeditions.md)). The Farm takes the same time in
+Expeditions add mechanics ([04](04-tiers-and-promotion.md), [10](../rework/10-expeditions.md)). The Farm takes the same time in
 every tier. Only promoted Umas live in tier 2, so for a while the roster spans two tiers and shares one Farm. A new
 tier-1 Uma, bought with the promotion's ticket, can take the promoted Uma's place.
 
@@ -260,7 +260,7 @@ one time factor to change if it feels too long.
 | Which races to run, and when | The **planner**: what each target still needs, cascaded to dishes, crafted and raw items, with stock and running work counted first |
 | How to spend Prize Money: Speed Tickets, raw items, upgrades | **Suggestions** for free Umas, which the owner starts with one tap |
 | What to sell | Collecting an Uma's finished unlocks before she races, or before she's moved |
-| When to advance a scenario, which Expedition to run, when to promote | **Push notifications** when Umas fall free, if the owner adopts uma-rpg's ([02](02-check-ins-and-notifications.md) §7) |
+| When to advance a scenario, which Expedition to run, when to promote | **Push notifications** when Umas fall free, if the owner adopts uma-rpg's (phase 4, not built: [02](02-check-ins-and-notifications.md) §7) |
 
 **The game never spends for the owner.** It never buys or sells, never uses a Speed Ticket, and never advances or
 promotes an Uma by itself. Repeat and suggestions start work only on the owner's tap. A queue starting its next entry

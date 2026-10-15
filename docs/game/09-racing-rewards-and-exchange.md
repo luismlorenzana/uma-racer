@@ -1,12 +1,11 @@
 # 09 · Racing rewards and the Exchange
 
-> **Status: approved design, 2026-10-14; first written 2026-10-13 (D328, D331).** What a race pays, the Daily Purse that keeps racing
-> from replacing the timers, the daily featured races, the Exchange, Speed Tickets and selling surplus. The prize
-> table, the purse, the featured draw, the Exchange's goods and stock rule and selling are built as rules in
-> `@racer/domain/rework/exchange` (T130, D345), and the tables marked live are rendered from them; nothing is in the
-> game yet. The Racecourse (§3.5, §4), the race's commit (§8–§9) and the result (§7) are built in the new game beside
-> today's app (T141, D359), with §10's last rows. Every number is a **draft**. The loop simulation ([12](12-economy-and-pacing.md) §12) tunes them, and its
-> checks become the tests that pin them.
+> **Status: as built, phase 3 (generation 2, D361); first written 2026-10-13 (D328, D331).** What a race pays, the
+> Daily Purse that keeps racing from replacing the timers, the daily featured races, the Exchange, Speed Tickets and
+> selling surplus. The prize table, the purse, the featured draw, the Exchange's goods and stock rule and selling are
+> the rules in `@racer/domain/economy` (T130, D345), and the tables marked live are rendered from them. The Racecourse
+> (§3.5, §4), the race's commit (§8–§9) and the result (§7) are T141's (D359), with §10's last rows. The loop
+> simulation's checks ([12](12-economy-and-pacing.md) §12) pin the numbers. Expedition prizes (§2) wait for phase 9.
 
 Races are the free-time half of the game. They cost nothing, are never blocked by Farm work or sessions (D328), and
 pay two things:
@@ -71,13 +70,13 @@ richer, but halving is easier to read and pays less for a bad race.
   place makes the purse and the pacing model exact.
 - **No tier multiplier.** Work times are the same in every tier ([12](12-economy-and-pacing.md) §9), so the anchor is too.
   Tier 2 and 3 races are harder to win, which is their own cost.
-- **Expedition races pay 1.5× the G1 row, whatever their local grade** (draft): 450 / 180 / 90 / 45 / 22.
-  [10](10-expeditions.md) decides which races are Expedition races (never in the regular catalogue), that retries are
+- **Expedition races pay 1.5× the G1 row, whatever their local grade** (the rule is built; its races are phase 9's): 450 / 180 / 90 / 45 / 22.
+  [10](../rework/10-expeditions.md) decides which races are Expedition races (never in the regular catalogue), that retries are
   free and that they pay no Racing EXP; this page sets the rate. A first draft here was ×2 on the race's own grade.
   10's rule is better: foreign grades don't map one-to-one onto JRA's, and a fully trained Uma wins about 45% abroad
   against 80–100% of home G1s, so a 450 Expedition race and a 300 home G1 pay about the same per race run.
 - **The Expedition rate is for families she hasn't won yet on this run.** Once a family is in her run's wins
-  ([10](10-expeditions.md) "Save"), racing it again pays the home G1 row (300 / 120 / 60 / 30 / 15). A repeat can't
+  ([10](../rework/10-expeditions.md) "Save"), racing it again pays the home G1 row (300 / 120 / 60 / 30 / 15). A repeat can't
   move her toward the eight wins, so it earns no premium; a family not yet won still does, including after the eighth
   win, while she chases a Clean Sweep. So the Expedition is never a better farm than home G1s.
 
@@ -177,7 +176,7 @@ the twentieth and the 12,000 edge stay.
 A daily board of three races that pay a bonus. It gives the free-time mode a small goal each day and nudges the owner
 off the same handful of races.
 
-| Rule | Value (draft) |
+| Rule | Value |
 |---|---|
 | The board | **3 races a day:** one G1, one G2 or G3, one OP or Pre-OP, from the regular catalogue (not Expedition pools) |
 | The draw | Seeded by the local date (`featured:YYYY-MM-DD`), so every device shows the same board. No race is featured two days running, and the three differ in distance category when the catalogue allows |
@@ -200,7 +199,7 @@ off the same handful of races.
 A Town Hall place ([11](11-hub-and-places.md)), drawn with uma-art's `exchange` market stall. It sells for Prize
 Money; it doesn't buy (selling happens in the Warehouse, §6).
 
-| Goods | Price (Prize Money, draft) | Limit |
+| Goods | Price (Prize Money) | Limit |
 |---|---|---|
 | **Speed Ticket** | 30 | None |
 | **Raw ingredient**, grade *g*, any family | (90 + 5(*g*−1)) × *k*: its real gathering minutes (*k* = 1.2, D338) | Grades up to the stock rule (§5.3); up to 99 a purchase |
@@ -353,7 +352,7 @@ the total. It asks once when the sale:
 
 No undo: a confirmed sale is final, and buying back costs three times as much, so the confirmations are the guard.
 
-**As built (T138).** Reserved is `reservedStock` (`rework/work`), what Recall would return; the sizes are `stackCounts`'s,
+**As built (T138).** Reserved is `reservedStock` (`work`), what Recall would return; the sizes are `stackCounts`'s,
 each priced by `sellPrice` with its total, a size of 0 off with its reason. `sellConfirmations` decides the one question,
 which reads all that apply in one sentence at live prices: "Sell 2 Cabbage Salad (grade 3) for 698? Each took about 17
 hours of work. This leaves the planner 4 short for Hishi Akebono's Observatory layer." (hours from `workValueSeconds`; the
@@ -373,12 +372,12 @@ joins.
 4. **Prize Money:** "+300 · 1st in a G1", and below it only the lines that applied: "Expedition rate", "Featured
    bonus +300", "Tired purse: paid a quarter (6,420 of 12,000)". The amount flies into the account bar's chip.
 5. **Goals:** goal ribbons and pips, as today; for an Expedition race, the distinct-win count ("5 of 8",
-   [10](10-expeditions.md)).
+   [10](../rework/10-expeditions.md)).
 6. **Flair:** badges, titles and achievements in today's T016 order, unchanged.
 7. **Actions:** **Next Uma** (the Racecourse on the next Uma with something to race, [11](11-hub-and-places.md)),
    **Race again** (same Uma, same race) and **Races**. At a gate with her career complete, an **Advance** action joins
    them and opens the Scenario Gate; an Expedition's eighth win shows **Promote** instead, and a lost Expedition race
-   **Retry** ([10](10-expeditions.md)). Until the result is saved only **Retry save** shows, as today.
+   **Retry** ([10](../rework/10-expeditions.md)). Until the result is saved only **Retry save** shows, as today.
 
 A reload shows the stored result, its prize and band from the saved row, without replaying fanfare.
 
@@ -391,7 +390,7 @@ A reload shows the stored result, its prize and band from the saved row, without
 | **A stale Exchange screen** | A `buy` carries the unit price the screen showed. If the price has changed, the server refuses it with "Price changed", charges nothing, and the screen refreshes |
 | **Short of money at the server** | Refused with nothing charged; the local purchase rolls back with a notice |
 | **A retried operation** | Returns its first receipt; nothing is charged or paid twice (§9) |
-| **Closing the app mid-race** | The result is settled when the race starts (today's app settles when playback ends), so quitting the playback can't change the prize or the purse. Reopening shows the result |
+| **Closing the app mid-race** | The result is settled when the race starts (the old app settled when playback ended), so quitting the playback can't change the prize or the purse. Reopening shows the result |
 | **A promoted Uma** | Prize Money, Speed Tickets and the Warehouse are the account's and carry ([04](04-tiers-and-promotion.md)). Her races in tier 2 pay the same table |
 | **An Uma bought mid-tier** | Changes nothing here. The Exchange's stock never drops, and her first races pay like anyone's |
 | **An Uma at Racing Level 50, or held** | Racing EXP follows [03](03-uma-progression.md); Prize Money is paid as usual, so racing a finished Uma still feeds the Farm, through the purse |
@@ -401,7 +400,7 @@ A reload shows the stored result, its prize and band from the saved row, without
 
 ## 9. Saved data and operations
 
-Generation 2's kinds ([13](13-removals-and-plan-changes.md) §6), with what this page needs on them:
+Generation 2's kinds ([13](../rework/13-removals-and-plan-changes.md) §6), with what this page needs on them:
 
 | Where | Field | Notes |
 |---|---|---|
@@ -412,7 +411,7 @@ Generation 2's kinds ([13](13-removals-and-plan-changes.md) §6), with what this
 | `items/speed-ticket` | count | Speed Tickets are an item |
 | `raceResults` row | `commit.prize: { gross, paid, band, expedition, featuredBonus }`, in the `finish-race` receipt the row keeps | What the result screen shows on reload |
 | `ledger` (log) | `{ id, resource, delta, reason, at }`, the built `LedgerEntry` (D340, D345); the id carries the cause | Prize Money movements (and [04](04-tiers-and-promotion.md)'s Uma Ticket and Shard movements) |
-| `itemLedger` (log) | `{ id, itemId, delta, reason, outfitId, opId, at }` ([13](13-removals-and-plan-changes.md) §6) | Speed Tickets and items bought, sold and used |
+| `itemLedger` (log) | `{ id, itemId, delta, reason, outfitId, opId, at }` ([13](../rework/13-removals-and-plan-changes.md) §6) | Speed Tickets and items bought, sold and used |
 
 **Ledger reasons:** `race-prize`, `featured-bonus`, `buy`, `sell`, `upgrade` (with the building id), `promotion`
 ([04](04-tiers-and-promotion.md)), and `dev-grant` in dev builds only. Every row's id names what caused it: the race
@@ -425,11 +424,11 @@ result, the operation, the building.
 | A race's prize | `race:<resultId>:prize`, and `race:<resultId>:featured` for a bonus |
 | `buy { opId, sku, qty, unitPrice }` | `buy:<opId>:pay` (Prize Money) and `buy:<opId>:get` (the item) |
 | `sell { opId, itemId, qty, unitPrice }` | `sell:<opId>:give` (the item) and `sell:<opId>:pay` (Prize Money) |
-| `speed-up { opId, outfitId, startedAt, tickets }` | `<opId>:m<n>`, the tickets' item movement ([13](13-removals-and-plan-changes.md) §6). `startedAt` names the job, so a ticket meant for a finished job can't land on the next one |
+| `speed-up { opId, outfitId, startedAt, tickets }` | `<opId>:m<n>`, the tickets' item movement ([13](../rework/13-removals-and-plan-changes.md) §6). `startedAt` names the job, so a ticket meant for a finished job can't land on the next one |
 
 - **The race's prize is written with its result**, in the same atomic commit as the result row, the Uma, the profile's
   balance and purse, and the ledger rows. **As built (T134), a race commits as the operation `finish-race`** in
-  [13](13-removals-and-plan-changes.md)'s list: in one tap it collects her finished unlocks, pays Racing EXP, goals and
+  [13](../rework/13-removals-and-plan-changes.md)'s list: in one tap it collects her finished unlocks, pays Racing EXP, goals and
   the gate's Shard on the preset of the race's distance, then the prize through the purse with any featured bonus, and
   writes the `raceResults` row under the operation's id, which is the race result's.
 - **The server re-runs** `buy`, `sell` and `speed-up` with the domain package and refuses one whose price, stock,
@@ -455,8 +454,8 @@ result, the operation, the building.
 | "Buy and finish" in one tap, with one confirmation | A free evening's money should reach the jobs without a trip to the Exchange |
 | Selling: a third of work value, rounded down; reserved stock never offered; dishes, needed stock and sales of 1,000+ confirm | No money pump; the planner protects what the roster still needs |
 | The purse day is the device's local date at race start, and never goes backwards | Today's day rule; a time-zone hop can't reopen a spent purse |
-| The rules live in `@racer/domain/rework/exchange`, not §9 and §11's `@racer/domain/economy` (D345) | [M033](../game/architecture.md#the-rework-modules) keeps every rework area under `rework/` until phase 3 moves them, when today's `economy.ts` goes |
-| The profile carries §9's `purse` and `exchangeGrade` (listed in [13](13-removals-and-plan-changes.md) §6), and phase 3's save carries them. A new account's purse is empty on 1970-01-01, which every race day is later than, and the Exchange stocks grade 1 (D345) | Grade 1 is stocked before the first Uma exists (D323); the first race starts a fresh purse |
+| The rules lived in `@racer/domain/rework/exchange` until T143 moved them to §9 and §11's `@racer/domain/economy` (D345, D361) | [M033](architecture.md#the-rework-modules) kept every rework area under `rework/` until phase 3, when the old `economy.ts` went |
+| The profile carries §9's `purse` and `exchangeGrade` (listed in [13](../rework/13-removals-and-plan-changes.md) §6), and phase 3's save carries them. A new account's purse is empty on 1970-01-01, which every race day is later than, and the Exchange stocks grade 1 (D345) | Grade 1 is stocked before the first Uma exists (D323); the first race starts a fresh purse |
 | The day comes in as `localDay`, the device's `YYYY-MM-DD` at race start (D345) | A pure rule can't know the time zone |
 | "Never two days running" keeps each slot's pool sorted by id and only the indices with the parity of the day's number (days since 1970-01-01). A one-race pool shows its race every other day. Each slot draws once a day, even from an empty pool, and prefers a distance category not yet on the board, slot by slot (D345) | Exact, with no stored history; a slot's draw never depends on an earlier slot's pool |
 | The stock counts every current Uma's open grade as well as the stored mark; `sim:loop` raises the mark after each collect, and phase 3 puts that in the collect commit (D345) | Only the Farm's collect raises Farm Level, and the Farm's rules don't depend on the Exchange; so a promotion can't lower the stock |

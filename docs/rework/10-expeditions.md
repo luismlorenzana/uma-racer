@@ -1,13 +1,17 @@
 # World Expeditions
 
-> **Status: approved design, 2026-10-14; first written 2026-10-13 (D327, D332).** Nothing here is built. Every number is a **draft** that
-> `pnpm sim:expeditions` and the loop simulation ([12](12-economy-and-pacing.md) §12) tune, then pin in tests. The race
-> pools are the [World Expeditions research](../research/world-expeditions.md)'s.
+> **Status: approved design, not built yet (phase 9); first written 2026-10-13 (D327, D332).** Every number is a
+> **draft** that `pnpm sim:expeditions` and the loop simulation ([12](../game/12-economy-and-pacing.md) §12) tune, then
+> pin in tests. The race pools are the [World Expeditions research](../research/world-expeditions.md)'s. What phase 3
+> built in its place: the Expedition Map as a placeholder ([11](../game/11-hub-and-places.md) §3.3), a stand-in run
+> whose eighth win completes it, reached only by the dev seeds (`tiers/expedition.ts`, [04](../game/04-tiers-and-promotion.md)
+> §3), and the Expedition prize rate ([09](../game/09-racing-rewards-and-exchange.md) §2.1). This page moves into the
+> manual when phase 9 builds it.
 
 A **World Expedition** is the finale of a tier. Once an Uma has finished her tier's last career, she travels abroad for
 an international campaign: one of **13 Expeditions**, each a pool of 8–14 real foreign races on one surface and at two
 neighbouring distances. **Eight distinct wins** from the pool complete it, and completing it **promotes** her to the
-next tier ([04](04-tiers-and-promotion.md)). Every tier offers all 13. Tier 1 is the base campaign. Tiers 2 and 3 field
+next tier ([04](../game/04-tiers-and-promotion.md)). Every tier offers all 13. Tier 1 is the base campaign. Tiers 2 and 3 field
 stronger rivals and add mechanics.
 
 This page fixes the structure now so that the large authoring job can happen later without a redesign. That job is
@@ -25,23 +29,23 @@ This page fixes the structure now so that the large authoring job can happen lat
 | Tier mechanics | Tier 2: home advantage, fuller fields, finals. Tier 3: adds the going and travel (engine v10) |
 | Rewards | Prize Money at 1.5× the G1 rate, an Expedition title, promotion (and one Uma Ticket from tier 1) |
 | Target | A fully trained Uma on an Expedition that suits her finishes in about **15–25 races**, about a week of her racing |
-| Place | The **Expedition Map** on the Racing page ([11](11-hub-and-places.md)), drawn with uma-art's `tier-finale` building |
+| Place | The **Expedition Map** on the Racing page ([11](../game/11-hub-and-places.md)), drawn with uma-art's `tier-finale` building |
 
 ## What an Expedition is
 
 The Expedition is the tier's **side-scenario**. Unlike a scenario, it adds no training layer, unlocks or career goals,
 and it pays no Racing EXP. She races with the build she has: her tier build at its scenario-5 layer
-([03](03-uma-progression.md), one build per tier).
+([03](../game/03-uma-progression.md), one build per tier).
 
 ### Entry
 
 - **Her tier's last career is complete:** Racing Level 50 and every career goal of the tier's fifth scenario won
-  ([03](03-uma-progression.md)). In tier 3, while it holds four scenarios, that is scenario 14's career
-  ([04](04-tiers-and-promotion.md)).
+  ([03](../game/03-uma-progression.md)). In tier 3, while it holds four scenarios, that is scenario 14's career
+  ([04](../game/04-tiers-and-promotion.md)).
 - **Her scenario-5 training layer does not have to be complete.** Racing is never blocked by training (D328), and the
   field is the real gate. Rivals are sized for a fully trained Uma, so an Uma with half her layer wins less often and
   takes longer. Her remaining sessions keep running while she races abroad. The Expedition page shows her layer
-  ("Training 18 / 22"), and the planner ([02](02-check-ins-and-notifications.md)) lists what is left.
+  ("Training 18 / 22"), and the planner ([02](../game/02-check-ins-and-notifications.md)) lists what is left.
 - Nothing else. An Uma who meets the rule sees **Start Expedition** on every Expedition page. One who does not sees
   why: "Scenario 5 career: 2 of 3 G1s won".
 
@@ -88,11 +92,11 @@ deadline, entry fee or cooldown. A retry is a new race: a new seed and a freshly
 - The **eighth distinct win completes** the run. It settles inside that race's commit, like a career goal. The results
   screen shows the eighth stamp, the title fanfare and **Promote**.
 - **Promotion is a separate, confirmed action**, available from then on with no deadline. It resets the Uma, so it
-  never happens by surprise. What promotion does belongs to [04](04-tiers-and-promotion.md).
+  never happens by surprise. What promotion does belongs to [04](../game/04-tiers-and-promotion.md).
 - **Until she promotes, she may keep racing her pool.** Wins past eight count toward Clean Sweep
-  ([rewards](#rewards)). Prize Money for repeat races follows [09](09-racing-rewards-and-exchange.md)'s anti-grind
+  ([rewards](#rewards)). Prize Money for repeat races follows [09](../game/09-racing-rewards-and-exchange.md)'s anti-grind
   rules.
-- Tier 3 has no next tier, and [04](04-tiers-and-promotion.md) owns that endgame. The recommendation to 04: she keeps
+- Tier 3 has no next tier, and [04](../game/04-tiers-and-promotion.md) owns that endgame. The recommendation to 04: she keeps
   her build and title, and may start any other Expedition for its title alone.
 
 ## All regions in every tier
@@ -126,7 +130,7 @@ is private ([content rules](#private-content-rules)).
 
 ### Every aptitude group has a choice
 
-Each of the research's five groups has **at least two** Expeditions. An Uma's career profile ([03](03-uma-progression.md),
+Each of the research's five groups has **at least two** Expeditions. An Uma's career profile ([03](../game/03-uma-progression.md),
 today's [Scenario Careers](../design/scenario-goals.md)) is her surface and two neighbouring distances. The table shows
 which Expeditions suit an Uma with A in both of her profile's distances, counting fit from the band columns above:
 
@@ -181,7 +185,7 @@ going, the time zone. So the owner learns three rule sets and seven flavours, no
 | Courses and seasons | Real layouts, local seasons | Same | Same |
 | Engine | v9 (today's) | v9 | **v10** |
 
-Tier 2's and tier 3's shares sit on top of [04](04-tiers-and-promotion.md)'s tier scaling: a tier-2 field is built on
+Tier 2's and tier 3's shares sit on top of [04](../game/04-tiers-and-promotion.md)'s tier scaling: a tier-2 field is built on
 a scenario-10 Uma, who is already stronger than a scenario-5 one.
 
 ### The mechanics catalogue
@@ -217,7 +221,7 @@ it fit the free-time racing mode, and does it carry regional flavour.
 - **Skills.** Not being in the game's roster, they have no unique. Each carries **one gold and three to seven whites**,
   rolled the way D163 rolls whites: from skills that can fire on this course.
 - **On screen.** With no stand art, the face ring holds the region's crest in her colour (new small art,
-  [11](11-hub-and-places.md)). She is tagged "Local champion" in the pre-race field, the feed and the results.
+  [11](../game/11-hub-and-places.md)). She is tagged "Local champion" in the pre-race field, the feed and the results.
 
 #### Finals
 
@@ -294,7 +298,7 @@ HOME_ADVANTAGE    = tier 1: 0 · tiers 2–3: 0.05
 lastScenario(t)   = 5, 10, 15 (14 in tier 3 until the 15th ships)
 ```
 
-`rivalPreset` is today's formula with the grade handicap replaced by the share. [04](04-tiers-and-promotion.md) owns
+`rivalPreset` is today's formula with the grade handicap replaced by the share. [04](../game/04-tiers-and-promotion.md) owns
 the trained Uma it is built on for the rework, and each scenario's caps still bound every stat.
 
 **One class for every Expedition race.** The real races are local G1s, G2s, G3s and Listed races, but a G3 abroad is
@@ -303,7 +307,7 @@ no softer here: every Expedition race uses the Expedition share. The local grade
 
 **Why these shares.** A fully bonded build wins 80–100% of today's G1s against fields at 95%
 ([difficulty target](../design/racing.md#difficulty-target)). Rivals and handicaps stay exactly as today (D336,
-[03](03-uma-progression.md) §9), and a fully trained Uma in the rework carries every card at today's maximum (D329), so
+[03](../game/03-uma-progression.md) §9), and a fully trained Uma in the rework carries every card at today's maximum (D329), so
 at 95% an Expedition would be a formality. At 100%, with one local champion in 12 runners, the draft aims at about 45%
 a race. Tiers 2 and 3 add strength, runners and mechanics for about 40% and 35%. The sim sets the shares, and each is a
 one-line change, like the grade handicaps.
@@ -322,12 +326,12 @@ With a win rate *p* a race, eight distinct wins take about 8 / *p* races: 18 at 
 makes **15–25 races**, and at about three races a day, a week of her racing.
 
 **The sim.** For each tier, it takes every Uma in the private roster whose profile has a suited Expedition, gives her
-[05](05-training-hub.md)'s full tier build of the last scenario, and runs a greedy campaign on her best fit: always the
+[05](../game/05-training-hub.md)'s full tier build of the last scenario, and runs a greedy campaign on her best fit: always the
 open, unwon family she is best at, with the best of four styles. It runs 200 campaigns a cell, prints medians,
 percentiles and win rates by tier and by region, and fails CI outside the bands above. It also reports, as counts
 only, how many roster Umas have no Expedition with fit 8 or more.
 
-**Roster cost (for [12](12-economy-and-pacing.md)).** Twenty-five Umas at about 20 races each is about 500 Expedition
+**Roster cost (for [12](../game/12-economy-and-pacing.md)).** Twenty-five Umas at about 20 races each is about 500 Expedition
 races a tier, roughly 8 hours of racing at about a minute a race with Skip. Entry does not wait for a finished training
 layer, so this racing overlaps scenario 5's last weeks of training rather than adding weeks to the tier.
 
@@ -335,14 +339,14 @@ layer, so this racing overlaps scenario 5's last weeks of training rather than a
 
 | Reward | Rule |
 |---|---|
-| **Prize Money** | Every Expedition race pays **1.5× the G1 row** of the tier's table, whatever its local grade: **450 / 180 / 90** for 1st / 2nd / 3rd at the README's drafts. She wins about 45% abroad against 80–100% of home G1s, so a race pays about the same either way: the Expedition is not a farm. [09](09-racing-rewards-and-exchange.md) owns the table, repeats and anti-grind |
+| **Prize Money** | Every Expedition race pays **1.5× the G1 row** of the tier's table, whatever its local grade: **450 / 180 / 90** for 1st / 2nd / 3rd at the README's drafts. She wins about 45% abroad against 80–100% of home G1s, so a race pays about the same either way: the Expedition is not a farm. [09](../game/09-racing-rewards-and-exchange.md) owns the table, repeats and anti-grind |
 | **Racing EXP** | **None.** She is at Racing Level 50, the tier's cap, so there is nothing to level, and nothing is converted. The Prize Money rate is the race's payment |
 | **Expedition title** | One per Expedition, earned at completion: 10 Prestige ([titles](../design/badges.md#4-titles-and-g1-trophies)). Completing the same Expedition again in a later tier earns Two-Time or Three-Time, as G1 repeats do |
 | **Clean Sweep** | A hidden one-off badge for winning every family of the pool in one run, before promoting. 4 Prestige |
 | **Series titles** | Real sweeps inside pools, mapped in the flair override: US Triple Crown, Hong Kong Triple Crown, Hong Kong Four-Year-Old Series, Hong Kong Speed Series, Korea Sprinter Series, and the Caulfield–Melbourne Cups double |
 | **Venue badges** | The dynamic **[Venue] Regular** badges cover the new venues by venue key. Grand Tour stays the ten JRA main venues |
 | **Trainer achievement** | **Around the World**: distinct Expeditions completed across the stable, 1 / 3 / 6 / 9 / 13 |
-| **Promotion** | [04](04-tiers-and-promotion.md). Promotion from tier 1 also pays one account **Uma Ticket** (README, 04) |
+| **Promotion** | [04](../game/04-tiers-and-promotion.md). Promotion from tier 1 also pays one account **Uma Ticket** (README, 04) |
 
 There is no completion purse: promotion is the prize. Titles carry through promotion with the account (D327). Working
 title names, which the owner may rename: American Speed Queen, Korean Sprint Queen, American Classic Queen, Desert
@@ -353,7 +357,7 @@ Queen, Australian Mile Queen, Queen of the Cups, British Stayer Queen and French
 
 ### The Expedition Map
 
-- A **place on the Racing page**; [11](11-hub-and-places.md) owns the Hub, routes and the art list. Its building is
+- A **place on the Racing page**; [11](../game/11-hub-and-places.md) owns the Hub, routes and the art list. Its building is
   uma-art's **`tier-finale`** (`buildings/atlas.json`, `page: "town"`, 48×48), already drawn as the tier's finale.
 - **Always visible.** Before any Uma is eligible, it opens with "No Uma has finished her tier yet" and each Uma's
   distance to entry ("Scenario 4 · Racing Lv 37").
@@ -371,7 +375,7 @@ Queen, Australian Mile Queen, Queen of the Cups, British Stayer Queen and French
 | **Next races** | Up to five open, unwon families she suits best (A first), each with its local grade, venue, distance (furlongs beside metres where the race is published in them), her aptitudes, prize, and Final or Shared tags. At tiers 2–3, finals show locked until four wins |
 | **Pool** | Every family. Won ones carry their stamp, date and a link to the result |
 | **In effect** | Her tier's rules: field strength, runners, local champions, finals, and at tier 3 the going's odds and jet lag |
-| **Training** | Her scenario-5 layer ("18 / 22") and a link to the planner ([02](02-check-ins-and-notifications.md)) |
+| **Training** | Her scenario-5 layer ("18 / 22") and a link to the planner ([02](../game/02-check-ins-and-notifications.md)) |
 | **Umas here** | Every Uma on this Expedition, with her wins |
 
 ### Pre-race, race and results
@@ -383,7 +387,7 @@ Queen, Australian Mile Queen, Queen of the Cups, British Stayer Queen and French
 - **Results:** the stamp and Prize Money; on the eighth win, the title fanfare and **Promote**, which opens 04's confirm
   sheet. A loss offers **Retry**.
 - **Planner:** an Uma at this stage reads "Expedition 5/8 · next: \<race\>", plus any training left
-  ([02](02-check-ins-and-notifications.md)). No push notification is needed: racing is active play.
+  ([02](../game/02-check-ins-and-notifications.md)). No push notification is needed: racing is active play.
 
 ## Save
 
@@ -413,7 +417,7 @@ interface ExpeditionRun {
   stored ids without awarding or animating again.
 - **Two devices** merge wins as a union by family, keeping the earliest result id; `completedAt` keeps the earliest
   time. Completion is idempotent.
-- **It ends at promotion.** Promotion ([04](04-tiers-and-promotion.md)) writes a summary of every run into her tier
+- **It ends at promotion.** Promotion ([04](../game/04-tiers-and-promotion.md)) writes a summary of every run into her tier
   history (Expedition, wins, races, completed or not) and clears `ExpeditionState`. Race results, titles and badges
   stay where they live.
 
@@ -467,14 +471,14 @@ straights with front types, slopes). Venue rows add a name, region and crest key
 - **Order**, cheapest first: Dubai, Hong Kong, South Korea, France/Europe, United States, Australia, Britain. The owner
   reviews each region in the preview as it lands.
 - **Deadline:** all 13 before the first Uma completes tier 1's last career, since every region must be offered in
-  every tier. [12](12-economy-and-pacing.md)'s timeline puts that about 16–20 weeks after the new game starts.
+  every tier. [12](../game/12-economy-and-pacing.md)'s timeline puts that about 16–20 weeks after the new game starts.
 
 ### Local champion rosters
 
 Seven regions with **8–12 champions each, about 70 in all**, each with a name, region, surface, home bands, running
 style and ring colour. **Names are original inventions:** Claude checks each against public race records and drops any
 that matches a real horse. They live in the private overlay with the rest of the pack, so the pack has one authoring
-place. **Seven region crests**, for the Map pins and the champions' face rings, go on [11](11-hub-and-places.md)'s list.
+place. **Seven region crests**, for the Map pins and the champions' face rings, go on [11](../game/11-hub-and-places.md)'s list.
 
 ### Private content rules
 
@@ -498,8 +502,8 @@ place. **Seven region crests**, for the Map pins and the champions' face rings, 
 | 5 | Pool ownership | Shared families allowed: 15, each in two pools of one region. A win counts for the run active when the race started | Decided here |
 | 6 | Eligibility | Age, sex and restricted-bred conditions are ignored. Every Uma may run every race | Decided here |
 | 7 | NPC content | Generic rivals as today, plus invented local champions. No real foreign horses | Decided here |
-| 8 | Name collision | The feature is **World Expeditions**. [04](04-tiers-and-promotion.md) renames Project L'Arc's "Expedition" buff | 04 |
-| 9 | Scenario context | A tier side-scenario. She races with her one tier build ([03](03-uma-progression.md)), so there is no earlier unit to choose. Results are tagged with the Expedition. No EXP | Decided here |
+| 8 | Name collision | The feature is **World Expeditions**. [04](../game/04-tiers-and-promotion.md) renames Project L'Arc's "Expedition" buff | 04 |
+| 9 | Scenario context | A tier side-scenario. She races with her one tier build ([03](../game/03-uma-progression.md)), so there is no earlier unit to choose. Results are tagged with the Expedition. No EXP | Decided here |
 | 10 | Implementation design | This page: lifecycle, save, rewards, retries and accomplishments | Done |
 
 ## Edge cases
@@ -509,22 +513,22 @@ place. **Seven region crests**, for the Map pins and the champions' face rings, 
   at most) also top out below 8. Such an Uma takes her best fit and wins the last one or two families at her next-best
   distance. For a dirt Medium · Long Uma that is American Dirt Classics: 7 Medium families plus one 1,800 m race, and
   she is usually B at a Mile. The Map says "No Expedition suits her fully. Best: American Dirt Classics, 7 of 12". If a
-  Lineage Hall slot raises an aptitude ([05](05-training-hub.md)), her fit updates at once. The sim counts this group.
+  Lineage Hall slot raises an aptitude ([05](../game/05-training-hub.md)), her fit updates at once. The sim counts this group.
   There is no 14th Expedition, because no real scene would carry it.
-- **An Uma who completes tier 3's Expedition** reaches the end of the climb, which [04](04-tiers-and-promotion.md)
+- **An Uma who completes tier 3's Expedition** reaches the end of the climb, which [04](../game/04-tiers-and-promotion.md)
   owns; the recommendation is above.
 - **Shared races** count once, for the run active when the race started, even if she switches mid-race. A shared
   family won on British Champions is not stamped in British Speed & Mile.
 - **A promoted Uma** arrives in her next tier with no Expedition state. Her old runs are history, and her chip appears
   on the Map only once she starts a new one. **An Uma bought mid-tier** does nothing special.
-- **Racing at home during an Expedition** pays as usual ([09](09-racing-rewards-and-exchange.md)) and counts for
+- **Racing at home during an Expedition** pays as usual ([09](../game/09-racing-rewards-and-exchange.md)) and counts for
   nothing. At tier 3 her next race abroad is an arrival.
 - **Content changes during a run.** Additions merge into the frozen pool. A family that leaves the content stays
   runnable for her run, and a won family is never removed.
 - **Offline.** Expedition races simulate and commit locally, like every race, once the Expedition pack is cached. If
   it is not, the Map shows "Connect once to download Expeditions", and races cannot start.
 - **A stale page** (another device finished the run) refreshes on the next commit. A race started from it counts by
-  the saved run, not the page, and Promote checks the saved run ([04](04-tiers-and-promotion.md)).
+  the saved run, not the page, and Promote checks the saved run ([04](../game/04-tiers-and-promotion.md)).
 - **Aptitudes change during a run** (a new Lineage Hall unlock): fit recomputes live, and the run is unaffected.
 - **A 0-stock Warehouse** has no effect: Expeditions use no items. **Two Umas on one Expedition** have independent
   runs, and each race rolls a fresh field.
@@ -551,7 +555,7 @@ place. **Seven region crests**, for the Map pins and the champions' face rings, 
    needs it.
 10. **Field strength** is 100 / 103 / 106% of a trained Uma of the tier's last scenario, one class for every Expedition
     race. Local champions get +5% and a 90–100% roll at tiers 2–3, and one gold plus 3–7 whites.
-11. **Prize Money is 1.5× the G1 row** (450 / 180 / 90 at the README's drafts; [09](09-racing-rewards-and-exchange.md)
+11. **Prize Money is 1.5× the G1 row** (450 / 180 / 90 at the README's drafts; [09](../game/09-racing-rewards-and-exchange.md)
     owns it). **No Racing EXP** abroad, and no completion purse.
 12. **Rewards:** a title per Expedition (10 Prestige, with Two-Time and Three-Time), a hidden Clean Sweep badge, six
     real-sweep series titles, and the Around the World Trainer achievement.

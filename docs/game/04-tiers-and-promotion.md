@@ -1,11 +1,13 @@
 # 04 · Tiers and promotion
 
-> **Status: approved design, 2026-10-14; first written 2026-10-13 (D327, D331, D332).** Three tiers of five scenarios, the 15th
-> scenario, promotion, what resets and what carries, Uma Tickets and the roster, tier scaling, and the scenario buffs
-> reviewed for the rework. Every number is a **draft**; the sims named in each section pin it.
+> **Status: as built, phase 3 (generation 2, D361); first written 2026-10-13 (D327, D331, D332).** Three tiers of five
+> scenarios, the 15th scenario, promotion, what resets and what carries, Uma Tickets and the roster, tier scaling, and
+> the scenario buffs reviewed for the rework. The tables marked live are rendered from the rules; the sims named in each
+> section pin their numbers. The World Expedition that triggers promotion is phase 9's ([10](../rework/10-expeditions.md)),
+> so until then only the dev seeds reach a promotion (§12).
 
 An Uma's progress inside a tier (Racing Level, advancing, her one build) is on [03](03-uma-progression.md). The World
-Expedition that ends a tier is on [10](10-expeditions.md); this page only uses its result.
+Expedition that ends a tier is on [10](../rework/10-expeditions.md); this page only uses its result.
 
 ## 1. The tier map
 
@@ -92,7 +94,7 @@ Japan has released a scenario about every four months (February, June, October).
 ### The trigger
 
 An Uma is promoted by **completing her tier's World Expedition**: eight distinct wins from its race pool (D332).
-[10](10-expeditions.md) owns everything about the Expedition: choosing one, its pool, attempts, mechanics and fields.
+[10](../rework/10-expeditions.md) owns everything about the Expedition: choosing one, its pool, attempts, mechanics and fields.
 The hook here:
 
 1. **She may start an Expedition** once her career at the tier's last scenario is complete: Racing Level 50, every goal
@@ -106,7 +108,7 @@ The hook here:
 
 The owner presses **Promote** when they choose. There is no deadline. Why not automatic:
 - **A reset is the biggest thing that happens to an Uma.** The owner may want to race her at her peak a while longer,
-  chase a Clean Sweep of the pool ([10](10-expeditions.md)), finish a badge, or let her work end.
+  chase a Clean Sweep of the pool ([10](../rework/10-expeditions.md)), finish a badge, or let her work end.
 - **Waiting costs nothing and blocks nobody.**
 
 While she waits she races as her last scenario, earns Prize Money ([09](09-racing-rewards-and-exchange.md)), works on
@@ -114,14 +116,14 @@ the Farm, and can still finish unlocks. **Promote is enabled only while she is f
 
 ### What is saved
 
-`promote` is one operation ([13](13-removals-and-plan-changes.md) §6), re-run by the API with the domain package.
+`promote` is one operation ([13](../rework/13-removals-and-plan-changes.md) §6), re-run by the API with the domain package.
 It requires a completed Expedition run and a free Uma on the server's copy. In one commit it:
 1. **closes her tier:** the last career closes, and a tier-history entry records:
    - the tier and the date;
    - her final Racing Level;
    - each preset's derived stats and card set, and her bonded cards ([06](06-cards-and-bonds.md));
    - a summary of every Expedition run (Expedition, wins, races, completed or not), after which her Expedition state is
-     cleared ([10](10-expeditions.md));
+     cleared ([10](../rework/10-expeditions.md));
 2. **resets her** (§4) into tier *t* + 1, scenario 1, Racing Level 1, Farm Level 1, with a new career frozen at once;
 3. **pays one Uma Ticket**, ledger id `promotion-uma-ticket:{umaId}:{tier}`;
 4. **writes the awards** (§9) as flair events.
@@ -191,7 +193,7 @@ scenario 1 ([03](03-uma-progression.md)). Tiers 2 and 3 fill only by promotion.
   ticket at a time, numbered as today. A gate's Shard is keyed by her lifetime gate (10 … 150), so each tier's gates pay
   again. An unlock spends 1 ticket under `unlock-uma:{outfitId}` (D340).
 - **Uma Tickets are never sold** (D336). The roster grows as Umas progress through the scenarios, which is the game's
-  normal unlock. Uma Select Coupons are Uma Tickets under their new name ([13](13-removals-and-plan-changes.md)).
+  normal unlock. Uma Select Coupons are Uma Tickets under their new name ([13](../rework/13-removals-and-plan-changes.md)).
 - **Shards come from every tier.** A tier-2 or tier-3 Uma's gates pay Shards too, but the tickets they make only ever
   bring an Uma into tier 1, which is what "tier 1 only" means. Every Uma pays about one ticket per tier she completes.
 - **No roster cap.** Building and facility slots are the real limit ([07](07-farm.md), [05](05-training-hub.md),
@@ -337,7 +339,7 @@ with today's 84% card factor and Extra Stats at the scenario's capacity, handica
 95%).
 - **The ladder keeps its shape.** Today's `trainedStat` runs 650 (scenario 1) to about 925 (14). The new trees keep
   each scenario's budget at 60% of its caps, so the typical Uma stays near that range and extends to the 15th. With
-  the buffs' typical values re-measured (§8), she runs 642 at T = 1 to 969 at 14. `pnpm sim:rework-careers` races
+  the buffs' typical values re-measured (§8), she runs 642 at T = 1 to 969 at 14. `pnpm sim:careers` races
   every career stage against these fields, and each meets its target ([03](03-uma-progression.md) §9).
 - **A promoted Uma** meets a field a little above the one she just left, with none of her build. She loses at first
   and wins again as her new layer fills, the reset the owner asked for.
@@ -345,15 +347,15 @@ with today's 84% card factor and Extra Stats at the scenario's capacity, handica
 ### Expedition difficulty
 
 Each tier's Expedition builds its fields on **the typical trained Uma of the tier's last scenario** (today's
-`rivalPreset`), at [10](10-expeditions.md)'s share instead of a grade handicap:
+`rivalPreset`), at [10](../rework/10-expeditions.md)'s share instead of a grade handicap:
 
-| Tier | Base | Share ([10](10-expeditions.md)) | Compared with a home G1 (95%) |
+| Tier | Base | Share ([10](../rework/10-expeditions.md)) | Compared with a home G1 (95%) |
 |---|---|---|---|
 | 1 | Grand Masters' typical Uma | **100%** | 5 points harder |
 | 2 | The Twinkle Legends' | **103%** | 8 points harder |
 | 3 | The 15th's (Tracen Diner's while tier 3 has four scenarios) | **106%** | 11 points harder |
 
-The tier's mechanics, regional fields and local champions come on top, all [10](10-expeditions.md)'s.
+The tier's mechanics, regional fields and local champions come on top, all [10](../rework/10-expeditions.md)'s.
 `pnpm sim:expeditions` tunes the shares to 10's win-rate targets. This page fixes only the base, so an Uma with her
 whole tier built is the Expedition's intended contender.
 
@@ -388,7 +390,7 @@ With one build per tier, the buff changes at each advance, and the Advance sheet
 | 15 | Japan's next | **Encore** | Wit cards pay +10% |
 <!-- /live -->
 
-The table is the Training Hub's rules (`REWORK_BUFFS` in `@racer/domain/rework/training`, D344). What the review
+The table is the Training Hub's rules (`REWORK_BUFFS` in `@racer/domain/training`, D344). What the review
 changed from today's buffs:
 - **Foundation**, wording: Extra Stats are now flat Gym nodes. Its 5 reachable nodes gain +100.
 - **Team Spirit** stays +1% a slot, now per filled Inspiration slot (D346). Unity Cup's layer opens the two parents
@@ -416,12 +418,12 @@ changed from today's buffs:
 - It is placement-free: moving a card between nodes changes nothing.
 
 **Every typical value is re-measured** (T133, D349). Today's run 0–5.5% of a tree. The layered model changes the
-typical build, and Team Spirit, Fragments and Encore are new rules. `pnpm sim:rework-builds` measures each buff on the
+typical build, and Team Spirit, Fragments and Encore are new rules. `pnpm sim:builds` measures each buff on the
 rework's typical build: the stamina ladder's four distance sets ([06](06-cards-and-bonds.md) §2) at full layer, every
 card current-era at 100%, Extra Stats at capacity, her open Inspiration slots filled and two career goals won. The value
 is what the buff adds as a share of her tree (card points and Extra Stats), averaged over the four sets. A value that
 moved more than half a point from today's is re-pinned, and rivals carry it (`REWORK_BUFF_TYPICAL` in
-`@racer/domain/rework/tiers`); the rest keep today's. The 15th's waits for its content (§2). A bold value is re-pinned:
+`@racer/domain/tiers`); the rest keep today's. The 15th's waits for its content (§2). A bold value is re-pinned:
 
 <!-- live:rework-buff-typical -->
 | T | Scenario | Buff | Today | Measured on the rework's typical build | Rivals carry |
@@ -469,7 +471,7 @@ Opened from the Expedition's result, her profile or the Expedition Map ([11](11-
 
 1. A full-screen moment: the old crest gives way to the new tier's, with her celebrating chibi and "Promoted to Tier 2".
 2. The awards play in order, as today's results reveal does: the promotion badge, then "+1 Uma Ticket". Her
-   Expedition title already played with the eighth win ([10](10-expeditions.md)).
+   Expedition title already played with the eighth win ([10](../rework/10-expeditions.md)).
 3. It lands on her profile, now "T2 · Project L'Arc · Racing Lv 1 · Farm Lv 1", with her new career and its first goal.
 
 Reduced motion shows the same text without the animation. Skip goes straight to the profile.
@@ -477,7 +479,7 @@ Reduced motion shows the same text without the animation. Skip goes straight to 
 ### New awards
 
 Badges and titles keep today's rules (pure flair, Prestige, scenario-linked, [Badges](../design/badges.md)).
-[10](10-expeditions.md) owns the Expedition awards:
+[10](../rework/10-expeditions.md) owns the Expedition awards:
 - **Expedition titles:** one per Expedition, at completion, with Two-Time and Three-Time for later tiers;
 - **Clean Sweep**;
 - **the real-sweep series titles**;
@@ -498,7 +500,7 @@ Existing awards that change meaning:
 - **Level badges** read the lifetime level ([03](03-uma-progression.md) §2).
 - **Living Legend** (every scenario completed) can only be earned through the Hall of Fame.
 - **Retired.** Trainer achievements that counted cards owned, stars, coupons or minigame runs retire
-  ([13](13-removals-and-plan-changes.md)).
+  ([13](../rework/13-removals-and-plan-changes.md)).
 
 ## 10. Tier 3 completion: the Hall of Fame
 
@@ -514,12 +516,18 @@ Nothing is lost, so there's nothing to confirm, and she needn't be free.
 | **Keeps racing** | Her last scenario's fields, for Prize Money, badges, titles and trophies; no Racing EXP |
 | **Keeps working** | On the Farm and in the Training Hub; any unlock she never finished can still be finished |
 | **Pays one Uma Ticket** | Like a promotion, so the account can bring in a new Uma (ledger `promotion-uma-ticket:{umaId}:3`) |
-| **Lives in the Hall of Fame** | In phase 3 a gold frame and a chip on her profile; a place of its own comes with the canvas Hub ([11](11-hub-and-places.md)): each inductee's portrait, induction date, the three Expeditions she completed, her titles, and her final stats per preset in each tier (from her tier history). Her Stable tile wears a gold frame |
-| **Keeps her Expedition runs, and may start others** | Any other Expedition, at tier-3 difficulty, for its title alone, as [10](10-expeditions.md) recommends. Her state isn't cleared, since there's no next tier |
+| **Lives in the Hall of Fame** | A gold frame on her Stable tile and her profile's art, and a Hall of Fame chip on her profile. Its own place is not built yet (below) |
+| **Keeps her Expedition runs, and may start others** | Any other Expedition, at tier-3 difficulty, for its title alone, as [10](../rework/10-expeditions.md) recommends. Her state isn't cleared, since there's no next tier |
 | **Can advance into the 15th** | If she was inducted from Tracen Diner before it shipped (§2) |
 
 The Hall of Fame is the game's endgame for one Uma. The account's endgame is filling it: 25 inductees is
 [12](12-economy-and-pacing.md)'s ~66-week mark.
+
+### Not built yet (phase 6): the Hall of Fame place
+
+A place of its own comes with the canvas Hub ([11](11-hub-and-places.md) §11): each inductee's portrait, induction
+date, the three Expeditions she completed, her titles, and her final stats per preset in each tier (from her tier
+history). Phase 3 has no Hall of Fame place (§12), and no Uma can be inducted before phase 9's Expeditions.
 
 ## 11. Edge cases
 
@@ -542,7 +550,7 @@ The Hall of Fame is the game's endgame for one Uma. The account's endgame is fil
    - **Retries and a second device:** they get the first receipt. The ticket's ledger id stops a second payment.
    - **Stale sheet:** if her work changed after the sheet opened (a job started or finished on another device), the
      promotion is refused and the sheet redraws with her current work. Promote stays as long as she's free.
-7. **The Expedition isn't built yet** (phase 9 late, [13](13-removals-and-plan-changes.md) §4). Umas wait at the
+7. **The Expedition isn't built yet** (phase 9 late, [13](../rework/13-removals-and-plan-changes.md) §4). Umas wait at the
    tier's last gate with racing open. Nothing is lost.
 8. **Buying into tier 2 or 3.** Impossible: a ticket always unlocks into tier 1.
 9. **The 15th lands mid-tier 3.** §2's table.
@@ -566,8 +574,8 @@ The Hall of Fame is the game's endgame for one Uma. The account's endgame is fil
 | Fragments: cards from era 4 or older pay +8% | Replaces a star rule; a real choice between old bonds and the newest era, with no new save field |
 | "Expedition" renamed **New Wave**, "Cooking" renamed **Full Course** | No collision with World Expeditions or the Kitchen |
 | The 15th's placeholder buff: **Encore**, Wit cards +10% | The one stat type no buff favours |
-| Tier awards: Promoted badges, Hall of Fame (badge and title), two Trainer achievements; the Expedition awards stay [10](10-expeditions.md)'s | [13](13-removals-and-plan-changes.md) asks this page for the tier awards |
-| Tier-3 completion is the Hall of Fame: no reset, keeps racing, working and her Expedition runs, may take other Expeditions' titles, pays a ticket | An endgame per Uma that keeps her useful, as [10](10-expeditions.md) recommends |
+| Tier awards: Promoted badges, Hall of Fame (badge and title), two Trainer achievements; the Expedition awards stay [10](../rework/10-expeditions.md)'s | [13](../rework/13-removals-and-plan-changes.md) asks this page for the tier awards |
+| Tier-3 completion is the Hall of Fame: no reset, keeps racing, working and her Expedition runs, may take other Expeditions' titles, pays a ticket | An endgame per Uma that keeps her useful, as [10](../rework/10-expeditions.md) recommends |
 | Ledger ids: a gate's Shard under today's `uma-gate-shard:{umaId}:{gate}` with her lifetime gate (10 … 150); the Shard exchange is its own operation, one ticket at a time as today; an unlock spends under `unlock-uma:{outfitId}` (D340) | Unique per gate per tier; §6 makes the exchange explicit, which 13 §6's operation list leaves out |
 | A promotion's ticket id names the tier she leaves (1 or 2), and the Hall of Fame's names tier 3 (D340) | So a promotion into tier 3 and an induction never share an id |
 | Promotion history's stats and SP come from the caller, the Training Hub's derivation (D340) | The tier rules can't derive stats; card sets, bonds and runs they write themselves |
@@ -576,7 +584,7 @@ The Hall of Fame is the game's endgame for one Uma. The account's endgame is fil
 | Rival fields restate today's `rivalPreset` and `rollRivalField` on the new trees, held to today's by parity tests fed today's trained stat; the 15th has no typical buff value yet (D340) | Today's read today's trees; the formula and handicaps are unchanged (D336) |
 | A career at T = 15 waits for the catalogue: advancing into the 15th refuses until today's planner knows it (phase 5); the rule from 14 to 15 is in place up to the advance's readiness (D340) | Today's planner knows 14 scenarios |
 | Until phase 9 a stand-in Expedition counts races and wins: 8 wins complete a run, an open run keeps counting after the 15th lands, and inducting outside tier 3 refuses with its own reason (D340) | §2 lets an open run finish from scenario 14; promotion needs a trigger before phase 9 |
-| The Promote sheet and the ceremony are built now, reachable only for an Uma holding a completed run: before phase 9, only through the dev mount's `promote` seed (T141) | M034 gives promotion to T141; §13 needs them testable |
+| The Promote sheet and the ceremony are built now, reachable only for an Uma holding a completed run: before phase 9, only through the dev seeds' `promote` seed at `/dev/seeds/*` (T141, T143) | M034 gives promotion to T141; §13 needs them testable |
 | No Hall of Fame place in phase 3 (T141) | §10 calls it a Town Hall place, [11](11-hub-and-places.md) §3.1 lists none, and no Uma reaches it before phase 9 |
 | Promoted · Tier 2 and 3, Hall of Fame and the title Hall of Famer read the Graduate fact of the scenario that closes the tier (5, 10, the catalogue's last), so badge entities keep their shapes (T141) | That scenario graduates only at promotion or induction |
 | The Promote sheet's work actions are the places' own (Collect, Recall, −30m through T140's tap runner); Promote stays disabled while she is busy (T141) | §5; nothing new is built for the sheet |
@@ -597,7 +605,7 @@ The Hall of Fame is the game's endgame for one Uma. The account's endgame is fil
   starts her at the next tier's scenario 1 with a frozen career.
 - An Uma Ticket can only unlock an unowned Uma into tier 1, scenario 1. Each scenario gate pays 1 Uma Shard once per Uma per tier, 5 Shards make a ticket, and no Prize Money path makes one.
 - The buff table in the domain matches §8 (names, rules, Encore), and every buff stays placement-invariant in tests.
-  `pnpm sim:rework-builds` reports each one's typical value, and rivals carry it.
+  `pnpm sim:builds` reports each one's typical value, and rivals carry it.
 - A tier-3 Expedition success inducts the Uma in the same commit, pays a ticket, never resets her, keeps her
   Expedition runs, and shows her in the Hall of Fame.
 - The promotion ceremony plays once per promotion, after the sheet, and skips to the profile on Skip or reduced motion.

@@ -1,10 +1,10 @@
 # 05 · Training Hub
 
-> **Status: approved design, 2026-10-14 (D326, D328, D338).** The Observatory, Lineage Hall, Gym and Dojo: how a
-> session works, which dish each unlock needs, the layer each scenario adds, the re-authored constellations, the
-> Inspiration and Extra Stats maps, and facility slots and upgrades. Every number is a **draft** that the loop
-> simulation ([12](12-economy-and-pacing.md) §12) tunes and then pins in tests. Phase 3's facility pages, session sheet
-> and build views are built beside today's app (T139, D357; §8 "As built").
+> **Status: as built, phase 3 (generation 2, D361); first written 2026-10-13 (D326, D328, D338).** The Observatory,
+> Lineage Hall, Gym and Dojo: how a session works, which dish each unlock needs, the layer each scenario adds, the
+> re-authored constellations, the Inspiration and Extra Stats maps, and facility slots and upgrades. The tables marked
+> live are rendered from the rules, and the loop simulation's checks ([12](12-economy-and-pacing.md) §12) pin the pace.
+> The facility pages, session sheet and build views are T139's (D357; §8 "As built").
 
 The Training Hub is where an Uma's build is unlocked, one piece at a time. Every piece follows the same model (D326):
 **one cooked dish pays for one timed unlock**. The four facilities differ only in what they unlock and which dish
@@ -68,7 +68,7 @@ The worked examples on these pages use the base minutes; the game multiplies eve
 
 **Finishing.** Each unlock has its own finish time, computed from the session's start, the unlock times and any Speed
 Tickets applied. Time runs offline. A finished unlock is **committed by Collect**: one operation with a receipt that
-writes it into the Uma's unlocks ([13](13-removals-and-plan-changes.md) §6). Until then her build screens show a
+writes it into the Uma's unlocks ([13](../rework/13-removals-and-plan-changes.md) §6). Until then her build screens show a
 **Collect** chip ("2 unlocks finished"), and starting a race collects her finished unlocks in the same tap
 ([01](01-game-loop.md)), so she never races without one she has earned. The unlock still in progress counts only once
 it finishes. Collecting a finished session frees the slot and the Uma. Collect all, queues and Repeat are [02](02-check-ins-and-notifications.md)'s.
@@ -211,11 +211,11 @@ every bond at its layer's lower grade, which is an upper bound.
 ## 4. Constellations re-authored
 
 Each tier's trees are **re-authored to 12, 16, 20, 24 and 28 card nodes** for its scenarios 1–5. Every scenario keeps
-its silhouette motif ([Scenarios](../design/scenarios.md#constellation-shapes)) and the drawing rules
-([Constellations](../design/constellations.md#silhouettes)): nodes on an even grid, straight uncrossed edges, ids and
+its silhouette motif (today's shape ids, `CONSTELLATION_SHAPES`, drawn below) and the drawing rules: nodes on an even
+grid, straight uncrossed edges, ids and
 unlock order numbered breadth-first, at least 40 pt between node centres on a 375 pt phone. The old rule that pruned the
 last six tips (the former Produce nodes) goes: a drawing has exactly its card count. The trees are static content in
-`@racer/domain/rework/constellation` (D342), and the table and drawings below are rendered from it.
+`@racer/domain/training` (D342), and the table and drawings below are rendered from it.
 
 <!-- live:constellation-trees -->
 | # | Scenario | Tier · scenario | Nodes | Per-card cap | How the motif adapts |
@@ -497,8 +497,9 @@ o o o o o o o o
 - **Per-card cap** stays `ceil(N / 6) + 1` (D134).
 - **Node value** keeps today's cap-budget formula; [04](04-tiers-and-promotion.md) owns the computed table. The one
   change this page asks for is the Extra Stats term (§6).
-- **What a node pays, skills per node, the invariance rule and card-type splits** are unchanged
-  ([Constellations](../design/constellations.md#stat-budget)); every card is at full value now ([06](06-cards-and-bonds.md)).
+- **What a node pays, skills per node, the invariance rule and card-type splits** are unchanged (today's rules in
+  `packages/domain/src/constellation.ts`, which `training/derive.ts` reads); every card is at full value now
+  ([06](06-cards-and-bonds.md)).
 
 **The drawing rules, checked.** The root is `n0` and the card nodes are `n1` … `n`*N*, numbered breadth-first from the
 root with today's tie rule (nearer rows, then columns), so the number is the unlock order. A validator refuses, with a
@@ -530,7 +531,7 @@ owner can move it any time, free.
 **Skill Points without Constellation Level.** Today 40% of the SP cap came from CL (`0.40 × spCap × CL / 10`). With CL
 gone, that baseline follows the opened tree: **baseline SP = 0.40 × spCap(T) × opened nodes ÷ N**, where *N* is her
 current scenario's tree size, as [03](03-uma-progression.md) §8 also states. A full tree earns the same 40% CL10 did; Friend and Group cards still pay the rest
-([Constellations](../design/constellations.md#skill-point-cards)). Advancing lowers the fraction (12 of 16) until the
+(`SP_CARD_SHARE`, `training/skill-points.ts`). Advancing lowers the fraction (12 of 16) until the
 new layer opens, while the new scenario's higher SP cap softens it.
 
 ## 5. The Inspiration map
@@ -609,8 +610,8 @@ a tier from 132 unlocks to 107. The time factor *k* = 1.2 keeps each scenario at
   needs choosing. Choice starts in scenario 2, when 15 nodes compete for 9 places. When an advance raises the
   capacity, the new places fill with opened nodes that were off, oldest first ([03](03-uma-progression.md) §6).
 - **No per-stat limit** beyond the map itself. D235's "four per stat" goes: at tier 1, scenario 5, a full Speed lean is
-  5 singles, 4 Duos and 4 Suns, +312 Speed from 13 of 15 places. The cap profile clamps, and the stamina ladder
-  ([Constellations](../design/constellations.md#balance-targets-the-stamina-ladder)) is re-measured with it (§12).
+  5 singles, 4 Duos and 4 Suns, +312 Speed from 13 of 15 places. The cap profile clamps, and the stamina ladder is
+  re-measured with it (§12).
 
 ### The stat formula: the 240-point pool goes
 
@@ -753,7 +754,7 @@ locked item with what it needs, for example:
 
 A locked item is never a dead end: it says what it needs and links to the step that gets it.
 
-**As built in phase 3 (T139).** The four facilities share one page and one Peek under `g2/places/training/`, each
+**As built in phase 3 (T139).** The four facilities share one page and one Peek under `places/training/`, each
 screen a pure view model over one work view. The page's header shows the level, "2 / 3 in use", the speed at Lv 3 and
 the shared **Upgrade** with what the level brings (`totalSlots`, `buildingSpeed`); slots sit under their room's stat or
 card-type icon; **Needs here** is the planner's `facilityLines` ("Amber Sprint · 12 nodes · 6 in stock, 6 short"), with
@@ -768,7 +769,7 @@ with the dish by name and grade ("Needs: Cabbage Salad (grade 3) at the Observat
 
 ## 9. What is saved
 
-| Where ([13](13-removals-and-plan-changes.md) §6) | What |
+| Where ([13](../rework/13-removals-and-plan-changes.md) §6) | What |
 |---|---|
 | `umas/{outfitId}` unlocks | `constellationOpened` (0–28: the count, since order is fixed); Inspiration `slots` (up to six ids), `uniques` (up to six slot ids, D336) and `golds` (up to twelve keys, `<slot>:gold0` for gold 1 and `<slot>:gold1` for gold 2, today's `inspirationGoldKey`); Extra Stats `nodes` (ids such as `speed-03`, `duo-power-speed-3`, `sun-4`); `active` Extra ids per preset; bonds ([06](06-cards-and-bonds.md)) |
 | `work/{outfitId}` | Her session: facility, room, slot, start time, the ordered unlocks (kind, target id, grade, dish id, minutes), reserved dish ids, Speed Ticket minutes applied, the facility speed it started at |
@@ -803,7 +804,7 @@ facility `upgrade`. Each is checked by the domain on the API and returns its fir
 | Choice | Why |
 |---|---|
 | A session holds 1–10 unlocks of one facility (one room at the Gym and Dojo) | Mirrors a Farm job; one facility per session keeps the slot model simple |
-| Finished unlocks commit on Collect, with a Collect chip on build screens and the pre-race sheet | One receipted operation per change ([13](13-removals-and-plan-changes.md)); a race never depends on the clock at the second |
+| Finished unlocks commit on Collect, with a Collect chip on build screens and the pre-race sheet | One receipted operation per change ([13](../rework/13-removals-and-plan-changes.md)); a race never depends on the clock at the second |
 | Repeat takes the next *N* unlocks at the same facility and room | "Restart everything" means the same as for Farm jobs |
 | No aptitude effect on session time | Keeps sessions predictable; aptitudes already matter in races |
 | Unlocks of a later layer cannot be done ahead | The layer is the pacing unit (D328); grades and node values are sized per scenario |
@@ -825,15 +826,15 @@ facility `upgrade`. Each is checked by the domain on the API and returns its fir
 | Project L'Arc's lintel is two nodes either side of the keystone root | Four a side would make 16 nodes, not 12 |
 | Tracen Diner's root sits above its counter of 8, as today | A counter of 8 through the root is nine nodes in a row, 37 pt apart; the 40 pt rule wins over the wording |
 | No lineage band on the tree; today's tree box and the 351 × 525 pt graph box stay | Inspiration is the Lineage Hall's own map (§5); the 40 pt results compare with today's |
-| The breadth-first walk and placement, fair share and the per-card cap are restated by drawing and by *N* in `rework/constellation`, each proven equal to today's by a parity test; the parser, tree box, card set size and shape ids are imported | Today's builder reads today's drawings and prunes six tips, and today's cap reads today's sizes by scenario (M033: reuse, don't copy) |
-| Tree sizes and the per-card cap live in the leaf `rework/constellation/sizes.ts` | Tier rules need them before the Training Hub's module exists; it re-exports `perCardCap` rather than restating it |
+| The breadth-first walk and placement, fair share and the per-card cap are restated by drawing and by *N* in `training/trees`, each proven equal to today's by a parity test; the parser, tree box, card set size and shape ids are imported | Today's builder reads today's drawings and prunes six tips, and today's cap reads today's sizes by scenario (M033: reuse, don't copy) |
+| Tree sizes and the per-card cap live in the leaf `training/trees/sizes.ts` | Tier rules need them before the Training Hub's module exists; it re-exports `perCardCap` rather than restating it |
 | "[Scenario] Fully Trained" now means every unlock of that layer done (bonds counted at 6, 9, 12, 15, 18) | CL10 no longer exists; it matches [12](12-economy-and-pacing.md)'s "max a scenario" |
 | **Sessions run on the Farm's work engine** ([07](07-farm.md) §2, T127): per-unlock timers, Collect (also part-way), Recall, queues of up to 3 at the same facility and room, and Speed Tickets, with ticket time clamped to the time remaining | One engine for every timed thing an Uma does; a Finish ends exactly when it's used, so nothing starts in the past |
 | **A queued session takes the facility's speed and its dishes when it starts**, and is checked when it's added, counting her earlier entries as made | §7 applies speed to sessions started after an upgrade; an unlock may depend on one queued ahead of it |
 | **Ties between queued starts go by [07](07-farm.md) §1's buildings, then the Observatory, Lineage Hall, Gym and Dojo, then room and slot** | [07](07-farm.md) §2 orders only the Farm buildings, but sessions queue too |
 | **Collect never refuses, and Recall with nothing running acts as Collect** | [02](02-check-ins-and-notifications.md) §9: an action already done shows its result |
 | The Training Hub's rules own [04](04-tiers-and-promotion.md) §8's reviewed buffs (D344) | They apply only in the derivation; rivals' typical values stay with the tier rules until the builds are re-measured against the field |
-| Facility slots, levels, speed and prices are the Farm's buildings' (`rework/farm`); node value, E and Extra Stats values per tier are the tier rules' (D344) | One owner per number |
+| Facility slots, levels, speed and prices are the Farm's buildings' (`farm`); node value, E and Extra Stats values per tier are the tier rules' (D344) | One owner per number |
 | Canonical unlock order: the Observatory by node; the Lineage Hall as §3's table; a Gym room by layer, grade, single, Duos in ring order, then the Sun; the Dojo has none, since a bond names its card (D344) | Repeat and the planner need a "next *N*"; a bond needs a chosen card ([02](02-check-ins-and-notifications.md) §6) |
 | "Next *N*" passes over an item still waiting on something, so a Gym room's next may skip a Duo or Sun for its stat's next single (D344) | The room still gives a full session; the skipped item opens once its singles are done |
 | Her work ahead of an unlock meets its dependency: every unlock of her started entries, made or not, and of her queued sessions ahead of it (D344) | A queued entry starts when the one before ends, finished but uncollected |
@@ -858,9 +859,9 @@ facility `upgrade`. Each is checked by the domain on the API and returns its fir
 | A build view's preset switch is view-only (`?preset=`), opening on her selected preset; every edit in it (assignments, lineage, active Extra Stats, the card set) is the viewed preset's (T139) | [03](03-uma-progression.md) §6: her profile selects a preset (T138's `set-race-defaults`) and every training screen edits it |
 | Lineage picks are made on the Lineage Hall's map only; the tree carries no lineage band (T139) | §4–§5; [11](11-hub-and-places.md) §3.2's Observatory says "card and lineage assignments" |
 | A gold position whose filler has fewer natural golds than it needs warns in §3's words ("This parent has one natural gold; gold 2 pays nothing until a parent with two fills slot A."), gold 1 too for one with none (T139) | §3's warning names gold 2; the same reading covers gold 1 |
-| What a node pays (`nodeSkillIds`) and what an Uma pays from a slot (`lineagePays`: her golds by position and her inherited unique) are the derivation's own readings in `rework/training/derive.ts`, which its skill library uses too (T139) | A screen restates no rule (M034); the node sheet and the lineage map need them |
+| What a node pays (`nodeSkillIds`) and what an Uma pays from a slot (`lineagePays`: her golds by position and her inherited unique) are the derivation's own readings in `training/derive.ts`, which its skill library uses too (T139) | A screen restates no rule (M034); the node sheet and the lineage map need them |
 | Dishes show by name and grade with their icon, never by id: §8's "`dish-vegetables-3` (Cabbage Salad)" reads "Cabbage Salad (grade 3)" (T139) | [08](08-item-catalogue-and-recipes.md) §10 shows a dish by name; [02](02-check-ins-and-notifications.md) §9 keeps ids off the screen |
-| Speed up, Recall, queue chips and the slot card are T140's shared `g2/ui/work/` pieces; T139 adds the shared **Upgrade** (moved from the Farm page) and a slot card's `startLabel` ("Start a session") (T139) | One look for every timed thing an Uma does ([07](07-farm.md) §2, §11); one Upgrade for every building |
+| Speed up, Recall, queue chips and the slot card are T140's shared `ui/work/` pieces; T139 adds the shared **Upgrade** (moved from the Farm page) and a slot card's `startLabel` ("Start a session") (T139) | One look for every timed thing an Uma does ([07](07-farm.md) §2, §11); one Upgrade for every building |
 
 ## 12. Done when
 
@@ -881,9 +882,8 @@ facility `upgrade`. Each is checked by the domain on the API and returns its fir
   a fresh account once the roster passes 20 and the Observatory is at Lv 2.
 - Every locked item on the build screens names its dish, facility and blocker, and its Unlock button opens the session
   sheet pre-filled.
-- `pnpm sim:rework-builds`' stamina ladder holds at every T on the re-authored trees with these Extra Stats, each rung
-  as today's ladder defines it ([Constellations](../design/constellations.md#balance-targets-the-stamina-ladder)),
-  and the command exits 0.
+- `pnpm sim:builds`' stamina ladder holds at every T on the re-authored trees with these Extra Stats, each rung
+  as "The ladder, measured" below defines it, and the command exits 0.
 
 **The ladder, measured** (T133, D349). 30 races a check in 12-runner G1 fields at pace and late, on full-layer builds:
 every card node open with current-era cards at 100%, the median Uma's base stats and no growth, Extra Stats at the

@@ -1,9 +1,8 @@
 # 07 · Farm
 
-> **Status: approved design, 2026-10-14; first written 2026-10-13 (D326, D327, D328, D330, D331, D334).** Built as
-> rules in phase 2 (D343) and measured by the loop simulation ([12](12-economy-and-pacing.md) §12, D348), whose tables
-> here are live. Nothing live uses it yet: phase 3 ships it. §10's screens are built in the new game beside today's
-> app (T140, D358), with §14's last rows.
+> **Status: as built, phase 3 (generation 2, D361); first written 2026-10-13 (D326, D327, D328, D330, D331, D334).**
+> The rules are phase 2's (D343), measured by the loop simulation ([12](12-economy-and-pacing.md) §12, D348), whose
+> tables here are live. §10's screens are T140's (D358), with §14's last rows.
 
 The Farm is where the roster spends most of its time. Umas gather ingredients at eight family sites, the **Pantry**
 crafts them and the **Kitchen** cooks them into dishes, all on timers that run while the app is closed. A dish is the
@@ -377,7 +376,7 @@ The Warehouse is in Town Hall ([11](11-hub-and-places.md)). It is the one invent
   [08](08-item-catalogue-and-recipes.md) §8). Surplus is stock beyond the planner's needs; reserved items can't be sold.
 
 **As built (T138).** A row's counts come from one projection of the work at the clock: **held** is the Warehouse
-settled to now; **reserved** is `reservedStock(state, now)` (`rework/work/activity.ts`), the inputs of every item not yet
+settled to now; **reserved** is `reservedStock(state, now)` (`work/activity.ts`), the inputs of every item not yet
 made in a started entry, which is exactly what Recall would hand back; **coming** is `projectWork(...).coming` by item;
 **needed** is `neededFromStock` over the plan for `targetsOf`. A stack with all four at 0 is hidden, and an empty
 Warehouse reads [09](09-racing-rewards-and-exchange.md) §8's "Nothing to sell yet: the Farm's first harvest lands here".
@@ -401,7 +400,7 @@ job sheet at the building that makes it (`/farm/:building?job=&back=`).
 
 ## 12. What's saved
 
-| Row ([13](13-removals-and-plan-changes.md) §6) | Farm fields |
+| Row ([13](../rework/13-removals-and-plan-changes.md) §6) | Farm fields |
 |---|---|
 | `buildings/{id}` | Level. Which job holds a slot is read from the work rows (§14) |
 | `work/{outfitId}` | Her running job (building, slot, kind, item or recipe, count, listed minutes, speed, reserved inputs, `startedAt`, acceleration, outputs collected so far), her queue of up to three, her last job for Repeat, and a dropped queue with its reason until the owner acts on it ([02](02-check-ins-and-notifications.md)) |
@@ -413,10 +412,10 @@ The server re-runs each operation with the domain package before committing it, 
 
 ## 13. What this replaces
 
-Today's Farm, the Stable Kitchen (M031, D304–D320; [design/farm-kitchen-rework.md](../design/farm-kitchen-rework.md),
+The old Farm, the Stable Kitchen (M031, D304–D320; deleted with the cutover, readable at the `pre-split` tag;
 [rearchitecture/05](../rearchitecture/05-farm.md)), concept by concept:
 
-| Today | After the rework |
+| Before | After the rework |
 |---|---|
 | Five districts × six stations, all 30 open (Vegetable Garden, Orchard, Barnyard, Workshop, Kitchen) | Ten uma-art buildings: eight family sites, the Pantry and the Kitchen, 27 → 38 slots (§1, §6) |
 | Station ids `garden-1` … `kitchen-6` | Building id plus slot index |
@@ -485,7 +484,7 @@ Today's Farm, the Stable Kitchen (M031, D304–D320; [design/farm-kitchen-rework
 | A card's ring is the current item's progress (`itemProgress`), as the Hub's pips are, redrawn on the 30-second clock (T140) | §10's "a ring for the current output"; one look for the pip and its card ([11](11-hub-and-places.md) §4) |
 | The Peek's stock by open grade runs up to the highest grade any current Uma has open; the Pantry and Kitchen show their lines short instead, the first three (T140) | [11](11-hub-and-places.md) §3.4 says "by open grade"; the same reading as the Exchange's stock ([09](09-racing-rewards-and-exchange.md) §5.3) |
 | Collect here and Repeat here sit in the page's thumb zone, off with their reason when nobody is ready or repeatable here; their receipt lists each line and each skip in the rule's words (T140) | §10 puts them beside the global ones; [02](02-check-ins-and-notifications.md) §5's "Kitchen full", "4 Honey short" |
-| `g2/ui/work/` (SlotCard, SpeedUpControls, RecallSheet, QueueChips, SizeChips) and `g2/ui/ItemIcon` are T140's, used unchanged by T139 and T142; the sheet keeps a short Uma list until T138's picker lands (T140) | One look for every timed thing and every item; the Farm makes the items |
+| `ui/work/` (SlotCard, SpeedUpControls, RecallSheet, QueueChips, SizeChips) and `ui/ItemIcon` are T140's, used unchanged by T139 and T142; the sheet keeps a short Uma list until T138's picker lands (T140) | One look for every timed thing and every item; the Farm makes the items |
 
 ## 15. Done when
 

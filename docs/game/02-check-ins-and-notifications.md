@@ -1,10 +1,10 @@
 # 02 · Check-ins, queues and notifications
 
-> **Status: approved design, 2026-10-14; first written 2026-10-13 (D328, D334).** How the owner keeps 25 Umas working in visits of under
-> a minute: Collect all, batch sizes, queues, Repeat, the check-in summary, the "what she still needs" planner, push
-> notifications, offline time, retries and plain words. Numbers are drafts. `pnpm sim:loop`
-> ([12](12-economy-and-pacing.md) §12) measures how much they raise utilisation. §1–§6 and §8–§9's screens are built in
-> the new game beside today's app (T142, D360), with §11's last rows; push (§7) waits for phase 4.
+> **Status: as built, phase 3 (generation 2, D361); first written 2026-10-13 (D328, D334).** How the owner keeps 25
+> Umas working in visits of under a minute: Collect all, batch sizes, queues, Repeat, the check-in summary, the "what
+> she still needs" planner, offline time, retries and plain words. `pnpm sim:loop` ([12](12-economy-and-pacing.md) §12)
+> measures how much they raise utilisation. §1–§6 and §8–§9 run in the game (T142, D360), with §11's last rows. Push
+> notifications (§7) are not built: phase 4, only if the owner asks.
 
 The pacing target assumes about **75% utilisation**: each Uma works about 18 hours a day, with three check-ins and
 queues ([12](12-economy-and-pacing.md) §11). Every idle hour between a job's end and the next visit is lost, so this
@@ -45,7 +45,7 @@ Settings (§3).
 - **Queues advance** as if each entry had started on time (§3).
 - It **never** restarts work, buys, sells or spends a Speed Ticket. Restarting is Repeat (§5).
 
-It is **one `collect-all` operation** ([13](13-removals-and-plan-changes.md) §6) whose receipt has a line per slot
+It is **one `collect-all` operation** ([13](../rework/13-removals-and-plan-changes.md) §6) whose receipt has a line per slot
 ([07](07-farm.md) §9). A slot that can't be collected, for example because the other device already did, never blocks
 the others, and its line says so. That receipt is what the summary shows (§4).
 
@@ -183,8 +183,8 @@ collected card, and the summary's **Repeat all** applies it to every free Uma wi
 ## 6. The planner: "what she still needs"
 
 Adapted from uma-rpg's farming targets ([D100](https://github.com/luismlorenzana/uma-rpg/blob/main/docs/design/farm.md),
-[loops "Targets"](https://github.com/luismlorenzana/uma-rpg/blob/main/docs/game/loops.md#professions)) and today's Wishlist
-([farm-kitchen-rework](../design/farm-kitchen-rework.md) §8).
+[loops "Targets"](https://github.com/luismlorenzana/uma-rpg/blob/main/docs/game/loops.md#professions)) and the old Farm's
+Wishlist.
 
 ### Targets
 
@@ -244,11 +244,11 @@ For each free Uma, in order ([01](01-game-loop.md) §4):
 **Start suggestions** starts them all after a one-line preview each. The planner itself writes nothing: it is derived
 on read from the save.
 
-## 7. Push notifications: optional, and only uma-rpg's
+## 7. Not built yet (phase 4): push notifications, optional and only uma-rpg's
 
 **The owner's rule (D336):** push notifications are optional, and nothing outside what uma-rpg already set up. If they
 come, they are **a port of uma-rpg's push** with the racer's few changes below. They aren't built unless the owner
-asks for them after playing the new game ([13](13-removals-and-plan-changes.md) §4, phase 4). Everything else on this
+asks for them after playing the new game ([13](../rework/13-removals-and-plan-changes.md) §4, phase 4). Everything else on this
 page works without them: the check-in summary, Collect all, Repeat and the planner.
 
 ### What uma-rpg already has (ported as is)
@@ -280,7 +280,7 @@ Only what the racer's rules need:
 |---|---|---|
 | Announces Farm jobs | Also announces **Training Hub sessions** ("Training done") | Sessions are the racer's other timer |
 | The badge counts ready slots | It counts **Umas** that need a tap: Ready or Free ([01](01-game-loop.md) §2) | The check-in thinks in Umas |
-| The tick reads uma-rpg's single save document | It reads the racer's `work/*` rows ([13](13-removals-and-plan-changes.md) §6) and runs `@racer/domain`'s "what ended between" rule, the same code Collect runs | The racer's save is per entity |
+| The tick reads uma-rpg's single save document | It reads the racer's `work/*` rows ([13](../rework/13-removals-and-plan-changes.md) §6) and runs `@racer/domain`'s "what ended between" rule, the same code Collect runs | The racer's save is per entity |
 | — | **Quiet hours** (default 23:00–07:30), with one morning notice if anything is still waiting | Overnight jobs end at night |
 | — | Nothing is sent while the app is open | The owner is already looking |
 
@@ -296,13 +296,13 @@ That's the whole list. No reminders, no hold window and no extra notice types be
 
 ## 8. Offline and the clock
 
-The rules are today's ([farm-kitchen-rework](../design/farm-kitchen-rework.md) §5,
-[technical contract](../technical/farm-kitchen-implementation.md#4-semantic-operation-contract) §4,
-[rearchitecture 05](../rearchitecture/05-farm.md) §4), applied to every job and session.
+The rules are the old Farm's offline rules ([rearchitecture 05](../rearchitecture/05-farm.md) §4), applied to every job
+and session.
 
 - **Timers derive from saved start timestamps.** An entry's *k*-th item or unlock ends at its start plus *k* item
-  times, less the Speed Tickets applied ([09](09-racing-rewards-and-exchange.md)). The shared idle math (`uma-idle`)
-  owns the formula. **Closed and offline time counts.**
+  times, less the Speed Tickets applied ([09](09-racing-rewards-and-exchange.md)). The work engine's clock
+  (`packages/domain/src/work/timeline.ts`) owns the formula, in numbers only so phase 7 can move it to `uma-idle`.
+  **Closed and offline time counts.**
 - **Nothing runs while the app is closed, and nothing needs to.** On opening, the app recomputes every card from the
   timestamps. It applies queued starts in time order (§3), refreshes the badge and summary counts, flushes the outbox
   and pulls the other device's changes. While open, a 30-second clock that pauses when the app is hidden updates the
@@ -315,7 +315,7 @@ The rules are today's ([farm-kitchen-rework](../design/farm-kitchen-rework.md) �
   - progress never runs backwards or below zero;
   - there is no anti-cheat and no clock service. It's a personal game.
 - **A second device adopts running work as it is,** with its original start, size and inputs. It never restarts a
-  timer or picks new inputs ([farm-kitchen-rework](../design/farm-kitchen-rework.md) §15).
+  timer or picks new inputs.
 - **A day away costs time, not progress.** Finished work waits as Ready until collected, and queued entries that
   couldn't start wait (§3).
 
@@ -324,7 +324,7 @@ The rules are today's ([farm-kitchen-rework](../design/farm-kitchen-rework.md) �
 ### Never paid twice
 
 - **Every tap is one operation with an id chosen before it's written** (or a few in order, each with its own id, as Start suggestions and Buy and restart are). A retried operation returns its first receipt
-  and is never applied twice ([13](13-removals-and-plan-changes.md) §6).
+  and is never applied twice ([13](../rework/13-removals-and-plan-changes.md) §6).
 - **A Collect all or Repeat whose answer was lost** is retried from the outbox with the same id. The server returns
   the first receipt, and the summary shows the same result. Nothing is paid, reserved or started twice.
 - **A double tap does nothing.** The button is disabled while its operation is pending, and a second tap isn't queued.
@@ -366,7 +366,7 @@ current choices before confirming", and called the banners internal messages.
 
 | Where | What | Synced |
 |---|---|---|
-| `work/{outfitId}` ([13](13-removals-and-plan-changes.md) §6, [07](07-farm.md) §12) | Her current entry, up to 3 queued entries, **her last finished entry (for Repeat)**, and the last dropped queue with what was short, for the summary's **Queue stopped** until the owner restarts or dismisses it | Yes |
+| `work/{outfitId}` ([13](../rework/13-removals-and-plan-changes.md) §6, [07](07-farm.md) §12) | Her current entry, up to 3 queued entries, **her last finished entry (for Repeat)**, and the last dropped queue with what was short, for the summary's **Queue stopped** until the owner restarts or dismisses it | Yes |
 | `profile/main` | **Targets** (up to 5, in order); **check-in times** (up to 4); Repeat's same-or-fit choice | Yes |
 | `operations` log | The `collect-all` and `repeat` receipts: the summary's source | Yes |
 | Firestore `push/{uid}` | Subscriptions, notice settings, quiet hours and time zone, the tick's bookkeeping | Server only |
@@ -393,7 +393,7 @@ The planner, suggestions, finish times and the badge count are **derived on read
 | Push is optional and only a port of uma-rpg's D63/D65, built if the owner asks after playing (D336) | The owner's rule: nothing outside what uma-rpg already set up |
 | The racer's changes are limited to sessions, counting Umas, reading per-entity rows, quiet hours and silence while the app is open | What the racer's rules need, and no more |
 | A stale screen re-checks and runs, shows the earlier result, or re-asks with new numbers; never an error | D320 |
-| **Bond picks are an input:** the planner and its suggestions take the cards the owner has chosen to bond next, per Uma (T131); generation 2 doesn't save them (T134) | §6 cascades only chosen bonds, and [13](13-removals-and-plan-changes.md) §6 saves no picks; phase 3 decides whether the Dojo sheet's picks persist |
+| **Bond picks are an input:** the planner and its suggestions take the cards the owner has chosen to bond next, per Uma (T131); generation 2 doesn't save them (T134) | §6 cascades only chosen bonds, and [13](../rework/13-removals-and-plan-changes.md) §6 saves no picks; phase 3 decides whether the Dojo sheet's picks persist |
 | If ×1 already overruns the next check-in, the picker fits the one after | §3 is silent; marking ×1 idles her until the following visit anyway |
 | Local time comes from the device's UTC offset, passed in; the sim passes 0. An operation that fits a size (Repeat's fit, Speed up all to the next check-in) carries it in its input | The rules stay pure, and a re-run sees the same local time; a DST night is off by an hour at most, once |
 | There are 1–4 check-in times, never none | "Up to four" (§3), and fitting needs at least one |
@@ -418,7 +418,7 @@ The planner, suggestions, finish times and the badge count are **derived on read
 | Collect all raises the Exchange's stock mark to the highest grade a Farm Level now opens | D345: the collect raises it, so the sim and phase 3 get it from one operation |
 | A slot whose collect fails keeps "That didn't work. Try again." and the others are collected | §2: one slot never blocks the others; §9's words for the unexpected |
 | A refused operation changes nothing and stores nothing in the `operations` log; only a receipt is kept | A refused tap applied nothing, so a retry may run once the rule allows it |
-| The new operation inputs: `start` from a stopped queue, `queue` dismiss, `speed-up` all, `set-targets`, `set-check-in-times`, `set-repeat-sizing` | §10 saves and syncs these ([13](13-removals-and-plan-changes.md) §6) |
+| The new operation inputs: `start` from a stopped queue, `queue` dismiss, `speed-up` all, `set-targets`, `set-check-in-times`, `set-repeat-sizing` | §10 saves and syncs these ([13](../rework/13-removals-and-plan-changes.md) §6) |
 | **The device's save (T136):** Dexie `uma-racer-g2` holds what the server confirmed plus the outbox; the store is a fold of the outbox over it | A refused or changed answer rolls back by refolding ([09](09-racing-rewards-and-exchange.md) §8: "the local purchase rolls back"), and a reload rebuilds the same state |
 | No device-only tables; the device's markers are `uma-racer:g2:` keys | The journals [rearchitecture/01](../rearchitecture/01-target-architecture.md) §4.2 names left with the minigames and Puzzles |
 | One lane: a 1.5 s debounce, a flush when hidden, a flush and pull when visible or online, and again after a flush that left rows | uma-rpg's timing, with today's flush on hidden so a tap reaches the server before iOS suspends the app |
@@ -441,7 +441,7 @@ The planner, suggestions, finish times and the badge count are **derived on read
 | Account says "App build" and "Content", not "build id" and "content version"; reduced motion (`uma-racer:g2:reducedMotion`) and race speed (`uma-racer:g2:raceSpeed`, 1× or 2×) are device keys (T138) | §9 bans "id" and "version" on screen; per-device conveniences are never synced (§10) |
 | Account shows the trainer's name read-only, edited in the Trophy Hall (T138) | The name lives in badge state, T141's |
 | A sign-out and a fixture load are optional port members (`signOut`, `fixtures`, `loadFixture`); where a port has none the button is off and says why (T138) | The dev mount has no auth, and only the in-memory port can swap its account in place |
-| Bond picks aren't saved in phase 3: the planner runs with `chosen = {}`, so an unchosen bond reads "N bonds: pick cards" and links to her Dojo sheet (T142) | T131 left it to phase 3; [13](13-removals-and-plan-changes.md) §6 saves no picks; a device-only list would plan differently per device; cards are chosen at the Dojo anyway |
+| Bond picks aren't saved in phase 3: the planner runs with `chosen = {}`, so an unchosen bond reads "N bonds: pick cards" and links to her Dojo sheet (T142) | T131 left it to phase 3; [13](../rework/13-removals-and-plan-changes.md) §6 saves no picks; a device-only list would plan differently per device; cards are chosen at the Dojo anyway |
 | Start suggestions is one `start` per line, each its own operation (T142) | 13 §6 has no batch start, and a line the state refuses mustn't stop the rest (T131's `startSuggestions`) |
 | The summary shows the server's receipt once it has one, else the local one (T142) | "Already collected" then shows in place, with no second screen (§9) |
 | Collect all runs once from navigation state, then keeps its id there, as Repeat all does (T142) | A reload shows the same receipt and never collects again |
@@ -453,14 +453,14 @@ The planner, suggestions, finish times and the badge count are **derived on read
 | Spending (Buy and restart, a fix's Buy, Speed up all) confirms once with the amount; everything else is one tap, one tap in flight for the whole sheet (T142) | §1 counts two taps for Buy and restart; §4 confirms Speed up all; §9's double tap |
 | A gated Needs line links to the Exchange row (`?family=&grade=`); only Queue stopped's and Couldn't repeat's fixes buy inline (T142) | T140's rule: a purchase stays one deliberate tap, outside §4's fixes |
 | `SizeChips` shows a chip per size, 1 to what the stock covers (T142, built by T140) | §3: "a chip per size with its finish time" |
-| The shared pieces came with T140 in `g2/ui/work/`; T142 adds `StoppedQueueCard` and `useTaps`, `useTap` for a list (T142) | One runner and one set of pieces for every timed thing (D358) |
+| The shared pieces came with T140 in `ui/work/`; T142 adds `StoppedQueueCard` and `useTaps`, `useTap` for a list (T142) | One runner and one set of pieces for every timed thing (D358) |
 | Offline shows one line in the summary's footer, linking to Account's sync row; the save's refused taps show there in plain words until dismissed; a stopped card another device already put back leaves its answer there (T142) | §9's words, where the owner just tapped |
 | "Already collected." names the Uma, or the place when nobody holds the slot now (T142) | The other device's collect freed the slot |
 | Training done's **Race** opens `/racing/racecourse?uma=`; Ready to advance's **Advance** opens T141's Advance sheet (`/racing/scenario-gate/:umaId?sheet=advance`) (T142) | "Advance, with its usual confirmation" (§4) is that sheet |
 | Her Needs tab is the body of T138's profile tab (`PROFILE_UI.Needs`) under her header and its target toggle (`PROFILE_UI.TargetToggle`); the roster view is the Stable's `needs` sub-page (T142) | A full-page sub-page would drop her header and tabs; [11](11-hub-and-places.md) §7.1 calls both the profile's sub-pages |
 | Each of her three startable lines takes its own Free Uma (T142, a gap in `needsFor`) | One slot per Uma ([01](01-game-loop.md) §2): every Start must be able to run |
 | The roster view lists the marked targets with up, down and remove, or the automatic five read-only; unlocks left per Uma with any left; dishes short by family and grade (T142) | §6: big-picture only; marking is the profile's |
-| The dev mount adds the `stopped` seed and `?at=HH:MM`, and a DEV-only proof at `/dev/check-in` (T142) | The check-in's checks need dropped queues and a clock at 09:00 or 23:00 (11 §7.2's rule for proofs) |
+| The seeds' mount adds the `stopped` seed and `?at=HH:MM`, and a DEV-only proof, now at `/dev/seeds/dev/check-in` (T142, T143) | The check-in's checks need dropped queues and a clock at 09:00 or 23:00 (11 §7.2's rule for proofs) |
 
 ## 12. Done when
 
@@ -480,7 +480,7 @@ The planner, suggestions, finish times and the badge count are **derived on read
   fix when empty; takes the next unlocks for a session; asks for cards at the Dojo; never repeats a recalled Uma.
 - **Planner:** for synthetic targets, the need lines equal a brute-force recount, layer by dish by crafted by raw,
   less stock and outputs coming. No dish is allocated twice across five targets.
-- **Push, if the owner asks for it:** uma-rpg's tests pass on the ported code; a session ending with the app closed
+- **Push, if the owner asks for it (phase 4):** uma-rpg's tests pass on the ported code; a session ending with the app closed
   gives one notice within about five minutes; nothing arrives in quiet hours or while the app is open; the badge
   matches the summary's count; and the billing report shows the push pieces at $0, or $0.10 at most.
 - **Clock:** moving the phone's clock forward makes work Ready and its Collect is accepted by the API. Moving it back

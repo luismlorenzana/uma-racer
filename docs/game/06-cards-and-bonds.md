@@ -1,9 +1,9 @@
 # 06 · Cards and bonds
 
-> **Status: approved design, 2026-10-14; first written 2026-10-13 (D329).** Every SSR open from the start, no stars and no card levels,
-> bonding a card to an Uma at the Dojo, what a bond costs by era, card sets and presets, Race Bonus, and the Card
-> Library. Every number is a **draft** that the loop simulation ([12](12-economy-and-pacing.md) §12) tunes and then
-> pins in tests.
+> **Status: as built, phase 3 (generation 2, D361); first written 2026-10-13 (D329).** Every SSR open from the start, no
+> stars and no card levels, bonding a card to an Uma at the Dojo, what a bond costs by era, card sets and presets, Race
+> Bonus, and the Card Library (T138, D356). The tables marked live are rendered from the rules, and the loop
+> simulation's checks ([12](12-economy-and-pacing.md) §12) pin the pace.
 
 Today a card has to be **owned** (a Card Select Coupon, D198) and **starred** (0–3★ from Friendship Training, D200,
 D255) before it pays in full. Both go. Every card is open and pays its maximum, and the one thing that stands between a
@@ -75,7 +75,7 @@ grade = 2p − 1                       (1, 3, 5, 7 or 9)
 ```
 
 So the newest cards of each scenario cost the most, and every older card costs grade 1. The table is the Training Hub's
-rules (`bondGrade` in `@racer/domain/rework/training`, D344).
+rules (`bondGrade` in `@racer/domain/training`, D344).
 
 <!-- live:bond-grades -->
 | Card era (JP scenario) | Tier 1 grade | Tier 2 grade | Tier 3 grade |
@@ -150,8 +150,9 @@ nodes empty, which is the visible reason to finish bonding.
 - **Six slots per distance preset.** An Uma has four presets per tier, Sprint, Mile, Medium and Long (D252's shape,
   per tier now: [03](03-uma-progression.md)). A race reads the preset of its distance (D254).
 - **Only bonded cards.** A slot accepts a card bonded to her. All four presets draw on the same bonds.
-- **Era gating stays.** The scenario at tier position *T* accepts cards with era ≤ *T* ([Scenarios](../design/scenarios.md#era-windows)).
-  Bonds already follow it, so a bonded card is always eligible.
+- **Era gating stays.** The scenario at tier position *T* accepts cards with era ≤ *T*. A card's era is the latest
+  scenario released on or before its JP release date (`eraOf` in `scenarios.ts`: `max { s.index : s.jpRelease ≤
+  card.jpRelease }`). Bonds already follow it, so a bonded card is always eligible.
 - **No duplicate card and no two cards of the same character** in one set.
 - **Per-card node cap** `ceil(N / 6) + 1` (D134): 3, 4, 5, 5 and 6 on trees of 12–28 ([05](05-training-hub.md) §4).
 - **Replacing a card hands its nodes to the replacement; removing a card empties its nodes** (D129). Swapping a
@@ -189,14 +190,31 @@ full value. On today's pack, 250 of 312 cards have a Race Bonus and 13 also have
 ## 5. Card focus
 
 **Running-style focus** (Front Runner, Pace Chaser, Late Surger, End Closer, Generalist) and **distance focus** (Sprint,
-Mile, Medium, Long, Generalist) stay exactly as today ([Support cards](../design/support-cards.md#card-focus), D201,
-D236), with their icons (D238, D251) and the authored `card-focus.json` corrections. A focus is a **browsing
-category**, never a bonus: it is how the owner finds a Late, Long set in two taps.
+Mile, Medium, Long, Generalist) stay exactly as before the rework (D201, D236), with their icons (D238, D251) and the
+authored `card-focus.json` corrections. A focus is a **browsing category**, never a bonus: it is how the owner finds a
+Late, Long set in two taps.
+
+- **The rule** (`cardFocus` in `packages/domain/src/card-focus.ts`): a card's skills are its distinct hint and event
+  skills in the skills pack. A skill is **restricted** to the styles its activation branches name
+  (`running_style==1..4`; each `@` branch of its condition, read with its precondition) when every branch names exactly
+  one; a branch that names none restricts nothing. A skill whose branches name Late and End counts once for each. The
+  card's focus is the style its skills are restricted to most when that is **at least 2 skills and 30%** of them
+  (`CARD_FOCUS_MIN_SKILLS`, `CARD_FOCUS_MIN_SHARE`); fewer, or a tie for the most, is Generalist. Distance reads
+  `distance_type==1..4` the same way, independently.
+- **Authored corrections:** the private, gitignored `content/overrides/card-focus.json` maps a card id to
+  `{ style?, distance?, note }`. `pnpm data:import` refuses an unknown id, an unknown value or a missing note, writes an
+  optional `focus` field onto those cards, and writes a private review table to `content/review/card-focus.md`. An
+  override replaces only the dimension it names. Claude authors it, as with `flair.json`.
+- **Icons** (D238, D251) are our own SVG drawings (`ui/CardFocusIcons`): a running style is a coloured ring around four
+  chevrons with the one lit where the style runs, and a distance is one bold sneaker on a yellow item tile in its
+  distance's colour, so it reads at 16 px. No original image is shipped.
+- **On screen:** the card page shows two chips, Style and Distance, each with its icon (Generalist has none); Library
+  and picker tiles carry both icons in their corners; the Library filters by both (§6).
 
 ## 6. The Card Library
 
 The Card Library is a place in the **Town Hall** ([11](11-hub-and-places.md), D333). It replaces the Cards tab and uses
-the shared album chrome ([Collection](../design/collection.md#albums)): sticky search, Sort and Filter, filter chips,
+the shared album chrome ([Albums](../design/ux.md#albums)): sticky search, Sort and Filter, filter chips,
 saved views, three view modes, compare and long-press actions.
 
 **Lens and Uma.** A chip row picks the **lens**: **All**, or one of the playable scenarios (14 until the 15th ships, D131). A second control picks an
@@ -242,13 +260,13 @@ bottom-right pill, which held stars, now shows:
 Below her bonded cards, a **Bond more** section lists eligible unbonded cards, each with its dish and a Bond button.
 There is no weaker parallel picker.
 
-**As built (T138).** What a card pays on screen is **`cardPay(card, T)`** (`rework/training/derive.ts`): the type's
+**As built (T138).** What a card pays on screen is **`cardPay(card, T)`** (`training/derive.ts`): the type's
 split, one node's stat points at T (`deriveBuild`'s own arithmetic for one node with the buff off, so *n* of its nodes are
 her preset's `cardRaw` for that card before the buff), `eraPct` at T and in each later playable scenario of the tier,
 SP per node for Friend and Group (`reworkSpNodeValue` × `eraPct`), the per-card cap, and the full Race Bonus. Its skills
 by node are **`cardNodeSkills`** (D182: node *k* pays its *k*-th gold and *k*-th white). The card's running-style and
-distance focus pass through `rework/training` from today's `card-focus` (§5). The Library is `CardLibrary` in
-`g2/places/card-library/` with `mode: 'browse' | 'pick'`: pick mode fixes the lens on the Uma it is given, offers only
+distance focus pass through `training` from today's `card-focus` (§5). The Library is `CardLibrary` in
+`places/card-library/` with `mode: 'browse' | 'pick'`: pick mode fixes the lens on the Uma it is given, offers only
 the caller's `eligible` cards and calls `onPick(cardId)`, for T139's card set tab and session sheet. Its lens and its
 saved views are device preferences (`uma-racer:g2:album:card-library`). With no Uma chosen the "her bond" filters rest.
 A pending bond reads "In session · bonds 01:30" (the bond's own unlock's end), "Bond ready to collect" once it has
@@ -256,7 +274,7 @@ finished, or "Queued to bond".
 
 ## 7. Badges and achievements
 
-Badges and titles stay, scenario-linked (D122). Achievements that count removed things retire ([13](13-removals-and-plan-changes.md) §1).
+Badges and titles stay, scenario-linked (D122). Achievements that count removed things retire ([13](../rework/13-removals-and-plan-changes.md) §1).
 For cards:
 
 | Today | Criterion | After the rework |
@@ -281,7 +299,7 @@ Diner's **Orders**, and Project L'Arc's **Expedition**, which needs a new name, 
 
 ## 9. What is saved
 
-| Where ([13](13-removals-and-plan-changes.md) §6) | What |
+| Where ([13](../rework/13-removals-and-plan-changes.md) §6) | What |
 |---|---|
 | `umas/{outfitId}` | `bonds`: the card ids bonded in her current tier. Each preset's `cardSet` (six ids or empty) and node assignments by node id |
 | `umas/{outfitId}` promotion history | The bonded ids of each finished tier, for history |
@@ -318,7 +336,7 @@ and collect with the session operations; a set edit is one ordinary Uma write.
 | The Card Library keeps today's lens chips, adds an Uma control, and replaces the stars pill with bond state | One browsing chrome; the tile answers "can she use it" |
 | Card Collector, Maxed Out and Coupon Clipper retire; Card Partners and [Era]/[Type] Bonded replace them | Collection becomes bonding, so its achievements count bonds |
 | Era Loyalist reads the sets of every race in the scenario | Four presets mean several sets per scenario |
-| No per-account card entity | Every card is open; bonds live on Umas ([13](13-removals-and-plan-changes.md)) |
+| No per-account card entity | Every card is open; bonds live on Umas ([13](../rework/13-removals-and-plan-changes.md)) |
 | `remainingUnlocks` takes the cards the owner has chosen to bond; the rest of each layer's pacing count shows as "pick cards", oldest layer first, with bonds made or pending counted toward it (D344) | [02](02-check-ins-and-notifications.md) §6 cascades only chosen bonds; the caller (a screen, or the loop simulation's deck) supplies the choice |
 | The card buff applies to a Friend or Group card's SP, as today (D344) | 03 §8 and §1 omit it from the SP formula, but 03 §8 calls Friend and Group "unchanged" and D165 buffs every card node |
 | A bond's layer is its card's first eligible scenario *p*; a card past her scenario refuses with the scenario that opens it, a card past her tier with its own tier's scenario (D344) | One rule for the grade and the lock; 18 a tier stays a count, not a cap |
@@ -331,7 +349,7 @@ and collect with the session operations; a set edit is one ordinary Uma write.
 | The ever-bonded set is a projection, `everBondedCardIds` over every Uma's bonds and tier histories, reconciled in each race, advance and promotion commit and when the Trophy Hall opens, so no other place calls flair (T141) | §9 keeps each tier's bonds, so it equals §7's record without a fact of its own |
 | The Library's lens chips are All and the playable scenarios: 14 until the 15th ships (T138) | §6 names 15; the 15th has no cards yet (§2) |
 | The Library's per-node pay is before the scenario buff; in All, a card pays as in its own scenario (T138) | The buff is her preset's ([04](04-tiers-and-promotion.md) §8) and shows in T139's build views |
-| One per-card pay for screens, `cardPay`, and its skills by node, `cardNodeSkills`, in `rework/training` (T138) | A screen restates no rule (M034); T139's build views and set tab need the same numbers |
+| One per-card pay for screens, `cardPay`, and its skills by node, `cardNodeSkills`, in `training` (T138) | A screen restates no rule (M034); T139's build views and set tab need the same numbers |
 | The Library opens on the featured Uma; a lens chip clears her, the Uma control picks another (T138) | §6: "the Library opens on the featured Uma" and "the lens follows her scenario" |
 
 ## 12. Done when
