@@ -5,6 +5,7 @@
 // sync row. Notifications are phase 4.
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, useSearchParams } from 'react-router'
+import { APP_BUILD_ID } from '../../../app/build'
 import { Button } from '../../../ui/Button'
 import { Chip } from '../../../ui/Chip'
 import { CloseIcon } from '../../../ui/icons'
@@ -185,7 +186,7 @@ export default function AccountPage({ place, rest }: PageProps) {
           <p className="text-[12px] text-ink-soft">Kept on this phone only.</p>
         </Panel>
         <Panel className="p-3" aria-label="About">
-          <Row label="App build">{__APP_BUILD_ID__}</Row>
+          <Row label="App build">{APP_BUILD_ID}</Row>
           <Row label="Content">{content === null ? 'Not loaded here' : `${content.manifest.version} · ${content.origin === 'offline-cache' ? 'offline' : 'network'}`}</Row>
         </Panel>
         <div data-g2="sign-in-row">

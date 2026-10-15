@@ -2,8 +2,8 @@
 // docs/rework/11-hub-and-places.md §6; T139). The tree's 0–100 canvas stretches to the validator's 351 × 525 pt graph
 // box (`PHONE_GRAPH_BOX_PT`), scaled to the host's width, so nodes keep the validator's 40 pt spacing; pinch zooms
 // and a drag pans (transform only). Edges are SVG; each node is a DOM button, coloured by its card's type once open.
-// Nodes are 36 pt, under the 44 pt rule: the List view carries every node's action at 44 pt (T139). Today's
-// `ConstellationGraph` reads Constellation Level and today's templates, so it isn't reused.
+// Nodes are 36 pt, under the 44 pt rule: the List view carries every node's action at 44 pt (T139). The old
+// app's constellation graph read its retired levels and templates, so it wasn't reused (T143 deleted it).
 import { PHONE_GRAPH_BOX_PT } from '@racer/domain/rework/constellation'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 

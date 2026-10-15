@@ -64,6 +64,13 @@ export interface AlbumQuery {
   mode: string | null
 }
 
+/** A one-tap starting point that sets the query; presets are not saved views and never overwrite one. */
+export interface AlbumPreset {
+  key: string
+  label: string
+  apply: (query: AlbumQuery) => AlbumQuery
+}
+
 export interface AlbumGroup {
   key: string
   label: string

@@ -20,17 +20,12 @@ describe('content diagnostics', () => {
   })
 
   it('keeps a verified offline fallback as a success state', () => {
-    const content = { origin: 'offline-cache', sparkRivals: null } as LoadedContent
+    const content = { origin: 'offline-cache' } as LoadedContent
     expect(diagnoseLoadedContent(content)).toMatchObject({ code: 'offline-fallback', success: true })
   })
 
-  it('keeps an old online manifest playable while surfacing the Spark catalogue fallback', () => {
-    const content = { origin: 'network', sparkRivals: null } as LoadedContent
-    expect(diagnoseLoadedContent(content)).toMatchObject({
-      code: 'spark-rivals-fallback',
-      success: true,
-      title: expect.stringContaining('catalogue fallback'),
-    })
-    expect(diagnoseLoadedContent(content).message).not.toContain('Content is not imported')
+  it('calls verified network content current', () => {
+    const content = { origin: 'network' } as LoadedContent
+    expect(diagnoseLoadedContent(content)).toMatchObject({ code: 'ready', success: true, action: null })
   })
 })

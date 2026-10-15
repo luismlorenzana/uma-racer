@@ -81,7 +81,7 @@ describe('the start rule (§2.4)', () => {
     const { where } = renderG2('/training', seedGame('quiet'))
     await waitFor(() => expect(localStorage.getItem(LAST_PAGE_KEY)).toBe('training'))
     expect(where()).toBe('/training')
-    localStorage.setItem(LAST_PAGE_KEY, 'puzzles')
+    localStorage.setItem(LAST_PAGE_KEY, 'nowhere')
     expect(startPath({ umas: 3, needsATap: 0 })).toBe('/town')
     expect(startPath({ umas: 0, needsATap: 9 })).toBe('/town/stable?tab=locked')
   })

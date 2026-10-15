@@ -1,7 +1,7 @@
 // The first-boot wipe (docs/rearchitecture/07-data-reset.md §2, §4; T136): generation 2 never reads the old save, it
 // deletes it, once per device, before its own database opens.
 // - `Dexie.delete('uma-racer')`, today's database (v34, 47 tables);
-// - in dev builds, every database named `farm-kitchen-proof-*` or `puzzle-proof-*`;
+// - in dev builds, every database of the old app's isolated dev proofs, all named `<name>-proof-*`;
 // - every localStorage key that starts with `uma-racer:` and not `uma-racer:g2:`;
 // - `caches.delete('racer-content')`; the service worker refills what generation 2 reads.
 // Then it sets `uma-racer:g2:wiped`. Each step tolerates absence, so a repeat is harmless, and a step that fails leaves
@@ -12,7 +12,7 @@ import Dexie from 'dexie'
 export const WIPED_KEY = 'uma-racer:g2:wiped'
 export const OLD_DATABASE = 'uma-racer'
 export const OLD_CONTENT_CACHE = 'racer-content'
-const DEV_PROOF_DATABASE = /^(farm-kitchen-proof-|puzzle-proof-)/
+const DEV_PROOF_DATABASE = /^[a-z][a-z-]*-proof-/
 const OLD_KEY = 'uma-racer:'
 const NEW_KEY = 'uma-racer:g2:'
 

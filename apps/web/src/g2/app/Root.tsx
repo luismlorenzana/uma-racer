@@ -5,13 +5,14 @@ import { useState } from 'react'
 import { Outlet } from 'react-router'
 import { Button } from '../../ui/Button'
 import { Panel } from '../../ui/Panel'
+import { APP_BUILD_ID } from '../../app/build'
 import { useSnapshot } from './game'
 
 function SaveError({ words }: { words: string }) {
   const [copied, setCopied] = useState(false)
   const copy = async () => {
     try {
-      await navigator.clipboard.writeText(`Uma Racer\nBuild ${__APP_BUILD_ID__}\n${new Date().toISOString()}\n${words}`)
+      await navigator.clipboard.writeText(`Uma Racer\nBuild ${APP_BUILD_ID}\n${new Date().toISOString()}\n${words}`)
       setCopied(true)
     } catch {
       setCopied(false)

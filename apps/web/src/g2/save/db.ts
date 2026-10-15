@@ -1,6 +1,6 @@
 // The device's copy of generation 2 (docs/rearchitecture/01-target-architecture.md §4.2; docs/rework/02-check-ins-and-
 // notifications.md §11; T136): Dexie `uma-racer-g2`, schema version 1, one table per kind and the outbox, and nothing
-// else (the journals §4.2 first named left with the minigames and Puzzles). The kind tables hold the rows the server
+// else (the run journals §4.2 first named left with the retired modes). The kind tables hold the rows the server
 // confirmed, as it sent them; `badges` and `flairEvents` also hold the device's own writes until their answer comes.
 // Rows are read back through T134's parsers: one that fails to parse is the caller's error, and nothing deletes it.
 // A later schema change that must keep data adds a version (uma-rpg's rule); until then there is one.

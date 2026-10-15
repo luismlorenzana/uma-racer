@@ -2,13 +2,13 @@ import { useCallback, useState, type ReactNode } from 'react'
 import {
   ALBUM_VIEWS,
   isActiveSelection,
+  type AlbumPreset,
   type AlbumQuery,
   type EmptyStateHint,
   type FacetDef,
   type SortDef,
 } from '../../game/album/query'
-import type { AlbumPreset } from '../../game/album/stable'
-import type { SavedView } from '../../game/album/prefs'
+import type { SavedView } from '../../g2/ui/albumPrefs'
 import { BottomSheet } from '../BottomSheet'
 import { Button } from '../Button'
 import { Chip } from '../Chip'

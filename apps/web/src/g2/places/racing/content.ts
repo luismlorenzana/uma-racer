@@ -41,7 +41,6 @@ export function devRaceContent(env: OperationEnv): LoadedContent {
   return {
     origin: 'network',
     manifest: { version: DEV_CONTENT_VERSION, generatedAt: '', source: {}, files: [] },
-    sparkRivals: null,
     umas: registry(umas),
     cards: registry(cards),
     skills: registry(skills),

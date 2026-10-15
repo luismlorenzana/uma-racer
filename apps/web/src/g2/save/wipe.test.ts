@@ -16,7 +16,7 @@ async function makeDatabase(name: string): Promise<void> {
 
 function deviceWith(dev = true) {
   const storage = memoryStorage()
-  for (const key of ['uma-racer:last-sync', 'uma-racer:puzzle-orbs', 'uma-racer:rpg-guide-v3', 'uma-racer:g2:lastPage', 'firebase:authUser', 'theme']) {
+  for (const key of ['uma-racer:last-sync', 'uma-racer:scenario-choice', 'uma-racer:farm-kitchen-guide-v1', 'uma-racer:g2:lastPage', 'firebase:authUser', 'theme']) {
     storage.setItem(key, 'x')
   }
   const steps: string[] = []
@@ -42,7 +42,7 @@ function deviceWith(dev = true) {
 
 describe('the first-boot wipe', () => {
   it("deletes today's database, the dev proofs, the old keys and the content cache, in order, then sets its marker", async () => {
-    for (const name of [OLD_DATABASE, 'farm-kitchen-proof-1', 'puzzle-proof-orbs', 'another-app']) await makeDatabase(name)
+    for (const name of [OLD_DATABASE, 'farm-kitchen-proof-1', 'farm-kitchen-proof-release-2', 'another-app']) await makeDatabase(name)
     const g2 = new SaveDb()
     await g2.profile.count()
     g2.close()
@@ -50,8 +50,8 @@ describe('the first-boot wipe', () => {
     expect(await wipeOnce(deps)).toBe('wiped')
     expect((await Dexie.getDatabaseNames()).sort()).toEqual(['another-app', SAVE_DB_NAME])
     expect(steps).toEqual([
-      `database ${OLD_DATABASE}`, 'database farm-kitchen-proof-1', 'database puzzle-proof-orbs',
-      'key uma-racer:last-sync', 'key uma-racer:puzzle-orbs', 'key uma-racer:rpg-guide-v3', `cache ${OLD_CONTENT_CACHE}`,
+      `database ${OLD_DATABASE}`, 'database farm-kitchen-proof-1', 'database farm-kitchen-proof-release-2',
+      'key uma-racer:last-sync', 'key uma-racer:scenario-choice', 'key uma-racer:farm-kitchen-guide-v1', `cache ${OLD_CONTENT_CACHE}`,
     ])
     expect(caches.delete).toHaveBeenCalledExactlyOnceWith('racer-content')
     expect(storage.getItem('uma-racer:g2:lastPage')).toBe('x')
@@ -74,11 +74,11 @@ describe('the first-boot wipe', () => {
   })
 
   it('leaves the proofs alone outside dev builds, and tolerates every absence', async () => {
-    await makeDatabase('puzzle-proof-orbs')
+    await makeDatabase('farm-kitchen-proof-release-2')
     const { deps } = deviceWith(false)
     expect(await wipeOnce({ ...deps, caches: null })).toBe('wiped')
-    expect(await Dexie.exists('puzzle-proof-orbs')).toBe(true)
-    await Dexie.delete('puzzle-proof-orbs')
+    expect(await Dexie.exists('farm-kitchen-proof-release-2')).toBe(true)
+    await Dexie.delete('farm-kitchen-proof-release-2')
   })
 
   it('leaves its marker unset when a step fails, so the next boot tries again', async () => {

@@ -1,19 +1,18 @@
-// Authenticated, hash-verified, offline-capable private content runtime (T002).
+// Authenticated, hash-verified, offline-capable private content runtime (T002). It reads the manifest's files whose kind
+// it knows (the five packs, the atlases and the art families) and ignores every other file, so a manifest published
+// with kinds this app no longer reads stays loadable (T143).
 
-import {
-  parseSparkRivalContentPack,
-  sparkRivalBestStrategy,
-  type ContentAtlas,
-  type ContentAtlasFrame,
-  type ContentAtlasKind,
-  type ContentManifest,
-  type ContentManifestFile,
-  type CourseTemplate,
-  type RaceTemplate,
-  type SparkRivalScenarioRoster,
-  type SkillTemplate,
-  type SupportCardTemplate,
-  type UmaTemplate,
+import type {
+  ContentAtlas,
+  ContentAtlasFrame,
+  ContentAtlasKind,
+  ContentManifest,
+  ContentManifestFile,
+  CourseTemplate,
+  RaceTemplate,
+  SkillTemplate,
+  SupportCardTemplate,
+  UmaTemplate,
 } from '@racer/domain'
 import { contentApi } from '../api/client'
 import { ContentFallbackError } from './errors'
@@ -57,8 +56,6 @@ export interface LoadedContent {
   skills: ContentRegistry<SkillTemplate>
   races: ContentRegistry<RaceTemplate>
   courses: ContentRegistry<CourseTemplate>
-  /** Optional for older manifests; Spark uses a deterministic catalogue fallback when null. */
-  sparkRivals: readonly SparkRivalScenarioRoster[] | null
   /**
    * Crests and skill icons are optional: a manifest published before T051 (crests) or D182 (skill icons) lacks them,
    * and the app falls back to no crest and its own star rather than refusing to load.
@@ -72,7 +69,7 @@ export interface LoadedContent {
  * tile for Uma lists (`art/bust/<umaId>`). T059 adds `chibi` (`<umaId>-a` standing, `-b` celebrating), `dress`
  * (`<charaId>-gym|summer|winter|casual`) and `face` (`<charaId>`, the 128 px race token).
  */
-export type ArtKind = 'uma' | 'card' | 'bust' | 'chibi' | 'dress' | 'face' | 'priconne'
+export type ArtKind = 'uma' | 'card' | 'bust' | 'chibi' | 'dress' | 'face'
 
 export interface ArtLoader {
   /** True when the published manifest carries art for this entry. */
@@ -85,7 +82,7 @@ export interface ArtLoader {
   load: (kind: ArtKind, id: string) => Promise<string | null>
   /**
    * Keeps an entry's object URL alive while a screen shows it: the recency window never revokes a held entry, so a
-   * minigame preloading more cards than the window holds cannot break the images already on screen. Returns the
+   * screen preloading more art than the window holds cannot break the images already on screen. Returns the
    * release. Call it before `load`, so nothing can evict the entry between its arrival and the hold.
    */
   hold?: (kind: ArtKind, id: string) => () => void
@@ -211,27 +208,20 @@ const PACK_FILES = {
   skills: /^data\/skills\.[a-f0-9]{8}\.json$/,
   races: /^data\/races\.[a-f0-9]{8}\.json$/,
   courses: /^data\/courses\.[a-f0-9]{8}\.json$/,
-  sparkRivals: /^data\/spark-rivals\.[a-f0-9]{8}\.json$/,
 } as const
 
-function optionalFile(manifest: ContentManifest, pattern: RegExp, label: string): ContentManifestFile | null {
-  const matches = manifest.files.filter((file) => pattern.test(file.path))
-  if (matches.length > 1) throw new Error(`Expected at most one ${label} file, found ${matches.length}`)
-  return matches[0] ?? null
-}
-
-const ART_FILE = /^art\/(uma|card|bust|chibi|dress|face|priconne)\/([A-Za-z0-9_-]+)\.[a-f0-9]{8}\.webp$/
+const ART_FILE = /^art\/(uma|card|bust|chibi|dress|face)\/([A-Za-z0-9_-]+)\.[a-f0-9]{8}\.webp$/
 /**
  * Object URLs held per kind for recently viewed art; older ones are revoked so memory stays bounded. Busts are small
  * (~18 KB) and fill whole grids, so a list keeps every one it shows; the large art keeps a short window.
  */
-const ART_CACHE_LIMIT: Record<ArtKind, number> = { uma: 24, card: 24, bust: 320, chibi: 64, dress: 24, face: 72, priconne: 24 }
+const ART_CACHE_LIMIT: Record<ArtKind, number> = { uma: 24, card: 24, bust: 320, chibi: 64, dress: 24, face: 72 }
 
 function artIndex(manifest: ContentManifest): Map<string, ContentManifestFile> {
   const index = new Map<string, ContentManifestFile>()
   for (const file of manifest.files) {
     const match = ART_FILE.exec(file.path)
-    if (match) index.set(`${match[1]}:${match[2]}${match[1] === 'priconne' ? `-${file.sha256.slice(0, 8)}` : ''}`, file)
+    if (match) index.set(`${match[1]}:${match[2]}`, file)
   }
   return index
 }
@@ -253,10 +243,6 @@ function createArtLoader(
     if (result.bytes.byteLength !== file.bytes) throw new Error(`Content byte length mismatch: ${file.path}`)
     const digest = hex(await globalThis.crypto.subtle.digest('SHA-256', result.bytes))
     if (digest !== file.sha256) throw new Error(`Content hash mismatch: ${file.path}`)
-    if (key.startsWith('priconne:')) {
-      const { width, height } = readWebpDimensions(result.bytes)
-      if (width !== 256 || height !== 256) throw new Error('Invalid RPG portrait dimensions')
-    }
     const url = urls.create(new Blob([result.bytes], { type: 'image/webp' }))
     track(url)
     cache.set(key, url)
@@ -343,7 +329,6 @@ async function loadVersion({ transport, manifest, origin, urls }: LoadVersionOpt
   const skillFile = findRequiredFile(manifest, PACK_FILES.skills, 'skills pack')
   const raceFile = findRequiredFile(manifest, PACK_FILES.races, 'races pack')
   const courseFile = findRequiredFile(manifest, PACK_FILES.courses, 'courses pack')
-  const sparkRivalFile = optionalFile(manifest, PACK_FILES.sparkRivals, 'spark-rivals pack')
   const umaAtlasFile = findRequiredFile(manifest, ATLAS_FILES['uma-icons'], 'uma-icons atlas')
   const cardAtlasFile = findRequiredFile(manifest, ATLAS_FILES['card-icons'], 'card-icons atlas')
   const optionalAtlasFiles = OPTIONAL_ATLASES.flatMap((kind) => {
@@ -351,13 +336,12 @@ async function loadVersion({ transport, manifest, origin, urls }: LoadVersionOpt
     return file ? [{ kind, file }] : []
   })
 
-  const [umaJson, cardJson, skillJson, raceJson, courseJson, sparkRivalJson, umaAtlasJson, cardAtlasJson] = await Promise.all([
+  const [umaJson, cardJson, skillJson, raceJson, courseJson, umaAtlasJson, cardAtlasJson] = await Promise.all([
     verifiedJson(transport, umaFile),
     verifiedJson(transport, cardFile),
     verifiedJson(transport, skillFile),
     verifiedJson(transport, raceFile),
     verifiedJson(transport, courseFile),
-    sparkRivalFile ? verifiedJson(transport, sparkRivalFile) : Promise.resolve(null),
     verifiedJson(transport, umaAtlasFile),
     verifiedJson(transport, cardAtlasFile),
   ])
@@ -371,21 +355,6 @@ async function loadVersion({ transport, manifest, origin, urls }: LoadVersionOpt
     return { ...race, seriesLegs: seriesLegs === undefined ? [] : seriesLegs } as RaceTemplate
   })
   const courses = parseContentPack<CourseTemplate>(courseJson, 'course')
-  const sparkRivals = sparkRivalJson === null ? null : parseSparkRivalContentPack(sparkRivalJson).items
-  if (sparkRivals) {
-    const umasById = new Map(umas.map((uma) => [uma.id, uma]))
-    for (const roster of sparkRivals) {
-      for (const [role, candidates] of [['ordinary', roster.ordinary], ['bosses', roster.bosses]] as const) {
-        candidates.forEach((candidate, index) => {
-          const uma = umasById.get(candidate.templateId)
-          if (!uma || uma.charaId !== candidate.charaId ||
-            sparkRivalBestStrategy(uma.aptitudes.strategy) !== candidate.strategy) {
-            throw new Error(`Spark rival content does not match the Uma pack at tier ${roster.tier} ${role}[${index}]`)
-          }
-        })
-      }
-    }
-  }
   const umaAtlas = parseContentAtlas(umaAtlasJson, 'uma-icons')
   const cardAtlas = parseContentAtlas(cardAtlasJson, 'card-icons')
   const optionalAtlases = await Promise.all(optionalAtlasFiles.map(async ({ kind, file }) => ({
@@ -432,7 +401,6 @@ async function loadVersion({ transport, manifest, origin, urls }: LoadVersionOpt
       skills: registry(skills),
       races: registry(races),
       courses: registry(courses),
-      sparkRivals,
       atlases: {
         'uma-icons': umaIcons,
         'card-icons': cardIcons,
