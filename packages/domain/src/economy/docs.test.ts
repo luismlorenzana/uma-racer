@@ -1,7 +1,7 @@
 // The Exchange's live blocks (docs/game/architecture.md#the-rework-modules): the four tables of rework/09 this area owns.
 // docs/docs.test.ts checks the page against them.
 import { describe, expect, it } from 'vitest'
-import { REWORK_BLOCKS } from '../docs/rework'
+import { AREA_BLOCKS } from '../docs/render'
 import { LIVE_BLOCKS } from './docs'
 
 describe('live blocks', () => {
@@ -9,7 +9,7 @@ describe('live blocks', () => {
     expect(Object.keys(LIVE_BLOCKS).sort()).toEqual(['exchange-prices', 'prize-table', 'purse-bands', 'sell-values'])
     for (const [key, render] of Object.entries(LIVE_BLOCKS)) {
       expect(render()).toMatch(/^\| .+ \|\n\|---/)
-      expect(REWORK_BLOCKS[key]).toBe(render)
+      expect(AREA_BLOCKS[key]).toBe(render)
     }
   })
 

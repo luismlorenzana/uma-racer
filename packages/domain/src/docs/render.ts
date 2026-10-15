@@ -2,13 +2,46 @@
 // here from the rules, so it can't drift from the game. A page marks a block with `<!-- live:<key> -->` …
 // `<!-- /live -->`; `pnpm docs:update` rewrites them, and `docs.test.ts` fails when one is stale. Pure: no I/O.
 // Only code-owned rules are rendered: nothing from the private content packs (Umas, cards, skills, races).
+//
+// Each area renders its own tables too (docs/game/architecture.md#the-rework-modules): an area exports
+// `LIVE_BLOCKS: Record<key, () => string>` from its `docs.ts`, and one import plus one argument to `AREA_BLOCKS` below
+// joins it. A key used twice fails at load, so two areas can't fight over a block.
+import { LIVE_BLOCKS as BUILDS_BLOCKS } from '../builds/docs'
+import { LIVE_BLOCKS as CHECK_IN_BLOCKS } from '../check-in/docs'
+import { LIVE_BLOCKS as EXCHANGE_BLOCKS } from '../economy/docs'
+import { LIVE_BLOCKS as FARM_BLOCKS } from '../farm/docs'
+import { LIVE_BLOCKS as HUB_BLOCKS } from '../hub/docs'
+import { LIVE_BLOCKS as ITEM_BLOCKS } from '../items/docs'
+import { LIVE_BLOCKS as PLANNER_BLOCKS } from '../planner/docs'
+import { LIVE_BLOCKS as LOOP_BLOCKS } from '../sim/docs'
+import { LIVE_BLOCKS as TIER_BLOCKS } from '../tiers/docs'
+import { LIVE_BLOCKS as TRAINING_BLOCKS } from '../training/docs'
+import { LIVE_BLOCKS as CONSTELLATION_BLOCKS } from '../training/trees/docs'
 import { CAP_PROFILES, CONSTELLATION_SHAPES, nodeValue } from '../constellation'
 import { GRADE_HANDICAP, RIVAL_REFERENCE_METERS, RIVAL_SKILL_RANGE, RIVAL_STAT_FLOOR, STYLE_COUNT_RANGE } from '../opponents'
 import { expToNextUmaLevel, GATE_SHARD_REWARD, raceExp } from '../progression'
 import { SCENARIO_BUFFS } from '../scenario-buffs'
 import { LEVELS_PER_SCENARIO, MAX_UMA_LEVEL, SCENARIOS, skillPointCap } from '../scenarios'
 import { RACE_GRADES, STATS } from '../types'
-import { REWORK_BLOCKS } from './rework'
+
+export type LiveBlocks = Readonly<Record<string, () => string>>
+
+export function joinBlocks(...tables: readonly LiveBlocks[]): LiveBlocks {
+  const joined: Record<string, () => string> = {}
+  for (const table of tables) {
+    for (const [key, render] of Object.entries(table)) {
+      if (key in joined) throw new Error(`Live block "${key}" is rendered twice`)
+      joined[key] = render
+    }
+  }
+  return joined
+}
+
+/** Every area's live blocks, joined. */
+export const AREA_BLOCKS: LiveBlocks = joinBlocks(
+  TIER_BLOCKS, ITEM_BLOCKS, CONSTELLATION_BLOCKS, EXCHANGE_BLOCKS, FARM_BLOCKS, TRAINING_BLOCKS, PLANNER_BLOCKS, BUILDS_BLOCKS, LOOP_BLOCKS,
+  CHECK_IN_BLOCKS, HUB_BLOCKS,
+)
 
 type Cell = string | number
 /** A Markdown table; pipes in cells are escaped. */
@@ -87,6 +120,6 @@ export function renderBlock(key: string, context: { packages: readonly { path: s
     case 'race-rewards': return raceRewards()
     case 'rivals': return rivals()
     case 'dependencies': return dependencies(context.packages)
-    default: return REWORK_BLOCKS[key]?.() ?? null
+    default: return AREA_BLOCKS[key]?.() ?? null
   }
 }

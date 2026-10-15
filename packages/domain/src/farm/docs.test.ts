@@ -3,7 +3,7 @@
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
-import { REWORK_BLOCKS } from '../docs/rework'
+import { AREA_BLOCKS } from '../docs/render'
 import { LIVE_BLOCKS } from './docs'
 
 const page = (name: string) => readFileSync(fileURLToPath(new URL(`../../../../docs/rework/${name}`, import.meta.url)), 'utf8')
@@ -16,7 +16,7 @@ describe('the Farm blocks', () => {
     const farm = page('07-farm.md'), hub = page('05-training-hub.md')
     for (const key of Object.keys(LIVE_BLOCKS)) {
       expect((key.startsWith('facility') ? hub : farm).includes(`<!-- live:${key} -->`), key).toBe(true)
-      expect(REWORK_BLOCKS[key]).toBe(LIVE_BLOCKS[key])
+      expect(AREA_BLOCKS[key]).toBe(LIVE_BLOCKS[key])
     }
   })
 

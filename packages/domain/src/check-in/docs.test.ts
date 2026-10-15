@@ -3,7 +3,7 @@
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
-import { REWORK_BLOCKS } from '../docs/rework'
+import { AREA_BLOCKS } from '../docs/render'
 import { hasBannedWord } from './words'
 import { LIVE_BLOCKS, OPERATION_DOCS } from './docs'
 import { OPERATIONS } from './once'
@@ -14,7 +14,7 @@ describe('the operations block', () => {
   it('renders 13 §6 in the page that states it, and joins the registry', () => {
     expect(Object.keys(LIVE_BLOCKS)).toEqual(['operations'])
     expect(page.includes('<!-- live:operations -->')).toBe(true)
-    expect(REWORK_BLOCKS.operations).toBe(LIVE_BLOCKS.operations)
+    expect(AREA_BLOCKS.operations).toBe(LIVE_BLOCKS.operations)
   })
 
   it('lists every operation once, in table order, with its line', () => {

@@ -1,7 +1,7 @@
 // The tier rules' live blocks (docs/game/architecture.md#the-rework-modules): the eight tables of rework/03, /04 and /05 this area
 // owns. docs/docs.test.ts checks each page against them.
 import { describe, expect, it } from 'vitest'
-import { REWORK_BLOCKS } from '../docs/rework'
+import { AREA_BLOCKS } from '../docs/render'
 import { LIVE_BLOCKS } from './docs'
 
 describe('live blocks', () => {
@@ -11,7 +11,7 @@ describe('live blocks', () => {
     ])
     for (const [key, render] of Object.entries(LIVE_BLOCKS)) {
       expect(render()).toMatch(/^\| .+ \|\n\|---/)
-      expect(REWORK_BLOCKS[key]).toBe(render)
+      expect(AREA_BLOCKS[key]).toBe(render)
     }
   })
 

@@ -1,7 +1,7 @@
 // The builds against the field's live blocks (T133): the four tables of rework/03 §9, /04 §8 and /05 §12 this area
 // owns, rendered from the committed reports. docs/docs.test.ts checks each page against them.
 import { describe, expect, it } from 'vitest'
-import { REWORK_BLOCKS } from '../docs/rework'
+import { AREA_BLOCKS } from '../docs/render'
 import { LIVE_BLOCKS } from './docs'
 
 describe('live blocks', () => {
@@ -10,7 +10,7 @@ describe('live blocks', () => {
     for (const [key, render] of Object.entries(LIVE_BLOCKS)) {
       expect(render()).toMatch(/^\| .+ \|\n\|---/)
       expect(render().split('\n')).toHaveLength(2 + 14)
-      expect(REWORK_BLOCKS[key]).toBe(render)
+      expect(AREA_BLOCKS[key]).toBe(render)
     }
   })
 
