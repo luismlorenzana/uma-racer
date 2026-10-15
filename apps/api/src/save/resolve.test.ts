@@ -10,7 +10,7 @@ import {
 import {
   comparePulled, encodeCursor, NO_SAVE, parseCursor, resolveSync, selectReadSet, snapshotPage, syncReadSet, type SaveRow,
 } from './resolve'
-import { saveG2Fixtures, type SaveG2Fixtures } from './save-g2.test-support'
+import { saveG2Fixtures, type SaveG2Fixtures } from './save.test-support'
 
 let F: SaveG2Fixtures
 beforeAll(async () => { F = await saveG2Fixtures() })

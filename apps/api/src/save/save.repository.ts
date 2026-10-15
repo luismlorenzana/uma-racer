@@ -6,7 +6,7 @@ import type { NoSave } from './resolve'
 /** Loads the operation env (T135's `OperationContent`); a repository calls it once, and only for a request with an operation. */
 export type OperationEnvLoader = () => Promise<OperationEnv>
 
-export interface SaveG2Repository {
+export interface SaveRepository {
   /** One page of the rows saved after `since`, resuming at `cursor` (one `resolve.ts` wrote). */
   snapshot(uid: string, since: number, cursor: string | null): Promise<SaveSnapshotV2>
   /** One sync, atomically: every change answered in order, or `NO_SAVE` with nothing written. */
@@ -15,7 +15,7 @@ export interface SaveG2Repository {
   purge(uid: string): Promise<PurgeResponse>
 }
 
-export const SAVE_G2_REPOSITORY = Symbol('SAVE_G2_REPOSITORY')
+export const SAVE_REPOSITORY = Symbol('SAVE_REPOSITORY')
 
 /** The purge's record: `saves/{uid}/meta/purge`, or the local file's `purge`. */
 export interface PurgeMarker {

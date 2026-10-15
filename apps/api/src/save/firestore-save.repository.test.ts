@@ -4,9 +4,9 @@ import { beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { createTrainerBadgeState } from '@racer/domain'
 import { rawItem } from '@racer/domain/rework/items'
 import { parseSyncRequestV2, type SyncRequestV2 } from '@racer/domain/save-g2'
-import { FirestoreSaveG2Repository } from './firestore-save-g2.repository'
+import { FirestoreSaveRepository } from './firestore-save.repository'
 import { NO_SAVE } from './resolve'
-import { FakeFirestore, saveG2Fixtures, type SaveG2Fixtures } from './save-g2.test-support'
+import { FakeFirestore, saveG2Fixtures, type SaveG2Fixtures } from './save.test-support'
 
 let F: SaveG2Fixtures
 beforeAll(async () => { F = await saveG2Fixtures() })
@@ -22,12 +22,12 @@ function request(changes: readonly unknown[]): SyncRequestV2 {
 const op = (n: number, name: string, input: unknown, at: number) => ({ type: 'operation', operation: { id: F.opId(n), name, input, at } })
 
 let fake: FakeFirestore
-let repo: FirestoreSaveG2Repository
+let repo: FirestoreSaveRepository
 let now: number
 beforeEach(() => {
   fake = new FakeFirestore()
   now = 1_800_000_000_000
-  repo = new FirestoreSaveG2Repository(fake.asFirestore, () => (now += 1_000))
+  repo = new FirestoreSaveRepository(fake.asFirestore, () => (now += 1_000))
 })
 
 const sync = (changes: readonly unknown[], env = F.ENV) => repo.sync('u1', request(changes), async () => env)
@@ -156,7 +156,7 @@ describe('the purge', () => {
     fake.docs.set('players/u1', { owner: true })
     fake.docs.set('players/u1/umas/uma-01', { kind: 'umas' })
     expect((await repo.purge('u1')).counts).toEqual({ collections: 1, documents: 2 })
-    expect((await new FirestoreSaveG2Repository(fake.asFirestore, () => now).purge('u3')).counts).toEqual({ collections: 0, documents: 0 })
+    expect((await new FirestoreSaveRepository(fake.asFirestore, () => now).purge('u3')).counts).toEqual({ collections: 0, documents: 0 })
   })
 
   it('answers `already` with the stored record when another device wrote the marker first', async () => {

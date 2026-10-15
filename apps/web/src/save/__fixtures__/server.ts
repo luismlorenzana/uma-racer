@@ -4,7 +4,7 @@
 // answer that skips a change, a held answer, and a save deleted underneath the device. Synthetic content only.
 import {
   encodeCursor, NO_SAVE, resolveSync, selectReadSet, snapshotPage, syncReadSet, type SaveRow,
-} from '../../../../api/src/save-g2/resolve'
+} from '../../../../api/src/save/resolve'
 import type { BadgeStateV1, FlairEventV1 } from '@racer/domain'
 import { SIM_CONTENT, SIM_UMAS } from '@racer/domain/rework/sim'
 import {

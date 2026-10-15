@@ -5,8 +5,8 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { parseSyncRequestV2, type SyncRequestV2 } from '@racer/domain/save-g2'
-import { LEGACY_LOCAL_SAVE_FILE, LocalSaveG2Repository } from './local-save-g2.repository'
-import { saveG2Fixtures, type SaveG2Fixtures } from './save-g2.test-support'
+import { LEGACY_LOCAL_SAVE_FILE, LocalSaveRepository } from './local-save.repository'
+import { saveG2Fixtures, type SaveG2Fixtures } from './save.test-support'
 
 let F: SaveG2Fixtures
 beforeAll(async () => { F = await saveG2Fixtures() })
@@ -22,13 +22,13 @@ const op = (n: number, name: string, input: unknown, at: number) => ({ type: 'op
 let dir: string
 let file: string
 let legacy: string
-let repo: LocalSaveG2Repository
+let repo: LocalSaveRepository
 beforeEach(async () => {
   dir = await mkdtemp(join(tmpdir(), 'racer-g2-local-'))
   file = join(dir, '.data', 'save-g2.json')
   legacy = join(dir, '.data', 'save.json')
   await mkdir(join(dir, '.data'))
-  repo = new LocalSaveG2Repository(file, legacy, () => 1_800_000_000_000)
+  repo = new LocalSaveRepository(file, legacy, () => 1_800_000_000_000)
 })
 afterEach(async () => rm(dir, { recursive: true, force: true }))
 
@@ -74,7 +74,7 @@ describe('the local repository', () => {
   })
 
   it('refuses to purge when the old dev path is the generation-2 file', async () => {
-    const same = new LocalSaveG2Repository(file, join(dir, '.data', '..', '.data', 'save-g2.json'))
+    const same = new LocalSaveRepository(file, join(dir, '.data', '..', '.data', 'save-g2.json'))
     await expect(same.purge('u1')).rejects.toThrow('cannot be the generation-2 file')
     expect(LEGACY_LOCAL_SAVE_FILE).toBe('.data/save.json')
   })

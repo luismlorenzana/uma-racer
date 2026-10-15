@@ -11,7 +11,7 @@ import {
 import { AuthGuard, CurrentUid } from '../auth/auth.guard'
 import { ContentUnavailable, OperationContent } from './operation-content'
 import { NO_SAVE, parseCursor } from './resolve'
-import { SAVE_G2_REPOSITORY, type SaveG2Repository } from './save-g2.repository'
+import { SAVE_REPOSITORY, type SaveRepository } from './save.repository'
 
 /** 426: an old installed app, or anything not on generation 2 (07 §4). */
 export const upgradeRequired = (): HttpException =>
@@ -19,9 +19,9 @@ export const upgradeRequired = (): HttpException =>
 
 @UseGuards(AuthGuard)
 @Controller()
-export class SaveG2Controller {
+export class SaveController {
   constructor(
-    @Inject(SAVE_G2_REPOSITORY) private readonly saves: SaveG2Repository,
+    @Inject(SAVE_REPOSITORY) private readonly saves: SaveRepository,
     @Inject(OperationContent) private readonly content: Pick<OperationContent, 'env'>,
   ) {}
 
@@ -42,7 +42,7 @@ export class SaveG2Controller {
     if (!isCurrentStamp(body)) throw upgradeRequired()
     const request = parseSyncRequestV2(body)
     if (typeof request === 'string') throw new BadRequestException(request)
-    let result: Awaited<ReturnType<SaveG2Repository['sync']>>
+    let result: Awaited<ReturnType<SaveRepository['sync']>>
     try {
       result = await this.saves.sync(uid, request, () => this.content.env())
     } catch (error) {

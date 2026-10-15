@@ -15,11 +15,11 @@ import { createTrainerBadgeState } from '@racer/domain'
 import { SAVE_LIMITS, type OperationEnv } from '@racer/domain/save-g2'
 import { AuthGuard } from '../auth/auth.guard'
 import { ContentService } from '../content/content.service'
-import { FirestoreSaveG2Repository } from './firestore-save-g2.repository'
+import { FirestoreSaveRepository } from './firestore-save.repository'
 import { ContentUnavailable, MANIFEST_TTL_MS, OperationContent } from './operation-content'
-import { SaveG2Controller } from './save-g2.controller'
-import { SaveG2Module } from './save-g2.module'
-import { FakeFirestore, saveG2Fixtures, writeSyntheticContent, type SaveG2Fixtures } from './save-g2.test-support'
+import { SaveController } from './save.controller'
+import { SaveModule } from './save.module'
+import { FakeFirestore, saveG2Fixtures, writeSyntheticContent, type SaveG2Fixtures } from './save.test-support'
 
 let F: SaveG2Fixtures
 beforeAll(async () => { F = await saveG2Fixtures() })
@@ -39,22 +39,22 @@ async function thrown(run: () => unknown): Promise<{ status: number; body: unkno
 }
 
 let fake: FakeFirestore
-let controller: SaveG2Controller
+let controller: SaveController
 let envLoads: number
 let env: () => Promise<OperationEnv>
 beforeEach(() => {
   fake = new FakeFirestore()
   envLoads = 0
   env = async () => F.ENV
-  controller = new SaveG2Controller(new FirestoreSaveG2Repository(fake.asFirestore), { env: () => { envLoads += 1; return env() } })
+  controller = new SaveController(new FirestoreSaveRepository(fake.asFirestore), { env: () => { envLoads += 1; return env() } })
 })
 
 describe('the routes', () => {
   it('all sit behind AuthGuard', () => {
-    expect(Reflect.getMetadata(GUARDS_METADATA, SaveG2Controller)).toEqual([AuthGuard])
-    const routes = Object.getOwnPropertyNames(SaveG2Controller.prototype)
-      .filter((name) => Reflect.getMetadata(METHOD_METADATA, (SaveG2Controller.prototype as unknown as Record<string, object>)[name]!) !== undefined)
-      .map((name) => Reflect.getMetadata(PATH_METADATA, (SaveG2Controller.prototype as unknown as Record<string, object>)[name]!) as string)
+    expect(Reflect.getMetadata(GUARDS_METADATA, SaveController)).toEqual([AuthGuard])
+    const routes = Object.getOwnPropertyNames(SaveController.prototype)
+      .filter((name) => Reflect.getMetadata(METHOD_METADATA, (SaveController.prototype as unknown as Record<string, object>)[name]!) !== undefined)
+      .map((name) => Reflect.getMetadata(PATH_METADATA, (SaveController.prototype as unknown as Record<string, object>)[name]!) as string)
     expect(routes.sort()).toEqual(['legacy/purge', 'save', 'sync'])
   })
 
@@ -121,7 +121,7 @@ describe('the routes', () => {
       await writeSyntheticContent(dir, F.PACKS, 'a1a1a1a1a1a1', ['skills'])
       let now = 1_800_000_000_000
       const content = new OperationContent(new ContentService(new ConfigService({ CONTENT_SOURCE: 'local', CONTENT_DIR: dir })), () => now)
-      const routes = new SaveG2Controller(new FirestoreSaveG2Repository(fake.asFirestore), content)
+      const routes = new SaveController(new FirestoreSaveRepository(fake.asFirestore), content)
       await routes.sync('u1', { ...STAMP, changes: [{ type: 'create', createdAt: 1 }] })
       const before = new Map(fake.docs)
       const changes = [op(1, 'unlock-uma', { outfitId: F.uma(1) }, 2)]
@@ -150,8 +150,8 @@ describe('the routes', () => {
 // --- Over HTTP ------------------------------------------------------------------------------------------------------
 
 /** The module on its own app, as main.ts mounts AppModule: the `api` prefix and the 5 MB JSON body. */
-@Module({ imports: [ConfigModule.forRoot({ isGlobal: true, ignoreEnvFile: true }), SaveG2Module] })
-class SaveG2TestApp {}
+@Module({ imports: [ConfigModule.forRoot({ isGlobal: true, ignoreEnvFile: true }), SaveModule] })
+class SaveTestApp {}
 
 const ENV_KEYS = ['AUTH_MODE', 'ALLOWED_EMAIL', 'PERSISTENCE', 'LOCAL_SAVE_FILE', 'CONTENT_SOURCE', 'CONTENT_DIR', 'DEV_OPERATIONS'] as const
 
@@ -184,7 +184,7 @@ describe('over HTTP', () => {
   async function start(auth: 'on' | 'disabled'): Promise<string> {
     if (auth === 'disabled') process.env.AUTH_MODE = 'disabled'
     else delete process.env.AUTH_MODE
-    const app = await NestFactory.create<NestExpressApplication>(SaveG2TestApp, { logger: false })
+    const app = await NestFactory.create<NestExpressApplication>(SaveTestApp, { logger: false })
     app.setGlobalPrefix('api')
     app.useBodyParser('json', { limit: '5mb' })
     await app.listen(0, '127.0.0.1')

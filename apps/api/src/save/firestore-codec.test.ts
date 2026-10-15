@@ -1,4 +1,4 @@
-// The Firestore codec (D151), kept from the generation-1 save module when T143 deleted it: a row whose data holds an
+// The Firestore codec (D151), kept from generation 1's save module when T143 deleted it: a row whose data holds an
 // array inside an array is stored as JSON text, every other row as it is.
 import { describe, expect, it } from 'vitest'
 import { fromStored, hasNestedArray, toStored } from './firestore-codec'

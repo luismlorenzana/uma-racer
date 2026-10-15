@@ -6,7 +6,7 @@ import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 import { rowKey, SAVE_GENERATION, type PurgeResponse, type SaveSnapshotV2, type SyncRequestV2, type SyncResponseV2 } from '@racer/domain/save-g2'
 import { needsOperationEnv, NO_SAVE, resolveSync, selectReadSet, snapshotPage, syncReadSet, type NoSave, type SaveRow } from './resolve'
-import { parsePurgeMarker, purgeResponse, type OperationEnvLoader, type PurgeMarker, type SaveG2Repository } from './save-g2.repository'
+import { parsePurgeMarker, purgeResponse, type OperationEnvLoader, type PurgeMarker, type SaveRepository } from './save.repository'
 
 /** The old dev store (07 §2), relative to the API's working directory. */
 export const LEGACY_LOCAL_SAVE_FILE = '.data/save.json'
@@ -36,7 +36,7 @@ async function writeJson(file: string, data: unknown): Promise<void> {
   await rename(tmp, file)
 }
 
-export class LocalSaveG2Repository implements SaveG2Repository {
+export class LocalSaveRepository implements SaveRepository {
   private queue: Promise<unknown> = Promise.resolve()
 
   /** `legacyFile` is `LEGACY_LOCAL_SAVE_FILE` under the working directory; tests pass a temporary one. */

@@ -10,11 +10,11 @@ import { craftedItem, rawItem } from '@racer/domain/rework/items'
 import {
   answersRequest, parseSaveSnapshotV2, parseSyncRequestV2, parseSyncResponseV2, type OperationEnv, type SaveSnapshotV2, type SyncResponseV2,
 } from '@racer/domain/save-g2'
-import { FirestoreSaveG2Repository } from './firestore-save-g2.repository'
-import { LocalSaveG2Repository } from './local-save-g2.repository'
+import { FirestoreSaveRepository } from './firestore-save.repository'
+import { LocalSaveRepository } from './local-save.repository'
 import { NO_SAVE } from './resolve'
-import type { SaveG2Repository } from './save-g2.repository'
-import { FakeFirestore, saveG2Fixtures, type SaveG2Fixtures } from './save-g2.test-support'
+import type { SaveRepository } from './save.repository'
+import { FakeFirestore, saveG2Fixtures, type SaveG2Fixtures } from './save.test-support'
 
 let F: SaveG2Fixtures
 beforeAll(async () => { F = await saveG2Fixtures() })
@@ -31,23 +31,23 @@ function ticking(start = 1_800_000_000_000): () => number {
 }
 
 interface Backend {
-  readonly repo: SaveG2Repository
+  readonly repo: SaveRepository
   readonly cleanup: () => Promise<void>
 }
 
 async function backend(kind: 'local' | 'firestore', clock = ticking()): Promise<Backend & { fake?: FakeFirestore }> {
   if (kind === 'firestore') {
     const fake = new FakeFirestore()
-    return { repo: new FirestoreSaveG2Repository(fake.asFirestore, clock), fake, cleanup: async () => undefined }
+    return { repo: new FirestoreSaveRepository(fake.asFirestore, clock), fake, cleanup: async () => undefined }
   }
   const dir = await mkdtemp(join(tmpdir(), 'racer-g2-'))
-  return { repo: new LocalSaveG2Repository(join(dir, 'save-g2.json'), join(dir, 'save.json'), clock), cleanup: () => rm(dir, { recursive: true, force: true }) }
+  return { repo: new LocalSaveRepository(join(dir, 'save-g2.json'), join(dir, 'save.json'), clock), cleanup: () => rm(dir, { recursive: true, force: true }) }
 }
 
 const op = (n: number, name: string, input: unknown, at: number) => ({ type: 'operation', operation: { id: F.opId(n), name, input, at } })
 
 /** One sync through T134's parsers on both sides of the wire. */
-async function sync(repo: SaveG2Repository, changes: readonly unknown[], env: OperationEnv = F.DEV): Promise<SyncResponseV2 | typeof NO_SAVE> {
+async function sync(repo: SaveRepository, changes: readonly unknown[], env: OperationEnv = F.DEV): Promise<SyncResponseV2 | typeof NO_SAVE> {
   const request = parseSyncRequestV2(JSON.parse(JSON.stringify({ ...STAMP, changes })))
   if (typeof request === 'string') throw new Error(request)
   let loads = 0
@@ -62,7 +62,7 @@ async function sync(repo: SaveG2Repository, changes: readonly unknown[], env: Op
 }
 
 /** Every page of a pull from `since`. */
-async function pull(repo: SaveG2Repository, since = 0): Promise<SaveSnapshotV2[]> {
+async function pull(repo: SaveRepository, since = 0): Promise<SaveSnapshotV2[]> {
   const pages: SaveSnapshotV2[] = []
   let cursor: string | null = null
   do {
@@ -76,7 +76,7 @@ async function pull(repo: SaveG2Repository, since = 0): Promise<SaveSnapshotV2[]
 }
 
 /** A synthetic day: what each step answered. */
-async function scriptedDay(repo: SaveG2Repository): Promise<unknown[]> {
+async function scriptedDay(repo: SaveRepository): Promise<unknown[]> {
   const answers: unknown[] = []
   const step = async (changes: readonly unknown[], env?: OperationEnv) => { answers.push(await sync(repo, changes, env)) }
   await step([{ type: 'upsert', kind: 'badges', id: 'trainer', baseVersion: 0, data: createTrainerBadgeState(1) }])

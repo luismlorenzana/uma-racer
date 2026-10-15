@@ -1,5 +1,5 @@
 // Production persistence for generation 2 (docs/rework/13-removals-and-plan-changes.md §6; docs/rearchitecture/07-data-
-// reset.md §3; T135): `saves/{uid}/{kind}/{id}`, one small document per row, stored through today's codec (a work row's
+// reset.md §3; T135): `saves/{uid}/{kind}/{id}`, one small document per row, stored through the codec (a work row's
 // arrays of arrays become `dataJson`, D151). A sync is one transaction, every read before the first write. The purge
 // deletes `players/{uid}` and writes `saves/{uid}/meta/purge`; `meta` is no save kind, so no pull returns it.
 import * as admin from 'firebase-admin'
@@ -8,7 +8,7 @@ import { KIND_ORDER, rowKey, RULE_LEDGER_REASONS, SAVE_GENERATION, SAVE_LIMITS, 
 import { fromStored, toStored } from './firestore-codec'
 import { needsOperationEnv, NO_SAVE, parseCursor, pullFloor, resolveSync, selectReadSet, snapshotPage, syncReadSet, type NoSave,
   type SaveRow } from './resolve'
-import { parsePurgeMarker, purgeResponse, type OperationEnvLoader, type PurgeMarker, type SaveG2Repository } from './save-g2.repository'
+import { parsePurgeMarker, purgeResponse, type OperationEnvLoader, type PurgeMarker, type SaveRepository } from './save.repository'
 
 type Firestore = admin.firestore.Firestore
 type Data = Record<string, unknown>
@@ -19,7 +19,7 @@ const alreadyExists = (error: unknown): boolean => {
   return code === 6 || code === 'already-exists' || code === 'ALREADY_EXISTS'
 }
 
-export class FirestoreSaveG2Repository implements SaveG2Repository {
+export class FirestoreSaveRepository implements SaveRepository {
   constructor(private readonly injectedDb?: Firestore, private readonly clock: () => number = Date.now) {}
 
   private get db(): Firestore {

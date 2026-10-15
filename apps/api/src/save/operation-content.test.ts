@@ -10,7 +10,7 @@ import { parseSyncRequestV2, type OperationEnv, type SyncRequestV2 } from '@race
 import { ContentService } from '../content/content.service'
 import { ContentUnavailable, MANIFEST_TTL_MS, OperationContent } from './operation-content'
 import { NO_SAVE, resolveSync } from './resolve'
-import { saveG2Fixtures, writeSyntheticContent, type SaveG2Fixtures } from './save-g2.test-support'
+import { saveG2Fixtures, writeSyntheticContent, type SaveG2Fixtures } from './save.test-support'
 
 let F: SaveG2Fixtures
 beforeAll(async () => { F = await saveG2Fixtures() })
