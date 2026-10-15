@@ -203,8 +203,9 @@ utilisation stretches a tier from about 20 to about 25 weeks ([12](12-economy-an
 ### A free evening
 
 Three check-ins as usual, plus **about 40 races** in an evening of an hour or so with skip. Those 40 races pay about
-6,000 Prize Money (draft), about 200 Speed Tickets, which take about **100 Uma-hours** off running work. That's
-**~22%** of the roster's 450-hour day.
+5,000 Prize Money after the Daily Purse ([09](09-racing-rewards-and-exchange.md) §3, D348), about 165 Speed Tickets,
+which take about **80 Uma-hours** off running work. The loop simulation measures heavy evenings at **~22%** of the
+roster's work time ([12](12-economy-and-pacing.md) §8).
 
 Where to spend them: the planner marks the running jobs whose finish unblocks the most, usually Kitchen jobs and
 the last session of a layer ([02](02-check-ins-and-notifications.md) §4). **Speed up all** spreads them in one tap.
@@ -214,9 +215,9 @@ the last session of a layer ([02](02-check-ins-and-notifications.md) §4). **Spe
 | Day | Check-ins | Races | Prize Money (draft) | Speed Tickets' worth | Roster time saved |
 |---|---|---|---|---|---|
 | Mon–Fri, each | 3 | ~8 | ~1,200 | ~40 | ~20 h (4%) |
-| Saturday (free evening) | 3 | ~40 | ~6,000 | ~200 | ~100 h (22%) |
+| Saturday (free evening) | 3 | ~40 | ~5,000 | ~165 | ~80 h (18%) |
 | Sunday | 3 | ~12 | ~1,800 | ~60 | ~30 h (7%) |
-| **Week** | **21** | **~92 (about 13 a day)** | **~13,800** | **~460** | **~230 h (~7% of 3,150)** |
+| **Week** | **21** | **~92 (about 13 a day)** | **~12,800** | **~425** | **~210 h (~7% of 3,150)** |
 
 - **The target holds without Speed Tickets** ([12](12-economy-and-pacing.md) §1). Tickets bought from target racing
   bring a tier from ~21 weeks to ~19.6; heavy racing every day would bring it to ~17.2.

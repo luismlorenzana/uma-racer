@@ -1,6 +1,6 @@
 // The Daily Purse (docs/rework/09-racing-rewards-and-exchange.md §3.3, §3.4, §8, §9): every race's gross prize fills
-// the account's purse for the day, in order. The first 6,000 pay in full, the next 6,000 a quarter, the rest a
-// twentieth; a race that crosses an edge is split. The day is the device's local date at race start, passed in by the
+// the account's purse for the day, in order. The first 4,500 pay in full (D348: `sim:loop` moved the edge from 6,000),
+// the rest to 12,000 a quarter, beyond that a twentieth; a race that crosses an edge is split. The day is the device's local date at race start, passed in by the
 // caller (a pure rule can't know the time zone), and the purse never goes back to an earlier day. Prize Money only:
 // Racing EXP, featured bonuses and sales never touch it.
 import type { DailyPurse } from '../types'
@@ -21,9 +21,9 @@ export interface PurseBandRule {
 /** Twentieths, so every band's share is a whole number: 20, 5 and 1. */
 export const PURSE_SHARE_DENOMINATOR = 20
 
-/** 09 §3.3 (draft): full to 6,000 at 20/20, tired to 12,000 at 5/20, spent beyond at 1/20. */
+/** 09 §3.3: full to 4,500 at 20/20 (D348, from 6,000), tired to 12,000 at 5/20, spent beyond at 1/20. */
 export const PURSE_BANDS: readonly PurseBandRule[] = Object.freeze([
-  Object.freeze({ band: 'full', upTo: 6_000, paidTwentieths: 20 } as const),
+  Object.freeze({ band: 'full', upTo: 4_500, paidTwentieths: 20 } as const),
   Object.freeze({ band: 'tired', upTo: 12_000, paidTwentieths: 5 } as const),
   Object.freeze({ band: 'spent', upTo: null, paidTwentieths: 1 } as const),
 ])
@@ -76,7 +76,7 @@ export const purseFor = (purse: DailyPurse, localDay: LocalDay): DailyPurse =>
 
 // --- Paying ---------------------------------------------------------------------------------------------------------
 
-/** The band a day's gross sits in; an edge belongs to the band below (6,000 is full). */
+/** The band a day's gross sits in; an edge belongs to the band below (4,500 is full). */
 export function bandAt(gross: number): PurseBand {
   const rule = PURSE_BANDS.find((band) => band.upTo === null || gross <= band.upTo)
   return rule!.band

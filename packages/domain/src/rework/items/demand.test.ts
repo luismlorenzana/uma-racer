@@ -1,6 +1,7 @@
 // Checks the recipes against 08 §7 (docs/rework/08-item-catalogue-and-recipes.md): the representative deck's dish
 // table, expanded through the recipes, gives §7's crafted table cell for cell. §7's numbers belong to the layers and the
-// deck (T132 rewrites them); this test only checks the expansion, with both tables copied as written.
+// deck: T132 rewrote them from `tierDemand` (D348, bonds at their era's odd grade) and renders them live. This test only
+// checks the expansion, with both tables copied as T132 wrote them.
 import { describe, expect, it } from 'vitest'
 import { DUOS, FEASTS, planetDish, type ItemGrade } from './catalogue'
 import { craftedDemand } from './demand'
@@ -19,10 +20,10 @@ const DISHES = [
   '| Mushrooms | 2 | 2 | 4 | 2 | 2 | 2 | 3 | 3 | 2 | 2 | **24** |',
   '| Sweets | 2 | 0 | 2 | 0 | 1 | 0 | 2 | 0 | 1 | 0 | **8** |',
   '| Fruits | 2 | 0 | 2 | 0 | 1 | 0 | 2 | 0 | 1 | 0 | **8** |',
-  '| Fish | 2 | 0 | 1 | 1 | 1 | 0 | 1 | 1 | 1 | 0 | **8** |',
-  '| Nuts & Seeds | 1 | 1 | 1 | 0 | 2 | 0 | 1 | 0 | 2 | 0 | **8** |',
-  '| Herbs & Spices | 1 | 1 | 1 | 0 | 1 | 1 | 1 | 0 | 1 | 1 | **8** |',
-  '| Grains | 0 | 1 | 0 | 0 | 0 | 1 | 0 | 0 | 0 | 1 | **3** |',
+  '| Fish | 2 | 0 | 2 | 0 | 1 | 0 | 2 | 0 | 1 | 0 | **8** |',
+  '| Nuts & Seeds | 2 | 0 | 1 | 0 | 2 | 0 | 1 | 0 | 2 | 0 | **8** |',
+  '| Herbs & Spices | 2 | 0 | 1 | 0 | 2 | 0 | 1 | 0 | 2 | 0 | **8** |',
+  '| Grains | 1 | 0 | 0 | 0 | 1 | 0 | 0 | 0 | 1 | 0 | **3** |',
   '| Duos | | | 4 | | 4 | | | | | | **8** |',
   '| Feasts | | | | 1 | | 1 | | 1 | | 1 | **4** |',
   '| **All** | | | | | | | | | | | **107** |',
@@ -31,12 +32,12 @@ const DISHES = [
 /** 08 §7 "Crafted items, per Uma per tier": family, grades 1–10, total, own dishes/Duos/Feasts, sides. */
 const CRAFTED = [
   '| Vegetables | 24 | 24 | 8 | 8 | 8 | 8 | 8 | 8 | 8 | 8 | **112** | 112 | 0 |',
-  '| Herbs & Spices | 10 | 5 | 8 | 1 | 9 | 5 | 5 | 1 | 4 | 5 | **53** | 44 | 9 |',
-  '| Sweets | 13 | 0 | 12 | 1 | 9 | 1 | 10 | 1 | 4 | 1 | **52** | 44 | 8 |',
-  '| Fruits | 12 | 0 | 12 | 2 | 8 | 2 | 9 | 1 | 4 | 1 | **51** | 40 | 11 |',
-  '| Fish | 10 | 0 | 8 | 6 | 10 | 1 | 5 | 5 | 4 | 1 | **50** | 44 | 6 |',
-  '| Nuts & Seeds | 9 | 4 | 8 | 1 | 11 | 1 | 5 | 2 | 8 | 1 | **50** | 40 | 10 |',
-  '| Grains | 22 | 9 | 10 | 5 | 5 | 10 | 4 | 6 | 0 | 4 | **75** | 12 | 63 |',
+  '| Herbs & Spices | 12 | 0 | 8 | 1 | 13 | 1 | 5 | 1 | 8 | 1 | **50** | 44 | 6 |',
+  '| Sweets | 12 | 0 | 12 | 1 | 9 | 1 | 11 | 1 | 4 | 1 | **52** | 44 | 8 |',
+  '| Fruits | 15 | 0 | 12 | 1 | 8 | 1 | 10 | 1 | 4 | 1 | **53** | 40 | 13 |',
+  '| Fish | 11 | 0 | 12 | 1 | 10 | 1 | 9 | 1 | 4 | 1 | **50** | 44 | 6 |',
+  '| Nuts & Seeds | 13 | 0 | 9 | 1 | 12 | 1 | 5 | 1 | 8 | 1 | **51** | 40 | 11 |',
+  '| Grains | 26 | 5 | 11 | 5 | 9 | 6 | 4 | 5 | 4 | 0 | **75** | 12 | 63 |',
   '| Mushrooms | 8 | 8 | 16 | 8 | 8 | 8 | 12 | 12 | 8 | 8 | **96** | 96 | 0 |',
   '| **All** | | | | | | | | | | | **539** | 432 | 107 |',
 ]

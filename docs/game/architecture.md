@@ -42,11 +42,14 @@ game, and the rework's rules beside it (M033) until phase 3 replaces today's.
 | `pnpm sim:careers` | Every career of the private pack, and each stage's win rate at TL10 | A career can't be generated, or a bonded set wins under 25% |
 | `pnpm sim:rework-builds` | The stamina ladder and the G1 grid on full-layer rework builds at every T = 1–14 against T125's fields, and each buff's typical value | A hard ladder check fails, other than the three accepted at a tier's first scenario (`LADDER_ACCEPTED_MISSES`, D350) |
 | `pnpm sim:rework-careers` | Every career of the private pack frozen by the rework's rule, and each stage's best case on full-layer builds at every T, against [rework/03](../rework/03-uma-progression.md) §12's targets | A career can't be frozen, or a cell falls under 25% |
+| `pnpm sim:loop` | The rework's whole economy from a fresh account over three tiers, and [rework/12](../rework/12-economy-and-pacing.md) §12's pacing checks; `--variant=`, `--matrix`, `--json` | A check fails, other than the two known misses (D348) |
 
 Flags: races per cell as a bare number, `--tiers=` (the game's scenarios T), `--ladder-only` and `--rates-only` for the
 builds, `--coverage-only` and `--content=<dir>` for the careers. The rework's two also take `--write-report`, which
 rewrites their committed report in `packages/domain/src/rework/builds/`; the rework pages' live blocks render it, so CI
-never runs the engine. Re-run both with it after changing a rule a build or a field reads.
+never runs the engine. Re-run both with it after changing a rule a build or a field reads. `pnpm sim:loop -- --refresh-wins`
+does the same for the loop's win table (`packages/domain/src/rework/sim/win-table.ts`); the loop itself runs on the
+domain's source, and its test runs the checks in CI.
 
 ## The web app
 

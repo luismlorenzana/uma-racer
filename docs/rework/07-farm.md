@@ -1,7 +1,8 @@
 # 07 · Farm
 
-> **Status: approved design, 2026-10-14; first written 2026-10-13 (D326, D327, D328, D330, D331, D334).** Nothing here is built. Every
-> number is a **draft**: the loop simulation ([12](12-economy-and-pacing.md) §12) tunes it and its checks pin it.
+> **Status: approved design, 2026-10-14; first written 2026-10-13 (D326, D327, D328, D330, D331, D334).** Built as
+> rules in phase 2 (D343) and measured by the loop simulation ([12](12-economy-and-pacing.md) §12, D348), whose tables
+> here are live. Nothing live uses it yet: phase 3 ships it.
 
 The Farm is where the roster spends most of its time. Umas gather ingredients at eight family sites, the **Pantry**
 crafts them and the **Kitchen** cooks them into dishes, all on timers that run while the app is closed. A dish is the
@@ -178,24 +179,30 @@ Each grade opens at its Farm Level, after this much Farm EXP:
 <!-- /live -->
 
 An average Uma works 75% of the day and puts 80% of that into the Farm: 864 minutes a day
-([12](12-economy-and-pacing.md) §6). The day she reaches each grade (the loop simulation renders these columns, T132):
+([12](12-economy-and-pacing.md) §6). The day she reaches each grade at that rate, and the day the loop simulation's
+founding cohort measured in tier 1 (T132):
 
-| Grade | At C (×1.0) | Mixed, well assigned (×1.3) | Always suited (×1.6) |
-|---|---|---|---|
-| 1 | day 0 | day 0 | day 0 |
-| 2 | 3 | 2 | 2 |
-| 3 | 6 | 4 | 4 |
-| 4 | 9 | 7 | 6 |
-| 5 | 12 | 9 | 8 |
-| 6 | 16 | 12 | 10 |
-| 7 | 19 | 15 | 12 |
-| 8 | 23 | 18 | 14 |
-| 9 | 27 | 21 | 17 |
-| 10 | 31 | 24 | 19 |
-| (Lv 50) | 34 | 26 | 21 |
+<!-- live:loop-farm-levels -->
+| Grade | Farm Lv | EXP | Day at C (×1.0) | Mixed (×1.3) | Always suited (×1.6) | Founding cohort, measured (median day) |
+|---|---|---|---|---|---|---|
+| 1 | 1 | 0 | 0 | 0 | 0 | 0.0 |
+| 2 | 6 | 2,450 | 3 | 2 | 2 | 2.0 |
+| 3 | 11 | 5,025 | 6 | 4 | 4 | 4.0 |
+| 4 | 16 | 7,725 | 9 | 7 | 6 | 6.0 |
+| 5 | 21 | 10,550 | 12 | 9 | 8 | 8.2 |
+| 6 | 26 | 13,500 | 16 | 12 | 10 | 10.6 |
+| 7 | 31 | 16,575 | 19 | 15 | 12 | 13.0 |
+| 8 | 36 | 19,775 | 23 | 18 | 14 | 15.6 |
+| 9 | 41 | 23,100 | 27 | 21 | 17 | 19.2 |
+| 10 | 46 | 26,550 | 31 | 24 | 19 | 22.2 |
+| (Lv 50) | 50 | 29,400 | 34 | 26 | 21 | |
 
-**Every grade is open within about a month of a tier**, while the tier's scenarios run about 20 weeks. So Farm Level
-is a fast climb at the start of each tier, and for an Uma who joins mid-tier, and never what holds a scenario back.
+The day columns are 864 Farm minutes a day. Working without a break, from Farm Lv 1 to 21 at a Lv 1
+building, an Uma gains 2.71 levels a day at C, 4.32 at A and 4.83 at S (the probe).
+<!-- /live -->
+
+**Every grade is open within about a month of a tier** (about three weeks for the cohort), while the tier runs about
+20 weeks. So Farm Level is a fast climb at the start of each tier, and for an Uma who joins mid-tier, and never what holds a scenario back.
 Which grade each unlock asks for is a rule of the layers ([05](05-training-hub.md) §3), not of Farm Level.
 
 **Umas who join late.** An Uma unlocked mid-tier starts at Farm Lv 1 in scenario 1, and her own first unlocks need the
@@ -233,45 +240,40 @@ buildings: cooking is 30% of all Farm work, and Vegetables feed every constellat
 
 ### Slot demand at the target
 
-> **First draft, before D338.** These hours were computed with 132 unlocks at *k* = 1. D338 sends a fifth fewer
-> dishes to the five stat sites and makes every job a fifth longer: the stat sites stay about as busy, while the
-> Vegetable Garden, Mushroom Cave, Pantry and Kitchen get about a fifth busier, so the Vegetable Garden's Lv 2 joins
-> the first upgrades. `pnpm sim:loop` recomputes this section in phase 2 (T132).
+The loop simulation's baseline (T132, D348): a roster growing from 20 to 25, three check-ins, the planner's suggestions
+and the spending policy's upgrades. A slot is held from a job's start until Collect, so the hours count the wait for
+the next check-in too. "Slots needed" is hours a day ÷ 18 (24 hours × 75%), and each use is the slot time held over a
+tier-1 scenario's window (the cohort's median entry to its median finish):
 
-25 Umas, 75% utilisation, base speed, using [08](08-item-catalogue-and-recipes.md)'s recipes and representative deck.
-"Slots needed" is hours a day ÷ 18. The peak is the busiest scenario of the tier for that building.
-
-| Building | Hours a day, tier average | Slots needed, average | Peak (scenario) | Slots needed at peak | Use at peak, Lv 1 / Lv 2 |
-|---|---|---|---|---|---|
-| Kitchen | 110 | 6.1 | 116 (1) | 6.4 | 108% / **81%** |
-| Pantry | 53 | 2.9 | 54 (all) | 3.0 | 100% / **75%** |
-| Vegetable Garden | 35 | 2.0 | 66 (1) | 3.7 | 92% / **73%** |
-| Fields | 25 | 1.4 | 36 (5) | 2.0 | 100% / 67% |
-| Sugar Grove | 24 | 1.3 | 31 (2) | 1.7 | 87% / 58% |
-| Orchard | 24 | 1.3 | 31 (4) | 1.7 | 86% / 57% |
-| Fishery | 24 | 1.3 | 30 (2) | 1.7 | 83% / 56% |
-| Mushroom Cave | 32 | 1.8 | 40 (2, 4) | 2.2 | 111% / **74%** |
-| Herb Garden | 25 | 1.4 | 29 (3) | 1.6 | 79% / 53% |
-| Nut Grove | 24 | 1.3 | 28 (3) | 1.6 | 78% / 52% |
-| **Farm** | **374** | **20.8** | | | |
-
-Re-estimated for D336's 24 Inspiration unlocks a tier (was 18): six more Mushrooms dishes per Uma per tier, each
-with a Grains side. The sim recomputes the whole table.
+<!-- live:loop-farm-slots -->
+| Building | Slots Lv 1 / 2 / 3 | Hours a day held, tier 1 | Slots needed (÷ 18) | Use in 1·1 | Use in 1·2 | Use in 1·3 | Use in 1·4 | Use in 1·5 | Peak, all tiers |
+|---|---|---|---|---|---|---|---|---|---|
+| Sugar Grove | 2 / 3 / 3 | 20.6 | 1.1 | 31% | 33% | 29% | 37% | 24% | 42% (3·2) |
+| Orchard | 2 / 3 / 3 | 20.5 | 1.1 | 32% | 33% | 27% | 39% | 25% | 40% (2·4) |
+| Fishery | 2 / 3 / 3 | 20.3 | 1.1 | 33% | 33% | 31% | 33% | 25% | 38% (3·2) |
+| Nut Grove | 2 / 3 / 3 | 20.3 | 1.1 | 22% | 35% | 41% | 22% | 40% | 41% (1·3) |
+| Herb Garden | 2 / 3 / 3 | 20.2 | 1.1 | 29% | 28% | 36% | 24% | 35% | 37% (2·3) |
+| Fields | 2 / 3 / 3 | 28.0 | 1.6 | 50% | 29% | 60% | 29% | 48% | 60% (1·3) |
+| Vegetable Garden | 4 / 5 / 5 | 44.2 | 2.5 | 58% | 30% | 28% | 34% | 34% | 65% (3·1) |
+| Mushroom Cave | 2 / 3 / 3 | 39.0 | 2.2 | 51% | 55% | 55% | 77% | 63% | 85% (2·4) |
+| Pantry | 3 / 4 / 4 | 62.9 | 3.5 | 58% | 64% | 83% | 84% | 66% | 91% (3·3) |
+| Kitchen | 6 / 8 / 8 | 133.0 | 7.4 | 74% | 75% | 64% | 80% | 80% | 83% (2·5) |
+<!-- /live -->
 
 How to read it:
-- **About 20 Umas farm at once** (25 × 80%), and 27 slots hold them from the first day.
-- **The Kitchen is the game's bottleneck building.** At 2 slots it would cap the whole game at a third of the target.
-  Six slots carry a 20-Uma roster (81% at peak); the 25-Uma roster needs Kitchen Lv 2.
-- **The Vegetable Garden is the hot site.** Over a tier it carries about 21% of all gathering against 9–10% for each
-  stat site since D338 ([08](08-item-catalogue-and-recipes.md) §7); in scenario 1, where 12 of the 27 unlocks are
-  constellation nodes, it carries about 36%. Four slots carry
-  a 20-Uma start (73%); Lv 2 carries 25.
-- **Fields is no longer cold.** 08's side rotation sends 63 of a tier's 107 sides to Grains, so it is busier than a
-  stat site since D338.
-- **Lv 1 fits a 20-Uma roster; Lv 2 everywhere fits 25** with every building at or under about 81% at peak, under
-  the sim's 90% check. Growing the
-  roster and upgrading the Kitchen and Pantry go together in tier 1's first weeks.
-- Decks change site demand a little: a Speed-heavy deck adds about 3 Sweets dishes a tier. Lv 2's headroom covers it.
+- **About 17 Farm slots are held at any moment over tier 1, 13 of them working**, and the 27 slots of Lv 1 hold the
+  20-Uma start.
+- **The Kitchen is the busiest building**, about 130 slot-hours a day: cooking is the longest step, and a 4.8–5.4-hour
+  dish fills only half of a 9.5-hour gap between check-ins. Six slots carry the 20-Uma start; the eight of Lv 2 carry
+  25 at about 80%.
+- **The Pantry is the fullest.** The planner fills its slots at nearly every check-in, and the owner queues more crafts
+  behind one that ends early, so its four slots run at the 90% ceiling (a known miss, D348): the recommendation is a
+  fifth slot at Lv 2 ([open questions](../open-questions.md)).
+- **The Vegetable Garden is the hot site in scenario 1**, where 12 of the 27 unlocks are constellation nodes, and the
+  **Mushroom Cave** in the scenarios with six Inspiration unlocks. Fields carries 63 of a tier's 107 sides.
+- **The stat sites run under half full** since D338 halved the Gym's singles ([08](08-item-catalogue-and-recipes.md)
+  §7). Their third slot at Lv 2 is headroom for a Speed-heavy deck.
+- Upgrades buy headroom above these averages, so the owner can catch up after a missed day.
 
 ## 7. Building upgrades
 
@@ -288,21 +290,22 @@ family, so they take one or two of each.
 | **All ten** | **14,100 PM** | **37,200 PM** |
 <!-- /live -->
 
-- **Lv 2 needs only grade-1 items and Prize Money**, so it comes with tier 1's first weeks of racing, and the owner
-  keeps up as the roster grows from 20 to 25. Lv 1 carries the 20-Uma start.
-- **Lv 3 opens once someone reaches Farm Lv 11** (grade 3, about day 4–6 of a tier). It pays back in six to ten days of the time
+- **Lv 2 needs only grade-1 items and Prize Money**, so it comes with tier 1's first careers: the sim's account buys
+  every Lv 2 between days 31 and 34, as the roster starts growing past 20. Lv 1 carries the 20-Uma start.
+- **Lv 3 opens once someone reaches Farm Lv 11** (grade 3, about day 4 of a tier); the sim's account has every Lv 3 by
+  about day 65, busiest building first. It pays back in six to ten days of the time
   it saves: ×1.25 saves a fifth of a building's work, which is ~21 Uma-hours a day at the Kitchen (~1,260 PM a day),
   ~10 at the Pantry, ~7 at the Vegetable Garden and ~5 at a stat site.
-- **All twenty upgrades cost 51,300 PM**, about four weeks of the target's racing (~1,900 PM a day, [12](12-economy-and-pacing.md) §3),
-  alongside the ~25,000 PM of Uma Tickets in the same weeks. Heavy racing makes it two.
+- **All twenty upgrades cost 51,300 PM**, about four weeks of the target's racing (about 1,850 PM a day,
+  [12](12-economy-and-pacing.md) §3). Racing bunches at the end of each layer (D336), so they arrive in two waves, after
+  the first and second scenarios.
 - An upgrade bought while jobs run adds its slots at once; the speed applies to jobs started after it.
-- Upgrades are a draft. The sim reports when each building reaches each level and pins "every building ≤ 90% average
-  slot use" ([12](12-economy-and-pacing.md) §12).
+- The sim reports when each building reaches each level ([12](12-economy-and-pacing.md) §7) and checks every building's
+  slot use against 90% in every scenario window (§12).
 
-**Pacing note.** With all ten buildings at Lv 3, Farm work takes 80% of its listed time and an unlock about 84% of the
-Uma-time in [12](12-economy-and-pacing.md) §5, so a scenario would take about 23–25 days instead of 27–30. Buildings
-carry, so that is the steady state for most of the game. The sim must run with building levels, and the four-week
-target is best measured at Lv 3; [12](12-economy-and-pacing.md) §10's time factor is the lever if it runs fast.
+**Pacing note.** With all ten buildings at Lv 3, Farm work takes 80% of its listed time, and the sim measures tiers 2
+and 3 at 20–23 days a scenario ([12](12-economy-and-pacing.md) §5). Buildings carry, so that is the steady state for
+most of the game; [12](12-economy-and-pacing.md) §10's time factor per tier is the lever if the owner wants it slower.
 
 ## 8. Speed Tickets
 

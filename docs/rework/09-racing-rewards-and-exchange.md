@@ -114,7 +114,7 @@ Numbers use ~150 a race and the roster's day of 27,000 Uma-minutes (25 × 24 h �
 | **Per-Uma "fresh legs"** | Each Uma's first 2 races a day pay in full, later ones 25% | 7% | 22% if spread over 20+ Umas; less if not | ~35% (50 full races across 25 Umas, then 25%) | **Rejected.** It punishes the natural way to clear a career, racing one Uma through her stage in one sitting, and barely bounds the roster (25 × 2 = 50 full races) |
 | **First win per scenario pays a bonus** | An Uma's first win of each race in a scenario pays ×2 | 7–14% | no bound | no bound | **Rejected as the bound.** Hundreds of races × 25 Umas is no limit; as a variety nudge the featured board (§4) does it more simply |
 | **Diminishing returns per race family per day** | The same race pays 100%, 50%, 25% … each day | 7% | ~22% | ~50% | **Rejected.** Switching races dodges it (about 24 G1s and 35 G2s); it taxes only the owner who doesn't game it |
-| **Daily Purse (account-wide, in Prize Money)** | The day's first 6,000 of prizes pay in full, the next 6,000 a quarter, beyond that a twentieth | 7% | **22%** | 28% | **Chosen** |
+| **Daily Purse (account-wide, in Prize Money)** | The day's first 4,500 of prizes pay in full (6,000 in the first draft, D348), the rest to 12,000 a quarter, beyond that a twentieth | 7% | **18%** | 24% | **Chosen** |
 
 Why measure the purse in Prize Money, not races: a race-count cap would make heavy days G1-only, since a capped race
 should be the dearest one. A Prize Money purse bounds the same whatever the owner races.
@@ -127,12 +127,12 @@ order:
 <!-- live:purse-bands -->
 | Band | Gross Prize Money that day | Paid |
 |---|---|---|
-| Full | 0 – 6,000 | 100% |
-| Tired | 6,000 – 12,000 | 25% |
+| Full | 0 – 4,500 | 100% |
+| Tired | 4,500 – 12,000 | 25% |
 | Spent | above 12,000 | 5% |
 <!-- /live -->
 
-- **A race that crosses a band edge is split**: a G1 win at 5,900 pays 100 in full and 200 at a quarter, so 150.
+- **A race that crosses a band edge is split**: a G1 win at 4,400 pays 100 in full and 200 at a quarter, so 150.
 - **The day** is the device's local calendar date when the race starts (today's rule: a day is the device's date,
   and anti-cheat isn't needed). A race started at 23:58 counts on that day.
 - **The purse only moves forward.** If the device's date goes back (a time-zone change), the stored day carries on
@@ -146,23 +146,26 @@ order:
 | Races in a day | Gross at ~150 a race | Paid | Share of the roster's day | Gross at ~200 a race | Paid | Share |
 |---|---:|---:|---:|---:|---:|---:|
 | 12 (the target) | 1,800 | 1,800 | 6.7% | 2,400 | 2,400 | 8.9% |
-| 25 | 3,750 | 3,750 | 13.9% | 5,000 | 5,000 | 18.5% |
-| **40 (a heavy evening)** | 6,000 | **6,000** | **22.2%** | 8,000 | **6,500** | **24.1%** |
-| 60 | 9,000 | 6,750 | 25.0% | 12,000 | 7,500 | 27.8% |
-| 100 | 15,000 | 7,650 | 28.3% | 20,000 | 7,900 | 29.3% |
-| 150 | 22,500 | 8,025 | 29.7% | 30,000 | 8,400 | 31.1% |
+| 25 | 3,750 | 3,750 | 13.9% | 5,000 | 4,625 | 17.1% |
+| **40 (a heavy evening)** | 6,000 | **4,875** | **18.1%** | 8,000 | **5,375** | **19.9%** |
+| 60 | 9,000 | 5,625 | 20.8% | 12,000 | 6,375 | 23.6% |
+| 100 | 15,000 | 6,525 | 24.2% | 20,000 | 6,775 | 25.1% |
+| 150 | 22,500 | 6,900 | 25.6% | 30,000 | 7,275 | 26.9% |
 
-So a normal day never sees the purse. A heavy evening pays its full worth, matching [12](12-economy-and-pacing.md)
-§8's ~6,000 and ~22%. Past about 40 races each further race is worth a quarter, then a twentieth: a G1 win deep in
-the evening still pays 15, half a Speed Ticket. Even every day at 150 races, racing buys under a third of the roster's
-time, so the tier stays above 15 weeks.
+So a normal day never sees the purse. A heavy evening pays most of its worth: the loop simulation measures heavy
+evenings at about 4,450 Prize Money a day and 22% of the roster's work time, normal days at about 1,850 and 8%
+([12](12-economy-and-pacing.md) §8). Past about 30 races each further race is worth a quarter, then a twentieth: a G1
+win deep in the evening still pays 15, half a Speed Ticket. Even every day at 150 races, racing buys under a third of
+the roster's time.
 
-**Tuning:** the sim pins the band edges with [12](12-economy-and-pacing.md)'s check "heavy racing saves 18–25%". Move the
-6,000 edge first; leave the quarter and twentieth alone.
+**Tuning (D348):** the sim pins the band edges with [12](12-economy-and-pacing.md)'s check "heavy racing saves
+18–25%". At the first draft's 6,000 a heavy evening saved 29%: the sim's roster works about two-thirds of its time, not
+the 75% this table assumes, so each Prize Money is a larger share of it. The first edge moved to 4,500; the quarter,
+the twentieth and the 12,000 edge stay.
 
 ### 3.5 On screen
 
-- **The Racecourse header** carries a slim purse bar: "Today's purse · 3,450 of 6,000 at full prize". Past 6,000 it
+- **The Racecourse header** carries a slim purse bar: "Today's purse · 3,450 of 4,500 at full prize". Past 4,500 it
   reads "Tired purse · a quarter until 12,000", and past 12,000 "Spent purse · a twentieth until midnight". (i)
   explains the bands in two lines.
 - **The pre-race sheet** shows the race's prize at the current band ("G1 win · 300", or "G1 win · 75, tired purse").
@@ -231,9 +234,9 @@ through promotion ([12](12-economy-and-pacing.md) §2).
 
 | Racing day | Paid Prize Money | As Speed Tickets | Roster time |
 |---|---:|---:|---|
-| Target (12 races) | ~1,900 | ~62 | ~31 Uma-hours |
-| Heavy evening (40 races) | ~6,000 | ~200 | ~100 Uma-hours |
-| Heavy, plus every featured bonus | ~6,600 | ~220 | ~110 Uma-hours |
+| Target (about 13 races, measured) | ~1,850 | ~62 | ~31 Uma-hours |
+| Heavy evening (40 races) | ~4,900–5,400 | ~165–180 | ~80–90 Uma-hours |
+| Heavy, plus every featured bonus | ~5,500–6,000 | ~185–200 | ~90–100 Uma-hours |
 
 ### 5.3 Raw ingredients and the stock rule
 
@@ -288,8 +291,10 @@ The one-off sinks, all bought with Prize Money (upgrades also take crafted items
 | Training Hub upgrades to Lv 3 | 10,700 | [05](05-training-hub.md) §7 |
 | **All of them** | **68,100** | |
 
-- **At target racing** (~1,900 a day) that's about **36 days**, about five weeks. With two heavy evenings a week
-  (5 × 1,900 + 2 × 6,000 = 21,500 a week) it's about three weeks.
+- **At target racing** (~1,850 a day) that's about **37 days**, about five weeks; racing bunches at the end of each
+  layer, so the loop simulation's account buys every Lv 2 between days 31 and 34 and every Lv 3 by about day 65
+  ([12](12-economy-and-pacing.md) §7). With two heavy evenings a week (5 × 1,850 + 2 × 5,000 = 19,250 a week) it's
+  about three and a half weeks.
 - **So tier 1's first weeks spend racing on growth, not skips.** A sensible order: the Kitchen, Pantry and
   Vegetable Garden at Lv 2 (07 notes a 25-Uma roster needs them), then the other Lv 2s, then Lv 3s once grade 3
   opens. The game suggests nothing here and never spends for the owner ([01](01-game-loop.md) §7).
@@ -430,7 +435,7 @@ race result id, the operation id, the building.
 | Expedition races pay 1.5× the G1 row whatever their local grade (10's proposal), not ×2 on their own grade | Foreign grades don't map onto JRA's; at ~45% wins abroad a race pays about what a home G1 does |
 | A family already won on her current run pays the home G1 row; Expedition races fill the Daily Purse like any race | Repeats don't advance the eight wins, so no premium; one purse for every race keeps the bound whole |
 | One prize factor is the lever if racing pays too much | Keeps the grades' ratios; G1-heavy careers may average 200 a race, not 150 |
-| **Anti-grind is an account-wide Daily Purse in Prize Money**: full to 6,000, a quarter to 12,000, a twentieth beyond | Hits 7% / 22% / flat; robust to G1-only days; never zero; one bar to read. Per-Uma, per-race and first-win rules either punish career bursts or don't bound |
+| **Anti-grind is an account-wide Daily Purse in Prize Money**: full to 4,500 (D348, from 6,000), a quarter to 12,000, a twentieth beyond | The loop simulation measures 8% / 22% / flat; robust to G1-only days; never zero; one bar to read. Per-Uma, per-race and first-win rules either punish career bursts or don't bound |
 | The purse touches Prize Money only, and sales don't fill it | EXP and goals are progression, never taxed; sales are already time-bounded |
 | Featured races ship in v1: 3 a day, first win pays the prize again, outside the purse | A daily goal for the racing mode, cheap to build, bounded at 600 |
 | The Exchange sells Speed Tickets and raw ingredients; not Uma Tickets, crafted items or dishes | Racing speeds the Farm up but never skips it; Umas come from progress (D336) |
@@ -452,7 +457,7 @@ race result id, the operation id, the building.
 
 - `@racer/domain/economy` holds the prize table, the place shares, the Expedition rate, the purse bands, the
   featured draw, the Exchange prices, the stock rule and the sell rule, and tests pin each: a G3 5th pays 7; a G1 win
-  at 5,900 gross pays 150; an Expedition win pays 450, and a second win of the same family on that run 300; the
+  at 4,400 gross pays 150; an Expedition win pays 450, and a second win of the same family on that run 300; the
   2026-10-13 board is the same on every run; a grade-5 crafted
   item sells for 55 (D338).
 - `pnpm sim:loop` with this page's rules passes [12](12-economy-and-pacing.md)'s checks: target racing saves 5–10%

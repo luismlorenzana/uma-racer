@@ -27,11 +27,11 @@ const boardOf = (profile: AccountProfile, localDay: string): readonly string[] =
 }
 
 describe('settleRacePrize', () => {
-  it('pays a G1 win at 5,900 gross 150 (09 §11), with its ledger row', () => {
-    const { profile, prize, ledger } = ok(settleRacePrize(profileWith({ gross: 5_900 }, 40), input(), NOW))
+  it('pays a G1 win at 4,400 gross 150 (09 §11), with its ledger row', () => {
+    const { profile, prize, ledger } = ok(settleRacePrize(profileWith({ gross: 4_400 }, 40), input(), NOW))
     expect(prize).toEqual({ gross: 300, paid: 150, band: 'tired', expedition: false, featuredBonus: 0 })
     expect(profile.prizeMoney).toBe(190)
-    expect(profile.purse).toEqual({ day: '2026-10-13', gross: 6_200, featuredPaid: [] })
+    expect(profile.purse).toEqual({ day: '2026-10-13', gross: 4_700, featuredPaid: [] })
     expect(ledger).toEqual([{ id: 'race:r1:prize', resource: 'prize-money', delta: 150, reason: 'race-prize', at: NOW }])
   })
 
@@ -44,9 +44,9 @@ describe('settleRacePrize', () => {
   })
 
   it('fills the purse with an Expedition race like any race (09 §10)', () => {
-    const { profile, prize } = ok(settleRacePrize(profileWith({ gross: 5_800 }), input({ expedition: { familyWon: false } }), NOW))
+    const { profile, prize } = ok(settleRacePrize(profileWith({ gross: 4_300 }), input({ expedition: { familyWon: false } }), NOW))
     expect(prize).toMatchObject({ gross: 450, paid: 200 + 62, band: 'tired' })
-    expect(profile.purse.gross).toBe(6_250)
+    expect(profile.purse.gross).toBe(4_750)
   })
 
   it('writes no row for nothing: a 6th place moves no money, but keeps the day', () => {
@@ -86,11 +86,11 @@ describe('settleRacePrize', () => {
 
 describe('the featured bonus (09 §4)', () => {
   it('pays the first win of a featured race its win prize again, outside the purse', () => {
-    const start = profileWith({ gross: 5_900 })
+    const start = profileWith({ gross: 4_400 })
     const { profile, prize, ledger } = ok(settleRacePrize(start, input({ board: ['g1-mile-a'] }), NOW))
     expect(prize).toEqual({ gross: 300, paid: 150, band: 'tired', expedition: false, featuredBonus: 300 })
     expect(profile.prizeMoney).toBe(450)
-    expect(profile.purse).toEqual({ day: '2026-10-13', gross: 6_200, featuredPaid: ['g1-mile-a'] })
+    expect(profile.purse).toEqual({ day: '2026-10-13', gross: 4_700, featuredPaid: ['g1-mile-a'] })
     expect(ledger).toEqual([
       { id: 'race:r1:prize', resource: 'prize-money', delta: 150, reason: 'race-prize', at: NOW },
       { id: 'race:r1:featured', resource: 'prize-money', delta: 300, reason: 'featured-bonus', at: NOW },

@@ -12,11 +12,11 @@ const purse = (gross: number, day = '2026-10-13', featuredPaid: readonly string[
 /** 09 §3.4: races, then gross / paid at ~150 a race, then gross / paid at ~200 a race. */
 const SECTION_3_4 = [
   '| 12 (the target) | 1,800 | 1,800 | 6.7% | 2,400 | 2,400 | 8.9% |',
-  '| 25 | 3,750 | 3,750 | 13.9% | 5,000 | 5,000 | 18.5% |',
-  '| **40 (a heavy evening)** | 6,000 | **6,000** | **22.2%** | 8,000 | **6,500** | **24.1%** |',
-  '| 60 | 9,000 | 6,750 | 25.0% | 12,000 | 7,500 | 27.8% |',
-  '| 100 | 15,000 | 7,650 | 28.3% | 20,000 | 7,900 | 29.3% |',
-  '| 150 | 22,500 | 8,025 | 29.7% | 30,000 | 8,400 | 31.1% |',
+  '| 25 | 3,750 | 3,750 | 13.9% | 5,000 | 4,625 | 17.1% |',
+  '| **40 (a heavy evening)** | 6,000 | **4,875** | **18.1%** | 8,000 | **5,375** | **19.9%** |',
+  '| 60 | 9,000 | 5,625 | 20.8% | 12,000 | 6,375 | 23.6% |',
+  '| 100 | 15,000 | 6,525 | 24.2% | 20,000 | 6,775 | 25.1% |',
+  '| 150 | 22,500 | 6,900 | 25.6% | 30,000 | 7,275 | 26.9% |',
 ]
 const cells = (row: string) => row.split('|').slice(1, -1).map((cell) => cell.trim().replace(/\*/g, ''))
 const n = (cell: string) => Number(cell.replace(/,/g, ''))
@@ -33,42 +33,42 @@ const raceByRace = (races: number, gross: number): number => {
 }
 
 describe('the bands (09 §3.3)', () => {
-  it('pay 20/20 to 6,000, 5/20 to 12,000 and 1/20 beyond', () => {
+  it('pay 20/20 to 4,500 (D348: the sim moved the first edge from 6,000), 5/20 to 12,000 and 1/20 beyond', () => {
     expect(PURSE_BANDS).toEqual([
-      { band: 'full', upTo: 6_000, paidTwentieths: 20 },
+      { band: 'full', upTo: 4_500, paidTwentieths: 20 },
       { band: 'tired', upTo: 12_000, paidTwentieths: 5 },
       { band: 'spent', upTo: null, paidTwentieths: 1 },
     ])
   })
 
   it('give an edge to the band below', () => {
-    expect([0, 6_000, 6_001, 12_000, 12_001, 1e9].map(bandAt)).toEqual(['full', 'full', 'tired', 'tired', 'spent', 'spent'])
+    expect([0, 4_500, 4_501, 12_000, 12_001, 1e9].map(bandAt)).toEqual(['full', 'full', 'tired', 'tired', 'spent', 'spent'])
   })
 })
 
 describe('payFromPurse', () => {
-  it('splits a G1 win at 5,900: 100 in full and 200 at a quarter pay 150 (09 §3.3, §11)', () => {
-    expect(payFromPurse(purse(5_900), '2026-10-13', 300)).toEqual({
-      purse: purse(6_200), paid: 150, band: 'tired', split: { full: 100, tired: 200, spent: 0 },
+  it('splits a G1 win at 4,400: 100 in full and 200 at a quarter pay 150 (09 §3.3, §11)', () => {
+    expect(payFromPurse(purse(4_400), '2026-10-13', 300)).toEqual({
+      purse: purse(4_700), paid: 150, band: 'tired', split: { full: 100, tired: 200, spent: 0 },
     })
   })
 
-  it('keeps a race ending at exactly 6,000 full, and the next tired', () => {
-    const first = payFromPurse(purse(5_700), '2026-10-13', 300)
-    expect(first).toMatchObject({ paid: 300, band: 'full', purse: { gross: 6_000 } })
+  it('keeps a race ending at exactly 4,500 full, and the next tired', () => {
+    const first = payFromPurse(purse(4_200), '2026-10-13', 300)
+    expect(first).toMatchObject({ paid: 300, band: 'full', purse: { gross: 4_500 } })
     expect(payFromPurse(first.purse, '2026-10-13', 300)).toMatchObject({ paid: 75, band: 'tired', split: { full: 0, tired: 300, spent: 0 } })
     expect(payFromPurse(purse(11_700), '2026-10-13', 300)).toMatchObject({ paid: 75, band: 'tired', purse: { gross: 12_000 } })
     expect(payFromPurse(purse(12_000), '2026-10-13', 300)).toMatchObject({ paid: 15, band: 'spent' })
   })
 
   it('lets one gross span all three bands, rounding down once', () => {
-    expect(payFromPurse(purse(5_900), '2026-10-13', 6_250)).toEqual({
-      purse: purse(12_150), paid: 100 + 1_500 + 7, band: 'spent', split: { full: 100, tired: 6_000, spent: 150 },
+    expect(payFromPurse(purse(4_400), '2026-10-13', 7_750)).toEqual({
+      purse: purse(12_150), paid: 100 + 1_875 + 7, band: 'spent', split: { full: 100, tired: 7_500, spent: 150 },
     })
   })
 
   it('pays nothing for nothing, and leaves the band where it was', () => {
-    expect(payFromPurse(purse(6_000), '2026-10-13', 0)).toEqual({ purse: purse(6_000), paid: 0, band: 'full', split: { full: 0, tired: 0, spent: 0 } })
+    expect(payFromPurse(purse(4_500), '2026-10-13', 0)).toEqual({ purse: purse(4_500), paid: 0, band: 'full', split: { full: 0, tired: 0, spent: 0 } })
   })
 
   it('starts a new purse on a later day, featured bonuses and all', () => {
@@ -94,7 +94,7 @@ describe('payFromPurse', () => {
 })
 
 describe('09 §3.4: what a day pays', () => {
-  it("comes out of a day's whole gross: 8,000 → 6,500, 15,000 → 7,650, 30,000 → 8,400 …", () => {
+  it("comes out of a day's whole gross: 8,000 → 5,375, 15,000 → 6,525, 30,000 → 7,275 …", () => {
     for (const row of SECTION_3_4) {
       const [, gross150, paid150, , gross200, paid200] = cells(row).map(n)
       for (const [gross, paid] of [[gross150!, paid150!], [gross200!, paid200!]] as const) {
