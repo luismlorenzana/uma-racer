@@ -2,7 +2,7 @@
 // once under its id; every stale-screen case ends in a result or a one-sentence question, never an error; a clock
 // moved forward makes work Ready and Collect all accepts it; one moved back makes waits longer, never negative.
 import { describe, expect, it } from 'vitest'
-import { account, clock, craft, ENV, gather, nodes, ok, slot, uma } from '../../__fixtures__/rework-check-in'
+import { account, atFarmLevel, clock, craft, ENV, gather, nodes, ok, slot, uma } from '../../__fixtures__/rework-check-in'
 import { isRefusal } from '../types'
 import { start } from '../work/operations'
 import { progress, remainingMs } from '../work/timeline'
@@ -133,5 +133,58 @@ describe('the clock', () => {
       previous = wait
     }
     expect(collectAll(working(), {}, NOW - 60 * 60_000, ENV).receipt.lines).toEqual([])
+  })
+})
+
+describe("the collect commit raises the Exchange's stock mark (09 §5.3, §10; D345; T140)", () => {
+  const STATS = { speed: 0, stamina: 0, power: 0, guts: 0, wit: 0 }
+  const PRESETS = { sprint: { stats: STATS, skillPoints: 0 }, mile: { stats: STATS, skillPoints: 0 }, medium: { stats: STATS, skillPoints: 0 }, long: { stats: STATS, skillPoints: 0 } }
+  function done<T>(result: T): Exclude<T, { readonly refused: true }> {
+    if (isRefusal(result)) throw new Error(result.reason)
+    return result as Exclude<T, { readonly refused: true }>
+  }
+  const TWO_HOURS = 2 * 60 * 60_000
+
+  it('a collect that lifts an Uma to Farm Lv 6 raises it to 2; a retry and promotion leave it there', () => {
+    // 500 EXP from Lv 5 to 6 is 2,000 quarter points; one grade-1 gather pays 108 EXP (432 quarters) at C.
+    const state = atFarmLevel(account(1), uma(1), 5, 1_600)
+    expect(state.profile.exchangeGrade).toBe(1)
+    const started = done(runOnce(state, { id: 'g-1', name: 'start', input: { outfitId: uma(1), slot: slot('fields'), request: gather('wheat', 1) } }, NOW, ENV))
+    expect(started.state.profile.exchangeGrade).toBe(1)
+    const later = NOW + TWO_HOURS
+    const collected = done(runOnce(started.state, { id: 'c-1', name: 'collect', input: { outfitId: uma(1) } }, later, ENV))
+    expect(collected.state.umas[uma(1)]!.farm.level).toBe(6)
+    expect(collected.state.profile.exchangeGrade).toBe(2)
+
+    const retried = done(runOnce(collected.state, { id: 'c-1', name: 'collect', input: { outfitId: uma(1) } }, later + 60_000, ENV))
+    expect(retried.repeated).toBe(true)
+    expect(retried.state).toBe(collected.state)
+
+    const quiet = done(runOnce(collected.state, { id: 's-1', name: 'set-repeat-sizing', input: { sizing: 'fit' } }, later, ENV))
+    expect(quiet.state.profile).toEqual({ ...collected.state.profile, repeatSizing: 'fit' })
+
+    const her = collected.state.umas[uma(1)]!
+    const run = { expeditionId: 'europe', races: 11, wins: 8, completed: true }
+    const travelled = { ...collected.state, umas: { ...collected.state.umas, [uma(1)]: { ...her, expedition: { runs: [run] } } } }
+    const promoted = done(runOnce(travelled, { id: 'p-1', name: 'promote', input: { umaId: uma(1), presets: PRESETS } }, later, ENV))
+    expect(promoted.state.umas[uma(1)]!.farm.level).toBe(1)
+    expect(promoted.state.profile.exchangeGrade).toBe(2)
+  })
+
+  it('every collect path raises it: Collect all, Recall, Repeat and a start that collects first', () => {
+    const ready = (id: string): WorkState => {
+      const state = atFarmLevel(account(1), uma(1), 5, 1_600)
+      return done(runOnce(state, { id, name: 'start', input: { outfitId: uma(1), slot: slot('fields'), request: gather('wheat', 2) } }, NOW, ENV)).state
+    }
+    const both = NOW + 2 * TWO_HOURS
+    expect(done(runOnce(ready('a'), { id: 'ca', name: 'collect-all', input: {} }, NOW + TWO_HOURS, ENV)).state.profile.exchangeGrade).toBe(2)
+    expect(done(runOnce(ready('b'), { id: 'rc', name: 'recall', input: { outfitId: uma(1) } }, NOW + TWO_HOURS, ENV)).state.profile.exchangeGrade).toBe(2)
+    const restart = done(runOnce(ready('c'), { id: 'st', name: 'start', input: { outfitId: uma(1), slot: slot('fields'), request: gather('wheat', 1) } }, both, ENV))
+    expect(restart.receipt.collected?.farmLevel.to).toBe(6)
+    expect(restart.state.profile.exchangeGrade).toBe(2)
+    // Repeat collects nothing itself; a mark below the open grades (an older save) still rises on its commit.
+    const collected = done(runOnce(ready('d'), { id: 'cd', name: 'collect', input: { outfitId: uma(1) } }, both, ENV)).state
+    const lowered: WorkState = { ...collected, profile: { ...collected.profile, exchangeGrade: 1 } }
+    expect(done(runOnce(lowered, { id: 'rp', name: 'repeat', input: {} }, both, ENV)).state.profile.exchangeGrade).toBe(2)
   })
 })

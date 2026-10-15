@@ -454,6 +454,7 @@ result, the operation, the building.
 | Each race rounds down once, after the purse share; §3.4 models day totals, so it is pinned on totals, and race by race it matches exactly at 200 a race and within 1 a race at 150 (D345) | §2.1's "after every multiplier" |
 | Surplus is the Free count; "All free" is every unreserved item, which dips into needed and so asks first; a needed-stock confirmation names the planner's whole shortfall after the sale (D345) | §6.1 defines Free as "the rest", then offers "Surplus (free minus needed)"; reserved inputs leave the Warehouse count when work starts ([07](07-farm.md) §2, §12), so the count is what can be sold |
 | A race result's `expedition` says the Expedition rate applied: a family not yet won on her run (D345) | It is what the result's "Expedition rate" line shows (§7); a family already won pays the home G1 row |
+| **The collect commit raises the stock mark:** `runOnce`, which every owner action passes through on the device and the server, sets `exchangeGrade` to `stockedGrade` over every current Farm Level after an operation applies, a no-op unless a collect (`collect`, `collect-all`, `recall`, `repeat` or `start`'s collect-first) lifted one; a retried id changes nothing (T140, D358) | D345's "phase 3 puts that in the collect commit": one place covers every collect path, and the Farm's rules still don't read the Exchange. `stockedGrade` never goes below the mark, so a promotion can't lower it |
 
 ## 11. Done when
 
