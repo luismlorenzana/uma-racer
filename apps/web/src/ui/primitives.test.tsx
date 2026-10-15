@@ -13,7 +13,6 @@ import { BottomSheet } from './BottomSheet'
 import { Button, type ButtonVariant } from './Button'
 import { Chip } from './Chip'
 import { Placeholder } from './Placeholder'
-import { SegmentedControl } from './SegmentedControl'
 
 const withMotion = (node: ReactNode) => render(<LazyMotion features={domAnimation} strict>{node}</LazyMotion>)
 
@@ -58,16 +57,6 @@ describe('Chip', () => {
     render(<><Chip selected>Turf</Chip><Chip>Dirt</Chip></>)
     expect(screen.getByRole('button', { name: 'Turf' }).getAttribute('aria-pressed')).toBe('true')
     expect(screen.getByRole('button', { name: 'Dirt' }).getAttribute('aria-pressed')).toBe('false')
-  })
-})
-
-describe('SegmentedControl', () => {
-  it('marks the chosen option and reports a new one', () => {
-    const onChange = vi.fn()
-    withMotion(<SegmentedControl label="View" value="icons" onChange={onChange} options={[{ value: 'icons', label: 'Icons' }, { value: 'list', label: 'List' }]} />)
-    expect(screen.getByRole('tab', { name: 'Icons' }).getAttribute('aria-selected')).toBe('true')
-    fireEvent.click(screen.getByRole('tab', { name: 'List' }))
-    expect(onChange).toHaveBeenCalledWith('list')
   })
 })
 

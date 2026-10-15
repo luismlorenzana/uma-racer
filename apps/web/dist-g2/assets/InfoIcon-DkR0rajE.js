@@ -1,0 +1,1 @@
+import{b2 as r,aD as c}from"./g2-DXmbSHEx.js";const n=r("info",{line:c.jsx("circle",{cx:"12",cy:"12",r:"8.5"}),detail:c.jsxs(c.Fragment,{children:[c.jsx("path",{d:"M12 11v5.2"}),c.jsx("circle",{cx:"12",cy:"7.9",r:"0.95",fill:"currentColor",stroke:"none"})]}),tone:c.jsx("circle",{cx:"12",cy:"12",r:"8.5"})});export{n as I};

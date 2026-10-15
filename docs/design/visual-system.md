@@ -80,7 +80,7 @@ Two faces, both OFL and self-hosted, latin subset only:
 | Primary button | Accent fill, ink text, `--r-sm`, 48 pt tall, press = scale 0.98 and drop to shadow-1. Loading state keeps the label |
 | Secondary | Panel fill with hairline border. Tertiary is text plus icon. Destructive is a danger outline |
 | Chip / filter | 32 pt pill, hairline border, selected = accent 12% fill with accent border and a check |
-| Segmented control | Sunken track, raised thumb, 2–4 segments. Tab rows use the same look at 44 pt (`ui/Tabs`) |
+| Tab row (`ui/Tabs`) | Sunken track, raised thumb, 2–4 tabs at 44 pt |
 | Panel | Panel surface, `--r-md`, hairline, 16 px padding, optional `micro` section label above |
 | Row | 56 pt, art or icon left, primary 15 / secondary 13, value right in display numerals |
 | Meter | Sunken track, 6 pt tall, stat colour fill, soft cap marked by a 1 px tick at 1200 |

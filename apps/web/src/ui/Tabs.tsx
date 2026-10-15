@@ -1,4 +1,4 @@
-// A row of two to four tabs at 44 pt (T138): today's SegmentedControl look (a sunken track, the chosen tab raised) with
+// A row of two to four tabs at 44 pt (T138): the old segmented control's look (a sunken track, the chosen tab raised) with
 // targets tall enough for the new game's rule (CLAUDE.md "Conventions"). Selection moves by a CSS transition on the
 // raised face, never a spring.
 export function Tabs<T extends string>({ options, value, onChange, label, className = '' }: {
