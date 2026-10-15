@@ -51,6 +51,43 @@ never runs the engine. Re-run both with it after changing a rule a build or a fi
 does the same for the loop's win table (`packages/domain/src/rework/sim/win-table.ts`); the loop itself runs on the
 domain's source, and its test runs the checks in CI.
 
+## The rework modules
+
+The rules of the [game rework](../rework/README.md), built in phase 2 (D340–D350) under
+`packages/domain/src/rework/<area>/` and exported lazily as `@racer/domain/rework/<area>`. **None of it is in play
+yet:** nothing in `apps/web` or `apps/api` imports them until phase 3's cutover, which moves them to their final homes.
+
+| Area | Holds |
+|---|---|
+| `tiers` | The tier map, Racing Level per tier, careers, advancing, promotion, Uma Tickets and Shards, tier scaling, rivals |
+| `items` | The 8 × 10 catalogue, crafted items, planet dishes, Duos and Feasts, recipes, grade gates, work values |
+| `work`, `farm` | The one-after-another work engine (jobs and sessions, queues, collect, recall, Speed Tickets), buildings, Farm Level |
+| `training` | The Training Hub's facilities, layers and unlock order, the Extra Stats map, bonds, presets, buffs, derived stats |
+| `constellation` | The re-authored trees, their sizes and the validator |
+| `exchange` | Prize Money, the Daily Purse, featured races, the Exchange and selling |
+| `check-in`, `planner` | Collect all, Repeat, batch sizing, the check-in summary, the planner's needs and suggestions |
+| `builds` | The committed balance reports of `sim:rework-builds` and `sim:rework-careers` |
+| `sim` | `pnpm sim:loop`, the whole economy from a fresh account, and its CI checks |
+
+The rules every area follows:
+- **Pure.** No I/O, `Date.now`, `Math.random`, React, Dexie or browser globals. Time comes in as `now`, integer
+  milliseconds; randomness comes from the race engine's seeded RNG, passed in.
+- **Whole seconds through one time factor.** Every duration is a rework base formula in minutes × `TIME_FACTOR` (1.2,
+  D338) × 60, rounded once, then divided by a building's speed and rounded once more (`rework/time.ts`).
+- **Reuse, don't copy.** Where the rework keeps a rule "as today", the module imports today's (`progression.ts`,
+  `scenario-goals.ts`, `constellation.ts`, `lineage.ts`, `opponents.ts` …). Where it changes a formula, the new one
+  lives in `rework/` and today's stays for today's game.
+- **Numbers are named constants** citing their rework page, pinned by tests beside the modules. A number changes only
+  with its page, its test and a decision entry.
+- **Art ids are uma-art's**, checked against the package's indexes by a test (`@luismlorenzana/uma-art`, a dev
+  dependency).
+- **State, not saves.** Plain typed state (`rework/types.ts`) shaped after the generation-2 save kinds
+  ([rework/13](../rework/13-removals-and-plan-changes.md) §6). Each owner action is a pure function
+  `(state, input, now, env?) → { state, receipt } | Refusal`, and a refusal carries plain words, never protocol names.
+- **Synthetic fixtures only.** No master data, names or ids from the private packs.
+- **The tables are live blocks in the rework pages.** Each area exports `LIVE_BLOCKS`, joined in
+  `packages/domain/src/docs/rework.ts`, and the docs check covers `docs/rework/*.md` as well as this manual.
+
 ## The web app
 
 - **Local-first.** Game state lives in Zustand stores, persisted to the IndexedDB database `uma-racer` (Dexie, 34

@@ -1,4 +1,4 @@
-// The Exchange's live blocks (docs/tasks/M033-rework-rules.md): the four tables of rework/09 this area owns.
+// The Exchange's live blocks (docs/game/architecture.md#the-rework-modules): the four tables of rework/09 this area owns.
 // docs/docs.test.ts checks the page against them.
 import { describe, expect, it } from 'vitest'
 import { REWORK_BLOCKS } from '../../docs/rework'

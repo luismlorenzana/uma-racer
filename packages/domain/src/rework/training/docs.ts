@@ -1,4 +1,4 @@
-// The Training Hub's live blocks (docs/tasks/M033-rework-rules.md "The live manual"): the tables of rework/README,
+// The Training Hub's live blocks (docs/game/architecture.md#the-rework-modules "The live manual"): the tables of rework/README,
 // /04 §8, /05 §1–§3 and §6, and /06 §2 that these rules own, rendered from the code so the design can't drift from it.
 // Registered in packages/domain/src/docs/rework.ts. Pure: no I/O, and nothing from the private packs.
 import type { InspirationSlot } from '../../inspiration'

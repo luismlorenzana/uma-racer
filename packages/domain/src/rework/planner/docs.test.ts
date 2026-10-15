@@ -1,4 +1,4 @@
-// The check-ins' live block (docs/tasks/M033-rework-rules.md "The live manual"): rework/02 §3's gap table, registered
+// The check-ins' live block (docs/game/architecture.md#the-rework-modules "The live manual"): rework/02 §3's gap table, registered
 // once. docs/docs.test.ts checks the block's body against the page.
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'

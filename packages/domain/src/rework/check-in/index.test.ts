@@ -1,5 +1,5 @@
 // `@racer/domain/rework/check-in` and `@racer/domain/rework/planner` export T131's contract
-// (docs/tasks/M033-rework-rules.md): what T132's check-in and idle-Uma policies call, and what phase 3's screens read.
+// (docs/game/architecture.md#the-rework-modules): what T132's check-in and idle-Uma policies call, and what phase 3's screens read.
 import { describe, expect, it } from 'vitest'
 import * as planner from '../planner/index'
 import * as checkIn from './index'

@@ -1,5 +1,5 @@
 // `@racer/domain/rework/tiers` is the area's index: its rules, plus the shared shapes and the time factor for
-// scripts/sim (docs/tasks/M033-rework-rules.md). Pins the durations the rework pages quote (D338).
+// scripts/sim (docs/game/architecture.md#the-rework-modules). Pins the durations the rework pages quote (D338).
 import { describe, expect, it } from 'vitest'
 import * as tiers from './index'
 

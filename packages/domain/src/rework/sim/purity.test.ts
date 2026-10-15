@@ -1,4 +1,4 @@
-// The loop simulation is pure (docs/tasks/M033-rework-rules.md "Pure"): no clock, no randomness but the RNG it is
+// The loop simulation is pure (docs/game/architecture.md#the-rework-modules "Pure"): no clock, no randomness but the RNG it is
 // handed, no I/O, and nothing live imports it.
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'

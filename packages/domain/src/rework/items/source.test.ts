@@ -1,4 +1,4 @@
-// The item rules stay pure data (docs/tasks/M033-rework-rules.md "Pure", "Art ids"): no I/O, clock, randomness or
+// The item rules stay pure data (docs/game/architecture.md#the-rework-modules "Pure", "Art ids"): no I/O, clock, randomness or
 // framework, and only tests read the art package, so it never reaches the built package.
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'

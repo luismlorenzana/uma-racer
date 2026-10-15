@@ -7,7 +7,7 @@ you, below. New questions land here with a recommendation, get resolved in the s
 move to the [decisions log](decisions.md).
 
 Draft numbers across the design and rework docs are tuning values until they are pinned in domain tests and a
-decision. The rework's numbers are tuned by `pnpm sim:loop` in phase 2 ([M033](tasks/M033-rework-rules.md)).
+decision. The rework's numbers are tuned by `pnpm sim:loop` in phase 2 ([M033](game/architecture.md#the-rework-modules)).
 
 ## Needs your decision
 

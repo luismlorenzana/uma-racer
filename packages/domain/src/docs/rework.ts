@@ -1,4 +1,4 @@
-// The rework's live blocks (docs/tasks/M033-rework-rules.md): each area under packages/domain/src/rework renders its
+// The rework's live blocks (docs/game/architecture.md#the-rework-modules): each area under packages/domain/src/rework renders its
 // tables into the rework pages. An area exports `LIVE_BLOCKS: Record<key, () => string>` from its `docs.ts`, and one
 // import plus one argument below joins it. A key used twice fails at load, so two areas can't fight over a block.
 import { LIVE_BLOCKS as EXCHANGE_BLOCKS } from '../rework/exchange/docs'

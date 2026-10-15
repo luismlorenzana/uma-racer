@@ -1,4 +1,4 @@
-// The time factor has one home (docs/tasks/M033-rework-rules.md "Durations are integer seconds", D338): outside
+// The time factor has one home (docs/game/architecture.md#the-rework-modules "Durations are integer seconds", D338): outside
 // rework/time.ts, no rework source writes 1.2 as a number in its code. Everything else imports TIME_FACTOR.
 import { readdirSync, readFileSync } from 'node:fs'
 import { join, relative } from 'node:path'

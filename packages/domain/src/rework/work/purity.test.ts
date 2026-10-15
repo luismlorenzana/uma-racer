@@ -1,4 +1,4 @@
-// The work engine and the Farm are pure (docs/tasks/M033-rework-rules.md "Pure"): no clock but the given `now`, no
+// The work engine and the Farm are pure (docs/game/architecture.md#the-rework-modules "Pure"): no clock but the given `now`, no
 // dice, no I/O and no browser globals; they never write into their inputs; the same state, input and `now` give the
 // same result. Their refusals are one table of plain words (docs/rework/02-check-ins-and-notifications.md §9).
 import { readdirSync, readFileSync } from 'node:fs'

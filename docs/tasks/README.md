@@ -41,7 +41,7 @@ Each row's specs are readable with `git show <commit>:docs/tasks/<file>`.
 
 | Work | Landed | Carried by | Last commit with the specs |
 |---|---|---|---|
-| M033 / T125–T133 — The rework's rules, `sim:loop` and the builds against the field | 2026-10-14 | [docs/rework/](../rework/README.md) (live blocks), `packages/domain/src/rework/`, D340–D350 | M033: `{M033_COMMIT}`; each T spec: the commit before its merge |
+| M033 / T125–T133 — The rework's rules, `sim:loop` and the builds against the field | 2026-10-14 | [docs/rework/](../rework/README.md) (live blocks), `packages/domain/src/rework/`, D340–D350 | M033: `adb10ed`; each T spec: the commit before its merge |
 | M032 — Re-architecture phase 1: a sound base | 2026-10-14 | [rearchitecture/08](../rearchitecture/08-phases.md) phase 1, D337, [the manual](../game/README.md) | No spec file: the phase table was the spec |
 | M024 / T081, M010 / T035, M011 / T036–T039 — **retired unbuilt** (D339) | 2026-10-14 | — | `afe4696` |
 | M031 / T124 — Complete Farm release and guarded preparation | 2026-10-10 | [Release contract](../technical/farm-kitchen-implementation.md#10-t124-complete-release-d315), D315 and [acceptance evidence](../research/farm-kitchen-release-acceptance.md); owner iPhone/account/PWA checks pending | `f6c4dcf` |

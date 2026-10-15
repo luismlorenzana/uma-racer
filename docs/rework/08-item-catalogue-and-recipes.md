@@ -505,6 +505,6 @@ signatures × 3 blocks) and Energy, 1,169 in all, drawn as original SVG marks. A
 - `pnpm sim:loop` reports Warehouse stock by family and grade over a tier, and no site is the bottleneck for more than
   [12](12-economy-and-pacing.md) §12's tolerance.
 - §3's family tables and §4's matrix are live blocks rendered from the domain constants, in this page until phase 3
-  moves it into the manual (`docs/game/`, [M033](../tasks/M033-rework-rules.md)).
+  moves it into the manual (`docs/game/`, [M033](../game/architecture.md#the-rework-modules)).
 - In the app, every item, dish and the Speed Ticket shows its icon, name, grade and destination, at 32 × 32 and its
   whole-number scales.

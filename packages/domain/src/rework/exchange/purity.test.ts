@@ -1,4 +1,4 @@
-// The Exchange's rules are pure (docs/tasks/M033-rework-rules.md "Pure"): no clock, no randomness of their own, no I/O,
+// The Exchange's rules are pure (docs/game/architecture.md#the-rework-modules "Pure"): no clock, no randomness of their own, no I/O,
 // no time factor (prices follow T126's work values, D338); they never write into their inputs, and the same input gives
 // the same output. Their refusals are plain words (docs/rework/02-check-ins-and-notifications.md §9).
 import { readdirSync, readFileSync } from 'node:fs'

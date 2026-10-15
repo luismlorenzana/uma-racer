@@ -1,4 +1,4 @@
-// The Training Hub's rules are pure (docs/tasks/M033-rework-rules.md "Pure"): no clock, no randomness, no I/O; they never
+// The Training Hub's rules are pure (docs/game/architecture.md#the-rework-modules "Pure"): no clock, no randomness, no I/O; they never
 // write into their inputs and repeat themselves exactly. Their refusals are one table of plain words
 // (docs/rework/02-check-ins-and-notifications.md §9), and the entry exports the whole area.
 import { readdirSync, readFileSync } from 'node:fs'

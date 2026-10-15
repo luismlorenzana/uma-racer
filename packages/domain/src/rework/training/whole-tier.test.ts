@@ -1,4 +1,4 @@
-// Cross-task acceptance #1 (docs/tasks/M033-rework-rules.md): one synthetic Uma goes from tier 1, scenario 1 to
+// Cross-task acceptance #1 (docs/game/architecture.md#the-rework-modules): one synthetic Uma goes from tier 1, scenario 1 to
 // promotion by operations only, against a synthetic Warehouse of exactly the 107 dishes the layers call for. Every
 // unlock starts in its own scenario and a later layer's start is refused; each takes one dish of the right family and
 // grade, so the Warehouse ends empty. Racing Level reaches 50 by winning her careers' races, the stand-in Expedition is

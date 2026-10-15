@@ -1,4 +1,4 @@
-// `@racer/domain/rework/work` and `@racer/domain/rework/farm` export T127's contract (docs/tasks/M033-rework-rules.md).
+// `@racer/domain/rework/work` and `@racer/domain/rework/farm` export T127's contract (docs/game/architecture.md#the-rework-modules).
 import { describe, expect, it } from 'vitest'
 import * as farm from '../farm/index'
 import * as work from './index'

@@ -1,4 +1,4 @@
-// The tier rules' live blocks (docs/tasks/M033-rework-rules.md "The live manual"): each table the rework pages state
+// The tier rules' live blocks (docs/game/architecture.md#the-rework-modules "The live manual"): each table the rework pages state
 // that this area owns, rendered from the code so the design can't drift from it. Registered in
 // packages/domain/src/docs/rework.ts. Pure: no I/O.
 import { HISTORICAL_CARD_NORMALIZATION, TREE_BUDGET_SHARE } from '../../constellation'

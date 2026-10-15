@@ -1,4 +1,4 @@
-// The Farm's live blocks (docs/tasks/M033-rework-rules.md "The live manual"): seven tables in rework/07 and /05,
+// The Farm's live blocks (docs/game/architecture.md#the-rework-modules "The live manual"): seven tables in rework/07 and /05,
 // registered once. docs/docs.test.ts checks each block's body against the page.
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
