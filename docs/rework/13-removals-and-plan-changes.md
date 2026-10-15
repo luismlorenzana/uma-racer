@@ -261,8 +261,9 @@ rows, so the device's numbers and the server's come from one function.
   `KIND_ORDER`, then `savedAt`, then id, up to 1,000 rows and 4 MiB a page. The cursor is the page's last row, written
   `kind~savedAt~id`.
 - **Firestore** keeps each row at `saves/{uid}/{kind}/{id}` through today's codec, which stores a work row's arrays of
-  arrays as `dataJson` (D151). A sync is one transaction, with every read before the first write. A pull queries each
-  kind by `savedAt` and then document id, outside a transaction.
+  arrays as `dataJson` (D151). A sync is one transaction, with every read before the first write. Firestore caps a
+  transaction by its 10 MiB request and 270 seconds, not by a count of writes (checked 2026-10-15), so a large Collect all
+  fits. A pull queries each kind by `savedAt` and then document id, outside a transaction.
 - **Local dev** keeps one file, `.data/save-g2.json` (the default for `LOCAL_SAVE_FILE` here), shaped
   `{ [uid]: { rows: { 'kind/id': row }, purge? } }`. Writes are atomic and calls are serialized.
 - **Content.** Operations run on the server's current `umas`, `races`, `cards` and `skills` packs. Each pack is verified
