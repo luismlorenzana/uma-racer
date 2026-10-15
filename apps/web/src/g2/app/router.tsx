@@ -2,6 +2,7 @@
 // `?peek=:place` for a Peek and `?sheet=menu | featured | check-in` for a global sheet, so Back closes either;
 // `/:page/:place/*` a place's sub-pages, then its Page; `/collection/reveal/uma/:umaId` the full-screen reveal; and
 // today's routes redirected by `redirects.ts`. Anything else goes to `/`.
+import { lazy, Suspense, type ComponentType } from 'react'
 import { createBrowserRouter, Navigate, useLocation, useParams, type RouteObject } from 'react-router'
 import { Shell } from '../hub/Shell'
 import { REDIRECTS, redirectPath } from './redirects'
@@ -15,6 +16,16 @@ function Redirect({ to }: { to: string }) {
   return <Navigate to={{ pathname: redirectPath(to, params), search: location.search, hash: location.hash }} replace />
 }
 
+// Dev proofs (§7.2: new proofs live under `/dev/`, beside the places they prove), in dev builds only, so a production
+// build drops them and their chunks. T142's shows the check-in's pieces on the seeds.
+const DEV_ROUTES: RouteObject[] = import.meta.env.DEV
+  ? [{ path: 'dev/check-in', element: <DevProof Proof={lazy(() => import('../dev/CheckInProof'))} /> }]
+  : []
+
+function DevProof({ Proof }: { Proof: ComponentType }) {
+  return <Suspense fallback={null}><Proof /></Suspense>
+}
+
 export const G2_ROUTES: RouteObject[] = [
   {
     element: <Root />,
@@ -25,6 +36,7 @@ export const G2_ROUTES: RouteObject[] = [
         element: <Shell />,
         children: [
           { index: true, element: <StartRoute /> },
+          ...DEV_ROUTES,
           { path: ':page', element: <PageRoute /> },
           { path: ':page/:place/*', element: <PlaceRoute /> },
         ],
