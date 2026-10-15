@@ -2,7 +2,9 @@
 
 > **Status: approved design, 2026-10-14; first written 2026-10-13 (D333).** The Hub's four pages, every place on them, the routes, the
 > two play modes as tap-by-tap flows, and the art: what uma-art already draws and what a uma-platform session draws
-> new. Nothing here is built.
+> new. Phase 3's frame is built beside today's app (T137, D353): the registry and Hub view in `@racer/domain/hub`, the
+> routes, redirects and shell in `apps/web/src/g2/`, reachable at `/dev/g2/*` in development until T143; the place
+> tasks (T138–T142) fill the Peeks, Pages and sheets.
 
 This page replaces the place list of the re-architecture's Hub plan ([rearchitecture/04](../rearchitecture/04-hub.md)
 §3–§6). It keeps that plan's pattern whole: a place registry, pixel-art pages on a Phaser canvas with a DOM hit layer,
@@ -457,6 +459,32 @@ Shipping the routes and registry in phase 3, not 6, means links change once.
 | New `racing` tiles | No existing page looks like a racecourse |
 | The Farm ring follows the Duo ring | Map neighbours are Duo partners, which teaches the Duos |
 | Pips: display only, up to 8, busy first, "+N" beyond | Fits the Kitchen's 8; keeps the 44 pt rule on the whole button |
+| A row carries a grid `cell` from §3's sketches; phase 6 adds map positions (T137) | §1's fractions place buildings on a canvas, which phase 3 doesn't draw (§11) |
+| No lock field: every place is open (T137) | §3 marks every place Open; grade locks live inside places |
+| A pip is Ready when she has anything to collect, a running batch's finished items included; the Ready badge, the counter and VoiceOver's "ready" are that one number (T137) | It is `readyCount`'s rule (02 §2), so a tile, the pill and Collect here agree |
+| A busy ring shows the current item's progress (new `itemProgress`) (T137) | §4 names the current output's or unlock's progress; `progress` is the whole entry's |
+| The start rule counts Umas Ready or Free (`needsATap`) (T137) | 02 §7's count; §2.4's "Waiting" is no status in 01 §2 |
+| One 30-second clock, stopped while hidden, for pips and labels (T137) | §4's 30 seconds; 02 §8's labels are cut to the minute anyway |
+| The Uma Tickets chip shows Shards as n/5, held at 5/5 in gold once a ticket can be made (T137) | The exchange is the owner's tap in the Stable (04 §6), so Shards can pass 5 |
+| "Sync paused" means signed out (T137) | Sync waits for a token; T136's own states are offline and error, and §2.1 names a paused chip |
+| Currency icons: a new two-tone coin, today's ticket and Uma coupon icons (T137) | §10.3's marks aren't in 2.4.0; the visual system wants two-tone currencies |
+| A Peek is a non-modal half sheet; the same tile again opens the Page (T137) | §1's "tap once, again for the Page" needs the tile in reach |
+| Global sheets are `?sheet=` routes; Collect all's intent rides in navigation state (T137) | Back closes them, and a reload never collects again |
+| T137 places the featured Uma (cell, still art, sheet route); her card, sheet and picker are T138's | Animation is phase 6 (§11); the profile, picker and `feature-uma` are the Stable's |
+| Faces are today's `face` art, then the outfit icon, then her initial (T137) | `character-faces` is phase 5's release; today's content stays until then (M034) |
+| Full screen is a slot's `fullScreen(rest)`; places take sub-page slots (T137) | §6's flows live inside place routes; the Needs views (T142) live under the Stable (T138) |
+| The hub view's counts are every place's default Counter; `useCounter` overrides one; 0 is hidden (T137) | One rule per counter, and only T141's two need data outside the work engine |
+| The dev mount is `g2.html` at `/dev/g2/*`, by a dev-only rewrite, over `rework/sim` seeds (T137) | M034: nothing in today's entry imports `g2/`; seeds stay synthetic |
+| The g2 budget is checked from now, by a measure-only build (T137) | An overrun found at T143 would come too late |
+| `g2/` imports only today's surviving generic pieces, held by a test (T137) | T143 deletes the rest in one change |
+| The shell reads the game through `G2Game`; T136 plugs its store into `boot.ts` (T137) | T137 lands before T136 (M034: "Needs —") |
+| uma-art goes in `dependencies`, exactly 2.4.0; the domain keeps its dev dependency (T137) | The web bundles its images; the domain only tests ids |
+| The hidden Account has no frame and no cell; the four new drawings are the only drawn places without a frame (T137) | It is reached from the trainer chip and the menu, never drawn (§3.1) |
+| A port's answer carries its operation's id beside `recheck`'s answer (T137) | The check-in sheet keeps Collect all's id in navigation state, so a reload shows the same receipt (T142) |
+| `PENDING` also holds the two global sheets, the plaza and the reveal (T137) | T143's "every slot filled" then covers every slot T138–T142 own, not only the places |
+| Global sheets open over any shell route, Peeks only over their page (T137) | The bar's menu button is on every Page too; a Peek belongs to the page its tile is on |
+| A page's tiles read in grid order, row by row (T137) | VoiceOver and the keyboard meet the tiles as the eye does |
+| The `busy` seed runs BASELINE's policies with the roster at its cap of 25 and opens 40 minutes after day 3's 08:00 check-in, done for three in five Farm Umas (T137) | BASELINE alone holds 20 Umas until Shards grow it, and at 08:00 itself every Uma is Ready: the offset shows Ready, Free, queued and busy rings together |
 
 ## 14. Done when
 
