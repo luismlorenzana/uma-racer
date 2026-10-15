@@ -21,7 +21,8 @@ import { SortSheet } from './SortSheet'
  * The browsing chrome every album shares, kept small so the list starts near the top (D176): a title line with the
  * count, one sticky toolbar (search, Sort, a badged Filters button, and the album's segments), and removable chips
  * for active filters. Quick picks and saved views live in the Filters sheet
- * (docs/design/ux.md#shared-browsing-chrome).
+ * (docs/design/ux.md#shared-browsing-chrome). Saved views are offered only to an album that keeps them: the Uma picker
+ * keeps nothing, so it passes none.
  */
 const VIEW_GLYPHS = { icons: ViewGridIcon, cards: ViewCardsIcon, list: ViewListIcon } as const
 
@@ -66,14 +67,15 @@ export function AlbumChrome({
   counts: Record<string, Record<string, number>>
   total: number
   parameter: string | null
-  views: readonly SavedView[]
+  /** The album's saved views; leave them out, with their handlers, for an album that keeps none. */
+  views?: readonly SavedView[]
   emptyHint: EmptyStateHint | null
   hiddenFilterKeys?: readonly string[]
   countFor: (draft: AlbumQuery) => number
   onQueryChange: (query: AlbumQuery) => void
   onParameterChange: (parameter: string | null) => void
-  onSaveView: (name: string) => void
-  onDeleteView: (name: string) => void
+  onSaveView?: (name: string) => void
+  onDeleteView?: (name: string) => void
   children: ReactNode
 }) {
   const [filterOpen, setFilterOpen] = useState(false)
@@ -88,6 +90,7 @@ export function AlbumChrome({
   const activeCount = activeFacets.length
   const sortLabel = sorts.find((sort) => sort.key === query.sort)?.label ?? 'Sort'
   const preview = useCallback((draft: AlbumQuery) => setDraftTotal(countFor(draft)), [countFor])
+  const saving = views !== undefined && onSaveView !== undefined && onDeleteView !== undefined
 
   const removeFilter = (key: string) => {
     const filters = { ...query.filters }
@@ -186,17 +189,17 @@ export function AlbumChrome({
         hiddenKeys={hiddenFilterKeys}
         onPreview={preview}
         onApply={(draft) => { onQueryChange(draft); setFilterOpen(false) }}
-        header={
+        header={presets.length > 0 || saving ? (
           <div className="mt-1 mb-2 grid gap-1.5">
             <p className="text-micro">Quick picks</p>
             <div className="flex flex-wrap gap-1.5">
               {presets.map((preset) => (
                 <Chip key={preset.key} onClick={() => { onQueryChange(preset.apply(query)); setFilterOpen(false) }}>{preset.label}</Chip>
               ))}
-              <Chip onClick={() => { setFilterOpen(false); setViewsOpen(true) }}>Saved views{views.length > 0 ? ` · ${views.length}` : ''}</Chip>
+              {saving && <Chip onClick={() => { setFilterOpen(false); setViewsOpen(true) }}>Saved views{views.length > 0 ? ` · ${views.length}` : ''}</Chip>}
             </div>
           </div>
-        }
+        ) : undefined}
       />
 
       <SortSheet
@@ -211,7 +214,7 @@ export function AlbumChrome({
         }}
       />
 
-      <BottomSheet open={viewsOpen} onClose={() => setViewsOpen(false)}>
+      {saving && <BottomSheet open={viewsOpen} onClose={() => setViewsOpen(false)}>
         <h2 className="font-display mb-1 text-xl font-bold">Saved views</h2>
         <p className="text-micro mb-3">Filters, sort, grouping and density under a name</p>
         <div className="grid gap-1.5">
@@ -253,7 +256,7 @@ export function AlbumChrome({
             Save
           </Button>
         </div>
-      </BottomSheet>
+      </BottomSheet>}
     </div>
   )
 }

@@ -83,3 +83,13 @@ export function recordOf(row: RaceResultRow, sequence: number): RaceResultRecord
 /** Her rows as today's records, in sequence. */
 export const historyOf = (rows: Readonly<Record<string, RaceResultRow>>, umaId: string): RaceResultRecord[] =>
   rowsOf(rows, umaId).map((row, sequence) => recordOf(row, sequence))
+
+/** The run page on one committed result: the Racecourse's full-screen `run` (`ui.ts`; 11 §6), `?result=` its row's id. */
+export const resultPath = (resultId: string): string => `/racing/racecourse/run?result=${encodeURIComponent(resultId)}`
+
+/** A record with its `raceResults` row's id, so a badge or a Trainer record can open that race's result. */
+export type LinkedRaceRecord = RaceResultRecord & { readonly resultId: string }
+
+/** Her rows as linked records, in sequence. */
+export const linkedHistoryOf = (rows: Readonly<Record<string, RaceResultRow>>, umaId: string): LinkedRaceRecord[] =>
+  rowsOf(rows, umaId).map((row, sequence) => ({ ...recordOf(row, sequence), resultId: row.opId }))

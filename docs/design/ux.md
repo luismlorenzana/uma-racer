@@ -151,8 +151,8 @@ in a turn race), and a feed of small toasts on the right calls out skills and mo
 Pause, step back and on while paused, and 1× or 2× (plus Slow in a turn race). **Skip** sits top right. The last spurt
 adds a slight zoom. The screen stays awake while it plays.
 
-A run starts at 1×. Account stores a default race speed for this phone (`uma-racer:g2:raceSpeed`), but the run doesn't
-read it yet. Dev builds expose `window.__raceScene` (`seek`, `skipToEnd`).
+A run starts at this phone's default race speed from Account (`uma-racer:g2:raceSpeed`, 1× or 2×), or at the nearest
+speed the race offers if that one isn't. Dev builds expose `window.__raceScene` (`seek`, `skipToEnd`).
 
 ### Results
 

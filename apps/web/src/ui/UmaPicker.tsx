@@ -1,8 +1,9 @@
 // The one Uma picker (D181; docs/design/ux.md "Default sorts"; T138): a sheet on the Stable's album over the Umas a
 // caller offers, with its search, filters, sorts and three views, opening on the level order unless the caller leads
-// with a sort of its own. Today's `UmaPickerSheet` props on the new game's store: the caller's sorts, `describe`,
-// `disabledReason` and `candidateIds`. An Uma that can't be picked stays listed, after the ones that can, with her
-// reason. Owned by the Stable; the Training (T139) and Farm (T140) places use it too.
+// with a sort of its own. It keeps nothing, so it offers no saved views (ux "Shared browsing chrome"). Today's
+// `UmaPickerSheet` props on the new game's store: the caller's sorts, `describe`, `disabledReason` and `candidateIds`.
+// An Uma that can't be picked stays listed, after the ones that can, with her reason. Owned by the Stable; the Training
+// (T139) and Farm (T140) places use it too.
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { emptyStateHint, runAlbumQuery, type AlbumQuery, type SortDef } from './album/query'
@@ -98,13 +99,10 @@ export function UmaPicker({
           counts={result.counts}
           total={result.total}
           parameter={parameter}
-          views={[]}
           emptyHint={emptyStateHint(rows, STABLE_FACETS, query)}
           countFor={(draft) => runAlbumQuery(rows, STABLE_FACETS, draft).total}
           onQueryChange={setQuery}
           onParameterChange={setParameter}
-          onSaveView={() => undefined}
-          onDeleteView={() => undefined}
         >
           <VirtualGrid
             items={entries}

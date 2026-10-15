@@ -103,12 +103,12 @@ describe('Trainer profile projections', () => {
       showcaseGroups: [{ id: 'default', name: null, awardRefs: ['trainer:stable-master', mixedRef] }],
     }, new Set(['trainer:stable-master', mixedRef]), new Set([uma.id, orphan.templateId]))
     const saves = { [uma.id]: save, [orphan.templateId]: orphan }
-    const collection = buildTrainerBadgeCollection(content, trainer, saves, [raceResult()])
+    const collection = buildTrainerBadgeCollection(content, trainer, saves, [{ ...raceResult(), resultId: 'op-trainer-view-0' }])
     expect(filterBadgeItems(collection.items, '', [{ kind: 'category', value: 'collection' }]).every((item) => item.category === 'collection')).toBe(true)
     expect(collection.items.every((item) => item.venue === null && item.points === 0)).toBe(true)
     expect(collection.records).toEqual(expect.arrayContaining([
       expect.objectContaining({ kind: 'highest-stat', umaName: uma.name, valueLabel: '999 Speed' }),
-      expect.objectContaining({ kind: 'biggest-winning-margin', source: expect.objectContaining({ to: expect.stringContaining('/race/run?') }) }),
+      expect.objectContaining({ kind: 'biggest-winning-margin', source: expect.objectContaining({ to: '/racing/racecourse/run?result=op-trainer-view-0' }) }),
     ]))
     expect(buildTrainerPinnedUmas(content, trainer, saves)).toEqual([
       { umaId: orphan.templateId, name: orphan.templateId, level: 12, missingContent: true },

@@ -2,24 +2,33 @@
 // The Racing page's places, rendered on the dev seeds through the in-memory port (T141 "Tests"): a race after the first
 // is four taps from the Racing page, its result reads the committed row and a reopen shows it without fanfare; the
 // Racecourse and Trophy Hall counters; a stale Advance redraws under "Her build changed." and keeps the button; the
-// Promote sheet waits for her to be free; the Map offers no Start and sends its sub-routes back; the three scopes. The
+// Promote sheet waits for her to be free; the Map offers no Start and sends its sub-routes back; the three scopes. A run
+// starts at Account's race speed and follows Account's reduced motion, and a badge's race link opens that result. The
 // PixiJS scene is stubbed: jsdom has no WebGL, and it ends the race as soon as it mounts.
 import { act, cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderG2, seedGame, stubStorage } from '../../__fixtures__/testing'
+import { TURN_RACE_RATE } from '../../scenes/race/presentation'
+import { setRaceSpeed, setReducedMotion, startingSpeed } from '../../ui/devicePrefs'
 import { readLogs } from './records'
 import { TROPHY_HALL_SEEN_KEY } from './seen'
+import { resultPath } from './today'
+import { raceRecords } from './trophy'
+
+/** What the stubbed scene was given: the reduced-motion flag it was built with, and each playback rate it was set to. */
+const scene = vi.hoisted(() => ({ reducedMotion: null as boolean | null, rates: [] as number[] }))
 
 vi.mock('../../scenes/race/RaceScene', () => ({
   RaceScene: class {
     private readonly onFinish: () => void
     constructor(..._args: unknown[]) {
       this.onFinish = _args[4] as () => void
+      scene.reducedMotion = _args[5] as boolean
     }
     async mount() { this.onFinish() }
     seek() {}
     skipToEnd() { this.onFinish() }
-    setSpeed() {}
+    setSpeed(rate: number) { scene.rates.push(rate) }
     setFaces() { return Promise.resolve() }
     destroy() {}
     get position() { return 0 }
@@ -30,7 +39,18 @@ afterEach(() => {
   cleanup()
   vi.unstubAllGlobals()
 })
-beforeEach(stubStorage)
+beforeEach(() => {
+  stubStorage()
+  scene.reducedMotion = null
+  scene.rates = []
+})
+
+/** Starts her G1 from race select and waits for the run page; returns the result's id. */
+async function startRace(where: () => string): Promise<string> {
+  fireEvent.click(await screen.findByRole('button', { name: 'Start race' }))
+  await waitFor(() => expect(where()).toMatch(/^\/racing\/racecourse\/run\?result=/))
+  return new URLSearchParams(where().split('?')[1]).get('result')!
+}
 
 describe('the Racecourse', () => {
   it('runs a race in four taps from the Racing page and shows its committed result, then quietly on a reopen', async () => {
@@ -59,6 +79,50 @@ describe('the Racecourse', () => {
     renderG2('/racing', seedGame('busy'))
     const tile = await screen.findByRole('link', { name: /^Racecourse/ })
     await waitFor(() => expect(tile.querySelector('[data-counter]')?.getAttribute('data-counter')).toBe('2'))
+  })
+
+  it("starts at Account's race speed, or the nearest speed the race offers", async () => {
+    expect(startingSpeed([1, 2], 2)).toBe(2)
+    expect(startingSpeed([1 / 3, 1, 2], 1)).toBe(1)
+    expect(startingSpeed([1 / 3, 1], 2)).toBe(1)
+    expect(startingSpeed([1, 2], 1 / 3)).toBe(1)
+    expect(startingSpeed([1, 2], 1.5)).toBe(1)
+    setRaceSpeed(2)
+    const { where } = renderG2('/racing/racecourse?uma=sim-uma-01&race=sim-g1-medium-a', seedGame('busy'))
+    await startRace(where)
+    const speeds = await screen.findByRole('group', { name: 'Playback speed' })
+    expect(within(speeds).getByRole('button', { name: '2×' }).getAttribute('aria-pressed')).toBe('true')
+    expect(within(speeds).getByRole('button', { name: '1×' }).getAttribute('aria-pressed')).toBe('false')
+    // The scene loads after the first render, and still starts at that rate: a turn race plays at its own rate on top.
+    const turnRace = within(speeds).queryByRole('button', { name: 'Slow' }) !== null
+    await waitFor(() => expect(scene.rates.at(-1)).toBe(2 * (turnRace ? TURN_RACE_RATE : 1)))
+  })
+
+  it("runs and shows the result without fanfare under Account's reduced motion, as the rest of the app does", async () => {
+    const game = seedGame('busy')
+    setReducedMotion(true)
+    const { where } = renderG2('/racing/racecourse?uma=sim-uma-01&race=sim-g1-medium-a', game)
+    await startRace(where)
+    await waitFor(() => expect(scene.reducedMotion).toBe(true))
+    // The Prize Money chip shows the new balance at once: no flying amount, no count up from the old one.
+    const chip = await screen.findByRole('status', { name: 'Prize Money' })
+    expect(chip.textContent).toBe(game.getSnapshot().state!.profile.prizeMoney.toLocaleString('en-US'))
+    act(() => setReducedMotion(false))
+  })
+
+  it("opens a badge's or a record's race on the live run route, at that race's result", async () => {
+    const game = seedGame('busy')
+    const { where } = renderG2('/racing/racecourse?uma=sim-uma-01&race=sim-g1-medium-a', game)
+    const id = await startRace(where)
+    cleanup()
+    const logs = await readLogs(game)
+    const linked = raceRecords(game.getSnapshot().state!, { ...logs, badges: {} }).find((record) => record.resultId === id)!
+    expect(linked).toMatchObject({ umaId: 'sim-uma-01', raceId: 'sim-g1-medium-a' })
+    expect(resultPath(linked.resultId)).toBe(`/racing/racecourse/run?result=${id}`)
+    const view = renderG2(resultPath(linked.resultId), game)
+    expect(await screen.findByRole('region', { name: 'Prize Money' })).toBeTruthy()
+    expect(document.querySelector('[data-g2="race-result"]')).not.toBeNull()
+    expect(view.where()).toBe(`/racing/racecourse/run?result=${id}`)
   })
 
   it('says nothing more than "That didn\'t work. Try again." when the commit fails', async () => {

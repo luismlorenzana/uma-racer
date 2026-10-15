@@ -121,11 +121,12 @@ describe('Badge collection projections', () => {
       }] },
       preferences: { ...won.state.preferences, showcaseGroups: [{ id: 'default', name: null, awardRefs: ['badge:removed-content'] }] },
     }
-    const history = [result(0), result(1)]
+    // Each record carries its `raceResults` row's id, which the live run route plays.
+    const history = [result(0), result(1)].map((record) => ({ ...record, resultId: `op-alpha-${record.sequence}` }))
     const view = buildUmaBadgeCollection(loaded, state, won.events, history)
     expect(view.items.find((item) => item.awardKey === 'badge:removed-content')).toMatchObject({ status: 'missing', pinned: true })
-    expect(buildTrophyWall(loaded, state, history)[0]).toMatchObject({ label: 'Synthetic Grand Prix', count: 2, lastSource: { to: '/race/run?uma=alpha&race=synthetic-race&strategy=pace&sequence=1' } })
-    expect(buildTimelineItems(loaded, state, won.events, history)[0]).toMatchObject({ source: { to: '/race/run?uma=alpha&race=synthetic-race&strategy=pace&sequence=0' } })
+    expect(buildTrophyWall(loaded, state, history)[0]).toMatchObject({ label: 'Synthetic Grand Prix', count: 2, lastSource: { to: '/racing/racecourse/run?result=op-alpha-1' } })
+    expect(buildTimelineItems(loaded, state, won.events, history)[0]).toMatchObject({ source: { to: '/racing/racecourse/run?result=op-alpha-0' } })
   })
 
   it('round-trips valid URL state, reports rejected values, and resolves an owned fallback', () => {

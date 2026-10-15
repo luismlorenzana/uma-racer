@@ -4,7 +4,7 @@
 // tier; who is bonded and where, then who could bond it now; and Bond in the thumb zone, which opens the Uma picker and
 // goes on to T139's Dojo session with her, this card and its room. A bond in progress reads "In session · bonds 01:30".
 import { scenarioRow } from '@racer/domain/tiers'
-import { useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router'
 import { ArtViewer } from '../../ui/ArtViewer'
 import { useArt } from '../../ui/album/useArt'
@@ -55,6 +55,15 @@ export default function CardPage({ place, rest, cardId }: PageProps & { cardId: 
   const pay = useMemo(() => (card === null ? null : cardPay(card, T)), [card, T])
   const offset = game.utcOffsetMin(now)
   const choices = useMemo(() => (state === null || env === null || card === null ? new Map() : new Map(Object.values(state.umas).map((uma) => [uma.outfitId, bondChoice(state, uma, card, now, env, offset)]))), [state, env, card, now, offset])
+
+  // Opening its page is what clears a card's NEW mark (ux "Shared behaviours"), as her profile does an Uma's. A device
+  // that has never opened the Library first takes every card as seen, as the Library would, so only cards a content
+  // update adds read NEW there.
+  useEffect(() => {
+    if (card === null || env === null) return
+    prefs.see(prefs.fresh ? [...env.content.cards.keys()] : [cardId])
+    // Once per card.
+  }, [cardId, card !== null])
 
   if (state === null || env === null) return <PlaceHeader place={place} rest={rest} />
   if (card === null || pay === null) {

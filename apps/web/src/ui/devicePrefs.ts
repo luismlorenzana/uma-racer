@@ -34,6 +34,19 @@ export function raceSpeed(): RaceSpeed {
 
 export const setRaceSpeed = (speed: RaceSpeed): void => write(RACE_SPEED_KEY, String(speed))
 
+/**
+ * The speed a run starts at: this phone's default when the race offers it, else the nearest speed it does offer (the
+ * slower one on a tie). `offered` is the run's own list, such as a turn race's Slow, 1× and 2×.
+ */
+export function startingSpeed(offered: readonly number[], saved: number = raceSpeed()): number {
+  let best = offered[0] ?? 1
+  for (const value of offered) {
+    const gap = Math.abs(value - saved) - Math.abs(best - saved)
+    if (gap < 0 || (gap === 0 && value < best)) best = value
+  }
+  return best
+}
+
 /** Account's own switch, apart from the system setting `useReducedMotionSetting` also reads. */
 export const deviceReducedMotion = (): boolean => {
   const value = read(REDUCED_MOTION_KEY)

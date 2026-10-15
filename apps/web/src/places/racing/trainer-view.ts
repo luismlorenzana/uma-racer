@@ -12,7 +12,6 @@ import {
   trainerStatName,
   type BadgeTier,
   type FlairEventV1,
-  type RaceResultRecord,
   type TrainerBadgeStateV1,
   type TrainerRecord,
   type UmaBadgeStateV1,
@@ -20,6 +19,7 @@ import {
 } from '@racer/domain'
 import type { LoadedContent } from '../../content/runtime'
 import { buildUmaBadgeCollection, type BadgeCollectionItem, type BadgeSourceView } from './badge-collection-view'
+import { resultPath, type LinkedRaceRecord } from './today'
 
 export interface TrainerBadgeCollection {
   scope: 'trainer'
@@ -76,13 +76,13 @@ function recordView(
   record: TrainerRecord,
   content: LoadedContent,
   saves: Readonly<Record<string, UmaSave>>,
-  raceHistory: readonly RaceResultRecord[],
+  raceHistory: readonly LinkedRaceRecord[],
 ): TrainerRecordView {
   const template = content.umas.byId.get(record.umaId)
   const sourceRace = record.sourceId ? raceHistory.find((row) => `race:${row.umaId}:${row.sequence}` === record.sourceId) : null
   const source = sourceRace ? {
     label: 'View race result',
-    to: `/race/run?uma=${encodeURIComponent(sourceRace.umaId)}&race=${encodeURIComponent(sourceRace.raceId)}&strategy=${sourceRace.strategy}&sequence=${sourceRace.sequence}`,
+    to: resultPath(sourceRace.resultId),
     safeId: record.sourceId,
   } : record.sourceId ? { label: 'Source unavailable', to: null, safeId: record.sourceId } : null
   const valueLabel = record.kind === 'biggest-winning-margin'
@@ -104,7 +104,7 @@ export function buildTrainerBadgeCollection(
   content: LoadedContent,
   state: TrainerBadgeStateV1,
   saves: Readonly<Record<string, UmaSave>>,
-  raceHistory: readonly RaceResultRecord[] = [],
+  raceHistory: readonly LinkedRaceRecord[] = [],
 ): TrainerBadgeCollection {
   const catalog = buildTrainerAchievementCatalog({ umas: content.umas.items, cards: content.cards.items, races: content.races.items })
   const progress = projectTrainerAchievementProgress(catalog, state)
@@ -180,7 +180,7 @@ export function buildTrainerShowcase(
   states: Readonly<Record<string, import('@racer/domain').BadgeStateV1>>,
   saves: Readonly<Record<string, UmaSave>>,
   events: readonly (FlairEventV1 & { id: string })[],
-  races: readonly RaceResultRecord[] = [],
+  races: readonly LinkedRaceRecord[] = [],
 ): TrainerShowcaseView[] {
   const collection = buildTrainerBadgeCollection(content, trainer, saves, races)
   const trainerItems = new Map(collection.items.map((item) => [item.awardKey, item]))
