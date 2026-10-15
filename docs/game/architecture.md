@@ -112,7 +112,7 @@ and the account bar's chips. The registry imports the rules for types only, so t
 - **Three sync lanes:** ordinary writes, Puzzle operations and Farm operations take turns.
 - **Lazy by default.** PixiJS, Firebase, the race engine and the heavy screens load on demand.
 - **The new game beside it** (`src/g2/`, M034): its own entry `g2.html`, served only by the dev server at `/dev/g2/*`
-  over synthetic seeds (`?seed=busy | fresh | quiet`), with no auth, content or service worker. It imports only today's
+  over synthetic seeds (`?seed=busy | fresh | quiet | …`), with no auth, content or service worker. It imports only today's
   generic pieces (the `ui/` primitives and icons, `content/`, `auth/`, `scenes/race/`), held by a test both ways, and
   reads the game through one port (`g2/app/game.ts`). `?save=device` fills it from the device save (`g2/save`, T136:
   Dexie `uma-racer-g2`, one store, one sync lane) on the seeds' content; only `&wipe` adds the first-boot wipe and purge.
@@ -131,6 +131,13 @@ and the account bar's chips. The registry imports the rules for types only, so t
   model (`model.ts`) over the rework state, and the one Uma picker (`g2/ui/UmaPicker`, D181) is the Stable's album in a
   sheet. Album preferences are device keys (`uma-racer:g2:album:<album>`), and today's album chrome and query engine
   are among the pieces `g2/` reuses.
+  The check-in (`g2/places/check-in/`, T142) fills the `?sheet=check-in` slot: Collect all from the pill, once, its
+  operation's id kept in navigation state; `checkInSummary`'s sections over this sheet's receipts (the server's once
+  answered); Repeat all with Same/Fit, Start suggestions, Queue stopped's `StoppedQueueCard` (beside T140's pieces in
+  `g2/ui/work/`, with `useTaps`), Couldn't repeat's fixes, Speed up all and Best use. The planner's views
+  (`g2/places/needs/`) are her profile's Needs tab and target toggle (T138's `PROFILE_UI` slots) and the Stable's
+  `needs` roster view. Dev seed `stopped` has three dropped queues, `?at=HH:MM` moves any seed's clock, and the DEV-only
+  `/dev/check-in` proof shows the size chips, queues and stopped cards.
 
 ## The API
 

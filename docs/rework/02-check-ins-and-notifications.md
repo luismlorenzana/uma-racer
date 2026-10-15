@@ -3,7 +3,8 @@
 > **Status: approved design, 2026-10-14; first written 2026-10-13 (D328, D334).** How the owner keeps 25 Umas working in visits of under
 > a minute: Collect all, batch sizes, queues, Repeat, the check-in summary, the "what she still needs" planner, push
 > notifications, offline time, retries and plain words. Numbers are drafts. `pnpm sim:loop`
-> ([12](12-economy-and-pacing.md) §12) measures how much they raise utilisation.
+> ([12](12-economy-and-pacing.md) §12) measures how much they raise utilisation. §1–§6 and §8–§9's screens are built in
+> the new game beside today's app (T142, D360), with §11's last rows; push (§7) waits for phase 4.
 
 The pacing target assumes about **75% utilisation**: each Uma works about 18 hours a day, with three check-ins and
 queues ([12](12-economy-and-pacing.md) §11). Every idle hour between a job's end and the next visit is lost, so this
@@ -440,6 +441,26 @@ The planner, suggestions, finish times and the badge count are **derived on read
 | Account says "App build" and "Content", not "build id" and "content version"; reduced motion (`uma-racer:g2:reducedMotion`) and race speed (`uma-racer:g2:raceSpeed`, 1× or 2×) are device keys (T138) | §9 bans "id" and "version" on screen; per-device conveniences are never synced (§10) |
 | Account shows the trainer's name read-only, edited in the Trophy Hall (T138) | The name lives in badge state, T141's |
 | A sign-out and a fixture load are optional port members (`signOut`, `fixtures`, `loadFixture`); where a port has none the button is off and says why (T138) | The dev mount has no auth, and only the in-memory port can swap its account in place |
+| Bond picks aren't saved in phase 3: the planner runs with `chosen = {}`, so an unchosen bond reads "N bonds: pick cards" and links to her Dojo sheet (T142) | T131 left it to phase 3; [13](13-removals-and-plan-changes.md) §6 saves no picks; a device-only list would plan differently per device; cards are chosen at the Dojo anyway |
+| Start suggestions is one `start` per line, each its own operation (T142) | 13 §6 has no batch start, and a line the state refuses mustn't stop the rest (T131's `startSuggestions`) |
+| The summary shows the server's receipt once it has one, else the local one (T142) | "Already collected" then shows in place, with no second screen (§9) |
+| Collect all runs once from navigation state, then keeps its id there, as Repeat all does (T142) | A reload shows the same receipt and never collects again |
+| `since` (`uma-racer:g2:check-in:shown-at`) is written when the sheet closes; folded sections are `uma-racer:g2:check-in:collapsed`; the first showing on a device has no "since" (T142) | Reopening the sheet's entry keeps "since 08:02"; a device that never showed it has no visit to measure from |
+| Per-Uma Repeat sits on her Free line; each place's Repeat here is T140's (T142) | §5's "on every collected card" in a summary that folds slots into totals |
+| A Free line's tap opens its sheet preselected: T140's job sheet, or T139's session sheet (`?session=&room=&unlocks=&back=`); a Free Uma with nothing to suggest reads "Nothing she can start for your targets now." and opens her Needs tab (T142) | T131 plans one suggestion per Uma; §4's "swap for another suggestion" has no rule |
+| Repeat all's starts with a note ("×6 → ×3", "grade 2 open") list under **Repeated (N)** after Collected; **Switch** is Recall, then a start at the higher grade at the same place and size, through `recheck`, while that job is still her latest (T142) | Repeat already started the old grade; Recall returns its inputs ([07](07-farm.md)) |
+| Couldn't repeat's Buy is a buy, then a Repeat of her; a skip shows while she is still Free (T142) | Her Repeat then finds the stock it lacked; a fixed skip has nothing left to show |
+| Spending (Buy and restart, a fix's Buy, Speed up all) confirms once with the amount; everything else is one tap, one tap in flight for the whole sheet (T142) | §1 counts two taps for Buy and restart; §4 confirms Speed up all; §9's double tap |
+| A gated Needs line links to the Exchange row (`?family=&grade=`); only Queue stopped's and Couldn't repeat's fixes buy inline (T142) | T140's rule: a purchase stays one deliberate tap, outside §4's fixes |
+| `SizeChips` shows a chip per size, 1 to what the stock covers (T142, built by T140) | §3: "a chip per size with its finish time" |
+| The shared pieces came with T140 in `g2/ui/work/`; T142 adds `StoppedQueueCard` and `useTaps`, `useTap` for a list (T142) | One runner and one set of pieces for every timed thing (D358) |
+| Offline shows one line in the summary's footer, linking to Account's sync row; the save's refused taps show there in plain words until dismissed; a stopped card another device already put back leaves its answer there (T142) | §9's words, where the owner just tapped |
+| "Already collected." names the Uma, or the place when nobody holds the slot now (T142) | The other device's collect freed the slot |
+| Training done's **Race** opens `/racing/racecourse?uma=`; Ready to advance's **Advance** opens T141's Advance sheet (`/racing/scenario-gate/:umaId?sheet=advance`) (T142) | "Advance, with its usual confirmation" (§4) is that sheet |
+| Her Needs tab is the body of T138's profile tab (`PROFILE_UI.Needs`) under her header and its target toggle (`PROFILE_UI.TargetToggle`); the roster view is the Stable's `needs` sub-page (T142) | A full-page sub-page would drop her header and tabs; [11](11-hub-and-places.md) §7.1 calls both the profile's sub-pages |
+| Each of her three startable lines takes its own Free Uma (T142, a gap in `needsFor`) | One slot per Uma ([01](01-game-loop.md) §2): every Start must be able to run |
+| The roster view lists the marked targets with up, down and remove, or the automatic five read-only; unlocks left per Uma with any left; dishes short by family and grade (T142) | §6: big-picture only; marking is the profile's |
+| The dev mount adds the `stopped` seed and `?at=HH:MM`, and a DEV-only proof at `/dev/check-in` (T142) | The check-in's checks need dropped queues and a clock at 09:00 or 23:00 (11 §7.2's rule for proofs) |
 
 ## 12. Done when
 
