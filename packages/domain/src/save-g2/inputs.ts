@@ -45,7 +45,7 @@ function parseSlots(value: unknown): ReturnType<typeof parseSlotRef>[] | null {
 
 function start(value: unknown): OperationInput<'start'> | null {
   if (!isObject(value) || !isRowId(value.outfitId)) return null
-  if (Object.hasOwn(value, 'from')) {
+  if (value.from !== undefined) {
     if (!exactKeys(value, ['outfitId', 'from'], ['count']) || value.from !== 'dropped') return null
     if (value.count !== undefined && !isPositiveInt(value.count)) return null
     return value.count === undefined ? { outfitId: value.outfitId, from: 'dropped' } : { outfitId: value.outfitId, from: 'dropped', count: value.count }
@@ -97,7 +97,7 @@ function repeat(value: unknown): RepeatInput | null {
 
 function speedUp(value: unknown): OperationInput<'speed-up'> | null {
   if (!isObject(value)) return null
-  if (Object.hasOwn(value, 'all')) {
+  if (value.all !== undefined) {
     if (!exactKeys(value, ['all', 'span'], ['utcOffsetMin']) || value.all !== true || !SPEED_UP_SPANS.includes(value.span as SpeedUpSpan)) return null
     if (value.utcOffsetMin !== undefined && !isOffset(value.utcOffsetMin)) return null
     const span = value.span as SpeedUpSpan
@@ -174,7 +174,7 @@ function finishRace(value: unknown): FinishRaceInput | null {
 
 function devGrant(value: unknown): DevGrantInput | null {
   const keys = ['items', 'prizeMoney', 'umaTickets', 'finish', 'gate'] as const
-  if (!isObject(value) || !exactKeys(value, [], keys) || Object.keys(value).length === 0) return null
+  if (!isObject(value) || !exactKeys(value, [], keys) || Object.values(value).every((v) => v === undefined)) return null
   const items = value.items
   if (items !== undefined && (!isObject(items) || Object.keys(items).length === 0 ||
     !Object.entries(items).every(([item, qty]) => isRowId(item) && itemById(item) !== undefined && isPositiveInt(qty)))) return null

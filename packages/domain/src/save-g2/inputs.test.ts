@@ -85,6 +85,15 @@ describe('operation inputs', () => {
     for (const value of [null, 'input', 42, [], ...(MALFORMED[name] ?? [])]) expect(parse(value), JSON.stringify(value)).toBeNull()
   })
 
+  it('reads a field holding undefined as absent, as JSON does, so an outbox kept by structured clone parses the same', () => {
+    const request = { kind: 'craft', item: 'chopped-carrot', count: 4 }
+    expect(OPERATION_INPUTS.start({ outfitId: 'uma-01', slot: { building: 'pantry', room: undefined, slot: 0 }, request }))
+      .toEqual({ outfitId: 'uma-01', slot: { building: 'pantry', slot: 0 }, request })
+    expect(OPERATION_INPUTS.repeat({ outfitIds: undefined, utcOffsetMin: 60 })).toEqual({ utcOffsetMin: 60 })
+    expect(OPERATION_INPUTS['dev-grant']({ prizeMoney: undefined })).toBeNull()
+    expect(OPERATION_INPUTS.collect({ outfitId: undefined })).toBeNull()
+  })
+
   it("leaves a rule's limits to the rule: a size of 12, a sixth target or two check-in times at once parse", () => {
     expect(OPERATION_INPUTS.start({ outfitId: 'uma-01', slot, request: { kind: 'craft', item: 'chopped-carrot', count: 12 } })).not.toBeNull()
     expect(OPERATION_INPUTS['set-targets']({ outfitIds: ['a', 'b', 'c', 'd', 'e', 'f'] })).not.toBeNull()

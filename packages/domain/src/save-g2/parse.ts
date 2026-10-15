@@ -42,10 +42,13 @@ import type { EntityData, EntityRow, ItemLedgerRow, LogData, LogRow, RaceResultR
 export const isObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
 
-/** Every required key present, and nothing but the required and optional keys. */
+/**
+ * Every required key present, and nothing but the required and optional keys. A key holding `undefined` is absent, as
+ * JSON reads it, so a value kept by structured clone (Dexie) parses as its JSON copy does.
+ */
 export function exactKeys(value: Record<string, unknown>, keys: readonly string[], optional: readonly string[] = []): boolean {
-  const actual = Object.keys(value)
-  return keys.every((key) => Object.hasOwn(value, key)) && actual.every((key) => keys.includes(key) || optional.includes(key))
+  const actual = Object.keys(value).filter((key) => value[key] !== undefined)
+  return keys.every((key) => value[key] !== undefined && Object.hasOwn(value, key)) && actual.every((key) => keys.includes(key) || optional.includes(key))
 }
 
 export const isNonNegativeInt = (value: unknown): value is number => Number.isSafeInteger(value) && (value as number) >= 0
@@ -98,7 +101,8 @@ export function isJson(value: unknown): boolean {
   if (value === null || typeof value === 'boolean' || typeof value === 'string') return true
   if (typeof value === 'number') return Number.isFinite(value)
   if (Array.isArray(value)) return value.every(isJson)
-  if (isObject(value)) return Object.getPrototypeOf(value) === Object.prototype && Object.values(value).every(isJson)
+  // An object's `undefined` field is one JSON leaves out.
+  if (isObject(value)) return Object.getPrototypeOf(value) === Object.prototype && Object.values(value).every((v) => v === undefined || isJson(v))
   return false
 }
 
@@ -308,7 +312,7 @@ export function parseUmaState(value: unknown): UmaState | null {
 export function parseSlotRef(value: unknown): SlotRef | null {
   if (!isObject(value) || !exactKeys(value, ['building', 'slot'], ['room']) || typeof value.building !== 'string' || !isBuildingId(value.building)) return null
   const rooms: readonly string[] = BUILDINGS[value.building].rooms
-  const hasRoom = Object.hasOwn(value, 'room')
+  const hasRoom = value.room !== undefined
   if (rooms.length > 0 ? !hasRoom || !rooms.includes(value.room as string) : hasRoom) return null
   if (!isIntIn(value.slot, 0, slotsPerRoom(value.building, MAX_BUILDING_LEVEL) - 1)) return null
   return hasRoom ? { building: value.building, room: value.room as RoomId, slot: value.slot } : { building: value.building, slot: value.slot }

@@ -7,7 +7,7 @@ import { createTrainerBadgeState, type FlairEventV1 } from '../badges'
 import { flairEventId } from '../flair'
 import { initialSave } from './initial'
 import { SAVE_LIMITS } from './kinds'
-import { stampEntity, stampLog } from './rows'
+import { logDraft, stampEntity, stampLog } from './rows'
 import {
   answersRequest, isCurrentStamp, parsePurgeRequest, parsePurgeResponse, parseSaveSnapshotV2, parseSnapshotQuery, parseSyncRequestV2,
   parseSyncResponseV2, snapshotQuery, type SyncChange,
@@ -142,6 +142,10 @@ describe('pages and the purge', () => {
     expect(typeof parseSaveSnapshotV2({ ...page, cursor: 'has spaces' })).toBe('string')
     const many = Array.from({ length: SAVE_LIMITS.pageRows + 1 - entities.length }, (_, n) => ({ ...entities[1]!, id: `x${n}` }))
     expect(typeof parseSaveSnapshotV2({ ...page, entities: [...entities, ...many] })).toBe('string')
+    // Nine receipts just under a row's bound each, over the page's 4 MiB together.
+    const heavy = (n: number) => stampLog(logDraft('operations', opId(n), T0, { name: 'collect-all', at: T0, receipt: { pad: 'x'.repeat(480 * 1024) } }), T0)
+    expect(typeof parseSaveSnapshotV2({ ...page, logs: [heavy(1)] })).toBe('object')
+    expect(typeof parseSaveSnapshotV2({ ...page, logs: Array.from({ length: 9 }, (_, n) => heavy(n + 1)) })).toBe('string')
   })
 
   it('reads a GET query: the stamp as strings, since (0 when absent) and the cursor', () => {
