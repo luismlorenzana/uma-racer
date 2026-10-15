@@ -1,16 +1,18 @@
 // The shared work pieces' view models (docs/rework/07-farm.md §2, §8, §10; docs/rework/05-training-hub.md §2;
 // docs/rework/09-racing-rewards-and-exchange.md §5.1; docs/rework/02-check-ins-and-notifications.md §3; T140). Pure
 // readings of the domain's state and rules for one slot's card, its Speed Ticket controls, a Recall's preview, a queue's
-// chips and the size chips. Every number comes from a domain function; nothing here restates a rule.
+// chips, the size chips and a building's upgrade. Every number comes from a domain function; nothing here restates a rule.
 import { chipWords, clockTime, fill, fitWords, say, sizeChips, type OperationEnv, type Words } from '@racer/domain/rework/check-in'
 import { buy as buyOperation, buyPrice } from '@racer/domain/rework/exchange'
 import { isRefusal } from '@racer/domain/rework/tiers'
-import type { BuildingId } from '@racer/domain/rework/farm'
-import { SPEED_TICKET_ID, type RecipeInput } from '@racer/domain/rework/items'
+import { buildingSpeed, MAX_BUILDING_LEVEL, totalSlots, upgradeCost, type BuildingId } from '@racer/domain/rework/farm'
+import { SPEED_TICKET_ID, type ItemId, type RecipeInput } from '@racer/domain/rework/items'
 import type { Projection, QueueWarning } from '@racer/domain/rework/planner'
+import type { WorkView } from './view'
+import { workWords } from './words'
 import {
-  applyTickets, endsAt, finishedCount, holdsSlot, itemEnds, itemProgress, recall, remainingMs, sameSlot, slotsOf, stockOf, sumInputs,
-  ticketsToFinish, SESSION_KIND, SPEED_TICKET_MS, type Entry, type SlotRef, type WorkRequest, type WorkRow, type WorkState,
+  applyTickets, buildingLevel, endsAt, finishedCount, holdsSlot, itemEnds, itemProgress, recall, remainingMs, sameSlot, slotsOf, stockOf,
+  sumInputs, ticketsToFinish, upgrade, SESSION_KIND, SPEED_TICKET_MS, type Entry, type SlotRef, type WorkRequest, type WorkRow, type WorkState,
 } from '@racer/domain/rework/work'
 
 const MS_PER_MINUTE = 60_000
@@ -228,4 +230,44 @@ export function sizeChipsView(start: number, itemSeconds: readonly number[], max
     marked: chips.marked,
     fit: fill(fitWords(chips, utcOffsetMin)),
   }
+}
+
+// --- Upgrades -------------------------------------------------------------------------------------------------------
+
+/** The next upgrade (07 §7, 05 §7) against what the account holds, with `upgrade`'s refusal when it can't be paid. */
+export interface UpgradeView {
+  readonly to: 2 | 3
+  readonly prizeMoney: number
+  readonly haveMoney: number
+  readonly items: readonly { readonly item: ItemId; readonly need: number; readonly have: number }[]
+  /** What the level brings: every slot at it (`totalSlots`) and its speed (`buildingSpeed`), against today's. */
+  readonly adds: { readonly slots: number; readonly slotsNow: number; readonly speed: number; readonly speedNow: number }
+  /** `prize-money` or `short` in the rule's words, else null. */
+  readonly refusal: Words | null
+}
+
+/** The next upgrade of `building` on the view's settled state, or null at Lv 3. */
+export function upgradeView(view: WorkView, building: BuildingId): UpgradeView | null {
+  const settled = view.settled
+  const level = buildingLevel(settled, building)
+  if (level >= MAX_BUILDING_LEVEL) return null
+  const to = (level + 1) as 2 | 3
+  const cost = upgradeCost(building, to)
+  const tried = upgrade(settled, { building }, view.now, view.env)
+  return {
+    to,
+    prizeMoney: cost.prizeMoney,
+    haveMoney: settled.profile.prizeMoney,
+    items: cost.items.map(({ item, qty }) => ({ item, need: qty, have: stockOf(settled.items, item) })),
+    adds: { slots: totalSlots(building, to), slotsNow: totalSlots(building, level), speed: buildingSpeed(to), speedNow: buildingSpeed(level) },
+    refusal: isRefusal(tried) ? say(tried.reason, tried.data) : null,
+  }
+}
+
+/** What the next level brings, in words: "3 slots at Lv 2", "Speed ×1.25 at Lv 3". */
+export function upgradeAdds(upgrade: UpgradeView): string[] {
+  const lines: string[] = []
+  if (upgrade.adds.slots > upgrade.adds.slotsNow) lines.push(workWords('upgrade-slots', { slots: upgrade.adds.slots, level: upgrade.to }))
+  if (upgrade.adds.speed > upgrade.adds.speedNow) lines.push(workWords('upgrade-speed', { speed: upgrade.adds.speed, level: upgrade.to }))
+  return lines
 }

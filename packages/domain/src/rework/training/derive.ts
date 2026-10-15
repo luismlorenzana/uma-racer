@@ -10,6 +10,8 @@
 // - Race Bonus is every card's full value (06 §4), for the tier rules' `applyRaceFinish`.
 // - `cardPay` is one card's share of that at a scenario, for the Card Library (06 §6, T138); a card's running-style and
 //   distance focus is today's (06 §5), passed through for the Library's corners.
+// - For the build views (T139): `nodeSkillIds` names what each paying node pays, and `lineagePays` what an Uma pays
+//   from a slot (her golds by position and her inherited unique), the same reading the derivation itself uses.
 import { MAX_STARS, cardGoldSkillIds, cardRaceBonus } from '../../cards'
 export { CARD_DISTANCE_FOCI, CARD_STYLE_FOCI, cardFocus, type CardFocus } from '../../card-focus'
 import { cardShares, eraPct, paysSkillPoints } from '../../constellation'
@@ -71,6 +73,11 @@ export interface DerivedBuild {
   readonly raceBonus: number
   /** Skills the card nodes pay, in node order. */
   readonly cardSkillIds: readonly string[]
+  /**
+   * What each paying node pays (D182): its card's next gold and next white, by node id, for a node's sheet (T139).
+   * A node that pays nothing (empty, past its card's cap, or a card that can't pay) is absent.
+   */
+  readonly nodeSkillIds: Readonly<Record<string, readonly string[]>>
   readonly openNodes: number
   /** Open nodes paying: holding a bonded, era-eligible card of the set, under its cap. */
   readonly filledNodes: number
@@ -149,9 +156,10 @@ export function deriveBuild(input: DeriveBuildInput): DerivedBuild {
   const scaled: Record<StatKey, number> = { speed: 0, stamina: 0, power: 0, guts: 0, wit: 0 }
   let scaledSp = 0
   const cardSkillIds: string[] = []
+  const nodeSkillIds: Record<string, readonly string[]> = {}
   const cursor = new Map<string, number>()
   const golds = new Map<string, readonly string[]>()
-  for (const { cardId } of live) {
+  for (const { nodeId, cardId } of live) {
     const card = cards.get(cardId)!
     const quality = eraPct(card.era, T) * buffPct(card)
     const shares = cardShares(card)
@@ -166,8 +174,10 @@ export function deriveBuild(input: DeriveBuildInput): DerivedBuild {
     const at = cursor.get(cardId) ?? 0
     cursor.set(cardId, at + 1)
     if (!golds.has(cardId)) golds.set(cardId, cardGoldSkillIds(card, content.skills))
-    for (const skillId of [golds.get(cardId)![at], card.hintSkillIds[at]]) {
-      if (skillId && !cardSkillIds.includes(skillId)) cardSkillIds.push(skillId)
+    const paid = [golds.get(cardId)![at], card.hintSkillIds[at]].filter((skillId): skillId is string => Boolean(skillId))
+    if (paid.length > 0) nodeSkillIds[nodeId] = paid
+    for (const skillId of paid) {
+      if (!cardSkillIds.includes(skillId)) cardSkillIds.push(skillId)
     }
   }
 
@@ -216,6 +226,7 @@ export function deriveBuild(input: DeriveBuildInput): DerivedBuild {
     loadoutSkillIds: preset.loadoutSkillIds.filter((id) => inLibrary.has(id)),
     raceBonus: [...cards.values()].reduce((sum, card) => sum + cardRaceBonus(card, MAX_STARS), 0),
     cardSkillIds,
+    nodeSkillIds,
     openNodes,
     filledNodes: live.length,
     activeExtraNodes,
@@ -258,17 +269,36 @@ function skillLibrary(
   for (const [slot, entry] of held) {
     const mirrored = [...held].some(([other, uma]) => other.includes('-gp') && inspirationParent(other) !== inspirationParent(slot) && uma.id === entry.id)
     const multiplier = slot.includes('-gp') && !mirrored ? GRANDPARENT_SP_MULTIPLIER : 1
+    // Whites at once; gold position k pays her k-th natural gold once opened; her inherited unique once opened.
+    const pays = lineagePays(entry, content.skills)
     let goldIndex = 0
     for (const skillId of entry.awakeningSkillIds) {
-      const gold = content.skills.get(skillId)?.kind === 'gold'
-      if (!gold || build.inspiration.golds.includes(inspirationGoldKey(slot, goldIndex))) add(skillId, 'inherited', entry.id, gold ? multiplier : 1)
-      if (gold) goldIndex += 1
+      if (pays.golds[goldIndex] !== skillId) {
+        add(skillId, 'inherited', entry.id, 1)
+        continue
+      }
+      if (build.inspiration.golds.includes(inspirationGoldKey(slot, goldIndex))) add(skillId, 'inherited', entry.id, multiplier)
+      goldIndex += 1
     }
-    if (build.inspiration.uniques.includes(slot)) {
-      for (const { skillId, sourceId } of lineageInheritedUniques([entry], content.skills)) add(skillId, 'inherited', sourceId, multiplier)
-    }
+    if (pays.unique !== null && build.inspiration.uniques.includes(slot)) add(pays.unique, 'inherited', entry.id, multiplier)
   }
   return { library, multipliers }
+}
+
+/** What an Uma pays from a lineage slot she fills (05 §5, D250, D174), for the derivation and the Lineage Hall's map. */
+export interface LineagePay {
+  /** Her natural golds in awakening order: gold position k (`<slot>:gold<k>`) pays the k-th, so gold 1 is the first. */
+  readonly golds: readonly string[]
+  /** Her unique in its inherited form, paid once the slot's unique is open; null when it has none. */
+  readonly unique: string | null
+}
+
+/** What `template` pays from any slot: her golds by position and her inherited unique. Her whites pay at once. */
+export function lineagePays(template: Pick<UmaTemplate, 'id' | 'uniqueSkillId' | 'awakeningSkillIds'>, skills: TrainingContent['skills']): LineagePay {
+  return {
+    golds: template.awakeningSkillIds.filter((skillId) => skills.get(skillId)?.kind === 'gold'),
+    unique: lineageInheritedUniques([template], skills)[0]?.skillId ?? null,
+  }
 }
 
 /** Her template; a missing one is a caller's bug (the parsers keep it out). */

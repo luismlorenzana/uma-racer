@@ -30,6 +30,9 @@ import { dependenciesOf, isOpen } from './order'
 import { LINEAGE_WHY, trainingRefusal } from './refusals'
 import { goldPosition, unlockKey, unlockLabel, type Unlock } from './unlocks'
 
+/** A preset's card set holds up to six cards (06 §3): the slots a screen draws (T139). */
+export { CARD_SET_SIZE }
+
 type Presets = UmaBuild['presets']
 const mapPresets = <T>(fn: (distance: DistanceCategory) => T): Record<DistanceCategory, T> =>
   Object.fromEntries(DISTANCE_CATEGORIES.map((distance) => [distance, fn(distance)])) as Record<DistanceCategory, T>

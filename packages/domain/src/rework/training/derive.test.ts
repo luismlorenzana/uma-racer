@@ -12,7 +12,7 @@ import { capProfileAt, extraBudgetAt, nodeValue, spCapAt } from '../tiers/scalin
 import { emptyBuild, type ScenarioAt, type UmaBuild } from '../types'
 import { STATS, type Stats } from '../../types'
 import { commitUnlocks } from './build'
-import { cardNodeSkills, cardPay, deriveBuild, type DeriveBuildInput } from './derive'
+import { cardNodeSkills, cardPay, deriveBuild, lineagePays, type DeriveBuildInput } from './derive'
 import { EXTRA_NODE_IDS, extraCapacity } from './extra'
 import { reworkSpNodeValue } from './skill-points'
 import { FIXED_UNLOCKS, fixedUnlock } from './unlocks'
@@ -251,6 +251,18 @@ describe('lineage', () => {
     expect(opened).not.toContain('i-dad')
   })
 
+  it("names what a slot pays (lineagePays): gold position k pays her k-th natural gold, and her inherited unique (T139)", () => {
+    const pays = lineagePays(MOM, TRAINING_CONTENT.skills)
+    expect(pays).toEqual({ golds: ['g1-mom', 'g2-mom'], unique: 'i-mom' })
+    for (const [index, skillId] of pays.golds.entries()) {
+      const paid = derive({ T: 2, cards: [], slots, lineage, golds: [`parent0:gold${index}`] }).library.map((skill) => skill.skillId)
+      expect(paid).toContain(skillId)
+      expect(paid).not.toContain(pays.golds[1 - index])
+    }
+    expect(derive({ T: 2, cards: [], slots, lineage, uniques: ['parent0'] }).library.map((skill) => skill.skillId)).toContain(pays.unique)
+    expect(lineagePays({ ...MOM, awakeningSkillIds: ['w1-mom', 'g2-mom'], uniqueSkillId: null }, TRAINING_CONTENT.skills)).toEqual({ golds: ['g2-mom'], unique: null })
+  })
+
   it("prices a single-side grandparent's golds and unique 2×, and a mirror's at normal SP (D250)", () => {
     const mirrored = derive({ T: 2, cards: [], slots, lineage, golds: ['parent0-gp0:gold0'], uniques: ['parent0-gp0'] })
     expect(mirrored.skillCostMultipliers.get('g1-gran')).toBe(1)
@@ -269,6 +281,16 @@ describe('skills and Race Bonus', () => {
     expect(derived.raceBonus).toBe(cardRaceBonus(cardOf('speed-e1'), MAX_STARS) + cardRaceBonus(cardOf('wit-e1'), MAX_STARS))
     expect(derived.raceBonus).toBeGreaterThan(0)
     expect(derived.library.slice(0, 1)).toEqual([{ skillId: 'unique-colt', origin: 'own-unique', sourceId: COLT.id }])
+  })
+
+  it("names each paying node's skills: its card's next gold and white, by node id (T139)", () => {
+    const derived = derive({ T: 1, cards: ['speed-e1', 'wit-e1'], nodes: ['speed-e1', 'wit-e1', 'speed-e1', null] })
+    expect(derived.nodeSkillIds).toEqual({
+      n1: ['gold-speed-e1', 'hint1-speed-e1'],
+      n2: ['gold-wit-e1', 'hint1-wit-e1'],
+      n3: ['hint2-speed-e1'],
+    })
+    expect(Object.values(derived.nodeSkillIds).flat()).toEqual(derived.cardSkillIds)
   })
 
   it('keeps only loadout skills her library holds', () => {

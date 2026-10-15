@@ -58,11 +58,18 @@ const NEEDS_PAGES: PlaceUi['subPages'] = {
   needs: lazy(() => import('./needs/RosterNeeds')),
 }
 
+// T139: the Training page's four facilities.
+const TrainingPage = lazy(() => import('./training/Page'))
+const TrainingPeek = lazy(() => import('./training/Peek'))
+
 export const PLACE_UI: Readonly<Partial<Record<PlaceId, PlaceUi>>> = {
-  // §6's full-screen flows inside place routes: the constellation tree and the Extra Stats map; the race run and result
-  // and the Scenario Gate's ceremony are the Racing page's (T141).
-  observatory: { fullScreen: oneSegment },
-  gym: { fullScreen: oneSegment },
+  // T139: the four facilities share one Page (the facility page, its session sheet and each Uma's build view at
+  // `:umaId`) and one Peek. §6's full-screen flows inside place routes: the constellation tree and the Extra Stats map;
+  // the race run and result and the Scenario Gate's ceremony are the Racing page's (T141).
+  observatory: { Page: TrainingPage, Peek: TrainingPeek, fullScreen: oneSegment },
+  'lineage-hall': { Page: TrainingPage, Peek: TrainingPeek },
+  gym: { Page: TrainingPage, Peek: TrainingPeek, fullScreen: oneSegment },
+  dojo: { Page: TrainingPage, Peek: TrainingPeek },
   ...FARM_UI,
   ...RACING_UI, // T141
   // T138: the Town Hall's places. The Stable's Page holds the roster and each profile (`outfit/:umaId`, `/skills`,
@@ -133,9 +140,7 @@ export type SlotId = PlaceId | 'sheet:check-in' | 'sheet:featured' | 'plaza' | '
  * Slots still waiting for their task. A place leaves once it has a Page and, unless it is `direct` or `hidden`, a
  * Peek; a sheet, the plaza or the reveal once it is set. The registry test holds both directions.
  */
-export const PENDING: readonly SlotId[] = Object.freeze([
-  'observatory', 'lineage-hall', 'gym', 'dojo', // T139
-] as const)
+export const PENDING: readonly SlotId[] = Object.freeze([] as const)
 
 /** The sub-page `rest` names, if any, with its params. */
 export function matchSubPage(ui: PlaceUi | undefined, rest: string): { readonly Page: Lazy<SubPageProps>; readonly params: RouteParams } | null {
