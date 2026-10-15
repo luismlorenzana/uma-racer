@@ -165,6 +165,24 @@ describe('the Scenario Gate', () => {
     expect(await screen.findByRole('heading', { name: 'URA Finale Graduate' })).toBeTruthy()
   })
 
+  it("goes on to her profile after 2.5 s, not 6 s, under Account's reduced motion", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    try {
+      const game = seedGame('gate')
+      const umaId = Object.values(game.getSnapshot().state!.umas).find((uma) => uma.racing.level === 10)!.outfitId
+      setReducedMotion(true)
+      const { where } = renderG2(`/racing/scenario-gate/${umaId}?sheet=advance`, game)
+      await screen.findByText('The new layer')
+      fireEvent.click(document.querySelector<HTMLButtonElement>('[data-advance]')!)
+      expect(await screen.findByRole('heading', { name: 'URA Finale Graduate' })).toBeTruthy()
+      await act(async () => { await vi.advanceTimersByTimeAsync(2_600) })
+      await waitFor(() => expect(where()).toBe(`/town/stable/outfit/${umaId}`))
+    } finally {
+      act(() => setReducedMotion(false))
+      vi.useRealTimers()
+    }
+  })
+
   it('opens Promote only while she is free, and offers her work actions first', async () => {
     const game = seedGame('promote')
     const state = game.getSnapshot().state!
