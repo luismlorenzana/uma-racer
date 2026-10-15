@@ -249,6 +249,9 @@ describe('her Needs tab', () => {
     expect(needs.startable.length).toBeGreaterThan(0)
     const slots = needs.startable.map((s) => `${s.start.slot.building}/${s.start.slot.slot}`)
     expect(new Set(slots).size).toBe(slots.length)
+    // Each line its own Free Uma, so every Start can run (T142).
+    const workers = needs.startable.map((s) => s.start.outfitId)
+    expect(new Set(workers).size).toBe(workers.length)
     for (const { line, start: job } of needs.startable) {
       expect(line.short).toBeGreaterThan(0)
       expect(job.item).toBe(line.item)
