@@ -9,6 +9,7 @@ import {
   equippedRaceBonus,
   expToNextUmaLevel,
   parseRaceResultRecord,
+  parseRaceRun,
   raceAttemptId,
   raceAttemptSeed,
   resolveRaceExperience,
@@ -260,5 +261,41 @@ describe('race result parsing', () => {
 describe('scenario-linked races (D122, T055)', () => {
   it('names a race\'s scenario from its start level: a gate level is still its scenario, the next level the next one', () => {
     expect([1, 9, 10, 11, 20, 21, 140].map((startLevel) => raceScenarioTier({ startLevel }))).toEqual([1, 1, 1, 2, 2, 3, 14])
+  })
+})
+
+describe('a generation-2 race run (finish-race, docs/rework/09-racing-rewards-and-exchange.md §9)', () => {
+  const run = () => ({
+    engineVersion: 9 as const,
+    course: {
+      distance: 2_000, surface: 'turf' as const, season: 1, trackId: 10006, rotation: 1, grade: 100,
+      layout: { corners: [{ start: 1_200, end: 1_600, number: 2 }], straights: [{ start: 0, end: 1_200 }, { start: 1_600, end: 2_000 }], slopes: [] },
+    },
+    contentVersion: 'abc123def456',
+    seed: 123,
+    strategy: 'pace' as const,
+    startStats: { speed: 100, stamina: 100, power: 100, guts: 100, wit: 100 },
+    field: record().field.map((runner) => ({ ...runner, skills: [] })),
+    accomplishmentFacts: {
+      version: 1 as const, familyId: 'synthetic-family', grade: 'g1' as const, venueKey: 'synthetic-venue', venueTags: [],
+      courseId: 'synthetic-course', surface: 'turf' as const, distance: 2_000, distanceCategory: 'medium' as const, series: [],
+      playerStartDelay: 0.04, playerFinalSpurtPlacement: 1, ledEverySectionCheckpoint: false, inheritedUniqueActivated: false,
+    },
+  })
+
+  it("is today's record without its progression fields, checked by the same parts", () => {
+    expect(parseRaceRun(run())).toEqual(run())
+    expect(parseRaceRun({ ...run(), engineVersion: 8 })).toEqual({ ...run(), engineVersion: 8 })
+    expect(parseRaceRun({ ...run(), engineVersion: 1 })).toBeNull()
+    expect(parseRaceRun({ ...run(), engineVersion: 10 })).toBeNull()
+    expect(parseRaceRun({ ...run(), umaId: 'u1' })).toBeNull()
+    const { accomplishmentFacts: _facts, ...withoutFacts } = run()
+    expect(parseRaceRun(withoutFacts)).toBeNull()
+    expect(parseRaceRun({ ...run(), strategy: 'end' })).toBeNull()
+    expect(parseRaceRun({ ...run(), field: run().field.slice(0, 7) })).toBeNull()
+    expect(parseRaceRun({ ...run(), field: run().field.map(({ skills: _skills, ...runner }) => runner) })).toBeNull()
+    const { grade: _grade, ...v5Course } = run().course
+    expect(parseRaceRun({ ...run(), course: v5Course })).toBeNull()
+    expect(parseRaceRun({ ...run(), accomplishmentFacts: { ...run().accomplishmentFacts, distance: 1_600, distanceCategory: 'mile' } })).toBeNull()
   })
 })

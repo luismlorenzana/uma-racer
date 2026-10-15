@@ -221,7 +221,7 @@ export function assertProgressionRaceContent(races: readonly RaceTemplate[]): vo
 
 export function parseRaceAccomplishmentFacts(
   value: unknown,
-  record?: Pick<RaceResultRecord, 'raceId' | 'playerPlacement' | 'field' | 'course'>,
+  record?: Pick<RaceResultRecord, 'playerPlacement' | 'field' | 'course'>,
 ): RaceAccomplishmentFactsV1 | null {
   if (!isRecord(value) || !hasExactKeys(value, [
     'version', 'familyId', 'grade', 'venueKey', 'venueTags', 'courseId', 'surface', 'distance', 'distanceCategory',
@@ -430,6 +430,60 @@ function parseRunner(value: unknown, fieldSize: number): RaceResultRunner | null
   }
 }
 
+/** The engine versions that record skills and a course (v1, the skillless engine, records neither). */
+type SkilledEngineVersion = NonNullable<RaceResultRecord['engineVersion']>
+const SKILLED_ENGINE_VERSIONS: readonly SkilledEngineVersion[] = [2, 3, 4, 5, 6, 7, 8, 9]
+
+/**
+ * The course a skilled engine recorded. Engine v4 (the stamina contest, D135) records the same course shape as v3; v5
+ * adds slopes, track and rotation; v6 (turns, D154) and v7 (D158) record the same course as v5; v8 adds the race's grade
+ * and each straight's front type, and v9 (D240) records v8's course.
+ */
+function parseRaceCourse(value: unknown, version: SkilledEngineVersion): RaceResultCourse | null {
+  const hasLayout = version >= 3
+  const v5 = version >= 5
+  const v8 = version >= 8
+  const courseKeys = v8
+    ? ['distance', 'surface', 'season', 'layout', 'trackId', 'rotation', 'grade']
+    : v5
+      ? ['distance', 'surface', 'season', 'layout', 'trackId', 'rotation']
+      : hasLayout ? ['distance', 'surface', 'season', 'layout'] : ['distance', 'surface', 'season']
+  if (!isRecord(value) || !hasExactKeys(value, courseKeys) || !isPositiveInt(value.distance) ||
+    !SURFACES.includes(value.surface as Surface) || !isNonNegativeInt(value.season)) return null
+  const layout = hasLayout ? parseCourseLayout(value.layout, value.distance, v5, v8) : null
+  if ((hasLayout && !layout) || (v5 && (!isNonNegativeInt(value.trackId) || !isNonNegativeInt(value.rotation))) ||
+    (v8 && !isNonNegativeInt(value.grade))) return null
+  return {
+    distance: value.distance,
+    surface: value.surface as Surface,
+    season: value.season,
+    ...(hasLayout ? { layout: layout! } : {}),
+    ...(v5 ? { trackId: value.trackId as number, rotation: value.rotation as number } : {}),
+    ...(v8 ? { grade: value.grade as number } : {}),
+  }
+}
+
+/**
+ * A race's field: 8–18 runners, each gate, place and Uma once, exactly one of them hers. A skilled engine's runners
+ * carry their skills; a v1 record's never do.
+ */
+function parseRaceField(value: unknown, skilled: boolean): RaceResultRunner[] | null {
+  if (!Array.isArray(value)) return null
+  const fieldSize = value.length
+  if (fieldSize < 8 || fieldSize > 18) return null
+  const runners = value.map((runner) => parseRunner(runner, fieldSize))
+  if (runners.some((runner) => runner === null)) return null
+  const field = runners as RaceResultRunner[]
+  if (
+    field.filter((runner) => runner.isPlayer).length !== 1 ||
+    new Set(field.map((runner) => runner.gate)).size !== fieldSize ||
+    new Set(field.map((runner) => runner.placement)).size !== fieldSize ||
+    new Set(field.map((runner) => runner.umaId)).size !== fieldSize ||
+    field.some((runner) => (runner.skills !== undefined) !== skilled)
+  ) return null
+  return field
+}
+
 export function parseRaceResultRecord(value: unknown): RaceResultRecord | null {
   const hasEngineVersion = isRecord(value) && Object.hasOwn(value, 'engineVersion')
   const hasCompletedGoalIds = isRecord(value) && Object.hasOwn(value, 'completedGoalIds')
@@ -450,36 +504,11 @@ export function parseRaceResultRecord(value: unknown): RaceResultRecord | null {
   if (!isRecord(value) || !hasExactKeys(value, keys) || !Array.isArray(value.field)) return null
   const fieldSize = value.field.length
   const startStats = parseStats(value.startStats)
-  const runners = value.field.map((runner) => parseRunner(runner, fieldSize))
-  const version = hasEngineVersion && [2, 3, 4, 5, 6, 7, 8, 9].includes(value.engineVersion as number) ? value.engineVersion as 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 : null
-  // Engine v4 (the stamina contest, D135) records the same course shape as v3; v5 adds slopes, track and rotation;
-  // v6 (turns, D154) and v7 (D158) record the same course as v5; v8 adds the race's grade and each straight's front type,
-  // and v9 (D240) records v8's course.
-  const hasLayout = version !== null && version >= 3
-  const v5 = version !== null && version >= 5
-  const v8 = version !== null && version >= 8
-  const courseKeys = v8
-    ? ['distance', 'surface', 'season', 'layout', 'trackId', 'rotation', 'grade']
-    : v5
-      ? ['distance', 'surface', 'season', 'layout', 'trackId', 'rotation']
-      : hasLayout ? ['distance', 'surface', 'season', 'layout'] : ['distance', 'surface', 'season']
-  const courseLayout = hasLayout && isRecord(value.course) && isPositiveInt(value.course.distance)
-    ? parseCourseLayout(value.course.layout, value.course.distance, v5, v8)
+  const version = hasEngineVersion && SKILLED_ENGINE_VERSIONS.includes(value.engineVersion as SkilledEngineVersion)
+    ? value.engineVersion as SkilledEngineVersion
     : null
-  const course = hasEngineVersion && isRecord(value.course) && hasExactKeys(value.course, courseKeys) &&
-    isPositiveInt(value.course.distance) && SURFACES.includes(value.course.surface as Surface) && isNonNegativeInt(value.course.season) &&
-    (!hasLayout || courseLayout) &&
-    (!v5 || (isNonNegativeInt(value.course.trackId) && isNonNegativeInt(value.course.rotation))) &&
-    (!v8 || isNonNegativeInt(value.course.grade))
-    ? {
-      distance: value.course.distance,
-      surface: value.course.surface as Surface,
-      season: value.course.season,
-      ...(hasLayout ? { layout: courseLayout! } : {}),
-      ...(v5 ? { trackId: value.course.trackId as number, rotation: value.course.rotation as number } : {}),
-      ...(v8 ? { grade: value.course.grade as number } : {}),
-    }
-    : null
+  const course = version === null ? null : parseRaceCourse(value.course, version)
+  const field = parseRaceField(value.field, hasEngineVersion)
   if (
     (hasEngineVersion && !version) ||
     (hasEngineVersion && !course) ||
@@ -492,31 +521,23 @@ export function parseRaceResultRecord(value: unknown): RaceResultRecord | null {
     !isNonNegativeInt(value.ticketReward) || !isNonNegativeInt(value.shardReward) || value.shardReward > 1 ||
     (hasCompletedGoalIds && (!Array.isArray(value.completedGoalIds) || value.completedGoalIds.some((id) => !isId(id)) ||
       new Set(value.completedGoalIds).size !== value.completedGoalIds.length)) ||
-    fieldSize < 8 || fieldSize > 18 || runners.some((runner) => runner === null) || !isNonNegativeInt(value.createdAt) ||
+    !field || !isNonNegativeInt(value.createdAt) ||
     // A past scenario's race (D190) names a scenario before her current one and pays nothing.
     (hasTier && (!isPositiveInt(value.tier) || value.tier >= tierOfLevel(value.startLevel) || value.expGained !== 0 ||
       value.levelsGained.length > 0 || value.ticketReward !== 0 || value.shardReward !== 0 ||
       (hasCompletedGoalIds && (value.completedGoalIds as unknown[]).length > 0)))
   ) return null
-  const field = runners as RaceResultRunner[]
   const levels = value.levelsGained as number[]
   const player = field.find((runner) => runner.isPlayer)
   const accomplishmentFacts = hasAccomplishmentFacts
     ? parseRaceAccomplishmentFacts(value.accomplishmentFacts, {
-      raceId: value.raceId as string,
       playerPlacement: value.playerPlacement as number,
       field,
       ...(course ? { course } : {}),
     })
     : null
   if (
-    field.filter((runner) => runner.isPlayer).length !== 1 ||
-    new Set(field.map((runner) => runner.gate)).size !== fieldSize ||
-    new Set(field.map((runner) => runner.placement)).size !== fieldSize ||
-    new Set(field.map((runner) => runner.umaId)).size !== fieldSize ||
     new Set(levels).size !== levels.length || levels.some((level, index) => index > 0 && level <= levels[index - 1]!) ||
-    (hasEngineVersion && field.some((runner) => runner.skills === undefined)) ||
-    (!hasEngineVersion && field.some((runner) => runner.skills !== undefined)) ||
     (hasAccomplishmentFacts && !accomplishmentFacts) ||
     (hasEarnedFlairEventIds && (!Array.isArray(value.earnedFlairEventIds) ||
       value.earnedFlairEventIds.some((id) => !isId(id)) || new Set(value.earnedFlairEventIds).size !== value.earnedFlairEventIds.length)) ||
@@ -550,5 +571,43 @@ export function parseRaceResultRecord(value: unknown): RaceResultRecord | null {
     ...(hasEarnedFlairEventIds ? { earnedFlairEventIds: [...value.earnedFlairEventIds as string[]] } : {}),
     field,
     createdAt: value.createdAt,
+  }
+}
+
+/**
+ * A race as it ran, without what it paid: the generation-2 `finish-race` operation's `run` (docs/rework/09-racing-
+ * rewards-and-exchange.md §9), which its `raceResults` row keeps beside the operation's receipt. The rules that pay a
+ * race live in `rework/`, so the progression fields (levels, EXP, tickets, Shards, goals) stay out.
+ */
+export type RaceRun = Pick<RaceResultRecord, 'engineVersion' | 'course' | 'contentVersion' | 'seed' | 'strategy' | 'startStats' | 'field' | 'accomplishmentFacts'>
+
+const RACE_RUN_KEYS = ['engineVersion', 'course', 'contentVersion', 'seed', 'strategy', 'startStats', 'field', 'accomplishmentFacts'] as const
+
+/**
+ * A generation-2 race's run, checked by `parseRaceResultRecord`'s own parts: a skilled engine's course and field, her
+ * strategy on her runner, and the accomplishment facts today's race commit always writes. Her id and place are the
+ * operation's input, which checks them against her runner.
+ */
+export function parseRaceRun(value: unknown): RaceRun | null {
+  if (!isRecord(value) || !hasExactKeys(value, RACE_RUN_KEYS)) return null
+  if (!SKILLED_ENGINE_VERSIONS.includes(value.engineVersion as SkilledEngineVersion)) return null
+  const version = value.engineVersion as SkilledEngineVersion
+  const course = parseRaceCourse(value.course, version)
+  const startStats = parseStats(value.startStats)
+  const field = parseRaceField(value.field, true)
+  if (!course || !startStats || !field || !isId(value.contentVersion) || !isNonNegativeInt(value.seed) ||
+    !STRATEGIES.includes(value.strategy as Strategy)) return null
+  const player = field.find((runner) => runner.isPlayer)!
+  const accomplishmentFacts = parseRaceAccomplishmentFacts(value.accomplishmentFacts, { playerPlacement: player.placement, field, course })
+  if (player.strategy !== value.strategy || !accomplishmentFacts) return null
+  return {
+    engineVersion: version,
+    course,
+    contentVersion: value.contentVersion,
+    seed: value.seed,
+    strategy: value.strategy as Strategy,
+    startStats,
+    field,
+    accomplishmentFacts,
   }
 }

@@ -138,18 +138,92 @@ logs and operations in one sync lane. The kinds change:
 | `badges/…` | Badge state, as today |
 | Logs: `raceResults`, `ledger`, `flairEvents`, `operations` | Append-only, as today. An Expedition race's result carries a snapshot of the run (Expedition, tier, mechanics in effect) |
 
-Every change is an **operation** re-run by the API with the domain package:
-- `start` (also restarting a dropped queue), `queue` (add, remove, move, dismiss a dropped queue), `collect`,
-  `collect-all`, `repeat`, `recall`, `speed-up` (one entry or all), `finish`, `upgrade`, `advance-scenario`;
-- `set-targets`, `set-check-in-times` and `set-repeat-sizing` ([02](02-check-ins-and-notifications.md) §10);
-- `finish-race` (a race's commit, [09](09-racing-rewards-and-exchange.md) §9), `exchange-shards`, `induct`, `feature-uma` and `set-race-defaults` (M034's specs);
-- `set-active-nodes`, `set-lineage` and the preset edits (card set, assignments, loadout); a bond is an ordinary Dojo session, so it needs no operation of its own;
-- `buy`, `sell`;
-- `unlock-uma`, `promote`.
+Every change is an **operation** re-run by the API with the domain package. The list is `OPERATIONS`
+(`rework/check-in`), rendered here:
 
-A retried operation returns its first receipt and is never applied twice. **Gone from the plan's save:** `cards/{cardId}`,
-the `puzzle*` kinds, `farm/main`, `farmWorkers`, `farmRecipes`, `farmExtra` and the item families for tokens, Puzzle
-materials and Energy.
+<!-- live:operations -->
+| Operation | What it does | Rules |
+|---|---|---|
+| `start` | Starts a job or session in a slot, or restarts a stopped queue | 07 §2, 05 §2, 02 §4 |
+| `queue` | Adds, removes or moves a queued request, or dismisses a stopped queue | 07 §2, 02 §3–§4 |
+| `collect` | Pays one Uma's finished items or unlocks | 07 §2, 05 §2 |
+| `collect-all` | Collects every finished slot, or one place's | 02 §2 |
+| `repeat` | Restarts each Free Uma's last job or session | 02 §5 |
+| `recall` | Stops her running entry and returns the unmade inputs | 07 §2 |
+| `speed-up` | Speed Tickets on one running entry, or Speed up all | 07 §8, 02 §4 |
+| `finish` | Ends her running entry with the Speed Tickets it takes | 07 §8 |
+| `upgrade` | Raises a building one level for its Prize Money and crafted items | 07 §7, 05 §7 |
+| `advance-scenario` | Moves an Uma at her gate, career won, to the next scenario | 03 §5 |
+| `promote` | Promotes an Uma to the next tier | 04 §3–§5 |
+| `induct` | Enters a tier-3 Uma into the Hall of Fame | 04 §10 |
+| `buy` | Buys Speed Tickets or raw ingredients at the Exchange | 09 §5 |
+| `sell` | Sells surplus items for Prize Money | 09 §6 |
+| `unlock-uma` | Unlocks an Uma with an Uma Ticket | 04 §6 |
+| `exchange-shards` | Turns five Uma Shards into an Uma Ticket | 04 §6 |
+| `set-targets` | The planner's targets, up to five in order | 02 §6 |
+| `set-check-in-times` | The check-in times, one to four | 02 §3 |
+| `set-repeat-sizing` | Repeat's same size or fit to the next check-in | 02 §5 |
+| `set-card-set` | A preset's card set | 06 §3 |
+| `set-assignments` | A preset's node assignments | 05 §4 |
+| `set-lineage` | A preset's lineage picks | 05 §5 |
+| `set-active-nodes` | A preset's active Extra Stats nodes | 05 §6 |
+| `set-loadout` | A preset's equipped skills | 03 §6 |
+| `finish-race` | A race's commit: her finished unlocks, Racing EXP, goals, the gate's Shard, Prize Money and the purse | 09 §9, 01 §2 |
+| `dev-grant` | Dev builds and a dev API only: items, Prize Money, Uma Tickets, finished work, a jump to her gate | M034 |
+<!-- /live -->
+
+M034's T138 adds `feature-uma` and `set-race-defaults`. A bond is an ordinary Dojo session, so it needs no operation of
+its own. A retried operation returns its first receipt and is never applied twice. **Gone from the plan's save:**
+`cards/{cardId}`, the `puzzle*` kinds, `farm/main`, `farmWorkers`, `farmRecipes`, `farmExtra` and the item families for
+tokens, Puzzle materials and Energy.
+
+### The save as built (T134)
+
+`@racer/domain/save-g2` holds generation 2, pure, beside today's save until T143 makes it `@racer/domain/save`. It has
+no migrations, no legacy constants and no cutover rows; the API (T135) and the web save layer (T136) build on it.
+
+- **Rows.** An entity is `{ kind, id, generation: 2, schema: 1, version, savedAt, data }`. Its `version` starts at 1 and
+  rises by one for each committed sync that changes it; `savedAt` is the server's time of that commit. A log row is
+  `{ kind, id, generation: 2, schema: 1, at, savedAt, data }`, where `at` is when it happened in the device's time; it
+  never changes once written. Every kind is at schema 1 ([rearchitecture/01](../rearchitecture/01-target-architecture.md) §5).
+
+| Kind | Id | `data` | Written by |
+|---|---|---|---|
+| `profile` | `main` | The whole `AccountProfile`: its eleven fields, `generation: 2` | Operations and the create |
+| `umas` | Her outfit id | `UmaState` | Operations |
+| `buildings` | A building id | `{ level }`, 1 to 3 | Operations and the create |
+| `work` | Her outfit id | `WorkRow` | Operations |
+| `items` | A catalogue item id, or `speed-ticket` | `{ count }`, a whole number from 0 | Operations |
+| `badges` | `uma:{outfitId}` or `trainer` | Badge state, as today | The device |
+| `ledger` | The row's id | `{ id, resource, delta, reason, at }`, the domain's `LedgerEntry` | Operations and the create |
+| `itemLedger` | The row's id | `{ id, itemId, delta, reason, outfitId, opId, at }` | Operations |
+| `raceResults` | The `finish-race` operation's id | `{ umaId, raceId, opId, at, tier, scenario, run, commit }`: the scenario she raced in, the race as it ran, and the operation's receipt | Operations |
+| `flairEvents` | As today | A flair event, as today | The device |
+| `operations` | The operation's id | `{ name, at, receipt }` | Operations |
+
+- **Writers.** Only badges and flair events are written as rows by the device, as today. Every other kind changes by an
+  operation, or by the create, which carries only `createdAt`: the server builds the new account's rows itself (§5).
+- **No row is ever deleted.** A work row that empties is written as an empty row, and an item used up as a count of 0.
+- **The state.** The rules run on the work engine's state with the whole profile. Read back from the rows, its ledger
+  keeps only the rule rows (`initial-uma-tickets`, `unlock-uma`, `uma-gate-shard`, `uma-shard-exchange` and
+  `promotion-uma-ticket`): the only rows a rule reads.
+- **A commit.** An operation carries an id of 8–64 letters, digits, `_` or `-`, chosen before the tap is written, and the
+  device's time as its `now`. Applied, it writes every entity whose data changed, and its logs: the new ledger rows; an
+  item row for each of the receipt's own rows (a purchase, a sale, a dev grant) and for each Warehouse movement
+  (`<id>:m<n>`, negative for a reserve, an upgrade's cost or a Speed Ticket, positive for a return or an output); a
+  race's `raceResults` row; and the `operations` row. Repeated, it gives its first receipt and writes nothing. Refused,
+  nothing changes and nothing is stored.
+- **Sync v2.** Every request and response carries `protocol: 2` and `generation: 2`; anything else is 426
+  ([rearchitecture/07](../rearchitecture/07-data-reset.md) §4). A request is the outbox in order: the create (at most
+  one, and first), badge upserts (`baseVersion` 0 creates), flair appends (the first write wins) and operations. The
+  response answers each change in order, and carries every row the sync wrote, the server's copy of each conflicted
+  row, and every entity after `exists`. A pull walks profile, buildings, umas, work, items, badges, ledger, operations,
+  flairEvents, itemLedger and raceResults, then `savedAt`, then id, a page at a time, and leaves out `operations` rows
+  older than a week.
+- **Bounds.** 100 changes a request and 2 MiB of JSON; 512 KiB a row or an operation's input; 1,000 rows and 4 MiB a
+  page; ids of up to 160 characters of today's id alphabet.
+- **Dev grants.** `dev-grant` runs only where the env says `dev: true`: a dev build, or an API started with
+  `DEV_OPERATIONS=true`. Production refuses it (M034).
 
 ## 7. Docs to retire or rewrite when phase 3 lands
 
@@ -173,6 +247,23 @@ materials and Energy.
 | Expeditions get their own phase with a deadline | The first Umas reach them about 20 weeks after the new game starts |
 | PixiJS leaves with the race's port (phase 8); the cutover deletes every other PixiJS scene | Porting the race in the cutover would add risk to the riskiest phase (M034) |
 | No per-account card state | Every card is open; bonds belong to Umas |
+| A race commits as the operation `finish-race` (T134) | [09](09-racing-rewards-and-exchange.md) §9 allows it and requires one atomic commit of the result, the Uma, the purse and the ledger; server authority needs an operation for that |
+| Only badges and flair events are device-written rows; every other kind changes by operation or the create | §6: every change is an operation. Badges and flair stay as today (M034) |
+| The create carries only `createdAt`; the server builds the rows itself | Server authority: the device never uploads a balance |
+| Rows carry `generation: 2` and `schema: 1` | [rearchitecture/01](../rearchitecture/01-target-architecture.md) §5's one schema version per kind, without today's sniffing |
+| No row is ever deleted: an empty work row, a zero count | Versions never restart, and promotion's dropped work row still syncs |
+| The state holds only the rule rows of the ledger | Rules read only those, and they grow with the roster, not with play time |
+| `itemLedger` rows come from each receipt's movements, with ids `<opId>:m<n>`; there is no "consume" row | [07](07-farm.md) §12 lists every movement. A reserved dish has already left the Warehouse, so collecting it moves nothing ([05](05-training-hub.md) §9's "consume" is that reserve) |
+| Ledger rows keep the domain's `LedgerEntry`, not 09 §9's first `{ currency, balanceAfter, ref }` | It is the built shape (T125, T130), and its id already names the cause |
+| Operations carry no base version | [02](02-check-ins-and-notifications.md) §9: the server re-checks a tap against the latest state |
+| Bond picks are not saved | §6 saves no picks, and 02 §11 left the choice to phase 3 |
+| Operation ids have no colons and are at most 64 characters | Derived ids such as `race:<id>:featured` stay within 160 and parse cleanly |
+| The server trusts the placement and the featured board, as it trusts the clock | 02 §8: there is no anti-cheat, and the purse and `featuredPaid` still bound the pay. The board's draw needs `@racer/race`'s seeded RNG, which the CommonJS API can't import |
+| A race's id is its operation's id | One tap is one race, and `runOnce` already makes the id once-only, so the server needs no per-Uma race count |
+| A pull carries a week of operation receipts | The summary needs only recent receipts (02 §10), and older ones stay on the server for retries |
+| The bounds of §6 | Under Firestore's 1 MiB document and Cloud Run's response limits, with room for a 25-Uma Collect all |
+| `dev-grant` gives items, Prize Money and Uma Tickets as `dev-grant` ledger and item rows, ends an Uma's running entry now without tickets, and jumps her to her gate with her career won and the gate's Shard paid once | M034's rehearsal reaches a gate on a fresh account. The rows keep 09 §9's audit, and the jump pays what reaching the gate pays, under the same once-only id |
+| Every receipt that moves Warehouse stock lists it in `movements`, `finish-race` its collect's too; an item row is dated when its movement applied | One rule writes every item row, and a queued start that settled during a tap keeps its own time |
 
 ## 9. Done when
 

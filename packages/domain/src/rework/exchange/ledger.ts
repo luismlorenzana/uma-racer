@@ -16,8 +16,11 @@ export const buyGetLedgerId = (opId: string): string => `buy:${opId}:get`
 export const sellGiveLedgerId = (opId: string): string => `sell:${opId}:give`
 export const sellPayLedgerId = (opId: string): string => `sell:${opId}:pay`
 
-/** Why an item moved. Other tasks widen it with their own reasons. */
-export type ItemLedgerReason = 'buy' | 'sell'
+/**
+ * Why an item moved: bought or sold here; one of the work engine's movements (07 §12, 05 §9: reserved for a job or
+ * session, returned by Recall, a job's output, an upgrade's cost, a Speed Ticket spent); or T134's `dev-grant`.
+ */
+export type ItemLedgerReason = 'buy' | 'sell' | 'reserve' | 'return' | 'output' | 'cost' | 'ticket' | 'dev-grant'
 
 /** One `itemLedger` row (13 §6): an item's count moved by `delta`. */
 export interface ItemLedgerEntry {

@@ -10,6 +10,7 @@ import { LIVE_BLOCKS as TRAINING_BLOCKS } from '../rework/training/docs'
 import { LIVE_BLOCKS as PLANNER_BLOCKS } from '../rework/planner/docs'
 import { LIVE_BLOCKS as BUILDS_BLOCKS } from '../rework/builds/docs'
 import { LIVE_BLOCKS as LOOP_BLOCKS } from '../rework/sim/docs'
+import { LIVE_BLOCKS as CHECK_IN_BLOCKS } from '../rework/check-in/docs'
 
 export type LiveBlocks = Readonly<Record<string, () => string>>
 
@@ -26,4 +27,5 @@ export function joinBlocks(...tables: readonly LiveBlocks[]): LiveBlocks {
 
 export const REWORK_BLOCKS: LiveBlocks = joinBlocks(
   TIER_BLOCKS, ITEM_BLOCKS, CONSTELLATION_BLOCKS, EXCHANGE_BLOCKS, FARM_BLOCKS, TRAINING_BLOCKS, PLANNER_BLOCKS, BUILDS_BLOCKS, LOOP_BLOCKS,
+  CHECK_IN_BLOCKS,
 )

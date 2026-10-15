@@ -19,7 +19,9 @@ import { collect, finish, queue, recall, speedUp, start, upgrade, type QueueInpu
 import { SESSION_KIND, type WorkRequest, type WorkState } from '../work/types'
 import { setTargets } from '../planner/targets'
 import { collectAll } from './collect-all'
+import { devGrant, type DevGrantInput } from './dev-grant'
 import { dismissDropped, restartDropped, type DismissInput, type RestartInput } from './dropped'
+import { finishRace, type FinishRaceInput } from './finish-race'
 import { repeat, setRepeatSizing } from './repeat'
 import { setCheckInTimes } from './schedule'
 import { speedUpAll, type SpeedUpAllInput } from './summary'
@@ -29,12 +31,14 @@ import { CHECK_IN_WORDS, say, type Words } from './words'
 export interface OperationEnv extends WorkEnv {
   readonly content: TierContent & TrainingContent
   readonly catalogue?: ScenarioCatalogue
+  /** True only in dev builds and on an API started with `DEV_OPERATIONS=true`: `dev-grant` runs nowhere else (M034). */
+  readonly dev?: boolean
 }
 
 /**
  * Every owner action of 13 §6, by name, each `(state, input, now, env, id) → { state, receipt } | Refusal`. `start`,
- * `queue` and `speed-up` take T131's variants beside T127's inputs; `buy` and `sell` take their ledger ids from the
- * operation's id.
+ * `queue` and `speed-up` take T131's variants beside T127's inputs; `buy`, `sell`, `finish-race` and `dev-grant` take
+ * their ledger ids from the operation's id, which is also the race result's.
  */
 export const OPERATIONS = Object.freeze({
   start: (state: WorkState, input: StartInput | RestartInput, now: number, env: OperationEnv) =>
@@ -64,6 +68,8 @@ export const OPERATIONS = Object.freeze({
   'set-lineage': (state: WorkState, input: Parameters<typeof setLineage>[1], now: number, env: OperationEnv) => setLineage(state, input, now, env),
   'set-active-nodes': (state: WorkState, input: Parameters<typeof setActiveNodes>[1], now: number) => setActiveNodes(state, input, now),
   'set-loadout': (state: WorkState, input: Parameters<typeof setLoadout>[1], now: number, env: OperationEnv) => setLoadout(state, input, now, env),
+  'finish-race': (state: WorkState, input: FinishRaceInput, now: number, env: OperationEnv, id: string) => finishRace(state, input, now, env, id),
+  'dev-grant': (state: WorkState, input: DevGrantInput, now: number, env: OperationEnv, id: string) => devGrant(state, input, now, env, id),
 })
 
 export type OperationName = keyof typeof OPERATIONS
