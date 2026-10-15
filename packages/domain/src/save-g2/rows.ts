@@ -35,6 +35,11 @@ export interface RaceResultRow {
   /** Where she raced: badges are scenario-linked (D122). */
   readonly tier: Tier
   readonly scenario: ScenarioOfTier
+  /**
+   * The set she raced with: the card set of the preset of the race's distance, after the operation's collect (T141).
+   * Era Loyalist reads the sets of every race she ran in a scenario (06 §7).
+   */
+  readonly cardSetIds: readonly string[]
   readonly run: RaceRun
   /** The operation's receipt: what the result screen shows on reload. */
   readonly commit: FinishRaceReceipt

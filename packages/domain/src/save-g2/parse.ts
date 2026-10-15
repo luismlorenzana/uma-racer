@@ -473,14 +473,15 @@ export function parseItemLedgerRow(value: unknown): ItemLedgerRow | null {
 }
 
 export function parseRaceResultRow(value: unknown): RaceResultRow | null {
-  if (!isObject(value) || !exactKeys(value, ['umaId', 'raceId', 'opId', 'at', 'tier', 'scenario', 'run', 'commit'])) return null
+  if (!isObject(value) || !exactKeys(value, ['umaId', 'raceId', 'opId', 'at', 'tier', 'scenario', 'cardSetIds', 'run', 'commit'])) return null
   if (!isRowId(value.umaId) || !isRowId(value.raceId) || !isOperationId(value.opId) || !isTimestamp(value.at) || !isTier(value.tier) ||
     !isScenario(value.scenario) || !isReceipt(value.commit)) return null
+  const cardSetIds = parseIds(value.cardSetIds, CARD_SET_SIZE)
   const run = parseRaceRun(value.run)
   const her = run?.field.find((runner) => runner.isPlayer)
-  if (!run || her?.umaId !== value.umaId) return null
+  if (!cardSetIds || !run || her?.umaId !== value.umaId) return null
   return {
-    umaId: value.umaId, raceId: value.raceId, opId: value.opId, at: value.at, tier: value.tier, scenario: value.scenario, run,
+    umaId: value.umaId, raceId: value.raceId, opId: value.opId, at: value.at, tier: value.tier, scenario: value.scenario, cardSetIds, run,
     commit: value.commit as unknown as RaceResultRow['commit'],
   }
 }

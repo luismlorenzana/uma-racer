@@ -92,7 +92,8 @@ const BAD: Readonly<Record<SaveKind, readonly ((row: any) => void)[]>> = { // es
     (r) => { r.at += 1 }],
   itemLedger: [(r) => { r.id = 'other' }, (r) => { r.data.delta = -r.data.delta }, (r) => { r.data.opId = 'short' }, (r) => { r.data.reason = 'consume' }],
   raceResults: [(r) => { r.id = opId(99) }, (r) => { r.data.scenario = 6 }, (r) => { r.data.tier = 0 }, (r) => { r.data.umaId = uma(9) },
-    (r) => { r.data.run.engineVersion = 1 }, (r) => { r.data.commit = [] }],
+    (r) => { r.data.run.engineVersion = 1 }, (r) => { r.data.commit = [] }, (r) => { delete r.data.cardSetIds }, (r) => { r.data.cardSetIds = ['a', 'a'] },
+    (r) => { r.data.cardSetIds = ['a', 'b', 'c', 'd', 'e', 'f', 'g'] }],
   flairEvents: [(r) => { r.id = 'flair:uma:other' }, (r) => { r.at += 1 }, (r) => { r.data.stage = 'mythic' }],
   operations: [(r) => { r.id = 'op:with:colons' }, (r) => { r.data.name = 'teleport' }, (r) => { r.data.receipt = 'done' }, (r) => { r.at += 1 }],
 }

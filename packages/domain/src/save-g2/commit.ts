@@ -11,7 +11,7 @@ import type { ItemMovement } from '../rework/work/types'
 import { OPERATION_INPUTS } from './inputs'
 import { isOperationId, SAVE_LIMITS } from './kinds'
 import { exactKeys, isJson, isObject, isTimestamp, ITEM_LEDGER_SIGNS, jsonBytes } from './parse'
-import { logDraft, type EntityDraft, type ItemLedgerRow, type LogDraft } from './rows'
+import { logDraft, type EntityDraft, type ItemLedgerRow, type LogDraft, type RaceResultRow } from './rows'
 import { entityChanges, type SaveState } from './state'
 
 /**
@@ -67,6 +67,32 @@ export function itemLedgerRows(opId: string, receipt: unknown, at: number): Item
 }
 
 /**
+ * A `finish-race` operation's `raceResults` row (09 §9): where she raced (her tier and scenario before it), the card set
+ * of the preset of the race's distance as she raced it (after the operation's collect, which may bond a card first; the
+ * race itself never changes her build), the run as the screen gave it, and the receipt. The device's store and the
+ * server write the same row.
+ */
+export function raceResultRow(
+  before: SaveState,
+  after: SaveState,
+  id: string,
+  at: number,
+  input: FinishRaceInput,
+  receipt: OperationReceipt<'finish-race'>,
+  env: OperationEnv,
+): RaceResultRow {
+  const her = before.umas[input.umaId]
+  const raced = after.umas[input.umaId]
+  if (her === undefined || raced === undefined) throw new RangeError(`No Uma ${input.umaId}`)
+  const race = env.content.races.find((entry) => entry.id === input.raceId)
+  if (race === undefined) throw new RangeError(`No race ${input.raceId}`)
+  return {
+    umaId: input.umaId, raceId: input.raceId, opId: id, at, tier: her.tier, scenario: her.scenario,
+    cardSetIds: [...raced.build.presets[race.distanceCategory].cardSetIds], run: input.run, commit: receipt,
+  }
+}
+
+/**
  * Commits one envelope on `state` (02 §9): `runOnce` at the envelope's time, then the rows it wrote. An applied commit's
  * entities are every one whose data changed; its logs are the new ledger rows (by id, after against before), the
  * receipt's item rows, the race's `raceResults` row for `finish-race` (with the tier and scenario she raced in), and the
@@ -88,12 +114,8 @@ export function commitOperation<N extends OperationName>(state: SaveState, envel
   const logs: LogDraft[] = after.ledger.filter((row) => !known.has(row.id)).map((row) => logDraft('ledger', row.id, row.at, row))
   for (const row of itemLedgerRows(envelope.id, result.receipt, envelope.at)) logs.push(logDraft('itemLedger', row.id, row.at, row))
   if (envelope.name === 'finish-race') {
-    const race = input as FinishRaceInput
-    const her = state.umas[race.umaId]!
-    logs.push(logDraft('raceResults', envelope.id, envelope.at, {
-      umaId: race.umaId, raceId: race.raceId, opId: envelope.id, at: envelope.at, tier: her.tier, scenario: her.scenario, run: race.run,
-      commit: result.receipt as OperationReceipt<'finish-race'>,
-    }))
+    const row = raceResultRow(state, after, envelope.id, envelope.at, input as FinishRaceInput, result.receipt as OperationReceipt<'finish-race'>, env)
+    logs.push(logDraft('raceResults', envelope.id, envelope.at, row))
   }
   logs.push(logDraft('operations', envelope.id, envelope.at, after.operations![envelope.id]!))
   return { status: 'applied', state: after, receipt: result.receipt, entities: entityChanges(state, after), logs }

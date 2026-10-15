@@ -29,7 +29,7 @@ const boardOf = (profile: AccountProfile, localDay: string): readonly string[] =
 describe('settleRacePrize', () => {
   it('pays a G1 win at 4,400 gross 150 (09 §11), with its ledger row', () => {
     const { profile, prize, ledger } = ok(settleRacePrize(profileWith({ gross: 4_400 }, 40), input(), NOW))
-    expect(prize).toEqual({ gross: 300, paid: 150, band: 'tired', expedition: false, featuredBonus: 0 })
+    expect(prize).toEqual({ gross: 300, paid: 150, band: 'tired', dayGross: 4_700, expedition: false, featuredBonus: 0 })
     expect(profile.prizeMoney).toBe(190)
     expect(profile.purse).toEqual({ day: '2026-10-13', gross: 4_700, featuredPaid: [] })
     expect(ledger).toEqual([{ id: 'race:r1:prize', resource: 'prize-money', delta: 150, reason: 'race-prize', at: NOW }])
@@ -37,21 +37,21 @@ describe('settleRacePrize', () => {
 
   it('pays an Expedition win 450, and a second win of the same family on that run 300 (09 §11)', () => {
     const first = ok(settleRacePrize(profileWith(), input({ grade: 'g2', expedition: { familyWon: false } }), NOW))
-    expect(first.prize).toEqual({ gross: 450, paid: 450, band: 'full', expedition: true, featuredBonus: 0 })
+    expect(first.prize).toEqual({ gross: 450, paid: 450, band: 'full', dayGross: 450, expedition: true, featuredBonus: 0 })
     const again = ok(settleRacePrize(first.profile, input({ resultId: 'r2', grade: 'g2', expedition: { familyWon: true } }), NOW))
-    expect(again.prize).toEqual({ gross: 300, paid: 300, band: 'full', expedition: false, featuredBonus: 0 })
+    expect(again.prize).toEqual({ gross: 300, paid: 300, band: 'full', dayGross: 750, expedition: false, featuredBonus: 0 })
     expect(again.profile.prizeMoney).toBe(750)
   })
 
   it('fills the purse with an Expedition race like any race (09 §10)', () => {
     const { profile, prize } = ok(settleRacePrize(profileWith({ gross: 4_300 }), input({ expedition: { familyWon: false } }), NOW))
-    expect(prize).toMatchObject({ gross: 450, paid: 200 + 62, band: 'tired' })
+    expect(prize).toMatchObject({ gross: 450, paid: 200 + 62, band: 'tired', dayGross: 4_750 })
     expect(profile.purse.gross).toBe(4_750)
   })
 
   it('writes no row for nothing: a 6th place moves no money, but keeps the day', () => {
     const { profile, prize, ledger } = ok(settleRacePrize(profileWith({ day: '2026-10-12', gross: 9_000 }), input({ place: 6 }), NOW))
-    expect(prize).toEqual({ gross: 0, paid: 0, band: 'full', expedition: false, featuredBonus: 0 })
+    expect(prize).toEqual({ gross: 0, paid: 0, band: 'full', dayGross: 0, expedition: false, featuredBonus: 0 })
     expect(ledger).toEqual([])
     expect(profile.purse).toEqual({ day: '2026-10-13', gross: 0, featuredPaid: [] })
   })
@@ -88,7 +88,7 @@ describe('the featured bonus (09 §4)', () => {
   it('pays the first win of a featured race its win prize again, outside the purse', () => {
     const start = profileWith({ gross: 4_400 })
     const { profile, prize, ledger } = ok(settleRacePrize(start, input({ board: ['g1-mile-a'] }), NOW))
-    expect(prize).toEqual({ gross: 300, paid: 150, band: 'tired', expedition: false, featuredBonus: 300 })
+    expect(prize).toEqual({ gross: 300, paid: 150, band: 'tired', dayGross: 4_700, expedition: false, featuredBonus: 300 })
     expect(profile.prizeMoney).toBe(450)
     expect(profile.purse).toEqual({ day: '2026-10-13', gross: 4_700, featuredPaid: ['g1-mile-a'] })
     expect(ledger).toEqual([
