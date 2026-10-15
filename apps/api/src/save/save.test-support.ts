@@ -8,7 +8,7 @@ import type { OperationEnv, OperationPacks } from '@racer/domain/save'
 // --- Synthetic fixtures ---------------------------------------------------------------------------------------------
 
 /** `packages/domain/src/__fixtures__/save.ts`: invented Umas, cards, skills and races, and their envs. */
-export interface SaveG2Fixtures {
+export interface SaveFixtures {
   readonly PACKS: OperationPacks
   readonly ENV: OperationEnv
   /** The env with `dev: true`, where `dev-grant` runs. */
@@ -18,9 +18,9 @@ export interface SaveG2Fixtures {
   clock(hhmm: string): number
 }
 
-/** The domain's synthetic save fixtures, read from source as today's API tests read theirs. */
-export async function saveG2Fixtures(): Promise<SaveG2Fixtures> {
-  return (await import(resolve(process.cwd(), '../../packages/domain/src/__fixtures__/save.ts'))) as SaveG2Fixtures
+/** The domain's synthetic save fixtures, read from source: the built package leaves `__fixtures__` out. */
+export async function saveFixtures(): Promise<SaveFixtures> {
+  return (await import(resolve(process.cwd(), '../../packages/domain/src/__fixtures__/save.ts'))) as SaveFixtures
 }
 
 /** A content folder as the importer writes it: the four packs, content-addressed, and a manifest at `version`. */

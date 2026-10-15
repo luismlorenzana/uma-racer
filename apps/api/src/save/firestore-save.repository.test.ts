@@ -6,10 +6,10 @@ import { rawItem } from '@racer/domain/items'
 import { parseSyncRequestV2, type SyncRequestV2 } from '@racer/domain/save'
 import { FirestoreSaveRepository } from './firestore-save.repository'
 import { NO_SAVE } from './resolve'
-import { FakeFirestore, saveG2Fixtures, type SaveG2Fixtures } from './save.test-support'
+import { FakeFirestore, saveFixtures, type SaveFixtures } from './save.test-support'
 
-let F: SaveG2Fixtures
-beforeAll(async () => { F = await saveG2Fixtures() })
+let F: SaveFixtures
+beforeAll(async () => { F = await saveFixtures() })
 
 const STAMP = { protocol: 2, generation: 2 } as const
 const VEG = rawItem('vegetables', 1).id

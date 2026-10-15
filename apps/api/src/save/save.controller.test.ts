@@ -19,10 +19,10 @@ import { FirestoreSaveRepository } from './firestore-save.repository'
 import { ContentUnavailable, MANIFEST_TTL_MS, OperationContent } from './operation-content'
 import { SaveController } from './save.controller'
 import { SaveModule } from './save.module'
-import { FakeFirestore, saveG2Fixtures, writeSyntheticContent, type SaveG2Fixtures } from './save.test-support'
+import { FakeFirestore, saveFixtures, writeSyntheticContent, type SaveFixtures } from './save.test-support'
 
-let F: SaveG2Fixtures
-beforeAll(async () => { F = await saveG2Fixtures() })
+let F: SaveFixtures
+beforeAll(async () => { F = await saveFixtures() })
 
 const STAMP = { protocol: 2, generation: 2 } as const
 const op = (n: number, name: string, input: unknown, at: number) => ({ type: 'operation', operation: { id: F.opId(n), name, input, at } })

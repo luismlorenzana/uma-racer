@@ -6,10 +6,10 @@ import { join } from 'node:path'
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { parseSyncRequestV2, type SyncRequestV2 } from '@racer/domain/save'
 import { LEGACY_LOCAL_SAVE_FILE, LocalSaveRepository } from './local-save.repository'
-import { saveG2Fixtures, type SaveG2Fixtures } from './save.test-support'
+import { saveFixtures, type SaveFixtures } from './save.test-support'
 
-let F: SaveG2Fixtures
-beforeAll(async () => { F = await saveG2Fixtures() })
+let F: SaveFixtures
+beforeAll(async () => { F = await saveFixtures() })
 
 const STAMP = { protocol: 2, generation: 2 } as const
 function request(changes: readonly unknown[]): SyncRequestV2 {

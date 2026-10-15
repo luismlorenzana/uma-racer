@@ -10,10 +10,10 @@ import {
 import {
   comparePulled, encodeCursor, NO_SAVE, parseCursor, resolveSync, selectReadSet, snapshotPage, syncReadSet, type SaveRow,
 } from './resolve'
-import { saveG2Fixtures, type SaveG2Fixtures } from './save.test-support'
+import { saveFixtures, type SaveFixtures } from './save.test-support'
 
-let F: SaveG2Fixtures
-beforeAll(async () => { F = await saveG2Fixtures() })
+let F: SaveFixtures
+beforeAll(async () => { F = await saveFixtures() })
 
 const STAMP = { protocol: 2, generation: 2 } as const
 const VEG = rawItem('vegetables', 1).id
