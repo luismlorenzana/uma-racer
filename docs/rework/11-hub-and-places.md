@@ -94,6 +94,37 @@ A notification tap opens what it names: the summary, or the place itself for a o
 
 Page ids, routes and the order of swiping: `town`, `training`, `racing`, `farm`.
 
+The place registry, `@racer/domain/hub`'s `PLACES` (T137), as it stands. A cell is a row and a column on the page's
+three-column grid of phase 3 (§11); a **new** frame is one of §10.3's drawings, shown as a plain tile until released.
+
+<!-- live:hub-places -->
+| Page | Place | Id | Kind | Route | Counter | Frame | Pips | Cell |
+|---|---|---|---|---|---|---|---|---|
+| Town Hall | Stable | `stable` | town | `/town/stable` | `uma-tickets` | `stable` | — | 1, 1 |
+| Town Hall | Warehouse | `warehouse` | town | `/town/warehouse` | — | `warehouse` | — | 3, 1 |
+| Town Hall | Exchange | `exchange` | town | `/town/exchange` | — | `exchange` | — | 3, 3 |
+| Town Hall | Card Library | `card-library` | town | `/town/card-library` | — | **new** | — | 1, 3 |
+| Town Hall | Account (hidden) | `account` | town | `/town/account` | — | — | — | — |
+| Training | Observatory | `observatory` | facility | `/training/observatory` | `finished-here` | `observatory` | yes | 1, 1 |
+| Training | Lineage Hall | `lineage-hall` | facility | `/training/lineage-hall` | `finished-here` | `party-hall` | yes | 1, 3 |
+| Training | Gym | `gym` | facility | `/training/gym` | `finished-here` | **new** | yes | 3, 1 |
+| Training | Dojo | `dojo` | facility | `/training/dojo` | `finished-here` | `brawler-dojo` | yes | 3, 3 |
+| Racing | Racecourse (direct) | `racecourse` | racing | `/racing/racecourse` | `featured-open` | **new** | — | 3, 2 |
+| Racing | Scenario Gate | `scenario-gate` | racing | `/racing/scenario-gate` | `ready-to-advance` | `scenario-gate` | — | 1, 2 |
+| Racing | Expedition Map | `expedition-map` | racing | `/racing/expedition-map` | `promotable` | `tier-finale` | — | 2, 3 |
+| Racing | Trophy Hall | `trophy-hall` | racing | `/racing/trophy-hall` | `new-flair` | **new** | — | 2, 1 |
+| Farm | Sugar Grove | `sugar-grove` | site | `/farm/sugar-grove` | `finished-here` | `sugar-grove` | yes | 3, 1 |
+| Farm | Orchard | `orchard` | site | `/farm/orchard` | `finished-here` | `orchard` | yes | 2, 3 |
+| Farm | Fishery | `fishery` | site | `/farm/fishery` | `finished-here` | `fishery` | yes | 4, 2 |
+| Farm | Nut Grove | `nut-grove` | site | `/farm/nut-grove` | `finished-here` | `nut-grove` | yes | 2, 1 |
+| Farm | Herb Garden | `herb-garden` | site | `/farm/herb-garden` | `finished-here` | `herb-garden` | yes | 3, 3 |
+| Farm | Fields | `fields` | site | `/farm/fields` | `finished-here` | `fields` | yes | 1, 1 |
+| Farm | Vegetable Garden | `vegetable-garden` | site | `/farm/vegetable-garden` | `finished-here` | `vegetable-garden` | yes | 1, 2 |
+| Farm | Mushroom Cave | `mushroom-cave` | site | `/farm/mushroom-cave` | `finished-here` | `mushroom-cave` | yes | 1, 3 |
+| Farm | Pantry | `pantry` | station | `/farm/pantry` | `finished-here` | `pantry` | yes | 2, 2 |
+| Farm | Kitchen | `kitchen` | station | `/farm/kitchen` | `finished-here` | `kitchen` | yes | 3, 2 |
+<!-- /live -->
+
 ### 3.1 Town Hall (`/town`)
 
 ```text

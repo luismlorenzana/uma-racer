@@ -41,6 +41,22 @@ export function progress(entry: Timed, now: number): number {
   return Math.min(1, Math.max(0, (now - (entry.startedAt - entry.acceleratedMs)) / total))
 }
 
+/**
+ * How far through its current item the entry is at `now`, 0–1 (rework/11 §4: a busy pip's ring fills by "the current
+ * output's or unlock's progress"): the first item not yet ended, from the previous item's end (or the start, less the
+ * tickets) to its own. 0 before the entry starts and 1 once every item has ended, so a clock moved either way stays in
+ * range.
+ */
+export function itemProgress(entry: Timed, now: number): number {
+  let from = entry.startedAt - entry.acceleratedMs
+  for (const end of itemEnds(entry.startedAt, entry.seconds, entry.acceleratedMs)) {
+    // An item that hasn't started gives a negative share (−∞ for a zero-second one), clamped to 0.
+    if (end > now) return Math.min(1, Math.max(0, (now - from) / (end - from)))
+    from = end
+  }
+  return 1
+}
+
 /** Tickets that finish `ms` of remaining time: ⌈ms ÷ 30 minutes⌉ (07 §8 "Finish"). */
 export const ticketsToFinish = (ms: number): number => (ms <= 0 ? 0 : Math.ceil(ms / SPEED_TICKET_MS))
 
