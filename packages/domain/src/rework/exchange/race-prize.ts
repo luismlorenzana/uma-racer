@@ -32,6 +32,11 @@ export interface RacePrize {
   readonly paid: number
   /** The band the purse ends in. */
   readonly band: PurseBand
+  /**
+   * The day's gross after this race, the purse it filled (T141): the result's "Tired purse: paid a quarter (6,420 of
+   * 12,000)" reads it from the stored row, so a reload shows the day as it stood.
+   */
+  readonly dayGross: number
   /** Whether the Expedition rate applied (a family not yet won on her run): the result's "Expedition rate" line. */
   readonly expedition: boolean
   /** The featured bonus paid, outside the purse; 0 when none. */
@@ -74,6 +79,7 @@ export function settleRacePrize(profile: AccountProfile, input: RacePrizeInput, 
       gross,
       paid: payment.paid,
       band: payment.band,
+      dayGross: payment.purse.gross,
       expedition: prizeRate(input.expedition) === EXPEDITION_RATE_PERCENT,
       featuredBonus,
     },

@@ -562,6 +562,7 @@ place. **Seven region crests**, for the Map pins and the champions' face rings, 
     are ready before the first tier-1 finale.
 15. **Dirt Medium · Long gets no Expedition.** Its Umas take their best fit.
 16. **The Expedition state ends at promotion**, summarised into her tier history.
+| Until phase 9 the Expedition Map is a placeholder: each Uma's distance to entry ("Scenario 4 · Racing Lv 37"), "Ready for her World Expedition. Expeditions open in a later update; she keeps racing, and nothing is lost." when she could start, and Promote for one already holding a completed run. It shows no Start, pool, region, fit, Expedition, prize or date, its sub-routes go back to the Map, and nothing writes Expedition state (T141) | [13](13-removals-and-plan-changes.md) §4 and "Entry": phase 9 replaces D340's stand-in run without a migration |
 
 ## Done when
 

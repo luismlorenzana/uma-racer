@@ -7,7 +7,7 @@ import { STATS } from '../../types'
 import { planetDish, type ItemGrade, type ItemId } from '../items/catalogue'
 import { familyFor, type FamilyId } from '../items/families'
 import { LAST_SCENARIO_NUMBER, SCENARIOS_PER_TIER, scenarioRow } from '../tiers/map'
-import type { Refusal, ScenarioOfTier, Tier, UmaBuild } from '../types'
+import type { Refusal, ScenarioOfTier, Tier, UmaBuild, UmaState } from '../types'
 import { trainingRefusal } from './refusals'
 import type { DojoRoomId } from './facilities'
 
@@ -68,4 +68,18 @@ export function bondStatus(
 export const bondLayerOfTier = (era: number, tier: Tier): ScenarioOfTier | null => {
   const p = bondLayer(era, tier)
   return p > SCENARIOS_PER_TIER ? null : (p as ScenarioOfTier)
+}
+
+/**
+ * Every card ever bonded, to any Uma in any tier (06 §7, §9): the sorted union of each Uma's current bonds and the
+ * bonds of every tier she left, which her tier history keeps. A projection, not a fact of its own, so it survives
+ * promotion without a write (T141): the Trainer's Card Partners and the Era and Type Bonded one-offs read it.
+ */
+export function everBondedCardIds(umas: Iterable<Pick<UmaState, 'build' | 'tierHistory'>>): string[] {
+  const ids = new Set<string>()
+  for (const uma of umas) {
+    for (const id of uma.build.bonds) ids.add(id)
+    for (const entry of uma.tierHistory) for (const id of entry.bonds) ids.add(id)
+  }
+  return [...ids].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))
 }

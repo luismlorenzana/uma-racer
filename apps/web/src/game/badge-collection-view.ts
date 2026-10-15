@@ -21,6 +21,7 @@ import {
   type UmaSave,
   type StableBadgeRarity,
   type RaceResultRecord,
+  type FlairGeneration,
 } from '@racer/domain'
 import type { LoadedContent } from '../content/runtime'
 import { badgeFrameStyle, type BadgeFrameStyle } from './badge-frame'
@@ -235,8 +236,10 @@ export function buildUmaBadgeCollection(
   state: UmaBadgeStateV1,
   events: readonly (FlairEventV1 & { id: string })[] = [],
   raceResults: readonly RaceResultRecord[] = [],
+  /** Today's catalogue (1) or generation 2's (T141). */
+  generation: FlairGeneration = 1,
 ): UmaBadgeCollection {
-  const catalog = buildUmaFlairCatalog({ state, races: content.races.items })
+  const catalog = buildUmaFlairCatalog({ state, races: content.races.items, generation })
   const groups = new Map(state.preferences.showcaseGroups.flatMap((group) => group.awardRefs.map((ref) => [ref, group.id] as const)))
   const definitions = new Map(catalog.definitions.map((definition) => [definition.awardKey, definition]))
   const items = catalog.definitions.flatMap((definition): BadgeCollectionItem[] => {
@@ -281,11 +284,12 @@ export function buildStableBadgeCollection(
   owned: readonly { save: UmaSave; state: UmaBadgeStateV1 | null }[],
   events: readonly (FlairEventV1 & { id: string })[] = [],
   raceResults: readonly RaceResultRecord[] = [],
+  generation: FlairGeneration = 1,
 ): StableBadgeCollection {
   const valid = owned.filter((entry): entry is { save: UmaSave; state: UmaBadgeStateV1 } => entry.state?.umaId === entry.save.templateId)
   const orphanedUmaIds = owned.filter((entry) => !content.umas.byId.has(entry.save.templateId) || entry.state?.umaId !== entry.save.templateId)
     .map((entry) => entry.save.templateId).sort()
-  const perUma = valid.map((entry) => ({ ...entry, view: buildUmaBadgeCollection(content, entry.state, events, raceResults) }))
+  const perUma = valid.map((entry) => ({ ...entry, view: buildUmaBadgeCollection(content, entry.state, events, raceResults, generation) }))
   const keys = new Set(perUma.flatMap((entry) => entry.view.items.filter((item) => item.kind !== 'missing').map((item) => item.awardKey)))
   const items: StableBadgeItem[] = []
   for (const awardKey of [...keys].sort()) {
@@ -381,8 +385,9 @@ export function buildTrophyWall(content: LoadedContent, state: UmaBadgeStateV1, 
 export function buildTimelineItems(
   content: LoadedContent, state: UmaBadgeStateV1, events: readonly (FlairEventV1 & { id: string })[],
   raceResults: readonly RaceResultRecord[] = [],
+  generation: FlairGeneration = 1,
 ): TimelineItemView[] {
-  const definitions = new Map(buildUmaFlairCatalog({ state, races: content.races.items }).definitions.map((row) => [row.awardKey, row]))
+  const definitions = new Map(buildUmaFlairCatalog({ state, races: content.races.items, generation }).definitions.map((row) => [row.awardKey, row]))
   return events.filter((event) => event.scope === 'uma' && event.umaId === state.umaId).map((event) => ({
     id: event.id, kind: event.kind, kindLabel: KIND_LABELS[event.kind], awardKey: event.awardKey,
     label: definitions.get(event.awardKey)?.label ?? (event.kind === 'trophy-earned' ? `G1 Trophy · ${event.awardKey}` : humanize(event.awardKey)),

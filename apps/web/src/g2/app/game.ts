@@ -7,10 +7,15 @@
 //   `waiting` (amber, D157) when `oldestQueuedAt` is over a day old, else `synced`;
 // - `run` builds the operation's id, runs the domain's `recheck` and answers with it, the id riding along;
 // - `notices` are the taps the server refused or couldn't run, in plain words, until a screen dismisses them (T136;
-//   09 §8: "the local purchase rolls back with a notice"); `syncNow` and `logs` are the save's too.
+//   09 §8: "the local purchase rolls back with a notice"); `syncNow` and `logs` are the save's too;
+// - `badges` are the device's own badge rows (bounded: one per Uma and the trainer), and `logs` also read every race
+//   result and the flair events (T141). A tap's `device` rows (T141's flair) are computed from the applied operation
+//   and written in its local transaction, queued behind it in the one lane; `writeDevice` writes them alone (the Trophy
+//   Hall's reconcile), as today's badge preferences are.
 // Only types come from the domain here, so this file costs the entry chunk nothing but the hooks.
+import type { BadgeStateV1, FlairEventV1 } from '@racer/domain'
 import type { HubView, hubView } from '@racer/domain/hub'
-import type { Answer, OperationEnv, OperationInput, OperationName, Words } from '@racer/domain/rework/check-in'
+import type { Answer, OperationEnv, OperationInput, OperationName, OperationReceipt, Words } from '@racer/domain/rework/check-in'
 import type { LedgerEntry } from '@racer/domain/rework/tiers'
 import type { WorkState } from '@racer/domain/rework/work'
 import type { ItemLedgerRow, RaceResultRow } from '@racer/domain/save-g2'
@@ -49,6 +54,43 @@ export interface G2Snapshot {
   readonly words?: string
   /** Refused or failed taps, oldest first; absent on a port that saves nothing. */
   readonly notices?: readonly G2Notice[]
+  /** The device's badge rows by row id (`trainer`, `uma:<outfitId>`); absent until the save opens (T141). */
+  readonly badges?: Readonly<Record<string, BadgeStateV1>>
+}
+
+/** What the Racing places read beyond the rules' state (T141): race results by operation id, badges, flair by event id. */
+export interface G2Records {
+  readonly raceResults: Readonly<Record<string, RaceResultRow>>
+  readonly badges: Readonly<Record<string, BadgeStateV1>>
+  readonly flairEvents: Readonly<Record<string, FlairEventV1>>
+}
+
+export const NO_RECORDS: G2Records = Object.freeze({ raceResults: {}, badges: {}, flairEvents: {} })
+
+/** A flair event's key in the records: one award stage, as its row id names it (`flairEventId`'s parts, unhashed). */
+export const flairKeyOf = (event: Pick<FlairEventV1, 'scope' | 'umaId' | 'awardKey' | 'stage'>): string =>
+  `${event.scope}/${event.umaId ?? ''}/${event.awardKey}/${event.stage}`
+
+/** Rows the device writes (13 §6's device kinds): a badge state replaces its row, a flair event is written once. */
+export interface G2DeviceRows {
+  readonly badges?: Readonly<Record<string, BadgeStateV1>>
+  readonly flairEvents?: readonly FlairEventV1[]
+}
+
+/** An applied operation, as its `device` callback sees it: before and after, the receipt, and the records with its own rows. */
+export interface G2Applied<N extends OperationName = OperationName> {
+  readonly id: string
+  readonly name: N
+  readonly at: number
+  readonly before: WorkState
+  readonly state: WorkState
+  readonly receipt: OperationReceipt<N>
+  readonly records: G2Records
+}
+
+export interface G2RunOptions<N extends OperationName = OperationName> {
+  /** The device's rows for an operation that applied now (not a repeat), written in its transaction: T141's flair. */
+  readonly device?: (applied: G2Applied<N>) => G2DeviceRows
 }
 
 /** `recheck`'s answer (T131: done, ask or say), with the operation's id so a sheet can find its receipt again. */
@@ -61,8 +103,13 @@ export interface G2Game {
   now(): number
   /** The device's offset from UTC at `now`, in minutes, for check-in times. */
   utcOffsetMin(now: number): number
-  /** One tap: applied at once through `recheck`, never twice; a second tap while `busyKey` is held gets the first's answer. */
-  run<N extends OperationName>(name: N, input: OperationInput<N>, busyKey?: string): Promise<G2Answer<N>>
+  /**
+   * One tap: applied at once through `recheck`, never twice; a second tap while `busyKey` is held gets the first's answer.
+   * `options.device` adds the device's rows to the same local transaction (T141).
+   */
+  run<N extends OperationName>(name: N, input: OperationInput<N>, busyKey?: string, options?: G2RunOptions<N>): Promise<G2Answer<N>>
+  /** The device's own rows, alone (the Trophy Hall's reconcile, T141); absent on a port that writes none. */
+  writeDevice?(rows: G2DeviceRows): Promise<void>
   /** Clears a notice once the screen has shown it. */
   dismissNotice?(id: string): void
   /** Account's Sync now: a flush and a pull at once (T136); absent on a port that saves nothing. */
@@ -75,6 +122,10 @@ export interface G2Game {
 export interface G2Logs {
   /** One Uma's race results, oldest first. */
   raceResults(umaId: string): Promise<RaceResultRow[]>
+  /** Every Uma's race results, by time (T141: the Trainer's records and the Trophy Hall). */
+  allRaceResults?(): Promise<RaceResultRow[]>
+  /** The flair events, by time (T141: the result's flair, the Trophy Hall and its counter). */
+  flairEvents?(): Promise<FlairEventV1[]>
   /** The whole ledger, by time. */
   ledgerRows(): Promise<LedgerEntry[]>
   /** The Warehouse's movements, by time. */

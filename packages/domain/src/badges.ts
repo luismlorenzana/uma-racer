@@ -33,6 +33,8 @@ export const BADGE_FILTER_CATEGORIES = [
 
 export const BADGE_TIER_POINTS = [1, 2, 4, 8, 16] as const
 export const BADGE_ONE_OFF_POINTS = 4
+/** Generation 2's Hall of Fame badge, a one-off worth four ordinary one-offs (docs/rework/04-tiers-and-promotion.md §9). */
+export const HALL_OF_FAME_POINTS = 16
 export const GOAL_RIBBON_POINTS = 1
 export const HONORS_POINTS = 4
 export const TITLE_POINTS = 10
@@ -923,7 +925,9 @@ function validateUmaBadgeState(value: UmaBadgeStateV1): boolean {
   if (![facts.starts, facts.wins, facts.seconds, facts.thirds, facts.currentWinStreak, facts.longestWinStreak,
     facts.balancedPeak, facts.levelPeak, facts.lifetimeTrainingTurns, facts.friendshipTrainings, facts.fullHouseCount].every(isNonNegativeInt) ||
     facts.wins > facts.starts || facts.seconds + facts.thirds > facts.starts || facts.currentWinStreak > facts.longestWinStreak ||
-    facts.friendshipTrainings > facts.lifetimeTrainingTurns || facts.fullHouseCount > facts.lifetimeTrainingTurns ||
+    // Full House is not bounded by the lifetime training turns: generation 2 retires that fact and keeps Full House
+    // (docs/rework/06-cards-and-bonds.md §7), so it can be earned with no turns counted. Each tier's row stays bounded.
+    facts.friendshipTrainings > facts.lifetimeTrainingTurns ||
     !parseStats(facts.statPeaks) || !parseSortedIds(facts.distinctSkillIds) || !parseTierList(facts.fullyTrainedTiers) ||
     !parseTierList(facts.honorsTiers) || !parseTierList(facts.completedScenarioTiers) || !validRaceFeats(facts.raceFeats)) return false
   if (!Array.isArray(facts.trainingByTier) || facts.trainingByTier.length > SCENARIOS.length || facts.trainingByTier.some((entry) =>

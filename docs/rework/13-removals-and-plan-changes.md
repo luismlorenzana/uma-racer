@@ -197,7 +197,7 @@ no migrations, no legacy constants and no cutover rows; the API (T135) and the w
 | `badges` | `uma:{outfitId}` or `trainer` | Badge state, as today | The device |
 | `ledger` | The row's id | `{ id, resource, delta, reason, at }`, the domain's `LedgerEntry` | Operations and the create |
 | `itemLedger` | The row's id | `{ id, itemId, delta, reason, outfitId, opId, at }` | Operations |
-| `raceResults` | The `finish-race` operation's id | `{ umaId, raceId, opId, at, tier, scenario, run, commit }`: the scenario she raced in, the race as it ran, and the operation's receipt | Operations |
+| `raceResults` | The `finish-race` operation's id | `{ umaId, raceId, opId, at, tier, scenario, cardSetIds, run, commit }`: the scenario she raced in, the set she raced with (T141), the race as it ran, and the operation's receipt | Operations |
 | `flairEvents` | As today | A flair event, as today | The device |
 | `operations` | The operation's id | `{ name, at, receipt }` | Operations |
 
@@ -303,7 +303,10 @@ the boot's order in [rearchitecture/07](../rearchitecture/07-data-reset.md) §3.
 - **A tap** (`run`) is one `commitOperation` on the store's state: `done` writes `op:<id>` in one transaction, then
   publishes; a refusal is `recheck`'s `ask` or `say` and writes nothing; a held busy key gets the first tap's answer.
 - **The port.** `createSaveGame` adapts the store to T137's `G2Game` one to one, and adds `notices`, `dismissNotice`,
-  `syncNow` and `logs` (race results, the ledger, the Warehouse's movements and a receipt, read on demand). T143 calls
+  `syncNow` and `logs` (race results, the ledger, the Warehouse's movements and a receipt, read on demand). T141 adds
+  the badge rows to the snapshot, every race result and the flair events to `logs`, a tap's `device` rows (its flair,
+  computed from the applied operation and the records, written in its transaction behind its outbox row; a callback that
+  throws writes nothing) and `writeDevice` for the Trophy Hall's reconcile. T143 calls
   `bootSaveGame(content)` from the entry, points `setSaveTokenProvider` at the Firebase token and follows the auth
   provider with `setSignedIn`.
 
@@ -364,6 +367,10 @@ the boot's order in [rearchitecture/07](../rearchitecture/07-data-reset.md) §3.
 | A failed pack load is tried again on the next call; the manifest still waits its minute | A brief bucket error costs one 503, not a minute of them |
 | Rows are written as their JSON copy | Firestore refuses `undefined` fields, so Firestore, the dev file and the wire hold the same copy |
 | The purge counts the parent document only if it existed | `recursiveDelete` deletes it either way, and the counts stay exact |
+| The generation-2 award catalogue sits behind a `generation: 2` option on `buildUmaFlairCatalog` and `buildTrainerAchievementCatalog`, and today's pure badge views take it as an optional last argument, until T143 removes today's (T141) | Build beside: today's app and tests stay green |
+| The web replays engine v9 only; `packages/race` keeps every version (T141) | The wipe leaves no older row; M034 keeps the engine as is |
+| Flair rides as `badges/…` entities and `flairEvents` rows in the operation's local transaction, behind it in the one lane: the port's `run` takes a `device` callback (T141) | [badges](../design/badges.md)'s atomic awards; badge entities keep their shapes |
+| The port reads race results and flair events through `logs` and carries the badge rows in its snapshot (T141) | T136 loads no log into its store; badge rows are bounded, one per Uma and the trainer |
 
 ## 9. Done when
 

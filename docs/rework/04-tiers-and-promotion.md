@@ -576,6 +576,11 @@ The Hall of Fame is the game's endgame for one Uma. The account's endgame is fil
 | Rival fields restate today's `rivalPreset` and `rollRivalField` on the new trees, held to today's by parity tests fed today's trained stat; the 15th has no typical buff value yet (D340) | Today's read today's trees; the formula and handicaps are unchanged (D336) |
 | A career at T = 15 waits for the catalogue: advancing into the 15th refuses until today's planner knows it (phase 5); the rule from 14 to 15 is in place up to the advance's readiness (D340) | Today's planner knows 14 scenarios |
 | Until phase 9 a stand-in Expedition counts races and wins: 8 wins complete a run, an open run keeps counting after the 15th lands, and inducting outside tier 3 refuses with its own reason (D340) | §2 lets an open run finish from scenario 14; promotion needs a trigger before phase 9 |
+| The Promote sheet and the ceremony are built now, reachable only for an Uma holding a completed run: before phase 9, only through the dev mount's `promote` seed (T141) | M034 gives promotion to T141; §13 needs them testable |
+| No Hall of Fame place in phase 3 (T141) | §10 calls it a Town Hall place, [11](11-hub-and-places.md) §3.1 lists none, and no Uma reaches it before phase 9 |
+| Promoted · Tier 2 and 3, Hall of Fame and the title Hall of Famer read the Graduate fact of the scenario that closes the tier (5, 10, the catalogue's last), so badge entities keep their shapes (T141) | That scenario graduates only at promotion or induction |
+| The Promote sheet's work actions are the places' own (Collect, Recall, −30m through T140's tap runner); Promote stays disabled while she is busy (T141) | §5; nothing new is built for the sheet |
+| The ceremony opens her profile after its awards (6 s; 2.5 s with reduced motion, without the animation), or at once on Skip (T141) | §9: it lands on her profile |
 
 ## 13. Done when
 

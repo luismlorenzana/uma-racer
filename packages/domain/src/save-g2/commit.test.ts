@@ -9,9 +9,9 @@ import { buyPrice } from '../rework/exchange/exchange'
 import { racePrizeLedgerId } from '../rework/exchange/ledger'
 import { sellPrice } from '../rework/exchange/selling'
 import { craftedItem, rawItem, SPEED_TICKET_ID } from '../rework/items/catalogue'
-import type { OperationName } from '../rework/check-in/once'
+import type { OperationName, OperationReceipt } from '../rework/check-in/once'
 import type { ItemMovement } from '../rework/work/types'
-import { commitOperation, itemLedgerRows, parseOperationEnvelope, type Commit } from './commit'
+import { commitOperation, itemLedgerRows, parseOperationEnvelope, raceResultRow, type Commit } from './commit'
 import { initialSave } from './initial'
 import { rowKey } from './rows'
 import type { SaveState } from './state'
@@ -109,8 +109,29 @@ describe('commitOperation', () => {
     if (raced.status !== 'applied') throw new Error(raced.status)
     expect(raced.logs.map(rowKey)).toEqual([`ledger/${racePrizeLedgerId(opId(2))}`, `raceResults/${opId(2)}`, `operations/${opId(2)}`])
     expect(store.logs.get(`raceResults/${opId(2)}`)!.data).toEqual({
-      umaId: uma(1), raceId, opId: opId(2), at: T0 + 5, tier: 1, scenario: 1, run: input.run, commit: raced.receipt,
+      umaId: uma(1), raceId, opId: opId(2), at: T0 + 5, tier: 1, scenario: 1, cardSetIds: [], run: input.run, commit: raced.receipt,
     })
+  })
+
+  it("keeps the set she raced with: the preset of the race's distance, as the operation left her (T141, Era Loyalist)", () => {
+    const store = new Store()
+    const created = initialSave(T0)
+    store.write(created.entities, created.logs, T0)
+    const unlocked = store.commit(created.state, { id: opId(1), name: 'unlock-uma', input: { outfitId: uma(1) }, at: T0 }, ENV)
+    if (unlocked.status !== 'applied') throw new Error(unlocked.status)
+    const raceId = goalRaceIds(unlocked.state.umas[uma(1)]!.career.goals[0]!)[0]!
+    const distance = ENV.content.races.find((race) => race.id === raceId)!.distanceCategory
+    const her = unlocked.state.umas[uma(1)]!
+    const withSet = (state: typeof unlocked.state, ids: string[]) => ({
+      ...state,
+      umas: { ...state.umas, [uma(1)]: { ...her, build: { ...her.build, presets: { ...her.build.presets, [distance]: { ...her.build.presets[distance], cardSetIds: ids } } } } },
+    })
+    const input = { umaId: uma(1), raceId, placement: 1, localDay: '2026-10-14', board: [], run: raceRun(uma(1)) }
+    const raced = store.commit(unlocked.state, { id: opId(2), name: 'finish-race', input, at: T0 + 5 }, ENV)
+    if (raced.status !== 'applied') throw new Error(raced.status)
+    const receipt = raced.receipt as OperationReceipt<'finish-race'>
+    const row = raceResultRow(withSet(unlocked.state, ['before']), withSet(raced.state, ['after-1', 'after-2']), opId(2), T0 + 5, input, receipt, ENV)
+    expect(row).toMatchObject({ tier: 1, scenario: 1, cardSetIds: ['after-1', 'after-2'], opId: opId(2), at: T0 + 5 })
   })
 
   it('refuses dev-grant unless the env says dev', () => {

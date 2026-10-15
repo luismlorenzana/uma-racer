@@ -485,6 +485,10 @@ Shipping the routes and registry in phase 3, not 6, means links change once.
 | Global sheets open over any shell route, Peeks only over their page (T137) | The bar's menu button is on every Page too; a Peek belongs to the page its tile is on |
 | A page's tiles read in grid order, row by row (T137) | VoiceOver and the keyboard meet the tiles as the eye does |
 | The `busy` seed runs BASELINE's policies with the roster at its cap of 25 and opens 40 minutes after day 3's 08:00 check-in, done for three in five Farm Umas (T137) | BASELINE alone holds 20 Umas until Shards grow it, and at 08:00 itself every Uma is Ready: the offset shows Ready, Free, queued and busy rings together |
+| The Trophy Hall's counter is flair earned since this device's last visit (`uma-racer:g2:trophy-hall-seen`); opening the Trophy Hall reconciles flair once and marks the visit (T141) | [01](01-game-loop.md) §4.2: device conveniences live in `uma-racer:g2:` keys |
+| The Racecourse's counter loads its draw lazily, so the entry holds none; the Scenario Gate's and the Expedition Map's are the hub view's (`ready-to-advance`, `promotable`: 0 before phase 9) (T141) | One rule per counter; §3.3's Map counter is promotable Umas |
+| The Scenario Gate's ceremony is a full-screen flow at `/racing/scenario-gate/:umaId/ceremony?op=:id`; the Advance and Promote sheets are `?sheet=advance` and `?sheet=promote` on her career (T141) | §6 lists the promotion ceremony; a sheet is a route, so Back closes it |
+| The Trophy Hall's scopes are `?scope=` uma, stable or trainer at `/racing/trophy-hall` (the featured Uma's badges by default), one Uma's at `/uma/:umaId` and the trainer profile at `/trainer` (T141) | §7.1's three routes; a scope is a view of one page |
 
 ## 14. Done when
 

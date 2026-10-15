@@ -7,6 +7,7 @@
 import { placesOn, type Place, type PlaceId } from '@racer/domain/hub'
 import { lazy, type ComponentType, type LazyExoticComponent } from 'react'
 import { matchPath } from 'react-router'
+import { RACING_UI } from './racing/ui'
 
 export type Lazy<P> = LazyExoticComponent<ComponentType<P>>
 export type RouteParams = Readonly<Record<string, string | undefined>>
@@ -53,11 +54,12 @@ const FarmPeek = lazy(() => import('./farm/building/BuildingPeek'))
 const FARM_UI: Readonly<Partial<Record<PlaceId, PlaceUi>>> = Object.fromEntries(placesOn('farm').map((place) => [place.id, { Page: FarmPage, Peek: FarmPeek }]))
 
 export const PLACE_UI: Readonly<Partial<Record<PlaceId, PlaceUi>>> = {
-  // §6's full-screen flows inside place routes: the race run and result, the constellation tree and the Extra Stats map.
-  racecourse: { fullScreen: (rest) => rest === 'run' || rest.startsWith('run/') },
+  // §6's full-screen flows inside place routes: the constellation tree and the Extra Stats map; the race run and result
+  // and the Scenario Gate's ceremony are the Racing page's (T141).
   observatory: { fullScreen: oneSegment },
   gym: { fullScreen: oneSegment },
   ...FARM_UI,
+  ...RACING_UI, // T141
 }
 
 export interface SheetProps {
@@ -102,7 +104,6 @@ export type SlotId = PlaceId | 'sheet:check-in' | 'sheet:featured' | 'plaza' | '
 export const PENDING: readonly SlotId[] = Object.freeze([
   'stable', 'warehouse', 'exchange', 'card-library', 'account', 'plaza', 'sheet:featured', 'flow:reveal', // T138
   'observatory', 'lineage-hall', 'gym', 'dojo', // T139
-  'racecourse', 'scenario-gate', 'expedition-map', 'trophy-hall', // T141
   'sheet:check-in', // T142
 ] as const)
 

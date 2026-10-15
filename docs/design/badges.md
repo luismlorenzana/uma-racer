@@ -290,6 +290,36 @@ award it, but the UI labels the underlying progress “at least”.
 - Results snapshot exact newly earned flair-event ids, including an empty array, so reload/retry cannot replay fanfare or
   re-evaluate a mutable catalog. Legacy results omit the field.
 
+## Generation 2 (T141, D359)
+
+The new game keeps the badge entities, flair events, evaluator and Prestige as they are, on its own catalogue:
+`buildUmaFlairCatalog({ …, generation: 2 })` and `buildTrainerAchievementCatalog({ …, generation: 2 })`, beside today's
+until T143 removes it.
+
+- **Retired:** Diligent, Card Collector, Maxed Out, Coupon Clipper, Era and Type Complete, and every Puzzle and
+  Friendship record. No generation-2 award reads `lifetimeTrainingTurns` or `friendshipTrainings`, so Full House is no
+  longer bounded by them.
+- **Redefined:** [Scenario] Fully Trained is that scenario's layer done (`layerDone`, D344); [Scenario] Graduate is
+  leaving it, at the advance or at promotion from a tier's last scenario; the level badges and Veteran Stable read the
+  lifetime level (50 × (tier − 1) + Racing Level); Living Legend comes only through the Hall of Fame; Era Loyalist reads
+  the set of every race she ran in the scenario (the `raceResults` row's `cardSetIds`); Capped and Perfect Form read the
+  scenario's cap.
+- **Added:** Promoted · Tier 2 and Tier 3 (one-off, 4 Prestige), Hall of Fame (one-off, 16 Prestige) and the title Hall
+  of Famer, each read from the Graduate fact of the scenario that closes the tier (5, 10, the catalogue's last); the
+  Trainer's Card Partners (10 / 25 / 50 / 100 / 200 distinct cards ever bonded), Era and Type Bonded, Promotions
+  (1 / 5 / 15 / 30 / 50) and Hall of Fame (1 / 3 / 10 / 25 / 50). The Trainer profile's meter is "Cards bonded x/N",
+  N the content's cards.
+- **Facts from the rework state.** A race applies today's race facts from its `raceResults` row at her sequence;
+  her build's facts (Fully Trained, Full House, skills, stat and level peaks) are read from her as she stands; leaving
+  a scenario writes its completion fact (her selected preset's stats, her starts there, her goals and Honors, her
+  lineage, and the deck: the union of every race's set, at most six, cards of another era kept first so Era Loyalist's
+  verdict holds; a permanent Training Level 1, which generation 2 doesn't have); Legacy counts the selected preset's
+  parents at each arrival. The ever-bonded set is `everBondedCardIds` over every Uma's bonds and tier histories.
+- **When.** Each race, advance and promotion commit evaluates the Uma's flair and reconciles the Trainer, and the rows
+  ride in the operation's local transaction, behind it in the one lane; opening the Trophy Hall reconciles once more,
+  writing only what changed. No other place calls flair. A result's flair is the events earned in its commit.
+- **Phase 9's:** Expedition titles, Clean Sweep, the real-sweep series titles and Around the World.
+
 ## Displaying flair
 
 ### Uma profile and Home
