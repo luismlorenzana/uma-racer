@@ -1,5 +1,5 @@
-// The private content the new game's art reads (T137): today's `face`, `chibi` and `bust` art and the `uma-icons` atlas.
-// The dev mount mounts no content, so every image falls back to the Uma's initial; T143 feeds today's ContentProvider in.
+// The private content the art reads (T137, T143): the `face`, `chibi` and `bust` art and the `uma-icons` atlas, from the
+// content provider through the session. The seeds' mount has no content, so every image falls back to the Uma's initial.
 import type { LoadedContent } from '../../content/runtime'
 import { createContext, useContext } from 'react'
 

@@ -1,7 +1,8 @@
-// The new game's routes (docs/rework/11-hub-and-places.md §7): `/` is the start rule; `/:page` a page grid, with
+// The app's routes (docs/rework/11-hub-and-places.md §7): `/` is the start rule; `/:page` a page grid, with
 // `?peek=:place` for a Peek and `?sheet=menu | featured | check-in` for a global sheet, so Back closes either;
 // `/:page/:place/*` a place's sub-pages, then its Page; `/collection/reveal/uma/:umaId` the full-screen reveal; and
-// today's routes redirected by `redirects.ts`. Anything else goes to `/`.
+// the old app's routes redirected by `redirects.ts`. Anything else, deleted paths included, goes to `/`. The live router
+// has no basename; the seeds' mount (dev builds only) serves the same routes under `SEEDS_PATH`.
 import { lazy, Suspense, type ComponentType } from 'react'
 import { createBrowserRouter, Navigate, useLocation, useParams, type RouteObject } from 'react-router'
 import { Shell } from '../hub/Shell'
@@ -17,7 +18,7 @@ function Redirect({ to }: { to: string }) {
 }
 
 // Dev proofs (§7.2: new proofs live under `/dev/`, beside the places they prove), in dev builds only, so a production
-// build drops them and their chunks. T142's shows the check-in's pieces on the seeds.
+// build drops them and their chunks. T142's shows the check-in's pieces, on the seeds at `/dev/seeds/dev/check-in`.
 const DEV_ROUTES: RouteObject[] = import.meta.env.DEV
   ? [{ path: 'dev/check-in', element: <DevProof Proof={lazy(() => import('../dev/CheckInProof'))} /> }]
   : []
@@ -46,4 +47,7 @@ export const G2_ROUTES: RouteObject[] = [
   },
 ]
 
-export const createG2Router = (basename: string) => createBrowserRouter(G2_ROUTES, { basename })
+/** Where dev builds mount the synthetic seeds (`dev/main.tsx`); in production it is an unknown path, so `/`. */
+export const SEEDS_PATH = '/dev/seeds'
+
+export const createG2Router = (basename?: string) => createBrowserRouter(G2_ROUTES, basename === undefined ? {} : { basename })

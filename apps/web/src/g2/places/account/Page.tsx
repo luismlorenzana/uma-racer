@@ -1,7 +1,8 @@
 // Account (docs/rework/11-hub-and-places.md §3.1; docs/rework/02-check-ins-and-notifications.md §3, §9, §10; D157; M034;
 // T138): the trainer's name (edited in the Trophy Hall), check-in times (`set-check-in-times`), sync and Sync now, this
-// device's reduced motion and default race speed, App build and Content, sign-out, and in dev builds only a dev section
-// that loads the synthetic fixtures and runs `dev-grant`. `?row=sync` opens at the sync row. Notifications are phase 4.
+// device's reduced motion and default race speed, App build and Content, Sign in or Sign out (the auth provider's, T143),
+// and in dev builds only a dev section that loads the synthetic fixtures and runs `dev-grant`. `?row=sync` opens at the
+// sync row. Notifications are phase 4.
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { Button } from '../../../ui/Button'
@@ -187,12 +188,19 @@ export default function AccountPage({ place, rest }: PageProps) {
           <Row label="App build">{__APP_BUILD_ID__}</Row>
           <Row label="Content">{content === null ? 'Not loaded here' : `${content.manifest.version} · ${content.origin === 'offline-cache' ? 'offline' : 'network'}`}</Row>
         </Panel>
-        <div>
-          <Button variant="destructive" className="w-full" disabled={game.signOut === undefined || signingOut}
-            onClick={() => { setSigningOut(true); void game.signOut?.().finally(() => setSigningOut(false)) }}>
-            Sign out
-          </Button>
-          {game.signOut === undefined && <p className="mt-1 text-center text-[12px] text-ink-soft">Nobody is signed in on this phone.</p>}
+        <div data-g2="sign-in-row">
+          {sync === 'paused' && game.signIn !== undefined ? (
+            <Button className="w-full" disabled={signingOut}
+              onClick={() => { setSigningOut(true); void game.signIn?.().finally(() => setSigningOut(false)) }}>
+              Sign in
+            </Button>
+          ) : (
+            <Button variant="destructive" className="w-full" disabled={game.signOut === undefined || signingOut}
+              onClick={() => { setSigningOut(true); void game.signOut?.().finally(() => setSigningOut(false)) }}>
+              Sign out
+            </Button>
+          )}
+          {game.signOut === undefined && game.signIn === undefined && <p className="mt-1 text-center text-[12px] text-ink-soft">Nobody is signed in on this phone.</p>}
         </div>
         {import.meta.env.DEV && <DevSection />}
       </div>

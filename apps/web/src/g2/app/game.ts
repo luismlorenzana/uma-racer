@@ -1,9 +1,9 @@
 // The game port (T137; docs/rework/11-hub-and-places.md §2; docs/rework/02-check-ins-and-notifications.md §8–§9): the
 // shell and every place read the game only through `G2Game`. `boot.ts` creates it lazily: the in-memory port over
-// synthetic seeds on the dev mount, or T136's device save (`g2/save`), whose `useSave` store adapts to it one to one:
+// synthetic seeds at `/dev/seeds/*` (dev builds), or T136's device save (`save/`), whose `useSave` store adapts to it one to one:
 // - `status` is the store's `lifecycle` (`booting`, `ready`, `error`, with its `words`), `trainerName` the trainer
 //   badge row's display name;
-// - `sync` is the chip's state: `paused` while signed out (today's `useAuth`), `offline`, `failing` (red) on `error`,
+// - `sync` is the chip's state: `paused` while signed out (the auth provider's), `offline`, `failing` (red) on `error`,
 //   `waiting` (amber, D157) when `oldestQueuedAt` is over a day old, else `synced`;
 // - `run` builds the operation's id, runs the domain's `recheck` and answers with it, the id riding along;
 // - `notices` are the taps the server refused or couldn't run, in plain words, until a screen dismisses them (T136;
@@ -116,7 +116,8 @@ export interface G2Game {
   syncNow?(): Promise<void>
   /** The logs the store doesn't hold, read on demand with the queued taps' own rows (T136). */
   readonly logs?: G2Logs
-  /** Account's sign-out (T138; over today's auth once T143 mounts it). Absent where nobody signs in, as in the dev mount. */
+  /** Account's Sign in and Sign out (T138, T143): the auth provider's. Absent where nobody signs in (auth off, the seeds). */
+  signIn?(): Promise<void>
   signOut?(): Promise<void>
   /** Dev builds only (M034, T138): the synthetic fixtures this port can load into its local account, by name. */
   readonly fixtures?: readonly string[]

@@ -19,7 +19,9 @@ import { contentApi } from '../api/client'
 import { ContentFallbackError } from './errors'
 import { findRequiredFile, parseContentAtlas, parseContentManifest, parseContentPack } from './parse'
 
-const LAST_MANIFEST_KEY = 'uma-racer:last-content-manifest'
+// The last verified manifest, for offline boots. Generation 2's own key (rearchitecture/01 §4.2: every key is
+// `uma-racer:g2:`), so the first-boot wipe, which removes every other `uma-racer:` key, keeps it (07 §2).
+const LAST_MANIFEST_KEY = 'uma-racer:g2:content-manifest'
 
 export interface ContentTransport {
   manifest: () => Promise<unknown>

@@ -20,3 +20,26 @@ export function loadAuth(): Promise<Auth> {
   )
   return authPromise
 }
+
+/**
+ * The signed-in owner's Firebase ID token, for the content's and the save's requests; null with auth off, signed out,
+ * or when Firebase can't refresh it (a cached content response still works offline, and the save waits).
+ */
+export async function idToken(): Promise<string | null> {
+  if (!firebaseEnabled) return null
+  const auth = await loadAuth()
+  return auth.currentUser ? auth.currentUser.getIdToken().catch(() => null) : null
+}
+
+/** Google sign-in by redirect, which works inside the iOS Home Screen app. A no-op with auth off. */
+export async function signIn(): Promise<void> {
+  if (!firebaseEnabled) return
+  const [auth, { GoogleAuthProvider, signInWithRedirect }] = await Promise.all([loadAuth(), import('firebase/auth')])
+  await signInWithRedirect(auth, new GoogleAuthProvider())
+}
+
+export async function signOut(): Promise<void> {
+  if (!firebaseEnabled) return
+  const [auth, { signOut: firebaseSignOut }] = await Promise.all([loadAuth(), import('firebase/auth')])
+  await firebaseSignOut(auth)
+}

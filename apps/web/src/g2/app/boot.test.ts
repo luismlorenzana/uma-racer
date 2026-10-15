@@ -1,14 +1,26 @@
-// The dev mount's boot (T137, T136): seeds by default, the device save only when asked (`?save=device`, kept for the tab
-// until a `?seed=`), and the first-boot wipe and the purge only with `&wipe`, so opening `/dev/g2/` never touches a
-// developer's own data.
+// The app's boot (T143): the device save on the content, with the first-boot wipe and the purge call; its requests carry
+// the auth provider's token; Account's Sign in and Sign out are the provider's, absent with auth off; and a tap holds the
+// update prompt's restart until it has committed.
 import 'fake-indexeddb/auto'
+import { SIM_CARDS, SIM_RACES, SIM_UMAS } from '@racer/domain/rework/sim'
 import Dexie from 'dexie'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { SaveGame } from '../save'
+import type { OperationContent } from '../save/env'
 import { memoryStorage } from '../save/server.test-support'
-import { bootGame, forgetDeviceBoot } from './boot'
+import { appUpdateLifecycle } from '../../app/update-lifecycle'
+import { bootSaveGame, forgetDeviceBoot } from './boot'
 
-const fetch = vi.fn(async (_input: string | URL | Request): Promise<Response> => Promise.reject(new TypeError('no network in tests')))
+const fetch = vi.fn(async (_input: string | URL | Request, _init?: RequestInit): Promise<Response> => Promise.reject(new TypeError('no network in tests')))
+
+const registry = <T extends { readonly id: string }>(items: readonly T[]) => ({ items, byId: new Map(items.map((item) => [item.id, item])) })
+const CONTENT: OperationContent = {
+  manifest: { version: 'invented0001' } as OperationContent['manifest'],
+  umas: registry(SIM_UMAS),
+  races: registry(SIM_RACES),
+  cards: registry(SIM_CARDS),
+  skills: registry([]),
+}
 
 beforeEach(() => {
   vi.stubGlobal('localStorage', memoryStorage())
@@ -19,53 +31,58 @@ beforeEach(() => {
 })
 afterEach(() => vi.unstubAllGlobals())
 
-async function oldDatabase(): Promise<void> {
-  const db = new Dexie('uma-racer')
-  db.version(1).stores({ profile: 'id' })
-  await db.table('profile').put({ id: 'main' })
-  db.close()
+async function opened(save: SaveGame): Promise<void> {
+  await save.session.opened
+  await save.session.lane.idle()
 }
 
-async function opened(game: SaveGame): Promise<void> {
-  await game.session.opened
-  await game.session.lane.idle()
-}
-
-describe('the dev mount', () => {
-  it("boots the seeds by default, and loads nothing of the device save", async () => {
-    const { game } = await bootGame('?seed=fresh')
-    expect('session' in game).toBe(false)
-    expect(game.getSnapshot()).toMatchObject({ status: 'ready', sync: 'synced' })
-  })
-
-  it('boots the device save when asked, keeps it for the tab, and never wipes or purges unasked', async () => {
-    await oldDatabase()
+describe("the app's boot", () => {
+  it('wipes the old save once, purges, and sends the provider token with every request', async () => {
+    const old = new Dexie('uma-racer')
+    old.version(1).stores({ profile: 'id' })
+    await old.table('profile').put({ id: 'main' })
+    old.close()
     localStorage.setItem('uma-racer:last-sync', '1')
-    const { game } = await bootGame('?save=device')
-    const device = game as SaveGame
-    await opened(device)
-    expect(device.getSnapshot().status).toBe('ready')
-    expect(await Dexie.exists('uma-racer')).toBe(true)
-    expect(localStorage.getItem('uma-racer:last-sync')).toBe('1')
-    expect(fetch.mock.calls.map(([input]) => String(input)).some((url) => url.includes('purge'))).toBe(false)
-    // One device save a page: a second boot (StrictMode's second effect) gets the same port, and so does a reload's.
-    const again = await bootGame('')
-    expect(again.game).toBe(device)
-    device.stop()
-    expect('session' in (await bootGame('?seed=fresh')).game).toBe(false)
-    expect('session' in (await bootGame('')).game).toBe(false)
-  })
-
-  it('wipes and purges with `&wipe`', async () => {
-    await oldDatabase()
-    localStorage.setItem('uma-racer:last-sync', '1')
-    const { game } = await bootGame('?save=device&wipe')
-    const device = game as SaveGame
-    await opened(device)
+    const token = vi.fn(async () => 'invented-token')
+    const { game, save } = await bootSaveGame(CONTENT, { token, signedIn: true })
+    await opened(save!)
+    expect(game.getSnapshot().status).toBe('ready')
+    expect(game.getSnapshot().state?.profile.umaTickets).toBe(20)
     expect(await Dexie.exists('uma-racer')).toBe(false)
     expect(localStorage.getItem('uma-racer:last-sync')).toBeNull()
-    expect(localStorage.getItem('uma-racer:g2:wiped')).not.toBeNull()
-    expect(fetch.mock.calls.map(([input]) => String(input)).some((url) => url.endsWith('/api/legacy/purge'))).toBe(true)
-    device.stop()
+    const purge = fetch.mock.calls.find(([input]) => String(input).endsWith('/api/legacy/purge'))
+    expect(purge).toBeDefined()
+    expect(new Headers(purge![1]?.headers).get('Authorization')).toBe('Bearer invented-token')
+    expect(token).toHaveBeenCalled()
+    save!.stop()
+  })
+
+  it("offers the provider's Sign in and Sign out, and none with auth off", async () => {
+    const signIn = vi.fn(async () => {})
+    const signOut = vi.fn(async () => {})
+    const { game, save } = await bootSaveGame(CONTENT, { token: async () => null, signedIn: true, signIn, signOut })
+    await opened(save!)
+    await game.signOut?.()
+    expect(signOut).toHaveBeenCalledOnce()
+    expect(game.signIn).toBe(signIn)
+    save!.stop()
+    forgetDeviceBoot()
+    const off = await bootSaveGame(CONTENT, { token: async () => null, signedIn: true })
+    expect(off.game.signIn).toBeUndefined()
+    expect(off.game.signOut).toBeUndefined()
+    off.save!.stop()
+  })
+
+  it("holds the update prompt's restart while a tap commits", async () => {
+    const { game, save } = await bootSaveGame(CONTENT, { token: async () => null, signedIn: false })
+    await opened(save!)
+    const seen: number[] = []
+    const unsubscribe = appUpdateLifecycle.subscribe(() => seen.push(appUpdateLifecycle.getSnapshot().activeActions))
+    const answer = await game.run('unlock-uma', { outfitId: SIM_UMAS[0]!.id })
+    unsubscribe()
+    expect(answer.kind).toBe('done')
+    expect(seen).toEqual([1, 0])
+    expect(game.getSnapshot().state?.profile.umaTickets).toBe(19)
+    save!.stop()
   })
 })

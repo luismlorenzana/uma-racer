@@ -13,7 +13,7 @@ interface Loaded {
 }
 
 export function GameProvider({ boot, game, rules = null, children }: {
-  /** Loads the port and the rules once; the dev mount's `bootGame`. */
+  /** Loads the port and the rules once: the session's `bootSaveGame`, or the seeds' `bootGame`. */
   boot?: () => Promise<{ readonly game: G2Game; readonly rules: G2Rules }>
   /** A port given outright (tests). */
   game?: G2Game
