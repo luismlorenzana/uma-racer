@@ -83,6 +83,8 @@ export type LedgerReason =
   | 'initial-uma-tickets' | 'unlock-uma' | 'uma-gate-shard' | 'uma-shard-exchange' | 'promotion-uma-ticket'
   | 'race-prize' | 'featured-bonus' | 'buy' | 'sell'
   | 'upgrade'
+  /** T134's `dev-grant`, run only in dev builds and on a dev API (M034, 09 §9). */
+  | 'dev-grant'
 
 type ProfileBalance = { readonly [K in keyof AccountProfile]: AccountProfile[K] extends number ? K : never }[keyof AccountProfile]
 

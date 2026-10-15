@@ -9,12 +9,12 @@ describe('the check-in and planner entries', () => {
     for (const name of [
       'nextCheckIn', 'sizeChips', 'fitSize', 'chipWords', 'fitWords', 'clockTime', 'setCheckInTimes', 'collectAll', 'readyCount', 'repeat', 'repeatable',
       'setRepeatSizing', 'buyFor', 'restartDropped', 'dismissDropped', 'queueStopped', 'makeThem', 'checkInSummary', 'speedUpAll', 'speedUpAllPlan',
-      'runOnce', 'recheck', 'hasBannedWord', 'say', 'fill',
+      'runOnce', 'recheck', 'hasBannedWord', 'say', 'fill', 'finishRace', 'devGrant',
     ] as const) expect(typeof checkIn[name], name).toBe('function')
     expect(checkIn.DEFAULT_CHECK_INS).toEqual([480, 780, 1350])
     expect(checkIn.MAX_CHECK_INS).toBe(4)
     expect(checkIn.BANNED_WORDS).toHaveLength(9)
-    expect(Object.keys(checkIn.OPERATIONS)).toHaveLength(24)
+    expect(Object.keys(checkIn.OPERATIONS)).toHaveLength(26)
   })
 
   it('export the planner', () => {

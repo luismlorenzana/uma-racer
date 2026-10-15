@@ -20,7 +20,7 @@ export const MINUTES_PER_DAY = 1_440
 const MS_PER_MINUTE = 60_000
 const MS_PER_DAY = MINUTES_PER_DAY * MS_PER_MINUTE
 /** UTC−14 to UTC+14: every offset a device can report. */
-const MAX_OFFSET_MINUTES = 14 * 60
+export const MAX_OFFSET_MINUTES = 14 * 60
 
 function assertOffset(utcOffsetMin: number): void {
   if (!Number.isInteger(utcOffsetMin) || Math.abs(utcOffsetMin) > MAX_OFFSET_MINUTES) {

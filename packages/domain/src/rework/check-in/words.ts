@@ -47,13 +47,15 @@ export const CHECK_IN_WORDS = {
   estimate: 'about {hours} Uma-hours of work',
 } as const
 
-/** The operations T131 adds, refused in plain words. */
+/** The operations T131 and T134 add, refused in plain words. */
 export const CHECK_IN_REFUSALS = {
   'check-in-times': 'Pick one to four times.',
   /** The 5 is `MAX_TARGETS`; a test keeps them equal. */
   targets: 'Five targets at most.',
   'nothing-stopped': 'Nothing to restart.',
   'place-full': '{place} full.',
+  /** T134's `dev-grant`, everywhere but a dev build or a dev API (M034). */
+  'dev-only': 'Dev builds only.',
 } as const
 
 export type CheckInRefusalCode = keyof typeof CHECK_IN_REFUSALS

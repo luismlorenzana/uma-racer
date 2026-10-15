@@ -43,7 +43,7 @@ describe('runOnce', () => {
     expect(Object.keys(OPERATIONS)).toEqual([
       'start', 'queue', 'collect', 'collect-all', 'repeat', 'recall', 'speed-up', 'finish', 'upgrade', 'advance-scenario', 'promote', 'induct',
       'buy', 'sell', 'unlock-uma', 'exchange-shards', 'set-targets', 'set-check-in-times', 'set-repeat-sizing', 'set-card-set', 'set-assignments',
-      'set-lineage', 'set-active-nodes', 'set-loadout',
+      'set-lineage', 'set-active-nodes', 'set-loadout', 'finish-race', 'dev-grant',
     ])
     const rich = { ...account(1, { carrot: 3 }), profile: { ...account(1).profile, prizeMoney: 500 } }
     const bought = runOnce(rich, { id: 'tap-9', name: 'buy', input: { sku: 'carrot', qty: 2, unitPrice: 108 } }, NOW, ENV)
