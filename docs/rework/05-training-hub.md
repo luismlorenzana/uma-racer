@@ -661,33 +661,30 @@ What changed and why:
 
 ## 7. Slots and upgrades
 
-**Demand.** Session hours per Uma per scenario follow from §3's grades; at the target pace (25 Umas, [12](12-economy-and-pacing.md)
-§5's days per scenario), the roster needs these slot-hours a day. Slots needed = hours ÷ (24 × 0.75), as in
-[12](12-economy-and-pacing.md) §7.
+**Demand.** The loop simulation's baseline (T132, D348; [12](12-economy-and-pacing.md) §12) measures each facility's
+slot time over tier 1: a slot is held from a session's start until Collect, so the hours count the wait for the next
+check-in too. Slots needed = hours ÷ (24 × 0.75), as in [12](12-economy-and-pacing.md) §7, and each use is the slot time
+held over a tier-1 scenario's window:
 
-| Facility | Tier average ([12](12-economy-and-pacing.md) §7) | Scenario 1 | Scenario 2 | Scenario 3 | Scenario 4 | Scenario 5 | Peak use: 20 Umas at Lv 1 · 25 at Lv 1 · 25 at Lv 2 |
-|---|---|---|---|---|---|---|---|
-| Observatory (2 slots, Lv 2: 3) | ~23 h · 1.3 slots | **37.6 h · 2.1** | 15.5 h · 0.9 | 17.6 h · 1.0 | 19.8 h · 1.1 | 22.7 h · 1.3 | 84% · **105%** · 70% |
-| Lineage Hall (2, Lv 2: 3) | ~21 h · 1.2 | 12.5 h · 0.7 | 23.0 h · 1.3 | 17.6 h · 1.0 | **29.7 h · 1.7** | 22.7 h · 1.3 | 66% · 83% · 55% |
-| Gym (5 rooms × 1, Lv 2: × 2) | ~31 h · 1.7 | 15.1 h · 0.8 | 37.8 h · 2.1 | **42.8 h · 2.4** | 29.2 h · 1.6 | 33.5 h · 1.9 | 38% · 48% · 24% |
-| Dojo (6 rooms × 1, Lv 2: × 2) | ~15 h · 0.8 | 18.1 h · 1.0 | 11.2 h · 0.6 | 12.8 h · 0.7 | 14.5 h · 0.8 | 16.6 h · 0.9 | 13% · 17% (Speed room ~30%) · 8% |
+<!-- live:loop-hub-slots -->
+| Building | Slots Lv 1 / 2 / 3 | Hours a day held, tier 1 | Slots needed (÷ 18) | Use in 1·1 | Use in 1·2 | Use in 1·3 | Use in 1·4 | Use in 1·5 | Peak, all tiers |
+|---|---|---|---|---|---|---|---|---|---|
+| Observatory | 2 / 3 / 3 | 30.2 | 1.7 | 62% | 41% | 36% | 36% | 46% | 77% (3·1) |
+| Lineage Hall | 2 / 3 / 3 | 26.9 | 1.5 | 26% | 45% | 37% | 52% | 53% | 53% (3·2) |
+| Gym | 5 rooms × 1 / 2 / 2 | 49.0 | 2.7 | 13% | 25% | 33% | 21% | 21% | 33% (1·3) |
+| Dojo | 6 rooms × 1 / 2 / 2 | 25.5 | 1.4 | 13% | 10% | 10% | 8% | 9% | 17% (2·1) |
+<!-- /live -->
 
-Hours a day for the roster of 25 at *k* = 1.2 (D338), with slots needed in each cell, over [12](12-economy-and-pacing.md)
-§5's days per scenario. The Dojo column prices every bond at its layer's lower grade, as [12](12-economy-and-pacing.md)
-does; most are grade 1, so it is an upper bound.
-
-- **Lv 1 carries a 20-Uma roster and Lv 2 carries 25**, the same rule as the Farm's buildings ([07](07-farm.md) §6).
-- **The Observatory is the one facility that needs Lv 2 for 25 Umas.** Scenario 1 is front-loaded with 12 nodes, and on
-  a new account the whole roster is in scenario 1 together. At 2 slots, 25 Umas would need 105% of it for the first four
-  weeks, past the sim's 90% ceiling ([12](12-economy-and-pacing.md) §12). The account starts with 20 Umas, which Lv 1
-  carries, and its Lv 2 needs only grade-1 items and Prize Money, so it is bought in tier 1's first weeks of racing, before the roster passes 20 with its first Uma Shards. Tiers 2 and 3 fill one promotion at a time, so
-  this peak happens once.
-- **The Lineage Hall's 2 slots** peak at 83% in scenario 4, which carries six of Inspiration's 24 unlocks a tier
-  (D336); one slot would bottleneck in scenarios 2 and 4. The sim watches it against the 90% ceiling.
-- **The Gym's rooms** carry under half their time even in scenario 3: each room takes its own stat's single, either
-  room of a Duo and any room for a Sun, so the load spreads.
-- **The Dojo's rooms** are almost idle on average. Six rooms exist for theme and so that several Umas bond at once at
-  the start of a tier, when everyone needs six bonds.
+- **Lv 1 carries the 20-Uma start and Lv 2 carries 25**, the same rule as the Farm's buildings ([07](07-farm.md) §6).
+  The sim's account buys every facility's Lv 2 around day 31, as the first careers pay.
+- **The Observatory is the busiest facility in scenario 1**, which is front-loaded with 12 nodes while the whole
+  roster is in scenario 1 together; after that it runs under half full. The founding cohort is promoted within a few
+  days of itself, so each tier's first scenario brings the peak back, at about three-quarters of its slots.
+- **The Lineage Hall** peaks in the scenarios with six Inspiration unlocks (D336), at about half its slots.
+- **The Gym's rooms** carry about a third of their time even at their busiest: each room takes its own stat's single,
+  either room of a Duo and any room for a Sun, so the load spreads.
+- **The Dojo's rooms** are almost idle. Six rooms exist for theme and so that several Umas bond at once at the start of
+  a tier, when everyone needs six bonds.
 
 **Upgrades** follow uma-rpg's facility upgrades and [07](07-farm.md) §7's pattern: Lv 1–3, one more slot per room at Lv 2,
 speed ×1.25 at Lv 3, paid in Prize Money and crafted items of the facility's families. Prices follow the anchor

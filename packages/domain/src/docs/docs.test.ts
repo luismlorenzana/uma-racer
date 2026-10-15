@@ -3,8 +3,12 @@
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect, it } from 'vitest'
+import { loopReport } from '../rework/sim/report'
 import { renderBlock, type PackageJson } from './render'
+
+// The loop simulation's blocks read one run per worker (T132); make it before the tests, not inside one's timeout.
+beforeAll(() => { loopReport() }, 120_000)
 
 const ROOT = fileURLToPath(new URL('../../../../', import.meta.url))
 const DOCS = join(ROOT, 'docs', 'game')

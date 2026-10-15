@@ -335,57 +335,65 @@ demand counts below: a scenario layer's first half takes grade 2*s*−1 and its 
 | An Extra Stats single node (stat, grade *g*) | That stat's family planet dish at *g* |
 | A Duo node | Its Duo at grade 3 or 5 |
 | A Sun node | The Feast of its grade (4, 6, 8, 10) |
-| A card bond | Its type's family: Speed → Sweets … Wit → Herbs & Spices; Friend and Group → Grains. The grade follows the layer, unless [06](06-cards-and-bonds.md) ties it to the card's era |
+| A card bond | Its type's family: Speed → Sweets … Wit → Herbs & Spices; Friend and Group → Grains. The grade follows the card's era: a card first eligible in the tier's scenario *p* takes grade 2*p* − 1 ([06](06-cards-and-bonds.md) §2) |
 
 ## 7. Demand over a tier
 
 One Uma's tier is **107 unlocks** (README, D338): 28 constellation nodes, 24 Inspiration, 25 Extra Stats singles,
-8 Duos, 4 Suns and 18 bonds. Bonds depend on her deck; the **representative deck** here has 3 bonds of each type (Speed,
-Stamina, Power, Guts, Wit, Friend/Group).
+8 Duos, 4 Suns and 18 bonds. Bonds depend on her deck; the **representative deck** here bonds one card of each of six
+types in scenario 1, a Speed, Stamina and Power card in scenarios 2 and 4, and a Guts, Wit and Friend card in
+scenarios 3 and 5, each of its scenario's own era, so each bond takes grade 2*s* − 1 ([06](06-cards-and-bonds.md) §2).
+That is 3 bonds of each type (Speed, Stamina, Power, Guts, Wit, Friend/Group) a tier. These tables are live: the loop
+simulation's `tierDemand` lists every unlock's dish (T128) and expands them through the recipes (T126) (T132, D348).
 
 ### Planet dishes, per Uma per tier
 
-The bond dishes here sit at mixed grades, while [06](06-cards-and-bonds.md) §2's era rule gives odd grades only and
-[12](12-economy-and-pacing.md) §5 prices a bond at its layer's lower grade. `pnpm sim:loop` (T132) rewrites both tables
-below with bonds at the layer's lower grade. Each family keeps its dish count; only the sides in the crafted table shift.
-
+<!-- live:demand-dishes -->
 | Family | *g*1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | Total |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | Vegetables | 6 | 6 | 2 | 2 | 2 | 2 | 2 | 2 | 2 | 2 | **28** |
 | Mushrooms | 2 | 2 | 4 | 2 | 2 | 2 | 3 | 3 | 2 | 2 | **24** |
 | Sweets | 2 | 0 | 2 | 0 | 1 | 0 | 2 | 0 | 1 | 0 | **8** |
 | Fruits | 2 | 0 | 2 | 0 | 1 | 0 | 2 | 0 | 1 | 0 | **8** |
-| Fish | 2 | 0 | 1 | 1 | 1 | 0 | 1 | 1 | 1 | 0 | **8** |
-| Nuts & Seeds | 1 | 1 | 1 | 0 | 2 | 0 | 1 | 0 | 2 | 0 | **8** |
-| Herbs & Spices | 1 | 1 | 1 | 0 | 1 | 1 | 1 | 0 | 1 | 1 | **8** |
-| Grains | 0 | 1 | 0 | 0 | 0 | 1 | 0 | 0 | 0 | 1 | **3** |
+| Fish | 2 | 0 | 2 | 0 | 1 | 0 | 2 | 0 | 1 | 0 | **8** |
+| Nuts & Seeds | 2 | 0 | 1 | 0 | 2 | 0 | 1 | 0 | 2 | 0 | **8** |
+| Herbs & Spices | 2 | 0 | 1 | 0 | 2 | 0 | 1 | 0 | 2 | 0 | **8** |
+| Grains | 1 | 0 | 0 | 0 | 1 | 0 | 0 | 0 | 1 | 0 | **3** |
 | Duos | | | 4 | | 4 | | | | | | **8** |
 | Feasts | | | | 1 | | 1 | | 1 | | 1 | **4** |
 | **All** | | | | | | | | | | | **107** |
+<!-- /live -->
+
+Bonds follow 06's era rule, so they sit at odd grades only: 9 of the first draft's 18 bond dishes moved from an even
+grade to the odd one below it (Fish 4 → 3 and 8 → 7, Nuts & Seeds 2 → 1, Herbs & Spices and Grains 2 → 1, 6 → 5 and
+10 → 9). Each family keeps its count of dishes; only the sides in the crafted table shift, and grade-2, -6 and -10 bonds
+no longer exist in tier 1.
 
 ### Crafted items, per Uma per tier
 
+<!-- live:demand-crafted -->
 | Family | *g*1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | **Total** | Own dishes, Duos, Feasts | Sides |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | Vegetables | 24 | 24 | 8 | 8 | 8 | 8 | 8 | 8 | 8 | 8 | **112** | 112 | 0 |
-| Herbs & Spices | 10 | 5 | 8 | 1 | 9 | 5 | 5 | 1 | 4 | 5 | **53** | 44 | 9 |
-| Sweets | 13 | 0 | 12 | 1 | 9 | 1 | 10 | 1 | 4 | 1 | **52** | 44 | 8 |
-| Fruits | 12 | 0 | 12 | 2 | 8 | 2 | 9 | 1 | 4 | 1 | **51** | 40 | 11 |
-| Fish | 10 | 0 | 8 | 6 | 10 | 1 | 5 | 5 | 4 | 1 | **50** | 44 | 6 |
-| Nuts & Seeds | 9 | 4 | 8 | 1 | 11 | 1 | 5 | 2 | 8 | 1 | **50** | 40 | 10 |
-| Grains | 22 | 9 | 10 | 5 | 5 | 10 | 4 | 6 | 0 | 4 | **75** | 12 | 63 |
 | Mushrooms | 8 | 8 | 16 | 8 | 8 | 8 | 12 | 12 | 8 | 8 | **96** | 96 | 0 |
+| Grains | 26 | 5 | 11 | 5 | 9 | 6 | 4 | 5 | 4 | 0 | **75** | 12 | 63 |
+| Fruits | 15 | 0 | 12 | 1 | 8 | 1 | 10 | 1 | 4 | 1 | **53** | 40 | 13 |
+| Sweets | 12 | 0 | 12 | 1 | 9 | 1 | 11 | 1 | 4 | 1 | **52** | 44 | 8 |
+| Nuts & Seeds | 13 | 0 | 9 | 1 | 12 | 1 | 5 | 1 | 8 | 1 | **51** | 40 | 11 |
+| Fish | 11 | 0 | 12 | 1 | 10 | 1 | 9 | 1 | 4 | 1 | **50** | 44 | 6 |
+| Herbs & Spices | 12 | 0 | 8 | 1 | 13 | 1 | 5 | 1 | 8 | 1 | **50** | 44 | 6 |
 | **All** | | | | | | | | | | | **539** | 432 | 107 |
+<!-- /live -->
 
 **What the rotation does.** With the obvious rule, "the side is the next family on the ring", Mushrooms would need
 a lot more than Grains: a 3× spread between the busiest and the idlest site. With §4.2's rotation, Grains lands at
 75, since 63 of the tier's 107 sides are bread. Mushrooms is 96, because Inspiration is 24 unlocks a tier (D336).
 
 **After D338 the stat families are the quiet ones.** Halving the Gym's singles took 20 crafted items a tier from each
-stat family, so they land between 50 and 53, against Vegetables 112 and Mushrooms 96. Their sites have 2 slots against
-the Vegetable Garden's 4, so per slot the load is closer than the totals suggest ([07](07-farm.md) §6). If `sim:loop`
-shows the stat sites idle while Vegetables and Mushrooms wait, the lever is rule 1 of §4.2: let Vegetables and
-Mushrooms dishes take a stat-family side on alternate grades instead of bread.
+stat family, so they land between 50 and 53, against Vegetables 112 and Mushrooms 96. The loop simulation measures
+their sites under half full and the Mushroom Cave at its busiest in the scenarios with six Inspiration unlocks
+([07](07-farm.md) §6), while the Vegetable Garden keeps up. If the owner wants the stat sites busier, the lever is rule
+1 of §4.2: let Vegetables and Mushrooms dishes take a stat-family side on alternate grades instead of bread.
 
 **The flag: Vegetables.** At 112 a tier Vegetables is the busiest family, and in scenario 1, where 12 of 27 unlocks
 are constellation nodes, it is **36% of all crafted demand** (48 of 135). Sides can't fix it: they only add
@@ -393,22 +401,25 @@ demand, and none goes to Vegetables. It is handled where it lands:
 - the **Vegetable Garden has more slots** than the other sites (4 → 5, [07](07-farm.md) §6);
 - the **Exchange sells raw Vegetables** for Prize Money ([09](09-racing-rewards-and-exchange.md)), a relief valve in a
   tight week;
-- if the sim still shows scenario 1 waiting on Vegetables, the lever is [05](05-training-hub.md)'s scenario-1 tree size
-  (12 nodes), not the recipes.
+- the loop simulation measures the Vegetable Garden at about 60% of its slots in scenario 1 and about a third after
+  it ([07](07-farm.md) §6), so the recipes stay as they are.
 
 **By scenario.** Shares of crafted demand per scenario of the tier:
 
-| Scenario | Crafted items | Vegetables | Mushrooms | Grains | Each stat family |
-|---|---|---|---|---|---|
-| 1 | 135 | 36% | 12% | 15% | 7–9% |
-| 2 | 116 | 14% | 21% | 9% | 9–13% |
-| 3 | 106 | 15% | 15% | 18% | 8–12% |
-| 4 | 96 | 17% | 25% | 11% | 6–12% |
-| 5 | 86 | 19% | 19% | 16% | 7–13% |
+<!-- live:demand-by-scenario -->
+| Scenario | Unlocks | Crafted items | Vegetables | Mushrooms | Grains | Each stat family |
+|---|---|---|---|---|---|---|
+| 1 | 27 | 135 | 36% | 12% | 15% | 7%–8% |
+| 2 | 23 | 116 | 14% | 21% | 9% | 9%–13% |
+| 3 | 21 | 106 | 15% | 15% | 19% | 8%–13% |
+| 4 | 19 | 96 | 17% | 25% | 11% | 6%–11% |
+| 5 | 17 | 86 | 19% | 19% | 15% | 7%–12% |
+<!-- /live -->
 
 **Other decks.** A Speed-heavy deck (6 Speed, 1 Guts, 2 Friend/Group bonds) moves about 12 crafted items a tier from
-Nuts & Seeds and Grains to Sweets: 2% of the tier's 539. A grade-9 Grains item (Moonrice Flour) is needed only when a
-Friend or Group bond falls at grade 9; the Warehouse simply holds none until then.
+Nuts & Seeds and Grains to Sweets: 2% of the tier's 539. A grade-9 Grains item (Moonrice Flour) is needed when a
+Friend or Group card of scenario 5's era is bonded, as the representative deck does; until then the Warehouse holds
+none.
 
 ## 8. Work values, for selling
 
