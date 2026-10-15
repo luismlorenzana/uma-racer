@@ -23,11 +23,12 @@ import { RaceMarkIcon } from '../../../ui/RaceMarkIcon'
 import { Collapsible, SectionHeading } from '../../../ui/Section'
 import { TypeIcon } from '../../../ui/TypeIcon'
 import type { LoadedContent } from '../../../content/runtime'
-import { useGame, useNow, useRuntime } from '../../app/game'
+import { useGame, useNow, useRuntime, type G2Records } from '../../app/game'
 import { PlaceHeader } from '../../ui/PlaceHeader'
 import { UmaFace } from '../../ui/UmaArt'
 import { useRaceContent } from './content'
 import { prepareRace } from './prepare'
+import { useRecords } from './records'
 import { startRace } from './race'
 import { STRATEGY_LABEL } from './run/labels'
 import { historyOf, resultCount, umaSaveOf } from './today'
@@ -148,18 +149,18 @@ function Strip({ tiles, selected, onPick }: { tiles: readonly StripTile[]; selec
   )
 }
 
-function PreRaceSheet({ race, uma, content, derived, onClose }: {
+function PreRaceSheet({ race, uma, content, derived, records, onClose }: {
   race: RaceTemplate
   uma: UmaState
   content: LoadedContent
   derived: DerivedBuild
+  records: G2Records
   onClose: () => void
 }) {
   const navigate = useNavigate()
   const { game } = useRuntime()
   const state = useGame((snapshot) => snapshot.state)!
   const env = useGame((snapshot) => snapshot.env)!
-  const records = useGame((snapshot) => snapshot.records)
   const now = useNow()
   const template = content.umas.byId.get(uma.outfitId)!
   const defaultStyle = uma.raceDefaults.preferences?.strategy ?? recommendedRacePreferences(template.aptitudes, template, content.races.items).strategy
@@ -193,7 +194,7 @@ function PreRaceSheet({ race, uma, content, derived, onClose }: {
     const day = localDayAt(at, game.utcOffsetMin(at))
     const snapshot = game.getSnapshot()
     const answer = await startRace({
-      game, state: snapshot.state!, env: snapshot.env!, content, records: snapshot.records, umaId: uma.outfitId, raceId: race.id, strategy,
+      game, state: snapshot.state!, env: snapshot.env!, content, umaId: uma.outfitId, raceId: race.id, strategy,
       localDay: day, board: featuredView(snapshot.state!.profile, day, content.races.items).board,
     })
     if (answer.kind === 'done') {
@@ -314,7 +315,7 @@ export function RaceSelect({ place }: { place: Place }) {
   const { game } = useRuntime()
   const state = useGame((snapshot) => snapshot.state)
   const env = useGame((snapshot) => snapshot.env)
-  const records = useGame((snapshot) => snapshot.records)
+  const records = useRecords()
   const now = useNow()
   const content = useRaceContent()
   const offset = game.utcOffsetMin(now)
@@ -331,7 +332,7 @@ export function RaceSelect({ place }: { place: Place }) {
     ? Object.fromEntries(DISTANCE_CATEGORIES.map((distance) => [distance, deriveUmaPreset(uma, distance, env.content)])) as Record<DistanceCategory, DerivedBuild>
     : null), [uma, env])
 
-  if (!state || !env || !content) return <PlaceHeader place={place} />
+  if (!state || !env || !content || !records) return <PlaceHeader place={place} />
   const bar = purseBar(state.profile.purse, localDay)
   const featured = featuredView(state.profile, localDay, content.races.items)
   const header = <PlaceHeader place={place} lines={bar.about} />
@@ -424,7 +425,7 @@ export function RaceSelect({ place }: { place: Place }) {
         )}
       </div>
       <BottomSheet open={picked !== null} onClose={() => pick(null)} label={picked?.name}>
-        {picked && <PreRaceSheet key={`${uma.outfitId}:${picked.id}`} race={picked} uma={uma} content={content} derived={presets[picked.distanceCategory]} onClose={() => pick(null)} />}
+        {picked && <PreRaceSheet key={`${uma.outfitId}:${picked.id}`} race={picked} uma={uma} content={content} derived={presets[picked.distanceCategory]} records={records} onClose={() => pick(null)} />}
       </BottomSheet>
     </div>
   )

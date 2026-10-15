@@ -4,7 +4,7 @@
 // records and one device key.
 import { useEffect, useState } from 'react'
 import { useG2Content } from '../../app/content'
-import { useGame, useNow, useRuntime } from '../../app/game'
+import { useGame, useNow, useRuntime, useSnapshot } from '../../app/game'
 import { readSeen } from './seen'
 
 type Counted = typeof import('./counted')
@@ -36,11 +36,17 @@ export function useFeaturedOpen(): number | null {
   return module.featuredOpen(profile, env, loaded, now, game.utcOffsetMin(now))
 }
 
-/** Flair earned since this device last opened the Trophy Hall. */
+/** Flair earned since this device last opened the Trophy Hall, read through the port's logs as it publishes. */
 export function useNewFlair(): number | null {
-  const events = useGame((snapshot) => snapshot.records.flairEvents)
-  const ready = useGame((snapshot) => snapshot.status === 'ready')
-  if (!ready) return null
-  const seen = readSeen()
-  return Object.values(events).filter((event) => event.earnedAt > seen).length
+  const { game } = useRuntime()
+  const snapshot = useSnapshot()
+  const [count, setCount] = useState<number | null>(null)
+  useEffect(() => {
+    if (snapshot.status !== 'ready' || game.logs?.flairEvents === undefined) return
+    let live = true
+    const seen = readSeen()
+    game.logs.flairEvents().then((events) => { if (live) setCount(events.filter((event) => event.earnedAt > seen).length) }, () => {})
+    return () => { live = false }
+  }, [game, snapshot])
+  return count
 }

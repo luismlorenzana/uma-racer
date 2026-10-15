@@ -7,6 +7,7 @@
 import { act, cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderG2, seedGame, stubStorage } from '../../testing'
+import { readLogs } from './records'
 import { TROPHY_HALL_SEEN_KEY } from './seen'
 
 vi.mock('../../../scenes/race/RaceScene', () => ({
@@ -44,7 +45,7 @@ describe('the Racecourse', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Skip' })) // 4
     const result = await screen.findByRole('region', { name: 'Prize Money' })
     const id = new URLSearchParams(where().split('?')[1]).get('result')!
-    const row = game.getSnapshot().records.raceResults[id]!
+    const row = (await readLogs(game)).raceResults[id]!
     expect(within(result).getByText(new RegExp(`in a G1$`)).textContent).toMatch(/^\+\d+ · \d+(st|nd|rd|th) in a G1$/)
     expect(document.querySelector('[data-g2="race-result"]')?.getAttribute('data-fanfare')).toBe('yes')
     expect(row.commit.prize.paid).toBeGreaterThanOrEqual(0)
@@ -115,7 +116,7 @@ describe('the Trophy Hall', () => {
     const view = renderG2('/racing/trophy-hall', game)
     const scopes = await screen.findByRole('navigation', { name: 'Badge scope' })
     expect(within(scopes).getAllByRole('link').map((link) => link.textContent)).toEqual(['Uma', 'Stable', 'Trainer'])
-    await waitFor(() => expect(Object.keys(game.getSnapshot().records.badges)).toContain('trainer'))
+    await waitFor(() => expect(Object.keys(game.getSnapshot().badges ?? {})).toContain('trainer'))
     expect(Number(localStorage.getItem(TROPHY_HALL_SEEN_KEY))).toBeGreaterThan(0)
     fireEvent.click(within(scopes).getByRole('link', { name: 'Trainer' }))
     expect(await screen.findByText(/^Cards bonded \d+\/\d+$/)).toBeTruthy()

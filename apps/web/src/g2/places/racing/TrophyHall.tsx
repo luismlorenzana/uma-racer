@@ -6,7 +6,7 @@
 import {
   FLAIR_CATEGORIES, awardRefsForState, replaceUmaPreferences, type BadgeSort, type BadgeFilter, type UmaBadgeStateV1,
 } from '@racer/domain'
-import { useEffect, useRef, useState } from 'react'
+import { createContext, useContext, useEffect, useRef, useState } from 'react'
 import { Link, Navigate, useSearchParams } from 'react-router'
 import {
   buildStableBadgeCollection, buildTimelineItems, buildTrophyWall, buildUmaBadgeCollection, filterBadgeItems, sortBadgeItems,
@@ -15,12 +15,13 @@ import {
 import { buildTrainerBadgeCollection, buildTrainerShowcase } from '../../../game/trainer-view'
 import { Button } from '../../../ui/Button'
 import { Meter } from '../../../ui/Meter'
-import { useGame, useHub, useNow, useRuntime } from '../../app/game'
+import { NO_RECORDS, useGame, useHub, useNow, useRuntime, type G2Records } from '../../app/game'
 import { PlaceHeader } from '../../ui/PlaceHeader'
 import { UmaFace } from '../../ui/UmaArt'
 import type { PageProps } from '../registry'
 import { useRaceContent } from './content'
 import { deviceRows, FLAIR_GENERATION, reconcileFlair } from './flair'
+import { readLogs, useRecords } from './records'
 import { stripOrder } from './view'
 import { badgeRow, eventList, raceRecords, recentFlair, savesOf, trainerBadge, umaBadge, writeSeen } from './trophy'
 import { amount, racingWords } from './words'
@@ -131,7 +132,7 @@ function Collection<T extends BadgeCollectionItem | StableBadgeItem>({ items, pi
 function UmaScope({ umaId }: { umaId: string }) {
   const { game } = useRuntime()
   const state = useGame((snapshot) => snapshot.state)!
-  const records = useGame((snapshot) => snapshot.records)
+  const records = useContext(RecordsContext)
   const now = useNow()
   const content = useRaceContent()!
   const [pinMode, setPinMode] = useState(false)
@@ -142,7 +143,7 @@ function UmaScope({ umaId }: { umaId: string }) {
   const events = eventList(records)
   const collection = badge ? buildUmaBadgeCollection(content, badge, events, races, FLAIR_GENERATION) : null
   const refs = new Set(badge ? awardRefsForState(badge) : [])
-  const write = (next: UmaBadgeStateV1) => void game.writeDevice({ badges: badgeRow(next) })
+  const write = (next: UmaBadgeStateV1) => void game.writeDevice?.({ badges: badgeRow(next) })
   const togglePin = (item: BadgeCollectionItem) => {
     if (!badge) return
     const [first, ...others] = badge.preferences.showcaseGroups
@@ -213,7 +214,7 @@ function UmaScope({ umaId }: { umaId: string }) {
 
 function TrophyWall({ badge }: { badge: UmaBadgeStateV1 }) {
   const state = useGame((snapshot) => snapshot.state)!
-  const records = useGame((snapshot) => snapshot.records)
+  const records = useContext(RecordsContext)
   const content = useRaceContent()!
   const wall = buildTrophyWall(content, badge, raceRecords(state, records))
   if (wall.length === 0) return null
@@ -234,7 +235,7 @@ function TrophyWall({ badge }: { badge: UmaBadgeStateV1 }) {
 
 function Timeline({ badge }: { badge: UmaBadgeStateV1 }) {
   const state = useGame((snapshot) => snapshot.state)!
-  const records = useGame((snapshot) => snapshot.records)
+  const records = useContext(RecordsContext)
   const content = useRaceContent()!
   const items = buildTimelineItems(content, badge, eventList(records), raceRecords(state, records), FLAIR_GENERATION).slice(0, 20)
   if (items.length === 0) return null
@@ -255,7 +256,7 @@ function Timeline({ badge }: { badge: UmaBadgeStateV1 }) {
 
 function StableScope() {
   const state = useGame((snapshot) => snapshot.state)!
-  const records = useGame((snapshot) => snapshot.records)
+  const records = useContext(RecordsContext)
   const content = useRaceContent()!
   const saves = savesOf(state)
   const owned = Object.values(saves).map((save) => ({ save, state: umaBadge(records, save.templateId) }))
@@ -270,7 +271,7 @@ function StableScope() {
 
 function TrainerScope({ profile }: { profile: boolean }) {
   const state = useGame((snapshot) => snapshot.state)!
-  const records = useGame((snapshot) => snapshot.records)
+  const records = useContext(RecordsContext)
   const content = useRaceContent()!
   const trainer = trainerBadge(records)
   if (!trainer) return <p className="py-6 text-center text-[13px] text-ink-soft">{racingWords('no-flair')}</p>
@@ -330,6 +331,9 @@ function TrainerScope({ profile }: { profile: boolean }) {
   )
 }
 
+/** The page's records, read once per publish at the top and shared by every section. */
+const RecordsContext = createContext<G2Records>(NO_RECORDS)
+
 /** Once per visit: the flair reconciled on the account as it stands, and this device's visit remembered. */
 function useVisit() {
   const { game } = useRuntime()
@@ -339,15 +343,15 @@ function useVisit() {
   useEffect(() => {
     if (!ready || content === null || done.current) return
     done.current = true
-    const { state, env, records } = game.getSnapshot()
     const now = game.now()
     writeSeen(now)
-    try {
-      const change = reconcileFlair({ state: state!, records, content, env: env!, now })
-      if (Object.keys(change.badges).length > 0 || change.events.length > 0) void game.writeDevice(deviceRows(change))
-    } catch {
+    void readLogs(game).then((logs) => {
+      const { state, env, badges } = game.getSnapshot()
+      const change = reconcileFlair({ state: state!, records: { ...logs, badges: badges ?? {} }, content, env: env!, now })
+      if (Object.keys(change.badges).length > 0 || change.events.length > 0) return game.writeDevice?.(deviceRows(change))
+    }).catch(() => {
       // A reconcile that fails leaves the stored flair as it is; the next commit or visit tries again.
-    }
+    })
   }, [ready, content, game])
 }
 
@@ -356,6 +360,7 @@ export default function TrophyHall({ place, rest }: PageProps) {
   const hub = useHub()
   const state = useGame((snapshot) => snapshot.state)
   const content = useRaceContent()
+  const records = useRecords()
   useVisit()
   const parts = rest.split('/').filter(Boolean)
   const fallbackUma = hub?.featured ?? Object.keys(state?.umas ?? {})[0] ?? null
@@ -363,7 +368,7 @@ export default function TrophyHall({ place, rest }: PageProps) {
   const umaId = parts[0] === 'uma' ? parts[1] ?? null : fallbackUma
   const title = parts[0] === 'trainer' ? racingWords('trainer-profile') : undefined
   const body = (() => {
-    if (!state || !content) return null
+    if (!state || !content || !records) return null
     if (parts[0] === 'uma' && (umaId === null || !state.umas[umaId])) return <Navigate to="/racing/trophy-hall" replace />
     if (parts.length > 0 && parts[0] !== 'uma' && parts[0] !== 'trainer') return <Navigate to="/racing/trophy-hall" replace />
     if (scope === 'trainer') return <TrainerScope profile={parts[0] === 'trainer'} />
@@ -378,7 +383,7 @@ export default function TrophyHall({ place, rest }: PageProps) {
         {scope !== 'trainer' || parts[0] === 'trainer' ? null : (
           <Link to="/racing/trophy-hall/trainer" state={{ back: true }} className="font-display flex min-h-11 items-center justify-center rounded-sm border border-hairline bg-panel text-sm font-semibold">{racingWords('trainer-profile')}</Link>
         )}
-        {body}
+        <RecordsContext.Provider value={records ?? NO_RECORDS}>{body}</RecordsContext.Provider>
       </div>
     </div>
   )

@@ -6,6 +6,7 @@ import { useGame, useHub } from '../../app/game'
 import { UmaFace } from '../../ui/UmaArt'
 import { useRaceContent } from './content'
 import { careerRow, careerRows, mapRows } from './gate'
+import { useRecords } from './records'
 import { recentFlair } from './trophy'
 import { racingWords } from './words'
 
@@ -61,9 +62,9 @@ export function MapPeek() {
 }
 
 export function TrophyPeek() {
-  const records = useGame((snapshot) => snapshot.records)
+  const records = useRecords()
   const content = useRaceContent()
-  if (!content) return null
+  if (!content || !records) return null
   const recent = recentFlair(content, records, 5)
   if (recent.length === 0) return <p className="py-2 text-[13px] text-ink-soft">{racingWords('no-flair')}</p>
   return (

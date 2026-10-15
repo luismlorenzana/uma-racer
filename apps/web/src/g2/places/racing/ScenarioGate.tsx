@@ -16,19 +16,20 @@ import { Crest } from '../../../ui/Crest'
 import { FlairCards } from '../../../ui/FlairCards'
 import { RaceMarkIcon } from '../../../ui/RaceMarkIcon'
 import { SegmentedControl } from '../../../ui/SegmentedControl'
-import { useGame, useNow, useRuntime, type G2Applied } from '../../app/game'
+import { NO_RECORDS, useGame, useNow, useRuntime, type G2Applied } from '../../app/game'
 import { PlaceHeader } from '../../ui/PlaceHeader'
+import { placeName, TapNoteLine, useTap } from '../../ui/work'
 import { UmaArt, UmaFace } from '../../ui/UmaArt'
 import type { PageProps } from '../registry'
 import { useRaceContent } from './content'
 import { deviceRows, eventsOfCommit, FLAIR_GENERATION, leaveFlair } from './flair'
 import { advanceSheet, careerRow, careerRows, promoteInput, promoteSheet, type AdvanceSheet as AdvanceView, type CareerRow } from './gate'
+import { useRecords } from './records'
 import { rowsOf } from './today'
 import { amount, racingWords } from './words'
 import type { LoadedContent } from '../../../content/runtime'
-import type { OperationEnv, OperationName } from '@racer/domain/rework/check-in'
+import type { OperationEnv } from '@racer/domain/rework/check-in'
 import { clockTime } from '@racer/domain/rework/check-in'
-import { BUILDINGS } from '@racer/domain/rework/farm'
 import { endsAt, type WorkRow } from '@racer/domain/rework/work'
 
 const PRESET_NAME: Record<DistanceCategory, string> = { sprint: 'Sprint', mile: 'Mile', medium: 'Medium', long: 'Long' }
@@ -181,18 +182,19 @@ function workOf(row: WorkRow | undefined, now: number) {
   const building = row?.slot?.building
   if (!row || !entry || !building) return null
   const end = endsAt(entry)
-  return { place: BUILDINGS[building].name, end, ready: end <= now, startedAt: entry.startedAt, queued: row.queue.length }
+  return { place: placeName(building), end, ready: end <= now, startedAt: entry.startedAt, queued: row.queue.length }
 }
 
 function PromotePanel({ uma, content, env, onClose }: { uma: UmaState; content: LoadedContent; env: OperationEnv; onClose: () => void }) {
   const navigate = useNavigate()
   const { game } = useRuntime()
   const state = useGame((snapshot) => snapshot.state)!
-  const records = useGame((snapshot) => snapshot.records)
+  const records = useRecords() ?? NO_RECORDS
   const now = useNow()
   const names = useNames(content)
   const [busy, setBusy] = useState(false)
   const [changed, setChanged] = useState(false)
+  const tap = useTap()
   const sheet = promoteSheet(state, uma.outfitId, rowsOf(records.raceResults, uma.outfitId), content.races.byId)
   if (sheet === null) return <p className="py-6 text-center text-[13px] text-ink-soft">{racingWords('her-build-changed')}</p>
   const work = workOf(state.work[uma.outfitId] as WorkRow | undefined, now)
@@ -200,12 +202,9 @@ function PromotePanel({ uma, content, env, onClose }: { uma: UmaState; content: 
   const badge = records.badges[badgeStateId(uma.outfitId)]
   const tierRange = [5 * (uma.tier - 1) + 1, 5 * uma.tier] as const
   const titles = badge?.scope === 'uma' ? badge.awards.titles.filter((title) => (title.source.tier ?? 0) >= tierRange[0] && (title.source.tier ?? 0) <= tierRange[1]).length : 0
-  const act = async (name: OperationName, input: unknown) => {
-    setBusy(true)
-    // The work actions are T136's operations, run as they are (nothing new here).
-    await game.run(name as 'collect', input as { outfitId: string }, `work:${uma.outfitId}`)
-    setBusy(false)
-  }
+  // Collect, Recall and −30m are the work operations as every place runs them (T140's `useTap`): nothing new here.
+  const workKey = `work:${uma.outfitId}`
+  const working = tap.pending !== null
   const promote = async () => {
     if (busy) return
     setBusy(true)
@@ -249,10 +248,11 @@ function PromotePanel({ uma, content, env, onClose }: { uma: UmaState; content: 
               {work.queued > 0 ? ` · ${racingWords('work-queued', { n: work.queued })}` : ''}
             </p>
             <div className="mt-2 grid grid-cols-3 gap-2">
-              <Button variant="secondary" size="sm" disabled={busy || !work.ready} onClick={() => void act('collect', { outfitId: uma.outfitId })}>{racingWords('collect')}</Button>
-              <Button variant="secondary" size="sm" disabled={busy} onClick={() => void act('recall', { outfitId: uma.outfitId })}>{racingWords('recall')}</Button>
-              <Button variant="secondary" size="sm" disabled={busy || work.ready} onClick={() => void act('speed-up', { outfitId: uma.outfitId, startedAt: work.startedAt, tickets: 1 })}>{racingWords('speed-up')}</Button>
+              <Button variant="secondary" size="sm" disabled={busy || working || !work.ready} onClick={() => void tap.run('collect', { outfitId: uma.outfitId }, workKey)}>{racingWords('collect')}</Button>
+              <Button variant="secondary" size="sm" disabled={busy || working} onClick={() => void tap.run('recall', { outfitId: uma.outfitId }, workKey)}>{racingWords('recall')}</Button>
+              <Button variant="secondary" size="sm" disabled={busy || working || work.ready} onClick={() => void tap.run('speed-up', { outfitId: uma.outfitId, startedAt: work.startedAt, tickets: 1 }, workKey)}>{racingWords('speed-up')}</Button>
             </div>
+            <TapNoteLine tap={tap} className="mt-2" />
           </>
         )}
       </div>
@@ -271,7 +271,7 @@ function Ceremony({ umaId }: { umaId: string }) {
   const [params] = useSearchParams()
   const reduced = Boolean(useReducedMotion())
   const state = useGame((snapshot) => snapshot.state)
-  const records = useGame((snapshot) => snapshot.records)
+  const records = useRecords()
   const content = useRaceContent()
   const op = state?.operations?.[params.get('op') ?? '']
   const leave = () => navigate(profilePath(umaId), { replace: true })
@@ -280,7 +280,7 @@ function Ceremony({ umaId }: { umaId: string }) {
     const timer = setTimeout(() => navigate(profilePath(umaId), { replace: true }), reduced ? 2500 : 6000)
     return () => clearTimeout(timer)
   }, [op, reduced, navigate, umaId])
-  if (!state || !content || op === undefined) return null
+  if (!state || !content || !records || op === undefined) return null
   const uma = state.umas[umaId]
   const events = eventsOfCommit(records, umaId, op.at)
   const badge = records.badges[badgeStateId(umaId)]

@@ -7,17 +7,15 @@ import type { Strategy } from '@racer/domain'
 import type { OperationEnv } from '@racer/domain/rework/check-in'
 import type { WorkState } from '@racer/domain/rework/work'
 import type { LoadedContent } from '../../../content/runtime'
-import type { G2Applied, G2Game, G2Records } from '../../app/game'
+import type { G2Applied, G2Game } from '../../app/game'
 import { deviceRows, raceFlair } from './flair'
 import { placementOf, prepareRace, raceRunOf, simulate } from './prepare'
-import { resultCount } from './today'
 
 export interface StartRace {
   readonly game: G2Game
   readonly state: WorkState
   readonly env: OperationEnv
   readonly content: LoadedContent
-  readonly records: G2Records
   readonly umaId: string
   readonly raceId: string
   readonly strategy: Strategy
@@ -47,9 +45,11 @@ export const raceDevice = (content: LoadedContent, env: OperationEnv) => (applie
 export async function startRace(input: StartRace): Promise<StartAnswer> {
   const { game, umaId } = input
   try {
+    // Her results so far, the queued ones included, read now: the seed's n (T141 "Prepare").
+    const sequence = (await game.logs?.raceResults(umaId))?.length ?? 0
     const attempt = prepareRace({
       state: input.state, env: input.env, content: input.content, now: game.now(), umaId, raceId: input.raceId,
-      strategy: input.strategy, sequence: resultCount(input.records.raceResults, umaId),
+      strategy: input.strategy, sequence,
     })
     const timeline = simulate(attempt)
     const answer = await game.run('finish-race', {

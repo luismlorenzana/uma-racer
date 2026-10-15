@@ -54,7 +54,7 @@ export const TRAINER_BADGE_ID = 'trainer'
 /** The rows to write: every changed badge state, every new event. */
 export const deviceRows = (change: FlairChange): G2DeviceRows => ({
   badges: change.badges,
-  flairEvents: Object.fromEntries(change.events.map((event) => [event.id, event.data])),
+  flairEvents: change.events.map((event) => event.data),
 })
 
 /** Her badge subject: the selected preset's stats and library, at her scenario T. */

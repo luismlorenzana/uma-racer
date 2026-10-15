@@ -13,12 +13,15 @@ import { seed, stubStorage } from '../../testing'
 import { devRaceContent } from './content'
 import { prepareRace, raceRunOf, replayOf, simulate, placementOf } from './prepare'
 import { raceDevice, startRace, takeFanfare } from './race'
+import { readLogs } from './records'
 import { featuredView, localDayAt, prizeLines } from './view'
 
 beforeEach(stubStorage)
 afterEach(() => vi.unstubAllGlobals())
 
 const busy = () => seed('busy')
+/** The port's records: its badges and every logged race and flair event. */
+const recordsOf = async (game: G2Game) => ({ ...(await readLogs(game)), badges: game.getSnapshot().badges ?? {} })
 const content = () => devRaceContent(busy().env)
 const day = () => localDayAt(busy().at, busy().utcOffsetMin)
 const G1 = () => busy().env.content.races.find((race) => race.grade === 'g1')!.id
@@ -76,7 +79,7 @@ describe('Start race commits finish-race (09 §8–§9)', () => {
     return {
       game,
       answer: startRace({
-        game, state: snapshot.state!, env: snapshot.env!, content: content(), records: snapshot.records, umaId, raceId,
+        game, state: snapshot.state!, env: snapshot.env!, content: content(), umaId, raceId,
         strategy: 'pace', localDay: day(), board,
       }),
     }
@@ -87,7 +90,8 @@ describe('Start race commits finish-race (09 §8–§9)', () => {
     const done = await answer
     expect(done.kind).toBe('done')
     const id = (done as { id: string }).id
-    const { records, state, receipts } = game.getSnapshot()
+    const { state, receipts } = game.getSnapshot()
+    const records = await recordsOf(game)
     const row = records.raceResults[id]!
     expect(row).toMatchObject({ umaId: 'sim-uma-03', raceId: G1(), opId: id, tier: 1 })
     expect(row.commit).toEqual(receipts[id]!.local)
@@ -105,13 +109,13 @@ describe('Start race commits finish-race (09 §8–§9)', () => {
     const second = start(game)
     const [a, b] = await Promise.all([first.answer, second.answer])
     expect(a).toEqual(b)
-    expect(Object.keys(game.getSnapshot().records.raceResults)).toHaveLength(1)
+    expect(Object.keys((await recordsOf(game)).raceResults)).toHaveLength(1)
   })
 
   it("equals the server's receipt when the server re-runs it on the same copy (02 §8)", async () => {
     const { game, answer } = start()
     const done = await answer as { id: string }
-    const row = game.getSnapshot().records.raceResults[done.id]!
+    const row = (await recordsOf(game)).raceResults[done.id]!
     const input = { umaId: row.umaId, raceId: row.raceId, placement: row.run.field.find((r) => r.isPlayer)!.placement, localDay: day(), board: [], run: row.run }
     const server = commitOperation(busy().state, { id: done.id, name: 'finish-race', input, at: row.at }, busy().env)
     expect(server.status).toBe('applied')
@@ -162,10 +166,10 @@ describe('Start race commits finish-race (09 §8–§9)', () => {
     const failing = vi.fn(() => { throw new Error('flair failed') })
     const answer = await startRace({
       game: { ...game, run: ((name, input, key) => game.run(name, input, key, { device: failing })) as G2Game['run'] }, state: snapshot.state!, env: snapshot.env!,
-      content: content(), records: snapshot.records, umaId: 'sim-uma-08', raceId: G1(), strategy: 'pace', localDay: day(), board: [],
+      content: content(), umaId: 'sim-uma-08', raceId: G1(), strategy: 'pace', localDay: day(), board: [],
     })
     expect(answer).toEqual({ kind: 'failed' })
-    expect(game.getSnapshot().records.raceResults).toEqual({})
+    expect((await recordsOf(game)).raceResults).toEqual({})
     expect(game.getSnapshot().state).toBe(snapshot.state)
     expect(raceDevice).toBeTypeOf('function')
   })

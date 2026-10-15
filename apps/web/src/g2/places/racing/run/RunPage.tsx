@@ -25,6 +25,7 @@ import { UmaFace } from '../../../ui/UmaArt'
 import { useRaceContent } from '../content'
 import { eventsOfCommit, FLAIR_GENERATION } from '../flair'
 import { replayOf, simulate } from '../prepare'
+import { useRecords } from '../records'
 import { startRace, takeFanfare } from '../race'
 import { recordOf, rowsOf, umaSaveOf } from '../today'
 import { canAdvance, featuredView, finishLines, gradeWords, holdLine, localDayAt, nextUma, prizeLines, stripOrder } from '../view'
@@ -74,9 +75,9 @@ export default function RunPage() {
   const status = useGame((snapshot) => snapshot.status)
   const state = useGame((snapshot) => snapshot.state)
   const env = useGame((snapshot) => snapshot.env)
-  const records = useGame((snapshot) => snapshot.records)
+  const records = useRecords()
   const content = useRaceContent()
-  const row = records.raceResults[resultId]
+  const row = records?.raceResults[resultId]
   const [fresh] = useState(() => takeFanfare(resultId))
   const hostRef = useRef<HTMLDivElement>(null)
   const sceneRef = useRef<RaceScene | null>(null)
@@ -141,7 +142,7 @@ export default function RunPage() {
   const leave = useLeave()
   // Back where the run was opened from (race select), else to race select on her.
   const toRaces = (umaId: string) => leave(`/racing/racecourse?uma=${encodeURIComponent(umaId)}`)
-  if (status === 'booting' || content === null) return null
+  if (status === 'booting' || content === null || records === null) return null
   if (!row || !replay || !timeline || !race || !state || !env) {
     return <Message title={racingWords('no-result')} action={{ label: racingWords('races'), onClick: () => navigate('/racing/racecourse', { replace: true }) }} />
   }
@@ -186,7 +187,7 @@ export default function RunPage() {
     const now = game.now()
     const localDay = localDayAt(now, game.utcOffsetMin(now))
     const answer = await startRace({
-      game, state, env, content, records, umaId: row.umaId, raceId: row.raceId, strategy: row.run.strategy, localDay,
+      game, state, env, content, umaId: row.umaId, raceId: row.raceId, strategy: row.run.strategy, localDay,
       board: featuredView(state.profile, localDay, content.races.items).board,
     })
     if (answer.kind === 'done') navigate(`/racing/racecourse/run?result=${encodeURIComponent(answer.id)}`, { replace: true })
