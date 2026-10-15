@@ -7,7 +7,7 @@ import {
   parseScenarioJourney,
   trainedScenario,
   withScenarioView,
-} from './save'
+} from './career-shapes'
 
 const aptitudes = {
   surface: { turf: 'A', dirt: 'G' },

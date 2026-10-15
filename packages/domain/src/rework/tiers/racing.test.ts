@@ -5,7 +5,7 @@ import { CONTENT, COLT, placeUma, wonCareer } from '../../__fixtures__/rework-ti
 import { careerHoldLevel } from '../../career-stages'
 import { GATE_SHARD_REWARD, expToNextUmaLevel, umaGateShardLedgerId } from '../../progression'
 import { addUmaRaceExp } from '../../progression-race'
-import type { UmaSave } from '../../save'
+import type { UmaSave } from '../../career-shapes'
 import { isRefusal, type ReworkState, type ScenarioOfTier, type Tier, type UmaState } from '../types'
 import { advanceScenario } from './advance'
 import { freezeCareer } from './career'

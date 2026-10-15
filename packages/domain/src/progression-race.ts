@@ -6,7 +6,7 @@ import type { RaceCourseLayout } from './course-layout'
 import { GATE_SHARD_REWARD, expToNextUmaLevel, raceExp } from './progression'
 import { parseCompiledRaceSkill, type CompiledRaceSkill } from './race-skills'
 import { MAX_UMA_LEVEL, isGateLevel, tierOfLevel } from './scenarios'
-import type { UmaSave } from './save'
+import type { UmaSave } from './career-shapes'
 import {
   DISTANCE_CATEGORIES,
   GRADES,

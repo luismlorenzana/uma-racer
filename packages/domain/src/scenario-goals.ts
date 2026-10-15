@@ -17,7 +17,7 @@ import {
   type ScenarioJourney,
   type RacePreferences,
   type UmaSave,
-} from './save'
+} from './career-shapes'
 import { LEVELS_PER_SCENARIO, isGateLevel, scenarioForTier, tierOfLevel } from './scenarios'
 import { CAREER_STAGE_LEVELS, careerHoldLevel, isCareerJourney, isCareerStage } from './career-stages'
 

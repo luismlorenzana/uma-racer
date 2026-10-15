@@ -1,7 +1,7 @@
 // Shared shapes for the rework's rules (docs/game/architecture.md#the-rework-modules). T125 completes the state skeleton here
 // (docs/rework/13-removals-and-plan-changes.md §6); each later task adds its own part.
 import type { InspirationSlot } from '../inspiration'
-import type { RacePreferences, ScenarioJourney } from '../save'
+import type { RacePreferences, ScenarioJourney } from '../career-shapes'
 import { DISTANCE_CATEGORIES, type DistanceCategory, type Stats } from '../types'
 import type { ItemGrade } from './items/catalogue'
 

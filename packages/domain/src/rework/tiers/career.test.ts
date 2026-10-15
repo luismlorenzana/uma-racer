@@ -3,7 +3,7 @@
 import { describe, expect, it } from 'vitest'
 import { CONTENT, COLT, DIRT_PARENT_A, DIRT_PARENT_B, DIRT_PARENT_C, RACES, SPRINTER, placeUma } from '../../__fixtures__/rework-tiers'
 import { lineageAptitudes } from '../../lineage'
-import { createScenarioTraining, createUmaSave, type ScenarioGoal, type ScenarioJourney, type UmaSave } from '../../save'
+import { createScenarioTraining, createUmaSave, type ScenarioGoal, type ScenarioJourney, type UmaSave } from '../../career-shapes'
 import { planScenarioCareer } from '../../scenario-goals'
 import { isRefusal, type UmaState } from '../types'
 import { careerAptitudes, careerView, freezeCareer, settleGoalWin } from './career'

@@ -3,7 +3,7 @@
 // a ticket in an explicit exchange, as today. No Prize Money path makes a ticket. The featured Uma (rework/11 §5) and
 // each Uma's race defaults (03 §6–§7) are the roster's two settings, written by `feature-uma` and `set-race-defaults`
 // (T138).
-import { bestBaseDistance, type RacePreferences } from '../../save'
+import { bestBaseDistance, type RacePreferences } from '../../career-shapes'
 import { recommendedRacePreferences } from '../../scenario-goals'
 import type { DistanceCategory } from '../../types'
 import { FIRST_EXCHANGE_GRADE } from '../exchange/exchange'

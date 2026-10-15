@@ -29,7 +29,7 @@ import {
   type FlairEventRecord,
 } from './flair'
 import type { RaceResultRecord } from './progression-race'
-import type { UmaSave } from './save'
+import type { UmaSave } from './career-shapes'
 import { MAX_UMA_LEVEL } from './scenarios'
 import { STATS, type StatKey } from './types'
 

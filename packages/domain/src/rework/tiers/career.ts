@@ -5,7 +5,7 @@ import type { RaceTemplate, UmaTemplate } from '../../content'
 import { INSPIRATION_SLOTS } from '../../inspiration'
 import { lineageAptitudes } from '../../lineage'
 import { SAVE_SCHEMA_VERSION, SCENARIO_GOAL_VERSION, createScenarioTraining, type ScenarioGoal, type ScenarioGoalLeg,
-  type ScenarioJourney, type UmaSave } from '../../save'
+  type ScenarioJourney, type UmaSave } from '../../career-shapes'
 import { planScenarioCareer } from '../../scenario-goals'
 import type { Aptitudes } from '../../types'
 import type { UmaState } from '../types'

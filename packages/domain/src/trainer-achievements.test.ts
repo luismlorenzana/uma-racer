@@ -17,7 +17,7 @@ import {
   type UmaSave,
   type UmaTemplate,
 } from './index'
-import { createUmaSave } from './save'
+import { createUmaSave } from './career-shapes'
 
 function umaTemplate(id: string): UmaTemplate {
   return {

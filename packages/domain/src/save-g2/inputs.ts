@@ -18,7 +18,7 @@ import { itemById } from '../rework/items/catalogue'
 import type { PromotionPresetStats } from '../rework/tiers/promotion'
 import type { RaceDefaultsInput } from '../rework/tiers/roster'
 import type { RepeatSizing } from '../rework/types'
-import type { RacePreferences } from '../save'
+import type { RacePreferences } from '../career-shapes'
 import { isRowId } from './kinds'
 import {
   exactKeys, isLocalDay, isNonNegativeInt, isObject, isPositiveInt, isTimestamp, parseIds, parsePreferences, parseSlotRef, parseWorkRequest,

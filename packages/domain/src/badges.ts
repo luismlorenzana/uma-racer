@@ -2,7 +2,7 @@
 
 import { raceScenarioTier, type RaceAccomplishmentFactsV1, type RaceResultRecord } from './progression-race'
 import { SCENARIOS, tierOfLevel } from './scenarios'
-import type { ScenarioJourney, UmaSave } from './save'
+import type { ScenarioJourney, UmaSave } from './career-shapes'
 import {
   DISTANCE_CATEGORIES,
   RACE_GRADES,

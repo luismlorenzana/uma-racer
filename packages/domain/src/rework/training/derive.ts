@@ -19,7 +19,7 @@ import type { SkillTemplate, SupportCardTemplate, UmaTemplate } from '../../cont
 import { ownSkillIds } from '../../derived'
 import { GRANDPARENT_SP_MULTIPLIER, INSPIRATION_SLOTS, inspirationGoldKey, inspirationParent, type InspirationSlot } from '../../inspiration'
 import { lineageAptitudes, lineageInheritedUniques, lineageSlotEligibility } from '../../lineage'
-import type { SkillUnlock } from '../../save'
+import type { SkillUnlock } from '../../career-shapes'
 import { DISTANCE_CATEGORIES, STATS, type Aptitudes, type DistanceCategory, type StatKey, type Stats, zeroStats } from '../../types'
 import { fairShare, perCardCap, treeCardNodesAt } from '../constellation/sizes'
 import { cardNodeId } from '../constellation/tree'

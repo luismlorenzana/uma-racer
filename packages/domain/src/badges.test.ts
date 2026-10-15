@@ -17,7 +17,7 @@ import {
   type RaceResultRecord,
   type UmaTemplate,
 } from './index'
-import { createUmaSave } from './save'
+import { createUmaSave } from './career-shapes'
 
 const template: UmaTemplate = {
   id: 'synthetic-uma',

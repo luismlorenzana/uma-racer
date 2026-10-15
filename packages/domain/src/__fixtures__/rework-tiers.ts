@@ -2,7 +2,7 @@
 // and race is invented; the set-leg slugs are the public ones today's planner already names.
 import type { RaceTemplate, UmaTemplate } from '../content'
 import { flairSeriesLegId, type FlairSeriesTag } from '../badges'
-import type { ScenarioJourney } from '../save'
+import type { ScenarioJourney } from '../career-shapes'
 import type { Aptitudes, DistanceCategory, RaceGrade, Surface } from '../types'
 import type { TierContent } from '../rework/tiers/career'
 import { freezeCareer, settleGoalWin } from '../rework/tiers/career'

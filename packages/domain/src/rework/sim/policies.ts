@@ -2,7 +2,7 @@
 // and in loop.ts: it decides what to do and in which order, and every change of state goes through the rules' own
 // operations. Each policy cites the page that describes the habit.
 import { careerComplete } from '../../scenario-goals'
-import type { ScenarioGoal, ScenarioJourney } from '../../save'
+import type { ScenarioGoal, ScenarioJourney } from '../../career-shapes'
 import type { RaceGrade } from '../../types'
 import { BUILDING_IDS, MAX_BUILDING_LEVEL, upgradeCost, type BuildingId } from '../farm/buildings'
 import { itemById, SPEED_TICKET_ID } from '../items/catalogue'
