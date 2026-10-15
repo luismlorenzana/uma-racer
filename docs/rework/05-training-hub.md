@@ -3,7 +3,8 @@
 > **Status: approved design, 2026-10-14 (D326, D328, D338).** The Observatory, Lineage Hall, Gym and Dojo: how a
 > session works, which dish each unlock needs, the layer each scenario adds, the re-authored constellations, the
 > Inspiration and Extra Stats maps, and facility slots and upgrades. Every number is a **draft** that the loop
-> simulation ([12](12-economy-and-pacing.md) §12) tunes and then pins in tests.
+> simulation ([12](12-economy-and-pacing.md) §12) tunes and then pins in tests. Phase 3's facility pages, session sheet
+> and build views are built beside today's app (T139, D357; §8 "As built").
 
 The Training Hub is where an Uma's build is unlocked, one piece at a time. Every piece follows the same model (D326):
 **one cooked dish pays for one timed unlock**. The four facilities differ only in what they unlock and which dish
@@ -752,6 +753,19 @@ locked item with what it needs, for example:
 
 A locked item is never a dead end: it says what it needs and links to the step that gets it.
 
+**As built in phase 3 (T139).** The four facilities share one page and one Peek under `g2/places/training/`, each
+screen a pure view model over one work view. The page's header shows the level, "2 / 3 in use", the speed at Lv 3 and
+the shared **Upgrade** with what the level brings (`totalSlots`, `buildingSpeed`); slots sit under their room's stat or
+card-type icon; **Needs here** is the planner's `facilityLines` ("Amber Sprint · 12 nodes · 6 in stock, 6 short"), with
+**Start** when she can and the Kitchen's job sheet for her first short dish; at the Dojo a target's bonds still to pick
+read "6 bonds: pick cards" and open her bonds view. **Collect here** is `collect-all` on this facility. The session
+sheet opens over the page from `?session=:umaId&room=:room&unlocks=<kind>:<target>,…&back=<path>` (plus `&queue=1`
+and a slot card's `&slot=n`); its list is her items of every open layer not yet open, canonical order, then the next
+layer locked, each read with `unlockStatus` counting her work ahead and the picks above it. A locked item reads the
+rule's own words ("Needs node 13 first.", "Opens in scenario 3 · Trackblazer"). The build views show the 05 §8 labels
+with the dish by name and grade ("Needs: Cabbage Salad (grade 3) at the Observatory · 2 in stock"; "Opens after node
+14"; "Needs: … · Power grade 3 and Speed grade 3 first", every unmet need of `dependenciesOf`).
+
 ## 9. What is saved
 
 | Where ([13](13-removals-and-plan-changes.md) §6) | What |
@@ -835,6 +849,18 @@ facility `upgrade`. Each is checked by the domain on the API and returns its fir
 | The derivation counts cards that are in the set, bonded and of an era her scenario allows; anything else pays nothing (D344) | Pure and total, as today's `deriveStats`: a stale id never breaks a read |
 | Team Spirit counts the filled open slots whose pick passes D250's repeat rules (D344) | The same slots that pay aptitudes |
 | The stamina ladder runs full-layer builds whose active Extra Stats lean on the rung's stat, most first, then on its backup (Guts behind Stamina, Power behind Speed), up to the capacity (D349) | Today's six leaned four and two; the capacity takes every opened node that pays the stat before any other |
+| Start takes the slot card's slot, else her own slot here, else the first free slot of the room or facility in `slotsOf` order; with none free, Start says when the next one frees, or that one is ready to collect (T139) | §8 doesn't say; every free slot of a place runs the same |
+| The sheet pre-picks `fitSize` of the next items (`nextUnlocks`), capped by the dishes in stock and 10; unlocks the link names arrive picked instead (an Unlock, a Bond), even without their dish, and the Dojo picks only cards it is given (T139) | §8's "as many as fit before the next check-in"; a locked item's Unlock means that item; a bond names its card (D344) |
+| A dish's free stock in the sheet is less the picks above it; an available item with none left is greyed with "0 in Warehouse · Cook" and can't be picked, and Start reads the rule's `short` words for a named one (T139) | §10's empty Warehouse: the sheet opens greyed and Start stays off until a picked unlock has its dish |
+| The sheet lists her items of every open layer not yet open, oldest first in canonical order, then the next layer locked; open items are left out, items in her work read "In session · opens 04:45", "Finished · Collect" or "Queued behind her session" (T139) | §8 step 2's "her unlockable items here, in unlock order" with §3's later layer shown locked |
+| A Duo or Sun goes to the room it was started from, else the first `roomsFor` lists; a Needs line's Start opens the room of her first unlock left here (T139) | §1 lets either room take it |
+| A busy Uma at this facility and room, with room in her queue, opens the sheet on **Add to queue** (T138's `&queue=1`, or her slot card's + Queue); a running Farm job offers Recall first in the picker, through the shared Recall sheet, then picks her (T139) | §2: a running job refuses the session until it is collected or recalled, with Recall on the sheet |
+| A build view's preset switch is view-only (`?preset=`), opening on her selected preset; every edit in it (assignments, lineage, active Extra Stats, the card set) is the viewed preset's (T139) | [03](03-uma-progression.md) §6: her profile selects a preset (T138's `set-race-defaults`) and every training screen edits it |
+| Lineage picks are made on the Lineage Hall's map only; the tree carries no lineage band (T139) | §4–§5; [11](11-hub-and-places.md) §3.2's Observatory says "card and lineage assignments" |
+| A gold position whose filler has fewer natural golds than it needs warns in §3's words ("This parent has one natural gold; gold 2 pays nothing until a parent with two fills slot A."), gold 1 too for one with none (T139) | §3's warning names gold 2; the same reading covers gold 1 |
+| What a node pays (`nodeSkillIds`) and what an Uma pays from a slot (`lineagePays`: her golds by position and her inherited unique) are the derivation's own readings in `rework/training/derive.ts`, which its skill library uses too (T139) | A screen restates no rule (M034); the node sheet and the lineage map need them |
+| Dishes show by name and grade with their icon, never by id: §8's "`dish-vegetables-3` (Cabbage Salad)" reads "Cabbage Salad (grade 3)" (T139) | [08](08-item-catalogue-and-recipes.md) §10 shows a dish by name; [02](02-check-ins-and-notifications.md) §9 keeps ids off the screen |
+| Speed up, Recall, queue chips and the slot card are T140's shared `g2/ui/work/` pieces; T139 adds the shared **Upgrade** (moved from the Farm page) and a slot card's `startLabel` ("Start a session") (T139) | One look for every timed thing an Uma does ([07](07-farm.md) §2, §11); one Upgrade for every building |
 
 ## 12. Done when
 
