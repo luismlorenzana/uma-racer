@@ -48,6 +48,15 @@ The server-side delete runs **inside the new API, for the signed-in owner only**
 The endpoint and its client call are deleted in the release after the owner confirms the purge ran. The marker
 document stays as a record.
 
+> **As built (T135, [rework/13](../rework/13-removals-and-plan-changes.md) §6).** The request is exactly
+> `{ protocol: 2, generation: 2 }`, and the answer is `{ status: 'purged' | 'already', at, counts: { collections,
+> documents } }`. The API counts `players/{uid}`'s subcollections with `listCollections`, and counts each deleted
+> document through the bulk writer that `recursiveDelete` runs on. The parent document counts only if it existed. It
+> then writes the marker `{ generation: 2, at, collections, documents }` with `create()`, so two devices racing write
+> one marker, and the loser answers `already` with the stored record. In dev, the local repository clears the uid's
+> entry from `.data/save.json`. That path is fixed, never an env var, and is refused if it resolves to the
+> generation-2 file.
+
 For checking: Claude can list `players/` before and after with the scoped gcloud configuration
 (`CLOUDSDK_ACTIVE_CONFIG_NAME=default CLOUDSDK_CORE_PROJECT=uma-racer`). Nothing in this plan changes the active
 gcloud account.
@@ -65,6 +74,11 @@ A second device, or the installed app on the same phone, can still run old code 
   is a conflict ([01](01-target-architecture.md) §4.3).
 - **The update reaches the device.** The service worker update is prompted as today ("Update ready — Restart"). On a
   426 the old app shows its sync error until the owner restarts it, which loads generation 2.
+
+> **As built (T135, [rework/13](../rework/13-removals-and-plan-changes.md) §6).** `GET /api/save` carries the stamp
+> as query parameters (`protocol=2&generation=2`), and the POSTs carry it in their bodies. Every route runs the auth
+> guard first, so a request without a token is 401 whatever its stamp. The stamp is checked next, and the parser
+> after it. The 426 body is `{ code: 'upgrade-required', protocol: 2, generation: 2 }`.
 
 ## 5. The new account
 
