@@ -6,7 +6,11 @@ import { emptyBuild, isRefusal, type ReworkState } from '../types'
 import { freezeCareer } from './career'
 import { EXPEDITION_WINS } from './expedition'
 import { PROMOTION_UMA_TICKETS } from './promotion'
-import { INITIAL_UMA_TICKETS, UMA_SHARDS_PER_TICKET, UMA_UNLOCK_TICKET_COST, exchangeShards, newAccount, unlockUma } from './roster'
+import { recommendedRacePreferences } from '../../scenario-goals'
+import {
+  INITIAL_UMA_TICKETS, UMA_SHARDS_PER_TICKET, UMA_UNLOCK_TICKET_COST, exchangeShards, featureUma, newAccount, racePreferencesOf, setRaceDefaults,
+  unlockUma,
+} from './roster'
 
 function ok<R>(result: { state: ReworkState; receipt: R } | { refused: true; reason: string }): { state: ReworkState; receipt: R } {
   if ('refused' in result) throw new Error(result.reason)
@@ -97,5 +101,60 @@ describe('exchangeShards', () => {
   it('numbers its rows after the highest one, as today', () => {
     const old = withShards(5, [{ id: 'uma-shard-exchange:7:shards', resource: 'uma-shards', delta: -5, reason: 'uma-shard-exchange', at: 1 }])
     expect(ok(exchangeShards(old, {}, 2)).receipt.sequence).toBe(8)
+  })
+})
+
+describe('featureUma (rework/11 §5, T138)', () => {
+  const two = () => ok(unlockUma(ok(unlockUma(newAccount(0), { outfitId: COLT.id }, 1, { content: CONTENT })).state,
+    { outfitId: SPRINTER.id }, 2, { content: CONTENT })).state
+
+  it('features any owned Uma, naming who was featured before', () => {
+    const { state, receipt } = ok(featureUma(two(), { outfitId: SPRINTER.id }, 3))
+    expect(receipt).toEqual({ outfitId: SPRINTER.id, previous: COLT.id })
+    expect(state.profile.featuredUmaId).toBe(SPRINTER.id)
+    expect(state.ledger).toEqual(two().ledger)
+  })
+
+  it('changes nothing for the Uma already featured, and refuses one not in the Stable', () => {
+    const state = two()
+    expect(featureUma(state, { outfitId: COLT.id }, 3)).toEqual({ state, receipt: { outfitId: COLT.id, previous: COLT.id } })
+    expect(featureUma(state, { outfitId: 'nobody' }, 3)).toMatchObject({ refused: true, code: 'unknown-uma', data: { uma: 'nobody' } })
+    expect(() => featureUma(state, { outfitId: COLT.id }, 1.5)).toThrow(RangeError)
+  })
+})
+
+describe('setRaceDefaults (03 §6–§7, T138)', () => {
+  const one = () => ok(unlockUma(newAccount(0), { outfitId: COLT.id }, 1, { content: CONTENT })).state
+  const preferences = { strategy: 'late', distance: 'long', surface: 'turf' } as const
+
+  it('sets the selected preset, her preferences, or both, keeping the other', () => {
+    const preset = ok(setRaceDefaults(one(), { umaId: COLT.id, selectedPreset: 'long' }, 2))
+    expect(preset.receipt).toEqual({ umaId: COLT.id, raceDefaults: { preferences: null, selectedPreset: 'long' } })
+    const both = ok(setRaceDefaults(preset.state, { umaId: COLT.id, preferences }, 3))
+    expect(both.state.umas[COLT.id]!.raceDefaults).toEqual({ preferences, selectedPreset: 'long' })
+    const back = ok(setRaceDefaults(both.state, { umaId: COLT.id, selectedPreset: 'mile', preferences: null }, 4))
+    expect(back.state.umas[COLT.id]!.raceDefaults).toEqual({ preferences: null, selectedPreset: 'mile' })
+  })
+
+  it('leaves her frozen career, build and ledger alone', () => {
+    const before = one()
+    const { state } = ok(setRaceDefaults(before, { umaId: COLT.id, preferences }, 2))
+    const { raceDefaults: _, ...rest } = state.umas[COLT.id]!
+    const { raceDefaults: __, ...was } = before.umas[COLT.id]!
+    expect(rest).toEqual(was)
+    expect(state.ledger).toEqual(before.ledger)
+  })
+
+  it('refuses an Uma not in the Stable, and an input setting nothing is a caller bug', () => {
+    expect(setRaceDefaults(one(), { umaId: 'nobody', selectedPreset: 'mile' }, 2)).toMatchObject({ refused: true, code: 'unknown-uma' })
+    expect(() => setRaceDefaults(one(), { umaId: COLT.id }, 2)).toThrow(RangeError)
+  })
+
+  it("reads her preferences, or today's recommendation from her career aptitudes until she sets them", () => {
+    const uma = one().umas[COLT.id]!
+    const recommended = recommendedRacePreferences(COLT.aptitudes, COLT, CONTENT.races)
+    expect(racePreferencesOf(uma, CONTENT)).toEqual(recommended)
+    const set = ok(setRaceDefaults(one(), { umaId: COLT.id, preferences }, 2)).state.umas[COLT.id]!
+    expect(racePreferencesOf(set, CONTENT)).toEqual(preferences)
   })
 })

@@ -256,7 +256,8 @@ function parseTierHistory(value: unknown): TierHistoryEntry | null {
   return { tier: value.tier, promotedAt: value.promotedAt, finalRacingLevel: value.finalRacingLevel, presets, bonds, runs }
 }
 
-function parsePreferences(value: unknown): RacePreferences | null {
+/** Her race preferences (03 §7): a running style, a distance and a surface. */
+export function parsePreferences(value: unknown): RacePreferences | null {
   if (!isObject(value) || !exactKeys(value, ['strategy', 'distance', 'surface'])) return null
   if (!STRATEGIES.includes(value.strategy as RacePreferences['strategy']) || !isDistance(value.distance) ||
     !SURFACES.includes(value.surface as RacePreferences['surface'])) return null

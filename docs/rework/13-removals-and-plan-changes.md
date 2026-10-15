@@ -160,6 +160,8 @@ Every change is an **operation** re-run by the API with the domain package. The 
 | `sell` | Sells surplus items for Prize Money | 09 §6 |
 | `unlock-uma` | Unlocks an Uma with an Uma Ticket | 04 §6 |
 | `exchange-shards` | Turns five Uma Shards into an Uma Ticket | 04 §6 |
+| `feature-uma` | Features an owned Uma in the Town Hall plaza | 11 §5 |
+| `set-race-defaults` | An Uma's selected preset and her preferred distance, surface and running style | 03 §6–§7 |
 | `set-targets` | The planner's targets, up to five in order | 02 §6 |
 | `set-check-in-times` | The check-in times, one to four | 02 §3 |
 | `set-repeat-sizing` | Repeat's same size or fit to the next check-in | 02 §5 |

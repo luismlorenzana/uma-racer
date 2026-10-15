@@ -8,7 +8,7 @@ describe('the work and farm entries', () => {
     for (const name of [
       'itemEnds', 'finishedCount', 'endsAt', 'remainingMs', 'progress', 'chainTimes', 'ticketsToFinish', 'applyTickets',
       'settle', 'start', 'queue', 'collect', 'recall', 'speedUp', 'finish', 'upgrade', 'workState', 'freeAt', 'isFree', 'collectBeforeRace',
-      'newWorkState', 'kindRules',
+      'reservedStock', 'newWorkState', 'kindRules',
     ] as const) expect(typeof work[name], name).toBe('function')
     expect(work.SPEED_TICKET_MS).toBe(1_800_000)
     expect(work.SESSION_KIND).toBe('session')

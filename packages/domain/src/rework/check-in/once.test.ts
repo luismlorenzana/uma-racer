@@ -42,7 +42,7 @@ describe('runOnce', () => {
   it("names every owner action of 13 §6, and gives `buy` and `sell` their ledger ids from the operation's id", () => {
     expect(Object.keys(OPERATIONS)).toEqual([
       'start', 'queue', 'collect', 'collect-all', 'repeat', 'recall', 'speed-up', 'finish', 'upgrade', 'advance-scenario', 'promote', 'induct',
-      'buy', 'sell', 'unlock-uma', 'exchange-shards', 'set-targets', 'set-check-in-times', 'set-repeat-sizing', 'set-card-set', 'set-assignments',
+      'buy', 'sell', 'unlock-uma', 'exchange-shards', 'feature-uma', 'set-race-defaults', 'set-targets', 'set-check-in-times', 'set-repeat-sizing', 'set-card-set', 'set-assignments',
       'set-lineage', 'set-active-nodes', 'set-loadout', 'finish-race', 'dev-grant',
     ])
     const rich = { ...account(1, { carrot: 3 }), profile: { ...account(1).profile, prizeMoney: 500 } }
@@ -52,6 +52,31 @@ describe('runOnce', () => {
     const sold = runOnce(bought.state, { id: 'tap-10', name: 'sell', input: { itemId: 'carrot', qty: 1, unitPrice: 36 } }, NOW, ENV)
     if (isRefusal(sold)) throw new Error(sold.reason)
     expect(sold.state.ledger.at(-1)!.id).toBe('sell:tap-10:pay')
+  })
+})
+
+describe("the roster's two settings, once (T138)", () => {
+  it('feature-uma and set-race-defaults apply once under their id, and refuse an Uma not in the Stable, storing nothing', () => {
+    const state = account(2)
+    const feature = { id: 'feat-1', name: 'feature-uma' as const, input: { outfitId: uma(2) } }
+    const featured = runOnce(state, feature, NOW, ENV)
+    if (isRefusal(featured)) throw new Error(featured.reason)
+    expect(featured.state.profile.featuredUmaId).toBe(uma(2))
+    const swapped = runOnce(featured.state, { id: 'feat-2', name: 'feature-uma', input: { outfitId: uma(1) } }, NOW, ENV)
+    if (isRefusal(swapped)) throw new Error(swapped.reason)
+    // The first tap's retry returns its first receipt and doesn't feature her again.
+    expect(runOnce(swapped.state, feature, NOW + 1, ENV)).toEqual({ state: swapped.state, receipt: featured.receipt, repeated: true })
+    expect(runOnce(state, { id: 'feat-3', name: 'feature-uma', input: { outfitId: 'nobody' } }, NOW, ENV)).toMatchObject({ code: 'unknown-uma' })
+
+    const defaults = { id: 'race-1', name: 'set-race-defaults' as const, input: { umaId: uma(1), selectedPreset: 'long' as const } }
+    const set = runOnce(state, defaults, NOW, ENV)
+    if (isRefusal(set)) throw new Error(set.reason)
+    expect(set.state.umas[uma(1)]!.raceDefaults.selectedPreset).toBe('long')
+    expect(set.state.operations?.['race-1']).toEqual({ name: 'set-race-defaults', at: NOW, receipt: set.receipt })
+    expect(runOnce(set.state, defaults, NOW + 1, ENV)).toMatchObject({ repeated: true, state: set.state })
+    const refused = runOnce(state, { id: 'race-2', name: 'set-race-defaults', input: { umaId: 'nobody', selectedPreset: 'mile' } }, NOW, ENV)
+    expect(refused).toMatchObject({ refused: true, code: 'unknown-uma' })
+    expect(state.operations).toBeUndefined()
   })
 })
 

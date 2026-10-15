@@ -13,7 +13,7 @@ import type { ScenarioCatalogue } from '../tiers/map'
 import type { TierContent } from '../tiers/career'
 import { assertNow } from '../tiers/ledger'
 import { induct, promote } from '../tiers/promotion'
-import { exchangeShards, unlockUma } from '../tiers/roster'
+import { exchangeShards, featureUma, setRaceDefaults, unlockUma } from '../tiers/roster'
 import { advanceScenario, setActiveNodes, setAssignments, setCardSet, setLineage, setLoadout } from '../training/build'
 import type { TrainingContent } from '../training/derive'
 import { isRefusal, type OpResult, type Refusal } from '../types'
@@ -63,6 +63,8 @@ export const OPERATIONS = Object.freeze({
   sell: (state: WorkState, input: Omit<SellInput, 'opId'>, now: number, _env: OperationEnv, id: string) => sell(state, { ...input, opId: id }, now),
   'unlock-uma': (state: WorkState, input: Parameters<typeof unlockUma>[1], now: number, env: OperationEnv) => unlockUma(state, input, now, env),
   'exchange-shards': (state: WorkState, input: Parameters<typeof exchangeShards>[1], now: number) => exchangeShards(state, input, now),
+  'feature-uma': (state: WorkState, input: Parameters<typeof featureUma>[1], now: number) => featureUma(state, input, now),
+  'set-race-defaults': (state: WorkState, input: Parameters<typeof setRaceDefaults>[1], now: number) => setRaceDefaults(state, input, now),
   'set-targets': (state: WorkState, input: Parameters<typeof setTargets>[1], now: number) => setTargets(state, input, now),
   'set-check-in-times': (state: WorkState, input: Parameters<typeof setCheckInTimes>[1], now: number) => setCheckInTimes(state, input, now),
   'set-repeat-sizing': (state: WorkState, input: Parameters<typeof setRepeatSizing>[1], now: number) => setRepeatSizing(state, input, now),
