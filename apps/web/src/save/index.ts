@@ -112,6 +112,7 @@ export function createSaveGame(options: SaveBootOptions): SaveGame {
       ledgerRows: () => session.actions.ledgerRows(),
       itemLedgerRows: () => session.actions.itemLedgerRows(),
       receipt: (id) => session.actions.receipt(id),
+      operation: (id) => session.actions.operation(id),
     },
     setSignedIn: (signedIn) => session.setSignedIn(signedIn),
     stop() {

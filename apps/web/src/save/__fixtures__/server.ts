@@ -8,8 +8,8 @@ import {
 import type { BadgeStateV1, FlairEventV1 } from '@racer/domain'
 import { SIM_CONTENT, SIM_UMAS } from '@racer/domain/sim'
 import {
-  flairEventId, isCurrentStamp, parsePurgeRequest, parseSnapshotQuery, parseSyncRequestV2, rowKey, STAMP, type OperationEnv, type SyncChange,
-  type SyncRequestV2,
+  entityChanges, flairEventId, initialSave, isCurrentStamp, logDraft, parsePurgeRequest, parseSnapshotQuery, parseSyncRequestV2, rowKey, STAMP,
+  stampEntity, stampLog, type OperationEnv, type SaveState, type SyncChange, type SyncRequestV2,
 } from '@racer/domain/save'
 import { vi } from 'vitest'
 import { createSaveApi } from '../api'
@@ -93,6 +93,19 @@ export class FakeServer {
     const promise = new Promise<void>((done) => (resolve = done))
     this.holding = { resolve, promise }
     return resolve
+  }
+
+  /**
+   * An account the server already holds, built by the rules elsewhere (a state no tap on this device could reach, such
+   * as a completed Expedition run): a new account's rows at `at`, every entity `state` changes, and its ledger.
+   */
+  holdAccount(state: SaveState, at: number): void {
+    const initial = initialSave(at)
+    for (const draft of [...initial.entities, ...entityChanges(initial.state, state)]) this.rows.set(rowKey(draft), stampEntity(draft, 1, at))
+    for (const entry of state.ledger) {
+      const row = stampLog(logDraft('ledger', entry.id, entry.at, entry), at)
+      this.rows.set(rowKey(row), row)
+    }
   }
 
   /** The server's save is deleted underneath the device (a dev reset): its next sync is a 409. */

@@ -3,8 +3,12 @@
 // the real one. T141 adds what the device save keeps beside the rules' state: a `finish-race` that applies writes its
 // `raceResults` row as T134's commit does (`raceResultRow`), a tap's device rows (badges and flair) are written with it
 // in one step or not at all, the snapshot carries the badges, and `logs` read the race results and flair events. On the
-// seeds' mount, Account can load another of the synthetic seeds in place (T138).
+// seeds' mount, Account can load another of the synthetic seeds in place (T138). Its state has the device save's shape:
+// a tap here is confirmed at once, and a confirmed tap's `operations` row is a log the save never folds into the
+// state, so the operations live beside the state, read through `logs.receipt` and `logs.operation` as the save's are.
 import type { FlairEventV1 } from '@racer/domain'
+import type { OperationRecord } from '@racer/domain/state'
+import type { WorkState } from '@racer/domain/work'
 import { recheck, type FinishRaceInput, type OperationInput, type OperationName, type OperationReceipt } from '@racer/domain/check-in'
 import { raceResultRow, type RaceResultRow } from '@racer/domain/save'
 import { flairKeyOf, NO_RECORDS, type G2Answer, type G2DeviceRows, type G2Game, type G2Receipt, type G2Records, type G2RunOptions, type G2Snapshot } from '../app/game'
@@ -21,6 +25,12 @@ export function withDeviceRows(records: G2Records, rows: G2DeviceRows): G2Record
   return badges === records.badges && flairEvents === records.flairEvents ? records : { ...records, badges, flairEvents }
 }
 
+/** The state as the device save holds it once every tap is confirmed: no `operations`, which stay in their log. */
+function confirmed(state: WorkState): { readonly state: WorkState; readonly operations: Readonly<Record<string, OperationRecord>> } {
+  const { operations, ...rest } = state
+  return { state: rest, operations: operations ?? {} }
+}
+
 const byTime = <T extends { readonly at: number; readonly opId: string }>(a: T, b: T): number => a.at - b.at || (a.opId < b.opId ? -1 : a.opId > b.opId ? 1 : 0)
 
 export function createMemoryGame(
@@ -31,7 +41,7 @@ export function createMemoryGame(
 ): G2Game {
   let seed = first
   let bootedAt = realNow()
-  let state = seed.state
+  let { state, operations } = confirmed(seed.state)
   let records: G2Records = seed.records ?? NO_RECORDS
   let receipts: Readonly<Record<string, G2Receipt>> = {}
   const listeners = new Set<() => void>()
@@ -71,7 +81,9 @@ export function createMemoryGame(
           const rows = options?.device?.({ id, name, at, before: state, state: result.state, receipt: result.receipt, records: next })
           if (rows !== undefined) next = withDeviceRows(next, rows)
         }
-        state = result.state
+        const settled = confirmed(result.state)
+        state = settled.state
+        operations = { ...operations, ...settled.operations }
         records = next
         keep(id, result.receipt)
         publish()
@@ -109,7 +121,8 @@ export function createMemoryGame(
       flairEvents: async (): Promise<FlairEventV1[]> => Object.values(records.flairEvents).sort((a, b) => a.earnedAt - b.earnedAt),
       ledgerRows: async () => [...state.ledger],
       itemLedgerRows: async () => [],
-      receipt: async (id) => receipts[id]?.local ?? state.operations?.[id]?.receipt ?? null,
+      receipt: async (id) => receipts[id]?.local ?? operations[id]?.receipt ?? null,
+      operation: async (id) => operations[id] ?? null,
     },
     // T138: Account's dev section loads another seed in place, its account and records both.
     ...(names.length === 0 ? {} : {
@@ -119,7 +132,9 @@ export function createMemoryGame(
         if (make === undefined) throw new RangeError(`No fixture ${name}`)
         seed = make()
         bootedAt = realNow()
-        state = seed.state
+        const loaded = confirmed(seed.state)
+        state = loaded.state
+        operations = loaded.operations
         records = seed.records ?? NO_RECORDS
         receipts = {}
         publish()

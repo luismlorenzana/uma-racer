@@ -6,7 +6,7 @@
 import { badgeStateId, STATS, type DistanceCategory } from '@racer/domain'
 import type { Place } from '@racer/domain/hub'
 import { scenarioNumber } from '@racer/domain/tiers'
-import type { UmaState } from '@racer/domain/state'
+import type { OperationRecord, UmaState } from '@racer/domain/state'
 import { m } from 'motion/react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router'
@@ -265,7 +265,27 @@ function PromotePanel({ uma, content, env, onClose }: { uma: UmaState; content: 
   )
 }
 
-/** After Advance or Promote (03 §5, 04 §9): her awards play, then her profile opens; Skip or reduced motion go at once. */
+/**
+ * The operation's log row for the ceremony, read through the port as the device save keeps it (T136): the state never
+ * carries it once the tap is confirmed. Undefined while it reads; null when the device has none.
+ */
+function useOperation(opId: string): OperationRecord | null | undefined {
+  const { game } = useRuntime()
+  const [found, setFound] = useState<{ readonly opId: string; readonly row: OperationRecord | null } | null>(null)
+  useEffect(() => {
+    let live = true
+    const read = game.logs?.operation(opId) ?? Promise.resolve(null)
+    read.then((row) => { if (live) setFound({ opId, row }) }, () => { if (live) setFound({ opId, row: null }) })
+    return () => { live = false }
+  }, [game, opId])
+  return found === null || found.opId !== opId ? undefined : found.row
+}
+
+/**
+ * After Advance or Promote (03 §5, 04 §9): her awards play, then her profile opens; Skip or reduced motion go at once.
+ * It always has its way out: the buttons show from the first frame, and the timer starts once the operation has been
+ * read, found or not, so a ceremony whose tap the device can't find still leaves for her profile.
+ */
 function Ceremony({ umaId }: { umaId: string }) {
   const navigate = useNavigate()
   const [params] = useSearchParams()
@@ -274,28 +294,28 @@ function Ceremony({ umaId }: { umaId: string }) {
   const state = useGame((snapshot) => snapshot.state)
   const records = useRecords()
   const content = useRaceContent()
-  const op = state?.operations?.[params.get('op') ?? '']
+  const op = useOperation(params.get('op') ?? '')
+  const read = op !== undefined
   const leave = () => navigate(profilePath(umaId), { replace: true })
   useEffect(() => {
-    if (op === undefined) return
+    if (!read) return
     const timer = setTimeout(() => navigate(profilePath(umaId), { replace: true }), reduced ? 2500 : 6000)
     return () => clearTimeout(timer)
-  }, [op, reduced, navigate, umaId])
-  if (!state || !content || !records || op === undefined) return null
-  const uma = state.umas[umaId]
-  const events = eventsOfCommit(records, umaId, op.at)
-  const badge = records.badges[badgeStateId(umaId)]
-  const flair = badge?.scope === 'uma' ? buildFlairFanfare(content, badge, events, events.filter((event) => event.scope === 'uma').map((event) => event.id)) : []
-  const trainer = records.badges.trainer
-  const trainerFlair = trainer?.scope === 'trainer' ? buildTrainerFlairFanfare(content, trainer, events, events.map((event) => event.id)) : []
-  const promoted = op.name === 'promote'
-  const receipt = op.receipt as { readonly from?: unknown; readonly to?: unknown; readonly ticketsPaid?: number }
+  }, [read, reduced, navigate, umaId])
+  const uma = state?.umas[umaId]
+  const events = records && op ? eventsOfCommit(records, umaId, op.at) : []
+  const badge = records?.badges[badgeStateId(umaId)]
+  const flair = content && badge?.scope === 'uma' ? buildFlairFanfare(content, badge, events, events.filter((event) => event.scope === 'uma').map((event) => event.id)) : []
+  const trainer = records?.badges.trainer
+  const trainerFlair = content && trainer?.scope === 'trainer' ? buildTrainerFlairFanfare(content, trainer, events, events.map((event) => event.id)) : []
+  const promoted = op?.name === 'promote'
+  const receipt = (op?.receipt ?? {}) as { readonly from?: unknown; readonly to?: unknown; readonly ticketsPaid?: number }
   const fromTier = promoted ? Number(receipt.from) : null
   const toTier = promoted ? Number(receipt.to) : null
   const graduate = flair.find((item) => item.awardKey.endsWith(':graduate'))
   const title = promoted ? racingWords('promoted-title', { tier: toTier ?? '' }) : graduate?.label ?? racingWords('graduate-title', { scenario: uma ? String(scenarioNumber(uma)) : '' })
   return (
-    <div className="pt-safe pb-safe fixed inset-0 z-40 flex flex-col items-center gap-4 overflow-y-auto bg-stage px-6 py-8 text-ink-on-dark" data-g2="ceremony">
+    <div className="pt-safe pb-safe fixed inset-0 z-40 flex flex-col items-center gap-4 overflow-y-auto bg-stage px-6 py-8 text-ink-on-dark" data-g2="ceremony" data-op={op === undefined ? 'reading' : op === null ? 'missing' : 'found'}>
       {promoted && (
         <div className="relative flex h-8 items-center justify-center">
           <m.span className="absolute" initial={{ opacity: 1, scale: 1 }} animate={reduced ? { opacity: 0 } : { opacity: 0, scale: 0.6 }} transition={{ duration: reduced ? 0 : 0.6, delay: reduced ? 0 : 0.4 }}><Crest>T{fromTier}</Crest></m.span>
@@ -303,7 +323,7 @@ function Ceremony({ umaId }: { umaId: string }) {
         </div>
       )}
       <UmaArt outfitId={umaId} size={140} />
-      <m.h1 className="font-display text-center text-2xl font-bold" initial={reduced ? false : { y: 12, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: reduced ? 0 : 0.3 }}>{title}</m.h1>
+      {op && <m.h1 className="font-display text-center text-2xl font-bold" initial={reduced ? false : { y: 12, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: reduced ? 0 : 0.3 }}>{title}</m.h1>}
       <div className="w-full max-w-sm text-ink">
         {flair.length > 0 && <FlairCards title={racingWords('promoted-awards')} items={flair} animate={!reduced} />}
         {promoted && (receipt.ticketsPaid ?? 0) > 0 && (

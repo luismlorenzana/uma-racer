@@ -45,6 +45,16 @@ export function seed(name: string): G2Seed {
   return found
 }
 
+/**
+ * The names of the taps a port has applied, oldest first, read as the device save offers them: the snapshot's receipts
+ * name the taps, and `logs.operation` reads each one's log row (the rules' state never holds a confirmed one).
+ */
+export async function appliedNames(game: G2Game): Promise<string[]> {
+  const ids = Object.keys(game.getSnapshot().receipts)
+  const rows = await Promise.all(ids.map((id) => game.logs!.operation(id)))
+  return rows.map((row, i) => row?.name ?? `missing:${ids[i]!}`)
+}
+
 /** The in-memory port on a seed, its clock held at the seed's time. */
 export const seedGame = (name: string, changes: Partial<G2Seed> = {}): G2Game => createMemoryGame({ ...seed(name), ...changes }, () => 0)
 

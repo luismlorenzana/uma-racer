@@ -14,7 +14,7 @@
 //   callback that throws writes nothing, the tap included.
 import type { BadgeStateV1, FlairEventV1 } from '@racer/domain'
 import { recheck, type Answer, type OperationInput, type OperationName } from '@racer/domain/check-in'
-import type { LedgerEntry } from '@racer/domain/state'
+import type { LedgerEntry, OperationRecord } from '@racer/domain/state'
 import {
   commitOperation, entityDraft, flairEventId, logDraft, parseEntityData, parseLogData, parseLogRow, stampEntity, stampLog, type ItemLedgerRow, type LogDraft,
   type Commit, type LogKind, type LogRow, type OperationEnv, type OperationEnvelope, type RaceResultRow, type SaveState,
@@ -58,6 +58,8 @@ export interface SaveActions {
   itemLedgerRows(): Promise<ItemLedgerRow[]>
   /** An operation's receipt: the store's latest, else the server's in Dexie (the store keeps 100). */
   receipt(id: string): Promise<unknown>
+  /** An operation's log row: the queued tap's pending one, else the confirmed one in Dexie; null when neither. */
+  operation(id: string): Promise<OperationRecord | null>
 }
 
 /** A `done` tap's outbox count: waiting, unless the lane is already saying it is offline or failing. */
@@ -238,6 +240,13 @@ export function createActions(ctx: ActionContext): SaveActions {
       const row = await db.operations.get(id)
       const parsed = row === undefined ? null : parseLogRow(row)
       return parsed?.kind === 'operations' ? parsed.data.receipt : null
+    },
+    operation: async (id): Promise<OperationRecord | null> => {
+      const queued = useSave.getState().pendingLogs.find((draft) => draft.kind === 'operations' && draft.id === id)
+      if (queued !== undefined) return queued.data as OperationRecord
+      const row = await db.operations.get(id)
+      const parsed = row === undefined ? null : parseLogRow(row)
+      return parsed?.kind === 'operations' ? parsed.data : null
     },
   }
 }

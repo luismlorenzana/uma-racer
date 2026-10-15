@@ -12,7 +12,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { G2Answer, G2Game, G2Snapshot } from '../../app/game'
 import { createMemoryGame } from '../../dev/memory'
 import { seedAt, type G2Seed } from '../../dev/seed'
-import { renderG2, seed, stubStorage } from '../../__fixtures__/testing'
+import { appliedNames, renderG2, seed, stubStorage } from '../../__fixtures__/testing'
 import { workView } from '../../ui/work/view'
 import { placeName } from '../../ui/work/words'
 import { apply, farmAccount, farmSeed, HOUR, uma, withFarmLevel } from '../farm/__fixtures__/farm'
@@ -419,7 +419,7 @@ describe('stale screens, double taps, offline and plain words (02 §9)', () => {
     fireEvent.click(button)
     fireEvent.click(button)
     await within(sheet).findByRole('button', { name: /^Repeated/ })
-    const repeats = Object.values(state(game).operations ?? {}).filter((op) => op.name === 'repeat')
+    const repeats = (await appliedNames(game)).filter((name) => name === 'repeat')
     expect(repeats).toHaveLength(1)
   })
 

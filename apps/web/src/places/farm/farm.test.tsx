@@ -12,7 +12,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { G2Answer, G2Game } from '../../app/game'
 import { createMemoryGame } from '../../dev/memory'
 import type { G2Seed } from '../../dev/seed'
-import { renderG2, stubStorage } from '../../__fixtures__/testing'
+import { appliedNames, renderG2, stubStorage } from '../../__fixtures__/testing'
 import { slotCards } from '../../ui/work/model'
 import { workView } from '../../ui/work/view'
 import { apply, farmAccount, farmSeed, HOUR, MINUTE, uma, withFarmLevel } from './__fixtures__/farm'
@@ -273,7 +273,7 @@ describe('Speed Tickets on a card (09 §5.1)', () => {
     await screen.findByRole('article', { name: new RegExp(`^${AMBER}\\. Wheat, 2 of 2 made, ready to collect`) })
     expect(state(game).profile.prizeMoney).toBe(910)
     expect(state(game).items['speed-ticket']).toBeUndefined()
-    const names = Object.values(state(game).operations ?? {}).map((record) => record.name)
+    const names = await appliedNames(game)
     expect(names.slice(-2)).toEqual(['buy', 'finish'])
   })
 })
