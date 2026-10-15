@@ -1,4 +1,4 @@
-// Static content-pack contracts produced by scripts/data (docs/technical/architecture.md §3).
+// Static content-pack contracts produced by scripts/data (docs/game/architecture.md#private-content).
 
 import type { CardEffect } from './cards'
 import type { CardFocusOverride } from './card-focus'

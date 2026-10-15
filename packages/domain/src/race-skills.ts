@@ -1,7 +1,7 @@
 // Safe R2.5 race-skill compiler and loadout rules (docs/design/racing.md#basic-race-skills-r25).
 
 import type { SkillTemplate, UmaTemplate } from './content'
-import type { SkillUnlock, UmaSave } from './save'
+import type { SkillUnlock } from './career-shapes'
 import type { Strategy } from './types'
 
 export const RACE_SKILL_SCALE = 10_000

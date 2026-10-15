@@ -12,7 +12,6 @@ export type ContentDiagnosticCode =
   | 'corrupt-bytes'
   | 'network-failure'
   | 'offline-fallback'
-  | 'spark-rivals-fallback'
   | 'ready'
 
 export interface ContentDiagnostic {
@@ -94,13 +93,6 @@ export function diagnoseLoadedContent(content: LoadedContent): ContentDiagnostic
     return {
       code: 'offline-fallback', success: true, title: 'Verified offline content',
       message: 'Using the last complete verified content version stored on this device.',
-      action: { kind: 'retry', label: 'Check for content' },
-    }
-  }
-  if (content.sparkRivals === null) {
-    return {
-      code: 'spark-rivals-fallback', success: true, title: 'Spark rivals using catalogue fallback',
-      message: 'The active private content predates the rival roster pack. Spark Match remains playable with a deterministic local lineup.',
       action: { kind: 'retry', label: 'Check for content' },
     }
   }

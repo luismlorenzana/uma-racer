@@ -23,7 +23,9 @@ Goal: **the same keyless GitHub Actions → GCP pipeline as uma-planner, at a co
 | GitHub Actions | CI/CD (private repo) | 2,000 minutes per month | $0 |
 | Cloud Billing budget | **Alerts at $1 and $5** | — | — |
 
-Sizing check: a heavy day of about 100 trainings and 30 races, with sync batches every few actions, is a few hundred Firestore writes.
+Sizing check: a sync that runs operations reads the whole operation set, about 200 reads at 25 Umas, so even 100 syncs
+a day stay under the 50k free reads; a heavy day of check-ins and 40 races is a few hundred Firestore writes
+([rework/13](../rework/13-removals-and-plan-changes.md) §8).
 Content packs plus atlases are an estimated 15–30 MB, downloaded once per content version.
 
 ## CI/CD (adapted from uma-planner)
@@ -64,15 +66,17 @@ runs the first deploy.
 | Web | `vite` on 5173, `/api` proxied to 8080 | Firebase Hosting |
 | API | `nest start --watch` on 8080 | Cloud Run |
 | Auth | `AUTH_MODE=disabled` | Firebase ID token + `ALLOWED_EMAIL` |
-| Saves | `PERSISTENCE=local` → `apps/api/.data/save.json` | `PERSISTENCE=firestore` |
+| Saves | `PERSISTENCE=local` → `apps/api/.data/save-g2.json` (`LOCAL_SAVE_FILE`) | `PERSISTENCE=firestore` → `saves/{uid}` |
+| Dev operations | `DEV_OPERATIONS=true`, set by `pnpm dev` and `pnpm api` (the API's own `dev` and `start:dev` scripts), so `dev-grant` runs | Never set: no deploy, Dockerfile or Cloud Run setting sets it, so production refuses `dev-grant` |
 | Content | `CONTENT_SOURCE=local` → `content/` | `CONTENT_SOURCE=gcs` → private bucket |
 | iPhone testing | `vite --host` over LAN, Safari Web Inspector over USB, iOS Simulator | Home Screen web app |
 
 ## Release runbook
 
-Code, private content, and the installed Home Screen app update independently. Settings shows the current **app build id**,
-the active **content version and origin**, and whether an app restart is ready. A release is complete only after all three
-states have been checked.
+Code, private content, and the installed Home Screen app update independently. Account (Town Hall, or the trainer
+button) shows the current **App build**, the active **Content** version and whether it came from the network or the
+offline cache, and the app shows **Update ready — Restart** when a restart is waiting. A release is complete only after
+all three states have been checked.
 
 ### 1. Deploy code
 
@@ -83,8 +87,8 @@ the unauthenticated health/auth-guard smoke checks. Watch it to completion witho
 gh run watch <run-id> -R luismlorenzana/uma-racer --exit-status
 ```
 
-If the release contains only code, skip the publish step. Open the hosted app while signed in and confirm Settings shows the
-new 12-character build id.
+If the release contains only code, skip the publish step. Open the hosted app while signed in and confirm Account shows the
+new 12-character App build.
 
 ### 2. Build and publish private content when it changed
 
@@ -108,8 +112,8 @@ environment. It never runs `gcloud config set` and never changes the owner's act
 `--content-dir` are available for recovery/testing; production defaults to `uma-racer-content`, `uma-racer`, and root
 `content/`.
 
-After a real publish, open the hosted app while signed in. Confirm Settings reports the published content version with network
-origin, then fetch `/api/content/manifest` through that same authenticated session. A null version means the bucket is empty;
+After a real publish, open the hosted app while signed in. Confirm Account reports the published Content version from the
+network, then fetch `/api/content/manifest` through that same authenticated session. A null version means the bucket is empty;
 403 means the signed-in account is not allow-listed; a missing object, integrity failure, or network-only failure each receives
 a distinct diagnostic. A complete verified offline fallback remains a success state. None of these recovery paths clear,
 replace, or reseed the local save.
@@ -117,9 +121,9 @@ replace, or reseed the local save.
 ### 3. Restart the installed app
 
 Reopen the Home Screen app. A waiting service worker—or a worker that took control in another tab—shows **Update ready** with a
-**Restart** action instead of reloading silently. If Training, race completion, redemption, promotion, or Scenario Start is
-committing, the restart waits for that promise to settle before activation/reload. Tap Restart and confirm Settings shows both
-the new build id and intended content version. The content runtime keeps the last complete version active until a replacement
+**Restart** action instead of reloading silently. If a tap or a device write is committing (`criticalGameplayAction` around
+the game port's `run` and `writeDevice`), the restart waits for it to settle before activation/reload. Tap Restart and
+confirm Account shows both the new App build and the intended Content version. The content runtime keeps the last complete version active until a replacement
 fully verifies, so both an old shell seeing new content and a new shell falling back to old cached content remain usable.
 
 If publishing fails, leave the existing manifest in place, fix credentials/network/local output, rerun `--dry-run`, and retry.

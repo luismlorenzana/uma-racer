@@ -1,20 +1,20 @@
-// The Hub's view (docs/rework/11-hub-and-places.md §2, §4, §5, §14; 02 §2, §7) on synthetic accounts run by the real work
+// The Hub's view (docs/game/11-hub-and-places.md §2, §4, §5, §14; 02 §2, §7) on synthetic accounts run by the real work
 // engine: pips follow the work rows, busy first; past eight slots the eighth pip is "+N"; the pill's counts are
 // `readyCount`'s and `freeUmas`'; the start rule's is `needsATap`'s; tab badges, counters, the featured Uma and the
 // account bar's chips.
 import { describe, expect, it } from 'vitest'
 import {
   account, CHECK_IN_CONTENT, clock, ENV, gather, nodes, ok, slot, uma, withStock,
-} from '../__fixtures__/rework-check-in'
-import { deepFreeze, placeUma } from '../__fixtures__/rework-tiers'
-import { withLevel } from '../__fixtures__/rework-work'
-import { needsATap, readyCount } from '../rework/check-in/collect-all'
-import { DOJO_ROOMS, GYM_ROOMS } from '../rework/farm/buildings'
-import { rawItem, SPEED_TICKET_ID } from '../rework/items/catalogue'
-import { freeUmas } from '../rework/planner/suggest'
-import { queue, start } from '../rework/work/operations'
-import { itemProgress } from '../rework/work/timeline'
-import type { WorkState } from '../rework/work/types'
+} from '../__fixtures__/check-in'
+import { deepFreeze, placeUma } from '../__fixtures__/tiers'
+import { withLevel } from '../__fixtures__/work'
+import { needsATap, readyCount } from '../check-in/collect-all'
+import { DOJO_ROOMS, GYM_ROOMS } from '../farm/buildings'
+import { rawItem, SPEED_TICKET_ID } from '../items/catalogue'
+import { freeUmas } from '../planner/suggest'
+import { queue, start } from '../work/operations'
+import { itemProgress } from '../work/timeline'
+import type { WorkState } from '../work/types'
 import { placeById } from './places'
 import { featuredUma, hubView, MAX_PIPS } from './view'
 import { tileLabel, umaTicketChip } from './words'

@@ -1,4 +1,4 @@
-// Uma Level: permanent, earned only from racing (docs/design/uma-progression.md).
+// The level curve and race EXP, earned only from racing, that Racing Level reads (docs/game/03-uma-progression.md §2).
 import { levelsIntoScenario } from './scenarios'
 import type { RaceGrade } from './types'
 
@@ -7,12 +7,6 @@ import type { RaceGrade } from './types'
  * scenario's nine. A gate's bank is the next scenario's first level, 100.
  */
 export const expToNextUmaLevel = (level: number): number => 100 + 25 * levelsIntoScenario(level)
-
-/**
- * The curve before save v13: it kept rising from scenario to scenario, so the second cost 4,050 EXP and the fourteenth
- * 31,050 (D241). Only the save's legacy parsers and the v13 migration read it.
- */
-export const legacyExpToNextUmaLevel = (level: number): number => 100 + 25 * (level - 1)
 
 export const WIN_EXP: Record<RaceGrade, number> = {
   debut: 40,
@@ -26,14 +20,8 @@ export const WIN_EXP: Record<RaceGrade, number> = {
 
 /** 2nd and 3rd place earn this share of the win EXP. */
 export const PLACED_EXP_SHARE = 0.25
-/** Tickets for each Uma Level gained: one run (D148). */
-export const UMA_LEVEL_TICKET_REWARD = 1
-/** What a level paid before save v7; race records written then keep it, as the facts of their day. */
-export const LEGACY_UMA_LEVEL_TICKET_REWARD = 5
 export const GATE_SHARD_REWARD = 1
 
-/** The ledger entry that pays an Uma Level's ticket: one per Uma per level, ever (D148, D241). */
-export const umaLevelTicketLedgerId = (umaId: string, level: number): string => `uma-level-tickets:${umaId}:${level}`
 /** The ledger entry that pays a gate's Uma Shard: one per Uma per gate, ever. */
 export const umaGateShardLedgerId = (umaId: string, gate: number): string => `uma-gate-shard:${umaId}:${gate}`
 
@@ -47,6 +35,3 @@ export function raceExp(grade: RaceGrade, placement: number, raceBonus = 0): num
 
 /** Gate-level overflow EXP is banked up to one level's worth and applied after promotion. */
 export const OVERFLOW_BANK_LEVELS = 1
-
-/** Flat bonus to each stat on promotion (not limited by caps). */
-export const PROMOTION_BONUS_PER_STAT = 10

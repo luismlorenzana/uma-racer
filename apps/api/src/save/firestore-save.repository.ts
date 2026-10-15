@@ -1,280 +1,107 @@
+// Production persistence for generation 2 (docs/rework/13-removals-and-plan-changes.md §6; docs/rearchitecture/07-data-
+// reset.md §3; T135): `saves/{uid}/{kind}/{id}`, one small document per row, stored through the codec (a work row's
+// arrays of arrays become `dataJson`, D151). A sync is one transaction, every read before the first write. The purge
+// deletes `players/{uid}` and writes `saves/{uid}/meta/purge`; `meta` is no save kind, so no pull returns it.
 import * as admin from 'firebase-admin'
+import { KIND_ORDER, rowKey, RULE_LEDGER_REASONS, SAVE_GENERATION, SAVE_LIMITS, type PurgeResponse, type SaveSnapshotV2,
+  type SyncRequestV2, type SyncResponseV2 } from '@racer/domain/save'
 import { fromStored, toStored } from './firestore-codec'
-import { freezeAdvance, advanceOutfit, bankData } from './inspiration-advance'
-import { resolveRpgCommand, type RpgCommandRequest, type RpgCommandResponse } from './rpg-command'
-import type { SaveRepository } from './save.repository'
-import { puzzleSyncReadSet, resolveSyncWithPuzzles, resolveTakeover } from './puzzle-sync'
-import { protectFarmSync } from './farm-sync'
-import { FARM_KITCHEN_RELEASE_ENABLED } from './farms'
-import { farmCutoverControl, farmCutoverReferences, farmCutoverSourceLogKeys, farmCohortPageId, FARM_CUTOVER_LIMITS,
-  farmCutoverDisabled, farmCutoverUnavailable, type FarmCutoverRequest, type FarmCutoverResponse } from './farms'
-import { resolveProtectedFarm } from './farm-cutover'
-import { PUZZLES_RELEASE_ENABLED, type PuzzleTakeoverRequest, type PuzzleTakeoverResponse } from './puzzles'
-import { preservationHeader, preservationPageIndexes, preservationPageId, preservationBatch, puzzleCohortId,
-  type PuzzlePreservationRequest, type PuzzlePreservationResponse, type VerifiedPuzzlePreservationContent } from './puzzles'
-import { disabledPreservation, unavailablePreservation, resolvePreservation } from './puzzle-preservation'
-import { resolveLegacySpark, legacySparkReceiptId, type LegacySparkRequest, type LegacySparkResponse } from './puzzles'
-import {
-  ENTITY_KINDS,
-  LOG_KINDS,
-  type EntityRecord,
-  type LogRecord,
-  type SaveSnapshot,
-  type SyncRequest,
-  type SyncResponse,
-} from './save.types'
+import { needsOperationEnv, NO_SAVE, parseCursor, pullFloor, resolveSync, selectReadSet, snapshotPage, syncReadSet, type NoSave,
+  type SaveRow } from './resolve'
+import { parsePurgeMarker, purgeResponse, type OperationEnvLoader, type PurgeMarker, type SaveRepository } from './save.repository'
 
-// Production persistence: players/{uid}/{kind}/{id}, one small doc per entity or log record
-// (docs/technical/architecture.md#firestore-data-model-saves). On Cloud Run, initializeApp() uses
-// Application Default Credentials automatically.
+type Firestore = admin.firestore.Firestore
+type Data = Record<string, unknown>
+
+/** Firestore's ALREADY_EXISTS, as the admin SDK reports it. */
+const alreadyExists = (error: unknown): boolean => {
+  const code = (error as { code?: unknown } | null)?.code
+  return code === 6 || code === 'already-exists' || code === 'ALREADY_EXISTS'
+}
+
 export class FirestoreSaveRepository implements SaveRepository {
+  constructor(private readonly injectedDb?: Firestore, private readonly clock: () => number = Date.now) {}
 
-  constructor(private readonly injectedDb?: admin.firestore.Firestore, private readonly puzzlesEnabled: boolean = PUZZLES_RELEASE_ENABLED,
-    private readonly preservationContent?: (frozenHash?: string) => Promise<VerifiedPuzzlePreservationContent>, private readonly farmEnabled: boolean = FARM_KITCHEN_RELEASE_ENABLED) {}
-
-  private get db(): admin.firestore.Firestore {
+  private get db(): Firestore {
     if (this.injectedDb) return this.injectedDb
     if (admin.apps.length === 0) admin.initializeApp()
     return admin.firestore()
   }
 
-  private player(uid: string) {
-    return this.db.collection('players').doc(uid)
+  private save(uid: string) {
+    return this.db.collection('saves').doc(uid)
   }
 
-  async load(uid: string): Promise<SaveSnapshot> {
-    const player = this.player(uid)
-    const [entitySnaps, logSnaps] = await Promise.all([
-      Promise.all(ENTITY_KINDS.map((kind) => player.collection(kind).get())),
-      Promise.all(LOG_KINDS.map((kind) => player.collection(kind).get())),
-    ])
-    return {
-      entities: entitySnaps.flatMap((snap) => snap.docs.map((d) => fromStored<EntityRecord>(d.data()))),
-      logs: logSnaps.flatMap((snap) => snap.docs.map((d) => fromStored<LogRecord>(d.data()))),
-      serverTime: Date.now(),
+  async snapshot(uid: string, since: number, cursor: string | null): Promise<SaveSnapshotV2> {
+    const after = cursor === null ? null : parseCursor(cursor)
+    if (cursor !== null && after === null) throw new RangeError('an invalid cursor')
+    const save = this.save(uid)
+    const now = this.clock()
+    // One row past a full page is enough to know another page follows.
+    const rows: SaveRow[] = []
+    for (const kind of KIND_ORDER.slice(after === null ? 0 : KIND_ORDER.indexOf(after.kind))) {
+      const room = SAVE_LIMITS.pageRows + 1 - rows.length
+      if (room <= 0) break
+      let query = save.collection(kind).where('savedAt', '>', pullFloor(kind, since, now))
+        .orderBy('savedAt').orderBy(admin.firestore.FieldPath.documentId())
+      if (after?.kind === kind) query = query.startAfter(after.savedAt, after.id)
+      const snap = await query.limit(room).get()
+      for (const doc of snap.docs) rows.push(fromStored<SaveRow>(doc.data()))
     }
+    return snapshotPage(rows, since, cursor, now)
   }
 
-  async advanceInspiration(uid: string): Promise<SaveSnapshot> {
-    const player = this.player(uid), bankRef = player.collection('inspirationBank').doc('main')
-    const initial = await this.db.runTransaction(async tx => {
-      const [doc] = await tx.getAll(bankRef)
-      if (doc!.exists) return fromStored<EntityRecord>(doc!.data()!)
-      const owned = await tx.get(player.collection('umas'))
-      const bank = freezeAdvance(owned.docs.map(d => fromStored<EntityRecord>(d.data())), Date.now())
-      if (bank) tx.set(bankRef, toStored(bank))
-      return bank
-    })
-    if (!initial) return { entities: [], logs: [], serverTime: Date.now() }
-    const initialBank = bankData(initial), ids = Object.keys(initialBank.cohort)
-    for (const id of ids.filter(id => !initialBank.opened.includes(id))) {
-      await this.db.runTransaction(async tx => {
-        const [bankDoc, umaDoc] = await tx.getAll(bankRef, player.collection('umas').doc(id))
-        const bank = fromStored<EntityRecord>(bankDoc!.data()!)
-        const uma = umaDoc!.exists ? fromStored<EntityRecord>(umaDoc!.data()!) : undefined
-        for (const row of advanceOutfit(bank, uma, id, Date.now())) tx.set(player.collection(row.kind).doc(row.id), toStored(row))
-      })
+  async sync(uid: string, request: SyncRequestV2, env: OperationEnvLoader): Promise<SyncResponseV2 | NoSave> {
+    // Content loads before the transaction: a missing pack throws here, and nothing is read or written.
+    const operationEnv = needsOperationEnv(request) ? await env() : undefined
+    const readSet = syncReadSet(request)
+    const save = this.save(uid)
+    const ref = (key: string) => {
+      const slash = key.indexOf('/')
+      return save.collection(key.slice(0, slash)).doc(key.slice(slash + 1))
     }
-    const rows = await this.db.getAll(bankRef, ...ids.map(id => player.collection('umas').doc(id)))
-    return { entities: rows.filter(d => d.exists).map(d => fromStored<EntityRecord>(d.data()!)), logs: [], serverTime: Date.now() }
-  }
-
-  async sync(uid: string, request: SyncRequest): Promise<SyncResponse> {
-    const readSet = puzzleSyncReadSet(request)
-    const player = this.player(uid)
-    const now = Date.now()
     return this.db.runTransaction(async (tx) => {
-      const reference = (key: string) => { const [kind, id] = key.split('/'); return player.collection(kind!).doc(id!) }
-      const entityRefs = readSet.entities.map(reference)
-      const logRefs = readSet.logs.map(reference)
-      const [entityDocs, logDocs] = await Promise.all([
-        entityRefs.length ? tx.getAll(...entityRefs) : Promise.resolve([]),
-        logRefs.length ? tx.getAll(...logRefs) : Promise.resolve([]),
+      const [collections, ledger, documents] = await Promise.all([
+        Promise.all(readSet.collections.map((kind) => tx.get(save.collection(kind)))),
+        readSet.ruleLedger ? tx.get(save.collection('ledger').where('data.reason', 'in', [...RULE_LEDGER_REASONS])) : Promise.resolve(null),
+        readSet.documents.length > 0 ? tx.getAll(...readSet.documents.map(ref)) : Promise.resolve([]),
       ])
-
-      const existing = new Map<string, EntityRecord>()
-      for (const doc of entityDocs) {
-        if (doc.exists) {
-          const record = fromStored<EntityRecord>(doc.data()!)
-          existing.set(`${record.kind}/${record.id}`, record)
-        }
-      }
-      const logs = new Map<string, LogRecord>()
-      for (const doc of logDocs) if (doc.exists) { const row = fromStored<LogRecord>(doc.data()!); logs.set(`${row.kind}/${row.id}`, row) }
-      const resolved = resolveSyncWithPuzzles(uid, request, existing, logs, now, this.puzzlesEnabled, this.farmEnabled)
-      // All reads have completed. Coalesce intermediate changes when multiple groups share a document.
-      const writes = new Map(resolved.writes.map(row => [`${row.kind}/${row.id}`, row]))
-      for (const row of writes.values()) tx.set(player.collection(row.kind).doc(row.id), toStored(row))
-      for (const row of resolved.appends) tx.set(player.collection(row.kind).doc(row.id), toStored(row))
+      const rows: SaveRow[] = []
+      for (const snap of collections) for (const doc of snap.docs) rows.push(fromStored<SaveRow>(doc.data()))
+      for (const doc of ledger?.docs ?? []) rows.push(fromStored<SaveRow>(doc.data()))
+      for (const doc of documents) if (doc.exists) rows.push(fromStored<SaveRow>(doc.data() as Data))
+      // Every read has completed; nothing is read after the first write.
+      const resolved = resolveSync(selectReadSet(rows, readSet), request, this.clock(), operationEnv)
+      if (resolved === NO_SAVE) return NO_SAVE
+      for (const row of [...resolved.entities, ...resolved.logs]) tx.set(ref(rowKey(row)), toStored(row))
       return resolved.response
     })
   }
 
-  async puzzleTakeover(uid: string, request: PuzzleTakeoverRequest): Promise<PuzzleTakeoverResponse> {
-    const player = this.player(uid)
-    return this.db.runTransaction(async tx => {
-      const [checkpoint, result, bank] = await tx.getAll(player.collection('puzzleCheckpoints').doc(request.checkpointId), player.collection('puzzleResults').doc(request.battleId), player.collection('constellationBank').doc('main'))
-      const entities = new Map<string, EntityRecord>(), logs = new Map<string, LogRecord>()
-      if (checkpoint?.exists) { const row = fromStored<EntityRecord>(checkpoint.data()!); entities.set(`${row.kind}/${row.id}`, row) }
-      if (bank?.exists) { const row = fromStored<EntityRecord>(bank.data()!); entities.set(`${row.kind}/${row.id}`, row) }
-      if (result?.exists) { const row = fromStored<LogRecord>(result.data()!); logs.set(`${row.kind}/${row.id}`, row) }
-      const resolved = resolveTakeover(uid, request, entities, logs, Date.now(), this.puzzlesEnabled)
-      for (const row of resolved.writes) tx.set(player.collection(row.kind).doc(row.id), toStored(row))
-      return resolved.response
-    })
-  }
+  async purge(uid: string): Promise<PurgeResponse> {
+    const marker = this.save(uid).collection('meta').doc('purge')
+    const first = await marker.get()
+    if (first.exists) return purgeResponse('already', parsePurgeMarker(first.data()))
 
-  async preparePuzzles(uid: string, request: PuzzlePreservationRequest): Promise<PuzzlePreservationResponse> {
-    if (!this.puzzlesEnabled) return disabledPreservation()
+    const player = this.db.collection('players').doc(uid)
+    const [subcollections, parent] = await Promise.all([player.listCollections(), player.get()])
+    // `recursiveDelete` deletes the parent document whether or not it exists; it counts only if it did.
+    let documents = parent.exists ? 1 : 0
+    const writer = this.db.bulkWriter()
+    writer.onWriteResult((written) => { if (written.path !== player.path) documents += 1 })
     try {
-      if (!this.preservationContent) return unavailablePreservation('Compatible replacement content is unavailable; no progression was changed')
-      const player = this.player(uid), saved = await player.collection('puzzlePreservation').doc('main').get()
-      const initial = new Map<string, EntityRecord>()
-      if (saved.exists) initial.set('puzzlePreservation/main', fromStored<EntityRecord>(saved.data()!))
-      const content = await this.preservationContent(preservationHeader(initial)?.contentHash)
-      return await this.db.runTransaction(async tx => {
-        const entities = new Map<string, EntityRecord>(), logs = new Map<string, LogRecord>()
-        const read = async (keys: string[]) => {
-          if (!keys.length) return
-          const docs = await tx.getAll(...keys.map(k => { const [kind, id] = k.split('/'); return player.collection(kind!).doc(id!) }))
-          for (const doc of docs) if (doc.exists) {
-            const row = fromStored<EntityRecord>(doc.data()!); entities.set(`${row.kind}/${row.id}`, row)
-          }
-        }
-        await read(['constellationBank/main', 'puzzlePreservation/main', 'profile/main', 'items/training:level-up-ticket'])
-        const header = preservationHeader(entities)
-        if (!header) {
-          const owned = await tx.get(player.collection('umas'))
-          for (const doc of owned.docs) { const row = fromStored<EntityRecord>(doc.data()); entities.set(`${row.kind}/${row.id}`, row) }
-        } else if (header.phase !== 'active') {
-          await read(preservationPageIndexes(header).map(i => `puzzlePreservation/${preservationPageId(i)}`))
-          const batch = preservationBatch(entities, header)
-          await read([...new Set(batch.flatMap(u => [`umas/${u.outfitId}`, `puzzleCohort/${puzzleCohortId(u.outfitId, u.scenarioId)}`]))])
-          const [credit] = await tx.getAll(player.collection('itemLedger').doc(`puzzle-preservation:${header.cutoverId}`))
-          if (credit?.exists) { const row = fromStored<LogRecord>(credit.data()!); logs.set(`${row.kind}/${row.id}`, row) }
-        }
-        const result = resolvePreservation(entities, logs, content, request, Date.now())
-        // No read is possible below this line. Freeze pages and each subsequent batch are indivisible.
-        for (const row of result.writes) tx.set(player.collection(row.kind).doc(row.id), toStored(row))
-        for (const row of result.appends) tx.set(player.collection(row.kind).doc(row.id), toStored(row))
-        return result.response
-      })
-    } catch (error) { return unavailablePreservation(error instanceof Error ? error.message : 'Preparation failed; retry with preserved receipts') }
-  }
-
-  async retireSpark(uid: string, request: LegacySparkRequest): Promise<LegacySparkResponse> {
-    if (!this.puzzlesEnabled) return { status: 'disabled', message: null, entities: [], logs: [] }
+      await this.db.recursiveDelete(player, writer)
+    } finally {
+      await writer.close()
+    }
+    const record: PurgeMarker = { generation: SAVE_GENERATION, at: this.clock(), collections: subcollections.length, documents }
     try {
-      const player = this.player(uid)
-      if (!this.preservationContent) throw new Error('Compatible replacement content is unavailable; keep the journal')
-      const saved = await player.collection('puzzlePreservation').doc('main').get(), initial = new Map<string, EntityRecord>()
-      if (saved.exists) initial.set('puzzlePreservation/main', fromStored<EntityRecord>(saved.data()!))
-      await this.preservationContent(preservationHeader(initial)?.contentHash)
-      return await this.db.runTransaction(async tx => {
-        const entityKeys = ['profile/main', 'constellationBank/main', `puzzlePreservation/${legacySparkReceiptId(request.run.id)}`],
-          logKeys = [`ledger/${request.run.id}`, `ledger/${request.run.id}:refund`], refs = [...entityKeys, ...logKeys].map(k => {
-            const [kind, id] = k.split('/'); return player.collection(kind!).doc(id!) })
-        const docs = await tx.getAll(...refs), entities = new Map<string, EntityRecord>(), logs = new Map<string, LogRecord>()
-        docs.forEach((doc, i) => {
-          if (!doc.exists) return
-          if (i < entityKeys.length) { const row = fromStored<EntityRecord>(doc.data()!); entities.set(`${row.kind}/${row.id}`, row) }
-          else { const row = fromStored<LogRecord>(doc.data()!); logs.set(`${row.kind}/${row.id}`, row) }
-        })
-        const result = resolveLegacySpark(request, entities, logs, Date.now())
-        for (const row of result.writes) tx.set(player.collection(row.kind).doc(row.id), toStored(row))
-        for (const row of result.appends) tx.set(player.collection(row.kind).doc(row.id), toStored(row))
-        return result.response
-      })
-    } catch (error) { return { status: 'recoverable-error', message: error instanceof Error ? error.message : 'Keep the journal and retry retirement', entities: [], logs: [] } }
-  }
-
-  async prepareFarm(uid: string, request: FarmCutoverRequest): Promise<FarmCutoverResponse> {
-    if (!this.farmEnabled) return farmCutoverDisabled() // Before db access/admin initialization, including status.
-    try {
-      const player = this.player(uid)
-      return await this.db.runTransaction(async tx => {
-        const entities = new Map<string, EntityRecord>(), logs = new Map<string, LogRecord>(), read = new Set<string>()
-        const fetch = async (keys: string[], log = false) => {
-          const fresh = keys.filter(k => !read.has(k)); fresh.forEach(k => read.add(k))
-          if (!fresh.length) return
-          const docs = await tx.getAll(...fresh.map(k => { const [kind, id] = k.split('/'); return player.collection(kind!).doc(id!) }))
-          for (const doc of docs) if (doc.exists) {
-            if (log) { const row = fromStored<LogRecord>(doc.data()!); logs.set(`${row.kind}/${row.id}`, row) }
-            else { const row = fromStored<EntityRecord>(doc.data()!); entities.set(`${row.kind}/${row.id}`, row) }
-          }
-        }
-        await fetch(['farmCutover/main', 'constellationBank/main', 'inspirationBank/main'])
-        const c = farmCutoverControl(entities)
-        if (!c) {
-          if (request.action !== 'prepare') return farmCutoverUnavailable('Verified whole-account archive required before preparing')
-          await fetch(['profile/main', 'farm/main'])
-          // Only the initial freeze reads a roster. A sentinel row detects overflow without an unbounded query.
-          const owned = await tx.get(player.collection('umas').where('deleted', '==', false).limit(FARM_CUTOVER_LIMITS.outfits + 1))
-          for (const doc of owned.docs) { const row = fromStored<EntityRecord>(doc.data()); entities.set(`${row.kind}/${row.id}`, row) }
-          await fetch(farmCutoverSourceLogKeys(entities), true)
-        } else {
-          if (request.action === 'advance') await fetch([`farmCutoverPages/${farmCohortPageId(c.generation, Math.floor(request.index / 32))}`])
-          const refs = farmCutoverReferences(entities, request)
-          await fetch(refs.entities); await fetch(refs.logs, true)
-        }
-        const result = resolveProtectedFarm(uid, entities, logs, request, Date.now())
-        // No reads after this point; progress + projections + immutable evidence commit together.
-        for (const row of result.writes) tx.set(player.collection(row.kind).doc(row.id), toStored(row))
-        for (const row of result.appends) tx.set(player.collection(row.kind).doc(row.id), toStored(row))
-        return result.response
-      })
-    } catch (error) { return farmCutoverUnavailable(error instanceof Error ? error.message : 'Farm reset failed; keep archive and Retry/Export') }
-  }
-
-  async rpgCommand(uid: string, request: RpgCommandRequest): Promise<RpgCommandResponse> {
-    const player = this.player(uid)
-    const now = Date.now()
-    return this.db.runTransaction(async (tx) => {
-      const entityKeys = new Map<string, { kind: EntityRecord['kind']; id: string }>(request.expected.map((row) => [`${row.kind}/${row.id}`, row]))
-      for (const row of request.upserts) entityKeys.set(`${row.kind}/${row.id}`, row)
-      entityKeys.set('farmCutover/main', { kind: 'farmCutover', id: 'main' })
-      // Read independently of client dependencies: older clients must not bypass an account's advance.
-      if (request.action === 'choose-node' || request.action === 'clear-chapter') entityKeys.set('inspirationBank/main', { kind: 'inspirationBank', id: 'main' })
-      const entityRefs = [...entityKeys.values()].map((row) => player.collection(row.kind).doc(row.id))
-      const logRows = [...request.appends, { kind: 'rpgReceipts' as const, id: request.commandId }]
-      const logRefs = logRows.map((row) => player.collection(row.kind).doc(row.id))
-      const [entityDocs, logDocs] = await Promise.all([
-        entityRefs.length ? tx.getAll(...entityRefs) : Promise.resolve([]),
-        tx.getAll(...logRefs),
-      ])
-      const entities = new Map<string, EntityRecord>()
-      const logs = new Map<string, LogRecord>()
-      entityDocs.forEach((doc) => {
-        if (doc.exists) {
-          const record = fromStored<EntityRecord>(doc.data()!)
-          entities.set(`${record.kind}/${record.id}`, record)
-        }
-      })
-      // Advance/clear consumes existing accepted evidence, never a new client claim.
-      if (request.action === 'choose-node' || request.action === 'clear-chapter') {
-        const target = request.upserts.find((row) => row.kind === 'rpgCheckpoints')
-        const current = target && entities.get(`rpgCheckpoints/${target.id}`)?.data
-        const entry = current?.frozenEntry as { entryId: string; retryOrdinal: number } | null | undefined
-        if (entry) {
-          const [result] = await tx.getAll(player.collection('rpgResults').doc(`${entry.entryId}:retry-${entry.retryOrdinal}`))
-          if (result?.exists) {
-            const row = fromStored<LogRecord>(result.data()!)
-            logs.set(`${row.kind}/${row.id}`, row)
-          }
-        }
-      }
-      logDocs.forEach((doc) => {
-        if (doc.exists) {
-          const record = fromStored<LogRecord>(doc.data()!)
-          logs.set(`${record.kind}/${record.id}`, record)
-        }
-      })
-      const resolved = resolveRpgCommand(uid, request, entities, logs, now)
-      if (resolved.response.status !== 'applied') return resolved.response
-      protectFarmSync({ upserts: resolved.writes.map(row => ({ ...row, baseVersion: row.version - 1 })), appends: [], farmProtocolVersion: 1 }, entities, logs)
-      for (const row of resolved.writes) tx.set(player.collection(row.kind).doc(row.id), toStored(row))
-      for (const row of resolved.appends) tx.set(player.collection(row.kind).doc(row.id), toStored(row))
-      return resolved.response
-    })
+      await marker.create(record)
+    } catch (error) {
+      // Another device's purge wrote the marker first: its record stands.
+      if (!alreadyExists(error)) throw error
+      return purgeResponse('already', parsePurgeMarker((await marker.get()).data()))
+    }
+    return purgeResponse('purged', record)
   }
 }

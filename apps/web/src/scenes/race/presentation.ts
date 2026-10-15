@@ -2,7 +2,7 @@ import type { RaceCourseLayout, RaceSkillEffectKind } from '@racer/domain'
 import { sampleTimeline, type RaceEvent, type RaceTimeline } from '@racer/race'
 
 // Pure renderer choreography derived from immutable race output
-// (docs/design/racing.md#presentation-straight-line-real-time-view).
+// (docs/design/racing.md#presentation-the-race-on-its-own-course).
 
 export const PRE_ROLL_SECONDS = 2.4
 export const REDUCED_PRE_ROLL_SECONDS = 0.6

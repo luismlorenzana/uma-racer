@@ -12,7 +12,7 @@ import {
   type RacePresentationStage,
 } from './presentation'
 
-// Plays a pre-simulated race timeline back at the display's refresh rate (docs/technical/architecture.md#2-deterministic-simulation-then-playback).
+// Plays a pre-simulated race timeline back at the display's refresh rate (docs/game/architecture.md#the-race).
 // The race runs on its own course (M018 part D): the snapshotted corners and straights laid out as a path, a follow
 // camera that turns with the pack so runners always travel left to right, and a minimap of the whole course.
 

@@ -5,7 +5,6 @@ import { zeroStats } from '../types'
 
 export const subject = (over: Partial<BadgeSubject> = {}): BadgeSubject => ({
   tier: 1,
-  trainingLevel: 1,
   stats: zeroStats(),
   library: [],
   ...over,

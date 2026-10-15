@@ -1,4 +1,4 @@
-// Scenarios are 10-level progression tiers in JP release order (docs/design/scenarios.md).
+// Scenarios are 10-level steps of a tier, in JP release order (docs/game/scenarios.md).
 
 export interface ScenarioDef {
   /** 1-based tier index. */
@@ -35,10 +35,6 @@ export function scenarioForTier(tier: number): ScenarioDef | undefined {
   return SCENARIOS[tier - 1]
 }
 
-/**
- * Baseline stat cap (the Training Level 10 cap): the original game's 1200 launch cap at tier 1, rising 80 per scenario
- * to 2000 at tier 11, and continuing at +80 after that (docs/design/scenarios.md#timeline-and-tiers).
- */
 /** Above this, stats count about half in races and training gains are halved — as in the original game. */
 export const STAT_SOFT_CAP = 1200
 
@@ -55,10 +51,6 @@ export const skillPointCap = (tier: number): number =>
 
 /** Share of the cap every career earns on its own, whatever the card set (D133). */
 export const BASELINE_SP_SHARE = 0.4
-
-/** Skill points earned by training alone: 40% of the cap at Training Level 10, a tenth of that per level. */
-export const baselineSkillPoints = (tier: number, trainingLevel: number): number =>
-  Math.round((skillPointCap(tier) * BASELINE_SP_SHARE * Math.min(10, Math.max(0, Math.trunc(trainingLevel)))) / 10)
 
 export const tierOfLevel = (umaLevel: number): number => Math.ceil(umaLevel / LEVELS_PER_SCENARIO)
 

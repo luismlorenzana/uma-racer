@@ -1,6 +1,6 @@
-// The place registry's live block (docs/game/architecture.md#the-rework-modules "The live manual"): rework/11 §3's
+// The place registry's live block (docs/game/architecture.md#the-rework-modules "The live manual"): game/11 §3's
 // places as the registry holds them, rendered from the code so the page can't drift. Registered in
-// packages/domain/src/docs/rework.ts. Pure: no I/O.
+// packages/domain/src/docs/render.ts. Pure: no I/O.
 import { HUB_PAGE_NAMES, PLACES, type Place } from './places'
 
 const code = (value: string): string => `\`${value}\``

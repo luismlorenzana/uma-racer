@@ -1,24 +1,24 @@
-// The Hub's view of the account (docs/rework/11-hub-and-places.md §2.1–§2.4, §3, §4, §5; docs/rework/02-check-ins-
+// The Hub's view of the account (docs/game/11-hub-and-places.md §2.1–§2.4, §3, §4, §5; docs/game/02-check-ins-
 // and-notifications.md §2, §7): what the shell, the page grids and the tiles draw, from one settle at `now`. The pill's
 // Collect all and Check-in counts, the start rule's count, the bar's tab badges, every building's slot pips, each
 // place's default counter, the featured Uma and the account bar's chips. Pure: only the given `now` is read. Every rule
 // is the rework modules'; this file only gathers their answers.
-import { hasReady, needingATap } from '../rework/check-in/collect-all'
-import { BUILDING_IDS, FACILITY_IDS, FARM_BUILDING_IDS, type BuildingId, type RoomId } from '../rework/farm/buildings'
-import { SPEED_TICKET_ID } from '../rework/items/catalogue'
-import { advanceReadiness } from '../rework/tiers/advance'
-import { assertNow } from '../rework/tiers/ledger'
-import { lifetimeLevel, type ScenarioCatalogue } from '../rework/tiers/map'
-import { promotionReadiness } from '../rework/tiers/promotion'
-import { UMA_SHARDS_PER_TICKET } from '../rework/tiers/roster'
-import { isRefusal, type UmaState } from '../rework/types'
-import { isFree } from '../rework/work/activity'
-import type { WorkEnv } from '../rework/work/kinds'
-import { slotsOf } from '../rework/work/operations'
-import { settle } from '../rework/work/settle'
-import { holdsSlot, stockOf } from '../rework/work/state'
-import { itemProgress } from '../rework/work/timeline'
-import type { SlotRef, WorkRow, WorkState } from '../rework/work/types'
+import { hasReady, needingATap } from '../check-in/collect-all'
+import { BUILDING_IDS, FACILITY_IDS, FARM_BUILDING_IDS, type BuildingId, type RoomId } from '../farm/buildings'
+import { SPEED_TICKET_ID } from '../items/catalogue'
+import { advanceReadiness } from '../tiers/advance'
+import { assertNow } from '../tiers/ledger'
+import { lifetimeLevel, type ScenarioCatalogue } from '../tiers/map'
+import { promotionReadiness } from '../tiers/promotion'
+import { UMA_SHARDS_PER_TICKET } from '../tiers/roster'
+import { isRefusal, type UmaState } from '../state/types'
+import { isFree } from '../work/activity'
+import type { WorkEnv } from '../work/kinds'
+import { slotsOf } from '../work/operations'
+import { settle } from '../work/settle'
+import { holdsSlot, stockOf } from '../work/state'
+import { itemProgress } from '../work/timeline'
+import type { SlotRef, WorkRow, WorkState } from '../work/types'
 import { PLACES, type PlaceId } from './places'
 
 /** §4: up to eight pips in two rows of four; past eight slots the eighth becomes "+N". */

@@ -1,13 +1,18 @@
+// The save module (T135, T143): generation 2's routes on the Firestore repository in production or the local JSON file
+// in dev, and the content its operations read. `AppModule` mounts it.
 import { resolve } from 'node:path'
 import { Module } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { AuthGuard } from '../auth/auth.guard'
+import { ContentService } from '../content/content.service'
 import { FirestoreSaveRepository } from './firestore-save.repository'
 import { LocalSaveRepository } from './local-save.repository'
+import { OperationContent } from './operation-content'
 import { SaveController } from './save.controller'
 import { SAVE_REPOSITORY, type SaveRepository } from './save.repository'
-import { ContentService } from '../content/content.service'
-import { verifiedPreservationContent } from './puzzle-preservation-content'
+
+/** The dev save's default path, as `.env.example`'s `LOCAL_SAVE_FILE` names it (rearchitecture/07 §2). */
+export const DEFAULT_LOCAL_SAVE_FILE = '.data/save-g2.json'
 
 @Module({
   controllers: [SaveController],
@@ -17,11 +22,14 @@ import { verifiedPreservationContent } from './puzzle-preservation-content'
       provide: SAVE_REPOSITORY,
       inject: [ConfigService],
       useFactory: (config: ConfigService): SaveRepository => {
-        const content = new ContentService(config), verify = (hash?: string) => verifiedPreservationContent(content, hash)
-        if ((config.get<string>('PERSISTENCE') ?? 'local') === 'firestore') return new FirestoreSaveRepository(undefined, undefined, verify)
-        const file = config.get<string>('LOCAL_SAVE_FILE') ?? '.data/save.json'
-        return new LocalSaveRepository(resolve(process.cwd(), file), undefined, verify)
+        if ((config.get<string>('PERSISTENCE') ?? 'local') === 'firestore') return new FirestoreSaveRepository()
+        return new LocalSaveRepository(resolve(process.cwd(), config.get<string>('LOCAL_SAVE_FILE') ?? DEFAULT_LOCAL_SAVE_FILE))
       },
+    },
+    {
+      provide: OperationContent,
+      inject: [ConfigService],
+      useFactory: (config: ConfigService): OperationContent => new OperationContent(new ContentService(config)),
     },
   ],
 })

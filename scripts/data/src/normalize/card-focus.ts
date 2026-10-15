@@ -1,4 +1,4 @@
-// Authored card-focus corrections onto the cards pack, and the private review report (docs/design/support-cards.md#card-focus,
+// Authored card-focus corrections onto the cards pack, and the private review report (docs/game/06-cards-and-bonds.md §5,
 // D201). The override lives in the gitignored content/overrides/card-focus.json; nothing here is checked-in content.
 
 import {

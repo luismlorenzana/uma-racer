@@ -4,9 +4,7 @@ import {
   addUmaRaceExp,
   assertProgressionRaceContent,
   bestStrategy,
-  createCardSave,
   createUmaSave,
-  equippedRaceBonus,
   expToNextUmaLevel,
   parseRaceResultRecord,
   parseRaceRun,
@@ -15,7 +13,6 @@ import {
   resolveRaceExperience,
   type RaceResultRecord,
   type RaceTemplate,
-  type SupportCardTemplate,
   type UmaTemplate,
 } from './index'
 
@@ -40,32 +37,6 @@ const uma = (id = 'u1'): UmaTemplate => ({
   awakeningSkillIds: [],
   realHorseSex: null,
   signatureRaceFamilyIds: [],
-  imageSource: 'https://invalid.test/synthetic.png',
-})
-
-const card = (): SupportCardTemplate => ({
-  id: 'c1',
-  charaId: 'card-chara-1',
-  charName: 'Synthetic Card',
-  title: 'Synthetic Support',
-  type: 'speed',
-  jpRelease: '2000-01-01',
-  era: 1,
-  obtain: 'free',
-  starter: true,
-  hintSkillIds: [],
-  eventSkillIds: [],
-  effectProfile: {
-    trainingBonus: 1,
-    friendshipBonus: 1,
-    statBonus: 1,
-    skillPointBonus: 1,
-    specialtyPriority: 1,
-    hintFrequency: 1,
-    raceBonus: 1,
-    initialStats: 1,
-  },
-  uniqueEffect: null,
   imageSource: 'https://invalid.test/synthetic.png',
 })
 
@@ -103,7 +74,6 @@ function record(): RaceResultRecord {
     playerPlacement: 1,
     expGained: 155,
     levelsGained: [2],
-    ticketReward: 5,
     shardReward: 0,
     field: Array.from({ length: 8 }, (_, index) => ({
       umaId: index === 0 ? 'u1' : `u${index + 1}`,
@@ -133,25 +103,14 @@ describe('progression race content and setup rules', () => {
     expect(raceAttemptId('u1', 4)).toBe('race:u1:4')
     expect(bestStrategy(uma())).toBe('pace')
   })
-
-  it('uses generated equipped-card Race Bonus', () => {
-    const template = card()
-    const bonus = equippedRaceBonus(1, [{ save: { ...createCardSave(template), stars: 1 }, template }])
-    expect(bonus).toBeCloseTo(0.03 * 1.5 * 1.08 * 0.68)
-    expect(equippedRaceBonus(1, [{
-      save: { ...createCardSave(template), stars: 1 },
-      template: { ...template, type: 'friend' },
-    }])).toBeCloseTo(0.03 * 1.5 * 1.08 * 0.68)
-  })
 })
 
 describe('Uma race progression', () => {
-  it('carries remainder through multiple levels and pays one ticket each (D148)', () => {
+  it('carries remainder through multiple levels', () => {
     const save = { ...createUmaSave(uma()), exp: 90 }
     const result = addUmaRaceExp(save, 300)
     expect(result.uma).toMatchObject({ level: 4, exp: 15 })
     expect(result.levelsGained).toEqual([2, 3, 4])
-    expect(result.ticketReward).toBe(3)
   })
 
   it('stops at a gate, grants one shard, and caps banked overflow', () => {
@@ -159,7 +118,7 @@ describe('Uma race progression', () => {
     const result = addUmaRaceExp(save, 1_000)
     expect(result.uma).toMatchObject({ level: 10, exp: expToNextUmaLevel(11) })
     expect(result.levelsGained).toEqual([10])
-    expect(result).toMatchObject({ ticketReward: 1, reachedGate: 10, shardReward: 1 })
+    expect(result).toMatchObject({ reachedGate: 10, shardReward: 1 })
     const banked = addUmaRaceExp(result.uma, 500)
     expect(banked.uma).toEqual(result.uma)
     expect(banked.levelsGained).toEqual([])
@@ -215,7 +174,6 @@ describe('race result parsing', () => {
     expect(parseRaceResultRecord(withGoals)).toEqual(withGoals)
     expect(parseRaceResultRecord({ ...withGoals, completedGoalIds: ['goal:1:aptitude', 'goal:1:aptitude'] })).toBeNull()
     expect(parseRaceResultRecord({ ...v3, course: { ...v3.course, layout: { corners: [], straights: [] } } })).toBeNull()
-    expect(parseRaceResultRecord({ ...valid, ticketReward: 10 })).toBeNull()
     expect(parseRaceResultRecord({ ...valid, extra: true })).toBeNull()
     expect(parseRaceResultRecord({ ...valid, field: valid.field.map((runner) => ({ ...runner, isPlayer: false })) })).toBeNull()
   })
@@ -264,7 +222,7 @@ describe('scenario-linked races (D122, T055)', () => {
   })
 })
 
-describe('a generation-2 race run (finish-race, docs/rework/09-racing-rewards-and-exchange.md §9)', () => {
+describe('a generation-2 race run (finish-race, docs/game/09-racing-rewards-and-exchange.md §9)', () => {
   const run = () => ({
     engineVersion: 9 as const,
     course: {

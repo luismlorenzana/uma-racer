@@ -18,6 +18,66 @@
         "default": "./src/index.ts"
       }
     },
+    "./save": {
+      "require": {
+        "types": "./dist/cjs/save/index.d.ts",
+        "default": "./dist/cjs/save/index.js"
+      },
+      "default": {
+        "types": "./src/save/index.ts",
+        "default": "./src/save/index.ts"
+      }
+    },
+    "./state": {
+      "require": {
+        "types": "./dist/cjs/state/index.d.ts",
+        "default": "./dist/cjs/state/index.js"
+      },
+      "default": {
+        "types": "./src/state/index.ts",
+        "default": "./src/state/index.ts"
+      }
+    },
+    "./economy": {
+      "require": {
+        "types": "./dist/cjs/economy/index.d.ts",
+        "default": "./dist/cjs/economy/index.js"
+      },
+      "default": {
+        "types": "./src/economy/index.ts",
+        "default": "./src/economy/index.ts"
+      }
+    },
+    "./tiers": {
+      "require": {
+        "types": "./dist/cjs/tiers/index.d.ts",
+        "default": "./dist/cjs/tiers/index.js"
+      },
+      "default": {
+        "types": "./src/tiers/index.ts",
+        "default": "./src/tiers/index.ts"
+      }
+    },
+    "./items": {
+      "require": {
+        "types": "./dist/cjs/items/index.d.ts",
+        "default": "./dist/cjs/items/index.js"
+      },
+      "default": {
+        "types": "./src/items/index.ts",
+        "default": "./src/items/index.ts"
+      }
+    },
+    "./work": {
+      "require": {
+        "types": "./dist/cjs/work/index.d.ts",
+        "default": "./dist/cjs/work/index.js"
+      },
+      "default": {
+        "types": "./src/work/index.ts",
+        "default": "./src/work/index.ts"
+      }
+    },
     "./farm": {
       "require": {
         "types": "./dist/cjs/farm/index.d.ts",
@@ -28,24 +88,54 @@
         "default": "./src/farm/index.ts"
       }
     },
-    "./farm/kitchen": {
+    "./training": {
       "require": {
-        "types": "./dist/cjs/farm/kitchen/index.d.ts",
-        "default": "./dist/cjs/farm/kitchen/index.js"
+        "types": "./dist/cjs/training/index.d.ts",
+        "default": "./dist/cjs/training/index.js"
       },
       "default": {
-        "types": "./src/farm/kitchen/index.ts",
-        "default": "./src/farm/kitchen/index.ts"
+        "types": "./src/training/index.ts",
+        "default": "./src/training/index.ts"
       }
     },
-    "./puzzles/*": {
+    "./check-in": {
       "require": {
-        "types": "./dist/cjs/minigames/uma-puzzles/*.d.ts",
-        "default": "./dist/cjs/minigames/uma-puzzles/*.js"
+        "types": "./dist/cjs/check-in/index.d.ts",
+        "default": "./dist/cjs/check-in/index.js"
       },
       "default": {
-        "types": "./src/minigames/uma-puzzles/*.ts",
-        "default": "./src/minigames/uma-puzzles/*.ts"
+        "types": "./src/check-in/index.ts",
+        "default": "./src/check-in/index.ts"
+      }
+    },
+    "./planner": {
+      "require": {
+        "types": "./dist/cjs/planner/index.d.ts",
+        "default": "./dist/cjs/planner/index.js"
+      },
+      "default": {
+        "types": "./src/planner/index.ts",
+        "default": "./src/planner/index.ts"
+      }
+    },
+    "./sim": {
+      "require": {
+        "types": "./dist/cjs/sim/index.d.ts",
+        "default": "./dist/cjs/sim/index.js"
+      },
+      "default": {
+        "types": "./src/sim/index.ts",
+        "default": "./src/sim/index.ts"
+      }
+    },
+    "./builds": {
+      "require": {
+        "types": "./dist/cjs/builds/index.d.ts",
+        "default": "./dist/cjs/builds/index.js"
+      },
+      "default": {
+        "types": "./src/builds/index.ts",
+        "default": "./src/builds/index.ts"
       }
     },
     "./hub": {
@@ -57,29 +147,7 @@
         "types": "./src/hub/index.ts",
         "default": "./src/hub/index.ts"
       }
-    },
-    "./rework/*": {
-      "require": {
-        "types": "./dist/cjs/rework/*/index.d.ts",
-        "default": "./dist/cjs/rework/*/index.js"
-      },
-      "default": {
-        "types": "./src/rework/*/index.ts",
-        "default": "./src/rework/*/index.ts"
-      }
-    },
-    "./save-g2": {
-      "require": {
-        "types": "./dist/cjs/save-g2/index.d.ts",
-        "default": "./dist/cjs/save-g2/index.js"
-      },
-      "default": {
-        "types": "./src/save-g2/index.ts",
-        "default": "./src/save-g2/index.ts"
-      }
-    },
-    "./puzzles-content-fixtures": "./src/minigames/uma-puzzles/content.synthetic.ts",
-    "./puzzles-preservation-fixtures": "./src/minigames/uma-puzzles/preservation.synthetic.ts"
+    }
   },
   "scripts": {
     "build": "tsc -p tsconfig.cjs.json && node -e \"require('fs').writeFileSync('dist/cjs/package.json', JSON.stringify({ type: 'commonjs' }))\"",

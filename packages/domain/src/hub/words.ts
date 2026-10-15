@@ -1,8 +1,8 @@
-// The Hub's words (docs/rework/11-hub-and-places.md §2, §4, §12; docs/rework/02-check-ins-and-notifications.md §9):
+// The Hub's words (docs/game/11-hub-and-places.md §2, §4, §12; docs/game/02-check-ins-and-notifications.md §9):
 // each tile's VoiceOver line, the counters' words and the shell's copy. Templates take `{name}` placeholders, filled by
 // `fill`. 02 §9's banned words never appear here; `hub/words.test.ts` holds every string to `hasBannedWord`. Imports
 // only types and the check-in's two word helpers, so the shell's entry chunk can read it.
-import { fill, say } from '../rework/check-in/words'
+import { fill, say } from '../check-in/words'
 import type { Place, PlaceCounter } from './places'
 import type { HubBuilding, HubView } from './view'
 

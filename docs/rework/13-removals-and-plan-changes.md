@@ -1,8 +1,10 @@
 # 13 · Removals and plan changes
 
-> **Status: approved design, 2026-10-14; first written 2026-10-13 (D326–D335).** What leaves Uma Racer with the rework, what stays, and
-> how the re-architecture plan ([docs/rearchitecture/](../rearchitecture/README.md), D321–D325) changes so the rework
-> and the rebuild ship as one game, wiped once.
+> **Status: the plan, carried out through phase 3 (generation 2, D361); first written 2026-10-13 (D326–D335).** What
+> left Uma Racer with the rework, what stays, and how the re-architecture plan
+> ([docs/rearchitecture/](../rearchitecture/README.md), D321–D325) changed so the rework and the rebuild ship as one
+> game, wiped once. §1's removals and §7's docs are done (T143); §6 is the generation-2 save as it runs, and §4's later
+> phases are still ahead. The game itself is described in [the manual](../game/README.md).
 
 ## 1. What leaves the game
 
@@ -12,17 +14,17 @@ feature flag, dormant code or compatibility reader stays behind (the D322 standa
 
 | System | What it was | Why it goes | Replaced by |
 |---|---|---|---|
-| **Constellation Level (CL)**, formerly Training Level | 1–10 per Uma and scenario; opened card nodes at CL1–8, raised SP to CL10; one shared level-up sheet (D211, D283, D287–D290) | The owner removes Training Levels entirely (D326) | Observatory sessions open card nodes one at a time ([05](05-training-hub.md)) |
+| **Constellation Level (CL)**, formerly Training Level | 1–10 per Uma and scenario; opened card nodes at CL1–8, raised SP to CL10; one shared level-up sheet (D211, D283, D287–D290) | The owner removes Training Levels entirely (D326) | Observatory sessions open card nodes one at a time ([05](../game/05-training-hub.md)) |
 | **Uma Puzzles** | The global five-party battle mode whose materials raised CL; PixiJS battle scene; its own preservation, bank, exchange and placeholder art (D267–D290) | It was CL's only source, and the owner removes all uma-puzzle wiring (D326) | Nothing: the Farm and Training Hub are the training loop |
 | **Friendship Training** | The card minigame that earned card stars, one Training Ticket a run | Stars are gone (D329), so it has nothing to pay | Nothing |
-| **Card stars and card ownership** | 0–3★ per card (D200, D255), Card Select Coupons as the only unlock (D198), the coupon at a card's first 3★ | Every card open and at full value (D329) | Bonds per Uma at the Dojo ([06](06-cards-and-bonds.md)) |
-| **Inspiration tokens and Convert** | Scenario Slot and Skill tokens (D250), their exchange (D309), the advance and debt bank (D256), and D322's plan to pay them from career goals | Tokens are removed entirely (D326) | Lineage Hall sessions ([05](05-training-hub.md)) |
-| **Permanent Uma Level 1–140** | One level across all fourteen scenarios, 10 per scenario (D121) | Tiers reset (D327) | Racing Level 1–50 per tier ([03](03-uma-progression.md)) |
-| **Trained units** | Every unlocked scenario stayed a raceable build of its own (D190); the load-from-previous button (D288) | Unlocks last for the tier (D328), so one build per tier is enough | One build per Uma per tier, carried automatically between scenarios ([03](03-uma-progression.md)) |
+| **Card stars and card ownership** | 0–3★ per card (D200, D255), Card Select Coupons as the only unlock (D198), the coupon at a card's first 3★ | Every card open and at full value (D329) | Bonds per Uma at the Dojo ([06](../game/06-cards-and-bonds.md)) |
+| **Inspiration tokens and Convert** | Scenario Slot and Skill tokens (D250), their exchange (D309), the advance and debt bank (D256), and D322's plan to pay them from career goals | Tokens are removed entirely (D326) | Lineage Hall sessions ([05](../game/05-training-hub.md)) |
+| **Permanent Uma Level 1–140** | One level across all fourteen scenarios, 10 per scenario (D121) | Tiers reset (D327) | Racing Level 1–50 per tier ([03](../game/03-uma-progression.md)) |
+| **Trained units** | Every unlocked scenario stayed a raceable build of its own (D190); the load-from-previous button (D288) | Unlocks last for the tier (D328), so one build per tier is enough | One build per Uma per tier, carried automatically between scenarios ([03](../game/03-uma-progression.md)) |
 | **Training Tickets** | +15 a day, cap 60; paid Friendship runs and scenario unlocks (`5 × tier`, D148) | Nothing left to buy | Advancing a scenario is free; Speed Tickets are bought with Prize Money |
-| **Today's Farm** (the Stable Kitchen, M031) | Five districts × six stations, 1,169 items, 6-hour batch jobs, 12/24 Farm EXP, ingredient blocks of five scenarios, the 65-node meal-funded Extra map per block (D314, D315) | uma-rpg's farming half and uma-art's art replace it (D330) | Eight family sites, Pantry and Kitchen ([07](07-farm.md)); 253 items ([08](08-item-catalogue-and-recipes.md)); the Gym's Extra Stats map ([05](05-training-hub.md)) |
-| **Energy** | A global item: 30 minutes off one running job | Renamed and bought, not granted | The Speed Ticket ([09](09-racing-rewards-and-exchange.md)) |
-| **The Home list** | A scrolling column of cards | The Hub (D333) | Four Hub pages ([11](11-hub-and-places.md)) |
+| **Today's Farm** (the Stable Kitchen, M031) | Five districts × six stations, 1,169 items, 6-hour batch jobs, 12/24 Farm EXP, ingredient blocks of five scenarios, the 65-node meal-funded Extra map per block (D314, D315) | uma-rpg's farming half and uma-art's art replace it (D330) | Eight family sites, Pantry and Kitchen ([07](../game/07-farm.md)); 253 items ([08](../game/08-item-catalogue-and-recipes.md)); the Gym's Extra Stats map ([05](../game/05-training-hub.md)) |
+| **Energy** | A global item: 30 minutes off one running job | Renamed and bought, not granted | The Speed Ticket ([09](../game/09-racing-rewards-and-exchange.md)) |
+| **The Home list** | A scrolling column of cards | The Hub (D333) | Four Hub pages ([11](../game/11-hub-and-places.md)) |
 | **Owner gifts and dev grants in production** | Re-granted coupons (D209), the +tickets buttons | Already removed by D323 | Dev builds only |
 
 ### Achievements and badges that change
@@ -33,7 +35,7 @@ Badges and titles stay, scenario-linked as today (D122). Trainer achievements th
 - coupons redeemed;
 - Puzzle and Friendship records.
 
-[06](06-cards-and-bonds.md) lists the card ones and [04](04-tiers-and-promotion.md) the new tier and Expedition
+[06](../game/06-cards-and-bonds.md) lists the card ones and [04](../game/04-tiers-and-promotion.md) the new tier and Expedition
 titles. Past achievement rows don't survive the wipe, so nothing is migrated.
 
 ## 2. What stays
@@ -43,14 +45,14 @@ titles. Past achievement rows don't survive the wipe, so nothing is migrated.
 | The race engine (`packages/race`) | Deterministic, seeded, unchanged. Expedition mechanics may add inputs in a new engine version ([10](10-expeditions.md)) |
 | Race skills, the race catalogue and course layouts | As today, with the platform's master data after its phase |
 | Scenario careers and goals | G3, two G2s, three G1s, the holds and the gate (D137) |
-| Cap profiles and scenario buffs | Revised where a buff named a removed system ([04](04-tiers-and-promotion.md)) |
-| Constellation mechanics | Card nodes, the per-card cap, the node value formula, breadth-first unlock order, card-type splits (D180). Trees re-authored to 12–28 nodes ([05](05-training-hub.md)) |
+| Cap profiles and scenario buffs | Revised where a buff named a removed system ([04](../game/04-tiers-and-promotion.md)) |
+| Constellation mechanics | Card nodes, the per-card cap, the node value formula, breadth-first unlock order, card-type splits (D180). Trees re-authored to 12–28 nodes ([05](../game/05-training-hub.md)) |
 | Inspiration's pick rules | Parents, grandparents, mirrors, aptitudes, inherited uniques and gold skills (D250's rules, without its tokens; the uniques become their own 6 unlocks, D336) |
 | Card types, eras, skills, focus, Race Bonus | Every card at today's 3★ value |
 | Four distance presets | Per tier now, not per scenario (D252's shape) |
 | Badges, titles, flair, trophies | Scenario-linked records (D122); D107's flair overrides |
 | The collection reveal | Unlocking an Uma with an Uma Ticket |
-| **Uma Shards** | The normal unlock (D336): each scenario gate an Uma reaches pays 1 Shard, 5 make an Uma Ticket. Gates come once per scenario per tier now, and tickets unlock into tier 1 only ([04](04-tiers-and-promotion.md) §6) |
+| **Uma Shards** | The normal unlock (D336): each scenario gate an Uma reaches pays 1 Shard, 5 make an Uma Ticket. Gates come once per scenario per tier now, and tickets unlock into tier 1 only ([04](../game/04-tiers-and-promotion.md) §6) |
 
 ## 3. Changes to the re-architecture decisions
 
@@ -60,7 +62,7 @@ titles. Past achievement rows don't survive the wipe, so nothing is migrated.
 | **D322** RPG deleted | Stands. Its **Inspiration-from-goal-wins** half is superseded by D326: there are no tokens. Its Convert moves nowhere; it is deleted with the tokens |
 | **D323** generation 2, wipe, 20 Uma Tickets | Stands. The new account changes (§5) |
 | **D324** Phaser 4 | Stands. The Puzzles are deleted in the cutover, so PixiJS is left only in the race scene until phase 8 ports it (M034) |
-| **D325** uma-platform owns data, art, kit | Stands, and grows. uma-art's `items`, `dishes` and `farmlands` buildings now cover the whole Farm, so the planned new `farm` family shrinks to nothing. The `racer` buildings family is what [11](11-hub-and-places.md) lists as new. `uma-idle` adopts one-after-another production with queues, which both games now share |
+| **D325** uma-platform owns data, art, kit | Stands, and grows. uma-art's `items`, `dishes` and `farmlands` buildings now cover the whole Farm, so the planned new `farm` family shrinks to nothing. The `racer` buildings family is what [11](../game/11-hub-and-places.md) lists as new. `uma-idle` adopts one-after-another production with queues, which both games now share |
 
 And these older decisions are superseded:
 
@@ -81,11 +83,11 @@ they're deleted. The order becomes:
 | Phase | Goal | Changes from [08](../rearchitecture/08-phases.md) |
 |---|---|---|
 | **1** | A sound base: the API on the workspace domain, budgets enforced, the live manual | Unchanged. **Can start now** (D335) |
-| **2** | **The rework's rules in the domain**, pure and tested, plus `sim:loop` passing [12](12-economy-and-pacing.md)'s checks. No UI, no save change, so the live game is untouched | **New.** Tiers, layers, sessions, bonds, the Farm catalogue, recipes, Prize Money, the Exchange |
+| **2** | **The rework's rules in the domain**, pure and tested, plus `sim:loop` passing [12](../game/12-economy-and-pacing.md)'s checks. No UI, no save change, so the live game is untouched | **New.** Tiers, layers, sessions, bonds, the Farm catalogue, recipes, Prize Money, the Exchange |
 | **3** | **Clean slate and the new game.** Generation-2 save in the rework's shape, the wipe and purge, every deletion (RPG, Spark, Puzzles, Friendship, CL, stars, tokens, today's Farm), the new screens as plain DOM pages: Stable, Training Hub places, Farm places, Warehouse, Exchange, Card Library, Racecourse with Prize Money, Scenario Gate. Collect all, Repeat, queues and the planner ship here | Was phase 2; now carries the new game. **The owner starts playing here** |
-| **4** | **Optional:** push notifications, a port of uma-rpg's D63/D65 setup with the racer's few changes ([02](02-check-ins-and-notifications.md) §7) | **New, and only if the owner asks** after playing the new game (D336). Nothing outside what uma-rpg already runs: the same Firestore collection, routes, Cloud Scheduler job and Secret Manager secret, set up with uma-rpg's script. About $0 |
+| **4** | **Optional:** push notifications, a port of uma-rpg's D63/D65 setup with the racer's few changes ([02](../game/02-check-ins-and-notifications.md) §7) | **New, and only if the owner asks** after playing the new game (D336). Nothing outside what uma-rpg already runs: the same Firestore collection, routes, Cloud Scheduler job and Secret Manager secret, set up with uma-rpg's script. About $0 |
 | **5** | Platform master data and the first shared packages | Was phase 3 |
-| **6** | The Hub: four pages, the place registry, art ([11](11-hub-and-places.md)) | Was phase 4, with the new place list |
+| **6** | The Hub: four pages, the place registry, art ([11](../game/11-hub-and-places.md)) | Was phase 4, with the new place list |
 | **7** | The Farm and Training Hub as pixel-art scenes on `uma-idle` | Was phase 5, now also the Training page |
 | **8** | The race on Phaser | Was phase 6; PixiJS leaves the repo with it (M034) |
 | **9** | **World Expeditions:** the 13 pools (136 race families), about 89 new course layouts in a private overlay, about 70 invented local champions, the Expedition Map, and `sim:expeditions` ([10](10-expeditions.md)) | **New.** All 13 must ship before the first Uma completes tier 1's last career, about **16–20 weeks after phase 3** |
@@ -130,7 +132,7 @@ logs and operations in one sync lane. The kinds change:
 
 | Kind | Holds |
 |---|---|
-| `profile/main` | Prize Money, Uma Tickets, Uma Shards, the Daily Purse (`purse`) and the Exchange's stock grade (`exchangeGrade`, [09](09-racing-rewards-and-exchange.md) §9), featured Uma, the planner's targets (up to five, in order), check-in times (up to four; default 08:00, 13:00, 22:30), Repeat's sizing setting, created at, `generation: 2` ([02](02-check-ins-and-notifications.md)) |
+| `profile/main` | Prize Money, Uma Tickets, Uma Shards, the Daily Purse (`purse`) and the Exchange's stock grade (`exchangeGrade`, [09](../game/09-racing-rewards-and-exchange.md) §9), featured Uma, the planner's targets (up to five, in order), check-in times (up to four; default 08:00, 13:00, 22:30), Repeat's sizing setting, created at, `generation: 2` ([02](../game/02-check-ins-and-notifications.md)) |
 | `umas/{outfitId}` | Tier, scenario, Racing Level and EXP, Farm Level and EXP, career, unlocks (constellation count, Inspiration slots, uniques and golds, Extra Stats nodes, active Extra nodes per preset), bonds, four presets (card set, assignments, loadout), lineage picks, her Expedition state (runs, each run's frozen pool, wins by race family; [10](10-expeditions.md)), promotion history |
 | `buildings/{id}` | Each Farm building's and Training facility's level (its slots follow from it; work rows hold them) |
 | `work/{outfitId}` | Her running job or session and its queue: kind, place, recipe or unlocks, batch size, reserved inputs, start time, Speed Tickets applied, her last job for Repeat, and a dropped queue with its reason until the owner acts on it |
@@ -139,7 +141,7 @@ logs and operations in one sync lane. The kinds change:
 | Logs: `raceResults`, `ledger`, `flairEvents`, `operations` | Append-only, as today. An Expedition race's result carries a snapshot of the run (Expedition, tier, mechanics in effect) |
 
 Every change is an **operation** re-run by the API with the domain package. The list is `OPERATIONS`
-(`rework/check-in`), rendered here:
+(`check-in`), rendered here:
 
 <!-- live:operations -->
 | Operation | What it does | Rules |
@@ -174,7 +176,7 @@ Every change is an **operation** re-run by the API with the domain package. The 
 | `dev-grant` | Dev builds and a dev API only: items, Prize Money, Uma Tickets, finished work, a jump to her gate | M034 |
 <!-- /live -->
 
-T138 added `feature-uma` and `set-race-defaults` (`rework/tiers/roster.ts`): both fields were saved (`featuredUmaId` on
+T138 added `feature-uma` and `set-race-defaults` (`tiers/roster.ts`): both fields were saved (`featuredUmaId` on
 the profile, `raceDefaults` on the Uma) and nothing wrote them after the first unlock. `feature-uma { outfitId }` takes
 any owned Uma; `set-race-defaults { umaId, selectedPreset?, preferences? }` sets either or both, `preferences: null`
 going back to the recommendation, and never refreezes her career. A bond is an ordinary Dojo session, so it needs no
@@ -184,8 +186,9 @@ tokens, Puzzle materials and Energy.
 
 ### The save as built (T134)
 
-`@racer/domain/save-g2` holds generation 2, pure, beside today's save until T143 makes it `@racer/domain/save`. It has
-no migrations, no legacy constants and no cutover rows; the API (T135) and the web save layer (T136) build on it.
+`@racer/domain/save` holds generation 2, pure (`packages/domain/src/save/`; built beside the old save as `save-g2`
+until T143 moved it). It has no migrations, no legacy constants and no cutover rows; the API (T135) and the web save
+layer (T136) build on it.
 
 - **Rows.** An entity is `{ kind, id, generation: 2, schema: 1, version, savedAt, data }`. Its `version` starts at 1 and
   rises by one for each committed sync that changes it; `savedAt` is the server's time of that commit. A log row is
@@ -232,9 +235,9 @@ no migrations, no legacy constants and no cutover rows; the API (T135) and the w
 
 ### The API as built (T135)
 
-`apps/api/src/save-g2/` serves generation 2 beside today's `save/` module. `AppModule` doesn't import it until T143
-mounts it and deletes today's. The server is the authority: it re-runs every operation with `commitOperation` on its own
-rows, so the device's numbers and the server's come from one function.
+`apps/api/src/save/` serves generation 2, and `AppModule` mounts it (built beside the old module as `save-g2/` until
+T143 deleted the old one and moved it). The server is the authority: it re-runs every operation with `commitOperation`
+on its own rows, so the device's numbers and the server's come from one function.
 
 - **Routes.** All three sit behind `AuthGuard`. Each runs the guard first, then the stamp, then T134's parser:
 
@@ -287,9 +290,9 @@ rows, so the device's numbers and the server's come from one function.
 
 ### The web save as built (T136)
 
-`apps/web/src/g2/save/` keeps generation 2 on the device and plays on it at once, offline too. Nothing in today's entry
-imports it; `g2/app/boot.ts` loads it lazily. The decisions are in [02](02-check-ins-and-notifications.md) §11, and
-the boot's order in [rearchitecture/07](../rearchitecture/07-data-reset.md) §3.
+`apps/web/src/save/` keeps generation 2 on the device and plays on it at once, offline too. `app/boot.ts` loads it
+lazily, so none of it reaches the entry chunk. The decisions are in [02](../game/02-check-ins-and-notifications.md)
+§11, and the boot's order in [rearchitecture/07](../rearchitecture/07-data-reset.md) §3.
 
 - **Dexie `uma-racer-g2`, version 1:** `profile`, `umas`, `buildings`, `work`, `items` and `badges` by `id`; `ledger`
   (`id, at, data.reason`), `itemLedger`, `flairEvents` and `operations` (`id, at`), `raceResults` (`id, at,
@@ -311,20 +314,25 @@ the boot's order in [rearchitecture/07](../rearchitecture/07-data-reset.md) §3.
   `syncNow` and `logs` (race results, the ledger, the Warehouse's movements and a receipt, read on demand). T141 adds
   the badge rows to the snapshot, every race result and the flair events to `logs`, a tap's `device` rows (its flair,
   computed from the applied operation and the records, written in its transaction behind its outbox row; a callback that
-  throws writes nothing) and `writeDevice` for the Trophy Hall's reconcile. T143 calls
-  `bootSaveGame(content)` from the entry, points `setSaveTokenProvider` at the Firebase token and follows the auth
-  provider with `setSignedIn`.
+  throws writes nothing) and `writeDevice` for the Trophy Hall's reconcile. Since T143 the session
+  (`app/session.tsx`) calls `bootSaveGame(content)` once the private content is ready, points `setSaveTokenProvider`
+  at the Firebase token (`auth/firebase.ts`'s `idToken`) and follows the auth provider with `setSignedIn`
+  ([architecture](../game/architecture.md#the-save-and-sync)).
 
-## 7. Docs to retire or rewrite when phase 3 lands
+## 7. Docs to retire or rewrite when phase 3 lands (done, T143)
+
+T143 carried this out as the table says, with two changes: the rework's pages 01–09, 11 and 12 moved into the manual
+(`docs/game/`) as built, so the design pages they replace were deleted rather than rewritten, and
+`docs/technical/architecture.md` folded into [the manual's architecture page](../game/architecture.md).
 
 | Doc | Fate |
 |---|---|
 | `docs/design/uma-puzzles.md`, `technical/uma-puzzles-implementation.md`, every `research/*puzzle*` page | Deleted (git keeps them) |
 | `docs/design/minigames.md`, `minigame-kit.md` | Deleted: no minigames remain |
-| `docs/design/farm.md`, `farm-kitchen-rework.md`, `technical/farm-kitchen-implementation.md` | Deleted; [07](07-farm.md) and [08](08-item-catalogue-and-recipes.md) become the Farm design |
+| `docs/design/farm.md`, `farm-kitchen-rework.md`, `technical/farm-kitchen-implementation.md` | Deleted; [07](../game/07-farm.md) and [08](../game/08-item-catalogue-and-recipes.md) become the Farm design |
 | `docs/design/training.md`, `constellations.md`, `uma-progression.md`, `support-cards.md`, `collection.md`, `economy.md`, `scenarios.md` | Rewritten "as built" from this folder |
-| `docs/design/ux.md` | Rewritten from [11](11-hub-and-places.md) |
-| `docs/rearchitecture/04-hub.md`, `05-farm.md` | Marked superseded by [11](11-hub-and-places.md), [07](07-farm.md) and [08](08-item-catalogue-and-recipes.md) |
+| `docs/design/ux.md` | Rewritten from [11](../game/11-hub-and-places.md) |
+| `docs/rearchitecture/04-hub.md`, `05-farm.md` | Marked superseded by [11](../game/11-hub-and-places.md), [07](../game/07-farm.md) and [08](../game/08-item-catalogue-and-recipes.md) |
 | `README.md`, `CLAUDE.md`, `AGENTS.md` | Status, doc map and commands updated |
 
 ## 8. Decided here
@@ -337,15 +345,15 @@ the boot's order in [rearchitecture/07](../rearchitecture/07-data-reset.md) §3.
 | Expeditions get their own phase with a deadline | The first Umas reach them about 20 weeks after the new game starts |
 | PixiJS leaves with the race's port (phase 8); the cutover deletes every other PixiJS scene | Porting the race in the cutover would add risk to the riskiest phase (M034) |
 | No per-account card state | Every card is open; bonds belong to Umas |
-| A race commits as the operation `finish-race` (T134) | [09](09-racing-rewards-and-exchange.md) §9 allows it and requires one atomic commit of the result, the Uma, the purse and the ledger; server authority needs an operation for that |
+| A race commits as the operation `finish-race` (T134) | [09](../game/09-racing-rewards-and-exchange.md) §9 allows it and requires one atomic commit of the result, the Uma, the purse and the ledger; server authority needs an operation for that |
 | Only badges and flair events are device-written rows; every other kind changes by operation or the create | §6: every change is an operation. Badges and flair stay as today (M034) |
 | The create carries only `createdAt`; the server builds the rows itself | Server authority: the device never uploads a balance |
 | Rows carry `generation: 2` and `schema: 1` | [rearchitecture/01](../rearchitecture/01-target-architecture.md) §5's one schema version per kind, without today's sniffing |
 | No row is ever deleted: an empty work row, a zero count | Versions never restart, and promotion's dropped work row still syncs |
 | The state holds only the rule rows of the ledger | Rules read only those, and they grow with the roster, not with play time |
-| `itemLedger` rows come from each receipt's movements, with ids `<opId>:m<n>`; there is no "consume" row | [07](07-farm.md) §12 lists every movement. A reserved dish has already left the Warehouse, so collecting it moves nothing ([05](05-training-hub.md) §9's "consume" is that reserve) |
+| `itemLedger` rows come from each receipt's movements, with ids `<opId>:m<n>`; there is no "consume" row | [07](../game/07-farm.md) §12 lists every movement. A reserved dish has already left the Warehouse, so collecting it moves nothing ([05](../game/05-training-hub.md) §9's "consume" is that reserve) |
 | Ledger rows keep the domain's `LedgerEntry`, not 09 §9's first `{ currency, balanceAfter, ref }` | It is the built shape (T125, T130), and its id already names the cause |
-| Operations carry no base version | [02](02-check-ins-and-notifications.md) §9: the server re-checks a tap against the latest state |
+| Operations carry no base version | [02](../game/02-check-ins-and-notifications.md) §9: the server re-checks a tap against the latest state |
 | Bond picks are not saved | §6 saves no picks, and 02 §11 left the choice to phase 3 |
 | Operation ids have no colons and are at most 64 characters | Derived ids such as `race:<id>:featured` stay within 160 and parse cleanly |
 | The server trusts the placement and the featured board, as it trusts the clock | 02 §8: there is no anti-cheat, and the purse and `featuredPaid` still bound the pay. The board's draw needs `@racer/race`'s seeded RNG, which the CommonJS API can't import |
@@ -372,10 +380,17 @@ the boot's order in [rearchitecture/07](../rearchitecture/07-data-reset.md) §3.
 | A failed pack load is tried again on the next call; the manifest still waits its minute | A brief bucket error costs one 503, not a minute of them |
 | Rows are written as their JSON copy | Firestore refuses `undefined` fields, so Firestore, the dev file and the wire hold the same copy |
 | The purge counts the parent document only if it existed | `recursiveDelete` deletes it either way, and the counts stay exact |
-| The generation-2 award catalogue sits behind a `generation: 2` option on `buildUmaFlairCatalog` and `buildTrainerAchievementCatalog`, and today's pure badge views take it as an optional last argument, until T143 removes today's (T141) | Build beside: today's app and tests stay green |
+| The generation-2 award catalogue sat behind a `generation: 2` option on `buildUmaFlairCatalog` and `buildTrainerAchievementCatalog` until T143 removed the old catalogue and the option (T141, T143) | Build beside: the old app and tests stayed green until the switch |
 | The web replays engine v9 only; `packages/race` keeps every version (T141) | The wipe leaves no older row; M034 keeps the engine as is |
 | Flair rides as `badges/…` entities and `flairEvents` rows in the operation's local transaction, behind it in the one lane: the port's `run` takes a `device` callback (T141) | [badges](../design/badges.md)'s atomic awards; badge entities keep their shapes |
 | The port reads race results and flair events through `logs` and carries the badge rows in its snapshot (T141) | T136 loads no log into its store; badge rows are bounded, one per Uma and the trainer |
+| The `pre-split` tag marks `main` before the switch and never moves; `main` then takes only fixes that block play, merged into `cutover/g2` too (T143) | rearchitecture/06 §2 and 07 §6: the tag marks the old game; T144's rollback reverts the merge, not the tag |
+| The switch deletes whole (D322's standard), and beyond its lists also what only the retired systems read: the owned-card deck, Training Levels and the old tree derivation, the ticket reward on race records, the pre-v13 level curve, the old goal evaluation, the minigame era's badge facts, the Trainer's owned-card and coupon inputs (T143) | Each served a retired system (§1) or the old save's migrations; `settleGoalWin` is the goal rule, and generation 2 writes none of those facts |
+| "Nothing old remains" (§9) allows "racing RPG", `uma-rpg` and `friendshipBonus`, and one file, `apps/web/src/app/router.test.tsx` (T143) | The app's description; the sibling game the rework ports from; the original's card effect in the private packs until phase 5; the router test must name the deleted routes it walks to `/` |
+| Parity tests whose oracle was deleted state the expected values instead; `domain.test.ts` loses only the pins of deleted rules (T143) | The rules keep their coverage without keeping deleted code; no kept number's pin changed |
+| The rework's pages 01–09, 11 and 12 move into the manual (`docs/game/`) as built, and the design pages they replace are deleted rather than rewritten; what still ran with no other page moves first (albums to ux.md, Trainer achievements to badges.md, card focus and era gating to 06) (T143) | M034 #6; rewriting §7's pages as well would describe each rule twice |
+| A later phase's section stays in its page under "Not built yet (phase N)"; 10 and this page stay in `docs/rework/`, whose README becomes an index, and its shared numbers and glossary join the manual's README (T143) | The manual describes what runs, and splitting pages would break every link; the moved pages already cite "the README" for those numbers |
+| Links to deleted pages in the task log name the old path in code font, read at `pre-split`; `decisions.md` keeps its links as written (T143) | The log keeps its history without dead links; decisions are append-only |
 
 ## 9. Done when
 

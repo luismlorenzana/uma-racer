@@ -1,4 +1,4 @@
-// Pure GameTora character-card normalization (docs/design/uma-progression.md).
+// Pure GameTora character-card normalization (docs/game/03-uma-progression.md).
 
 import { GRADES, type Aptitudes, type Grade, type Stats, type UmaTemplate } from '@racer/domain'
 import { id, ids, number as numberValue, records, text, type NormalizeResult, type RawRecord } from './shared'

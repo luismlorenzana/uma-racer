@@ -1,19 +1,15 @@
 // Verified, manifest-last private content publishing (docs/technical/infrastructure.md#release-runbook).
 
-import { parseSparkRivalContentPack, type ContentManifest, type ContentManifestFile } from '@racer/domain'
+import type { ContentManifest, ContentManifestFile } from '@racer/domain'
 import { createHash } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
-import { RPG_CATALOG_PATH, RPG_PACK_PATH, validateRpgContent } from './rpg'
-import { PUZZLE_CATALOG_PATH, PUZZLE_PACK_PATH } from '@racer/domain'
-import { validatePuzzleContent } from './puzzles'
 
 const VERSION_PATTERN = /^[a-f0-9]{12}$/
 const SHA_PATTERN = /^[a-f0-9]{64}$/
 const OBJECT_CHECK_CONCURRENCY = 8
 // `art/<family>/<id>.<hash>.webp` is the per-entry art added alongside the packs and atlases.
 const CONTENT_PATH_PATTERN = /^(?:(?:data|atlases)\/[A-Za-z0-9][A-Za-z0-9._-]*|art\/[a-z][a-z-]*\/[A-Za-z0-9][A-Za-z0-9._-]*)$/
-const SPARK_RIVALS_PATH = /^data\/spark-rivals\.[a-f0-9]{8}\.json$/
 
 export interface RemoteObjectState {
   bytes: number
@@ -150,16 +146,6 @@ export async function publishContent(options: PublishContentOptions): Promise<Pu
   const { manifest, path: manifestPath } = await readManifest(options.contentDir)
   const localPaths = new Map<string, string>()
   for (const file of manifest.files) localPaths.set(file.path, await verifyFile(options.contentDir, file))
-  if (manifest.files.some(f => RPG_CATALOG_PATH.test(f.path) || RPG_PACK_PATH.test(f.path))) await validateRpgContent(options.contentDir, manifest)
-  if (manifest.files.some(f => PUZZLE_CATALOG_PATH.test(f.path) || PUZZLE_PACK_PATH.test(f.path))) await validatePuzzleContent(options.contentDir, manifest)
-  const sparkPacks = manifest.files.filter((file) => SPARK_RIVALS_PATH.test(file.path))
-  if (sparkPacks.length !== 1) throw new Error(`Production content must contain exactly one Spark rival pack; found ${sparkPacks.length}`)
-  try {
-    const sparkPath = localPaths.get(sparkPacks[0]!.path)!
-    parseSparkRivalContentPack(JSON.parse(await readFile(sparkPath, 'utf8')) as unknown)
-  } catch (error) {
-    throw new Error('Production Spark rival pack is invalid', { cause: error })
-  }
 
   const remoteVersionBefore = remoteVersion(await options.storage.readManifest())
   const uploadPaths: string[] = []

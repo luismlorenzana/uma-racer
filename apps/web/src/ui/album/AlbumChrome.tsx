@@ -2,13 +2,13 @@ import { useCallback, useState, type ReactNode } from 'react'
 import {
   ALBUM_VIEWS,
   isActiveSelection,
+  type AlbumPreset,
   type AlbumQuery,
   type EmptyStateHint,
   type FacetDef,
   type SortDef,
-} from '../../game/album/query'
-import type { AlbumPreset } from '../../game/album/stable'
-import type { SavedView } from '../../game/album/prefs'
+} from './query'
+import type { SavedView } from '../albumPrefs'
 import { BottomSheet } from '../BottomSheet'
 import { Button } from '../Button'
 import { Chip } from '../Chip'
@@ -21,7 +21,7 @@ import { SortSheet } from './SortSheet'
  * The browsing chrome every album shares, kept small so the list starts near the top (D176): a title line with the
  * count, one sticky toolbar (search, Sort, a badged Filters button, and the album's segments), and removable chips
  * for active filters. Quick picks and saved views live in the Filters sheet
- * (docs/design/collection.md#shared-browsing-chrome).
+ * (docs/design/ux.md#shared-browsing-chrome).
  */
 const VIEW_GLYPHS = { icons: ViewGridIcon, cards: ViewCardsIcon, list: ViewListIcon } as const
 

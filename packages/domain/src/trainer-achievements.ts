@@ -1,10 +1,8 @@
-// Trainer achievement catalog and deterministic reconciliation (docs/design/collection.md#trainer-achievements-account-wide).
-// Generation 2's catalogue sits beside today's behind `generation: 2` (docs/rework/06-cards-and-bonds.md §7, §9;
-// 04-tiers-and-promotion.md §9; 13-removals-and-plan-changes.md §1; T141): what counted cards owned, stars or coupons
-// retires, the ever-bonded set stands in for ownership, and promotions and the Hall of Fame are counted.
+// Trainer achievement catalog and deterministic reconciliation (docs/design/badges.md#trainer-achievements),
+// on generation 2's catalogue (docs/game/06-cards-and-bonds.md §7, §9; 04-tiers-and-promotion.md §9;
+// 13-removals-and-plan-changes.md §1; T141): the ever-bonded set stands in for card ownership, and promotions and the
+// Hall of Fame are counted.
 
-import { bestCardStars } from './card-progression'
-import { MAX_STARS } from './cards'
 import type { RaceTemplate, SupportCardTemplate, UmaTemplate } from './content'
 import {
   BADGE_TIERS,
@@ -29,10 +27,9 @@ import {
   flairDynamicKey,
   flairEventId,
   type FlairEventRecord,
-  type FlairGeneration,
 } from './flair'
 import type { RaceResultRecord } from './progression-race'
-import type { CardSave, LedgerEntry, UmaSave } from './save'
+import type { UmaSave } from './career-shapes'
 import { MAX_UMA_LEVEL } from './scenarios'
 import { STATS, type StatKey } from './types'
 
@@ -41,9 +38,6 @@ export const TRAINER_ACHIEVEMENT_EVALUATOR_VERSION = 1 as const
 
 export const TRAINER_ACHIEVEMENT_THRESHOLDS = {
   stableMaster: [30, 40, 60, 90] as const,
-  cardCollector: [10, 25, 50, 100] as const,
-  maxedOut: [1, 5, 15, 40, 100] as const,
-  couponClipper: [1, 5, 15, 40, 100] as const,
   stableWins: [10, 100, 500, 1_500, 5_000] as const,
   stableG1s: [1, 10, 50, 150, 500] as const,
   statBadges: [5, 25, 75, 200, 500] as const,
@@ -56,7 +50,6 @@ export const TRAINER_ACHIEVEMENT_THRESHOLDS = {
   stableGoals: [5, 25, 100, 300, 1_000] as const,
   honorsCollector: [1, 10, 30, 100, 300] as const,
   familyTree: [2, 5, 10, 25, 50] as const,
-  // Generation 2 (06 §7, 04 §9).
   cardPartners: [10, 25, 50, 100, 200] as const,
   promotions: [1, 5, 15, 30, 50] as const,
   hallOfFame: [1, 3, 10, 25, 50] as const,
@@ -81,13 +74,6 @@ export interface TrainerAchievementCatalogV1 {
   version: typeof TRAINER_ACHIEVEMENT_CATALOG_VERSION
   definitions: TrainerAchievementDefinition[]
   titleDenominatorKeys: string[]
-  /** Present only on generation 2's catalogue; today's has no such key, so its output is unchanged. */
-  generation?: 2
-}
-
-export interface TrainerLedgerRow {
-  id: string
-  data: LedgerEntry
 }
 
 export interface TrainerReconcileInput {
@@ -97,20 +83,16 @@ export interface TrainerReconcileInput {
   cards: readonly SupportCardTemplate[]
   races: readonly RaceTemplate[]
   ownedUmas: readonly UmaSave[]
-  ownedCards: readonly CardSave[]
   contributors: readonly UmaBadgeStateV1[]
-  ledger: readonly TrainerLedgerRow[]
   raceResults: readonly RaceResultRecord[]
   now: number
   retroactive: boolean
   sourceId?: string
-  /** Today's catalogue (1, the default) or the rebuild's (2). Generation 2 reads no owned cards and no ledger. */
-  generation?: FlairGeneration
   /**
    * Every card id ever bonded, to any Uma in any tier (06 §7, §9): `everBondedCardIds` over every Uma's bonds and tier
-   * histories. Required in generation 2, read by Card Partners and the Era and Type Bonded one-offs.
+   * histories, read by Card Partners and the Era and Type Bonded one-offs.
    */
-  bondedCardIds?: readonly string[]
+  bondedCardIds: readonly string[]
 }
 
 export interface TrainerReconcileResult {
@@ -130,7 +112,6 @@ export interface TrainerAchievementProgress {
   frozenAllKeys: string[]
 }
 
-const NORMAL_STAGES = BADGE_TIERS.slice(0, 4)
 
 function sortedUnique(values: readonly string[]): string[] {
   return [...new Set(values)].sort((left, right) => left.localeCompare(right))
@@ -156,16 +137,6 @@ function countRows(values: ReadonlyMap<string, number>): CountFact[] {
 function setCount(target: Map<string, number>, key: string, count: number): void {
   if (!Number.isSafeInteger(count) || count < 0) throw new Error(`Trainer aggregate is invalid: ${key}`)
   target.set(key, count)
-}
-
-function isCouponRedemption(row: TrainerLedgerRow): boolean {
-  if (row.data.reason === 'card-coupon-redeem') {
-    return row.data.resource === 'card-coupons' && row.data.delta === -1 && /^card-coupon-redeem:[A-Za-z0-9_.:-]+$/.test(row.id)
-  }
-  if (row.data.reason === 'uma-coupon-redeem') {
-    return row.data.resource === 'uma-coupons' && row.data.delta === -1 && /^uma-coupon-redeem:[A-Za-z0-9_.:-]+$/.test(row.id)
-  }
-  return false
 }
 
 function titleDenominator(races: readonly RaceTemplate[]): string[] {
@@ -218,28 +189,36 @@ function fixedDefinition(
 
 const typeLabel = (type: string): string => `${type.charAt(0).toLocaleUpperCase()}${type.slice(1)}`
 
-/** Today's fixed achievements that generation 2 retires with cards owned, stars and coupons (06 §7, 13 §1). */
-const RETIRED_IN_GENERATION_2: ReadonlySet<string> = new Set(['trainer:card-collector', 'trainer:maxed-out', 'trainer:coupon-clipper'])
-
 /**
- * Generation 2's Trainer catalogue (06 §7, 04 §9): today's fixed achievements without the retired ones, Veteran
- * Stable on the lifetime level, Card Partners, Promotions and Hall of Fame, and the Era and Type Bonded one-offs in
- * place of today's Era and Type Complete.
+ * The Trainer catalogue (06 §7, 04 §9): the fixed achievements, Veteran Stable on the lifetime level, Card Partners,
+ * Promotions and Hall of Fame, and the Era and Type Bonded one-offs.
  */
-function generationTwoCatalog(
-  today: readonly TrainerAchievementDefinition[],
-  cards: readonly SupportCardTemplate[],
-  titleKeys: string[],
-): TrainerAchievementCatalogV1 {
+export function buildTrainerAchievementCatalog(input: {
+  umas: readonly UmaTemplate[]
+  cards: readonly SupportCardTemplate[]
+  races: readonly RaceTemplate[]
+}): TrainerAchievementCatalogV1 {
+  const umaIds = sortedUnique(input.umas.map((uma) => uma.id))
+  const titleKeys = titleDenominator(input.races)
   const definitions: TrainerAchievementDefinition[] = [
-    ...today.filter((row) => !RETIRED_IN_GENERATION_2.has(row.awardKey)).map((row) => row.awardKey === 'trainer:veteran-stable'
-      ? { ...row, description: 'Raise Umas to lifetime level 50 or higher.' }
-      : row),
+    fixedDefinition('trainer:stable-master', 'Stable Master', 'Own Umas across the current private catalog.', 'collection', 'owned-umas', TRAINER_ACHIEVEMENT_THRESHOLDS.stableMaster, 'catalog-umas', umaIds),
+    fixedDefinition('trainer:stable-wins', 'Stable Wins', 'Win races across the Stable.', 'stable', 'stable-wins', TRAINER_ACHIEVEMENT_THRESHOLDS.stableWins),
+    fixedDefinition('trainer:stable-g1s', 'Stable G1s', 'Win G1 races across the Stable.', 'stable', 'stable-g1s', TRAINER_ACHIEVEMENT_THRESHOLDS.stableG1s),
+    fixedDefinition('trainer:stat-badges', 'Stat Badges', 'Earn stat and Balanced badge stages across the Stable.', 'stable', 'stat-badge-stages', TRAINER_ACHIEVEMENT_THRESHOLDS.statBadges),
+    fixedDefinition('trainer:badge-hoarder', 'Badge Hoarder', 'Earn badge stages, one-offs, Ribbons, and Honors across the Stable.', 'stable', 'badge-stages', TRAINER_ACHIEVEMENT_THRESHOLDS.badgeHoarder),
+    fixedDefinition('trainer:title-holders', 'Title Holders', 'Hold distinct title definitions across the Stable.', 'stable', 'distinct-titles', TRAINER_ACHIEVEMENT_THRESHOLDS.titleHolders, 'catalog-titles', titleKeys),
+    fixedDefinition('trainer:graduations', 'Graduations', 'Complete scenarios across the Stable.', 'journey', 'graduations', TRAINER_ACHIEVEMENT_THRESHOLDS.graduations),
+    fixedDefinition('trainer:veteran-stable', 'Veteran Stable', 'Raise Umas to lifetime level 50 or higher.', 'stable', 'veteran-umas', TRAINER_ACHIEVEMENT_THRESHOLDS.veteranStable),
+    fixedDefinition('trainer:legendary-stable', 'Legendary Stable', 'Raise Umas to the current maximum level.', 'stable', 'legendary-umas', TRAINER_ACHIEVEMENT_THRESHOLDS.legendaryStable),
+    fixedDefinition('trainer:heirs', 'Heirs', 'Start scenarios with at least one direct parent.', 'journey', 'parented-starts', TRAINER_ACHIEVEMENT_THRESHOLDS.heirs),
+    fixedDefinition('trainer:stable-goals', 'Stable Goals', 'Complete tracked Journey goals across the Stable.', 'journey', 'stable-goals', TRAINER_ACHIEVEMENT_THRESHOLDS.stableGoals),
+    fixedDefinition('trainer:honors-collector', 'Honors Collector', 'Earn Journey Honors across the Stable.', 'journey', 'honors', TRAINER_ACHIEVEMENT_THRESHOLDS.honorsCollector),
+    fixedDefinition('trainer:family-tree', 'Family Tree', 'Have distinct Umas serve as a direct parent.', 'journey', 'parent-holders', TRAINER_ACHIEVEMENT_THRESHOLDS.familyTree),
     fixedDefinition('trainer:card-partners', 'Card Partners', 'Bond distinct support cards, to any Uma in any tier.', 'collection', 'bonded-cards', TRAINER_ACHIEVEMENT_THRESHOLDS.cardPartners),
     fixedDefinition('trainer:promotions', 'Promotions', 'Promote Umas to the next tier across the Stable.', 'journey', 'promotions', TRAINER_ACHIEVEMENT_THRESHOLDS.promotions),
     fixedDefinition('trainer:hall-of-fame', 'Hall of Fame', 'Induct Umas into the Hall of Fame.', 'journey', 'hall-of-fame', TRAINER_ACHIEVEMENT_THRESHOLDS.hallOfFame),
   ]
-  for (const era of [...new Set(cards.map((card) => card.era))].sort((left, right) => left - right)) {
+  for (const era of [...new Set(input.cards.map((card) => card.era))].sort((left, right) => left - right)) {
     definitions.push({
       awardKey: `trainer:era-bonded:${era}`,
       label: `Era ${era} Bonded`,
@@ -250,10 +229,10 @@ function generationTwoCatalog(
       aggregateKey: `bonded-era:${era}`,
       thresholds: [],
       allThresholdKey: `catalog-era:${era}`,
-      frozenKeys: sortedUnique(cards.filter((card) => card.era === era).map((card) => card.id)),
+      frozenKeys: sortedUnique(input.cards.filter((card) => card.era === era).map((card) => card.id)),
     })
   }
-  for (const type of sortedUnique(cards.map((card) => card.type))) {
+  for (const type of sortedUnique(input.cards.map((card) => card.type))) {
     definitions.push({
       awardKey: safeDynamicKey('trainer:type-bonded', type),
       label: `${typeLabel(type)} Bonded`,
@@ -264,73 +243,7 @@ function generationTwoCatalog(
       aggregateKey: safeDynamicKey('bonded-type', type),
       thresholds: [],
       allThresholdKey: safeDynamicKey('catalog-type', type),
-      frozenKeys: sortedUnique(cards.filter((card) => card.type === type).map((card) => card.id)),
-    })
-  }
-  definitions.sort((left, right) => left.awardKey.localeCompare(right.awardKey))
-  return { version: TRAINER_ACHIEVEMENT_CATALOG_VERSION, definitions, titleDenominatorKeys: titleKeys, generation: 2 }
-}
-
-export function buildTrainerAchievementCatalog(input: {
-  umas: readonly UmaTemplate[]
-  cards: readonly SupportCardTemplate[]
-  races: readonly RaceTemplate[]
-  /** Today's catalogue (1, the default) or the rebuild's (2). */
-  generation?: FlairGeneration
-}): TrainerAchievementCatalogV1 {
-  const umaIds = sortedUnique(input.umas.map((uma) => uma.id))
-  const cardIds = sortedUnique(input.cards.map((card) => card.id))
-  const titleKeys = titleDenominator(input.races)
-  const definitions: TrainerAchievementDefinition[] = [
-    fixedDefinition('trainer:stable-master', 'Stable Master', 'Own Umas across the current private catalog.', 'collection', 'owned-umas', TRAINER_ACHIEVEMENT_THRESHOLDS.stableMaster, 'catalog-umas', umaIds),
-    fixedDefinition('trainer:card-collector', 'Card Collector', 'Own SSR support cards across the current private catalog.', 'collection', 'owned-cards', TRAINER_ACHIEVEMENT_THRESHOLDS.cardCollector, 'catalog-cards', cardIds),
-    fixedDefinition('trainer:maxed-out', 'Maxed Out', 'Take support cards to 3★, their max, in any scenario.', 'collection', 'maxed-cards', TRAINER_ACHIEVEMENT_THRESHOLDS.maxedOut),
-    fixedDefinition('trainer:coupon-clipper', 'Coupon Clipper', 'Redeem Card and Uma Select Coupons.', 'collection', 'coupon-redemptions', TRAINER_ACHIEVEMENT_THRESHOLDS.couponClipper),
-    fixedDefinition('trainer:stable-wins', 'Stable Wins', 'Win races across the Stable.', 'stable', 'stable-wins', TRAINER_ACHIEVEMENT_THRESHOLDS.stableWins),
-    fixedDefinition('trainer:stable-g1s', 'Stable G1s', 'Win G1 races across the Stable.', 'stable', 'stable-g1s', TRAINER_ACHIEVEMENT_THRESHOLDS.stableG1s),
-    fixedDefinition('trainer:stat-badges', 'Stat Badges', 'Earn stat and Balanced badge stages across the Stable.', 'stable', 'stat-badge-stages', TRAINER_ACHIEVEMENT_THRESHOLDS.statBadges),
-    fixedDefinition('trainer:badge-hoarder', 'Badge Hoarder', 'Earn badge stages, one-offs, Ribbons, and Honors across the Stable.', 'stable', 'badge-stages', TRAINER_ACHIEVEMENT_THRESHOLDS.badgeHoarder),
-    fixedDefinition('trainer:title-holders', 'Title Holders', 'Hold distinct title definitions across the Stable.', 'stable', 'distinct-titles', TRAINER_ACHIEVEMENT_THRESHOLDS.titleHolders, 'catalog-titles', titleKeys),
-    fixedDefinition('trainer:graduations', 'Graduations', 'Complete scenarios across the Stable.', 'journey', 'graduations', TRAINER_ACHIEVEMENT_THRESHOLDS.graduations),
-    fixedDefinition('trainer:veteran-stable', 'Veteran Stable', 'Raise Umas to level 50 or higher.', 'stable', 'veteran-umas', TRAINER_ACHIEVEMENT_THRESHOLDS.veteranStable),
-    fixedDefinition('trainer:legendary-stable', 'Legendary Stable', 'Raise Umas to the current maximum level.', 'stable', 'legendary-umas', TRAINER_ACHIEVEMENT_THRESHOLDS.legendaryStable),
-    fixedDefinition('trainer:heirs', 'Heirs', 'Start scenarios with at least one direct parent.', 'journey', 'parented-starts', TRAINER_ACHIEVEMENT_THRESHOLDS.heirs),
-    fixedDefinition('trainer:stable-goals', 'Stable Goals', 'Complete tracked Journey goals across the Stable.', 'journey', 'stable-goals', TRAINER_ACHIEVEMENT_THRESHOLDS.stableGoals),
-    fixedDefinition('trainer:honors-collector', 'Honors Collector', 'Earn Journey Honors across the Stable.', 'journey', 'honors', TRAINER_ACHIEVEMENT_THRESHOLDS.honorsCollector),
-    fixedDefinition('trainer:family-tree', 'Family Tree', 'Have distinct Umas serve as a direct parent.', 'journey', 'parent-holders', TRAINER_ACHIEVEMENT_THRESHOLDS.familyTree),
-  ]
-  if (input.generation === 2) return generationTwoCatalog(definitions, input.cards, titleKeys)
-
-  const eras = [...new Set(input.cards.map((card) => card.era))].sort((left, right) => left - right)
-  for (const era of eras) {
-    const ids = sortedUnique(input.cards.filter((card) => card.era === era).map((card) => card.id))
-    definitions.push({
-      awardKey: `trainer:era-complete:${era}`,
-      label: `Era ${era} Complete`,
-      description: `Own every support card in era ${era}.`,
-      category: 'collection',
-      tags: ['trainer', 'collection', `era:${era}`],
-      kind: 'one-off',
-      aggregateKey: `owned-era:${era}`,
-      thresholds: [],
-      allThresholdKey: `catalog-era:${era}`,
-      frozenKeys: ids,
-    })
-  }
-  const types = sortedUnique(input.cards.map((card) => card.type))
-  for (const type of types) {
-    const ids = sortedUnique(input.cards.filter((card) => card.type === type).map((card) => card.id))
-    definitions.push({
-      awardKey: safeDynamicKey('trainer:type-complete', type),
-      label: `${type.charAt(0).toLocaleUpperCase()}${type.slice(1)} Complete`,
-      description: `Own every ${type} support card.`,
-      category: 'collection',
-      tags: ['trainer', 'collection', `type:${type}`],
-      kind: 'one-off',
-      aggregateKey: safeDynamicKey('owned-type', type),
-      thresholds: [],
-      allThresholdKey: safeDynamicKey('catalog-type', type),
-      frozenKeys: ids,
+      frozenKeys: sortedUnique(input.cards.filter((card) => card.type === type).map((card) => card.id)),
     })
   }
   definitions.sort((left, right) => left.awardKey.localeCompare(right.awardKey))
@@ -342,21 +255,17 @@ function assertUniqueIds<T>(rows: readonly T[], id: (row: T) => string, label: s
   if (new Set(ids).size !== ids.length) throw new Error(`Duplicate Trainer ${label}`)
 }
 
-/** Generation 2's promotions: the scenarios that close tiers 1 and 2, each graduated only at promotion (04 §9). */
+/** The promotions: the scenarios that close tiers 1 and 2, each graduated only at promotion (04 §9). */
 const PROMOTION_SCENARIOS: ReadonlySet<number> = new Set(Object.values(FLAIR_PROMOTION_SCENARIOS))
 
 function aggregateFacts(input: TrainerReconcileInput, catalog: TrainerAchievementCatalogV1): CountFact[] {
-  // Generation 2 has no card entities and no coupons (06 §9): the ever-bonded set stands in for ownership.
-  const g2 = input.generation === 2
+  // There are no card entities (06 §9): the ever-bonded set stands in for ownership.
   assertUniqueIds(input.ownedUmas, (row) => row.templateId, 'Uma contributor')
-  assertUniqueIds(input.ownedCards, (row) => row.templateId, 'Card contributor')
   assertUniqueIds(input.contributors, (row) => row.umaId, 'badge contributor')
-  assertUniqueIds(input.ledger, (row) => row.id, 'ledger contributor')
   const knownUmaIds = new Set(input.umas.map((row) => row.id))
   const knownCardIds = new Set(input.cards.map((row) => row.id))
   const umas = [...input.ownedUmas].filter((row) => knownUmaIds.has(row.templateId)).sort((left, right) => left.templateId.localeCompare(right.templateId))
-  const cards = g2 ? [] : [...input.ownedCards].filter((row) => knownCardIds.has(row.templateId)).sort((left, right) => left.templateId.localeCompare(right.templateId))
-  const bondedIds = g2 ? sortedUnique((input.bondedCardIds ?? []).filter((id) => knownCardIds.has(id))) : []
+  const bondedIds = sortedUnique(input.bondedCardIds.filter((id) => knownCardIds.has(id)))
   const contributorMap = new Map(input.contributors.map((row) => [row.umaId, row]))
   const contributors = umas.map((uma) => {
     const state = contributorMap.get(uma.templateId)
@@ -367,16 +276,10 @@ function aggregateFacts(input: TrainerReconcileInput, catalog: TrainerAchievemen
   setCount(facts, 'owned-umas', umas.length)
   setCount(facts, 'catalog-umas', input.umas.length)
   setCount(facts, 'catalog-cards', input.cards.length)
-  if (g2) {
-    setCount(facts, 'bonded-cards', bondedIds.length)
-    setCount(facts, 'promotions', contributors.reduce((sum, state) =>
-      sum + state.facts.completedScenarioTiers.filter((tier) => PROMOTION_SCENARIOS.has(tier)).length, 0))
-    setCount(facts, 'hall-of-fame', contributors.filter((state) => state.facts.completedScenarioTiers.includes(FLAIR_HALL_OF_FAME_SCENARIO)).length)
-  } else {
-    setCount(facts, 'owned-cards', cards.length)
-    setCount(facts, 'maxed-cards', cards.filter((card) => bestCardStars(card) === MAX_STARS).length)
-    setCount(facts, 'coupon-redemptions', input.ledger.filter(isCouponRedemption).length)
-  }
+  setCount(facts, 'bonded-cards', bondedIds.length)
+  setCount(facts, 'promotions', contributors.reduce((sum, state) =>
+    sum + state.facts.completedScenarioTiers.filter((tier) => PROMOTION_SCENARIOS.has(tier)).length, 0))
+  setCount(facts, 'hall-of-fame', contributors.filter((state) => state.facts.completedScenarioTiers.includes(FLAIR_HALL_OF_FAME_SCENARIO)).length)
   setCount(facts, 'stable-wins', contributors.reduce((sum, state) => sum + state.facts.wins, 0))
   setCount(facts, 'stable-g1s', contributors.reduce((sum, state) => sum + countFact(state.facts.gradeWins, 'g1'), 0))
   setCount(facts, 'stat-badge-stages', contributors.reduce((sum, state) => sum + state.awards.badges.filter((award) => award.awardKey.startsWith('badge:stat:') || award.awardKey === 'badge:balanced').length, 0))
@@ -392,30 +295,28 @@ function aggregateFacts(input: TrainerReconcileInput, catalog: TrainerAchievemen
   setCount(facts, 'honors', contributors.reduce((sum, state) => sum + state.facts.honorsTiers.length, 0))
   setCount(facts, 'parent-holders', contributors.filter((state) => state.facts.legacyEvidence.length > 0).length)
 
-  // Today counts the cards owned in each era and type; generation 2 the cards ever bonded.
-  const heldCardIds = new Set(g2 ? bondedIds : cards.map((card) => card.templateId))
-  const held = g2 ? 'bonded' : 'owned'
+  // The cards ever bonded in each era and type.
+  const heldCardIds = new Set(bondedIds)
   for (const era of [...new Set(input.cards.map((card) => card.era))].sort((left, right) => left - right)) {
     const bucket = input.cards.filter((card) => card.era === era)
     setCount(facts, `catalog-era:${era}`, bucket.length)
-    setCount(facts, `${held}-era:${era}`, bucket.filter((card) => heldCardIds.has(card.id)).length)
+    setCount(facts, `bonded-era:${era}`, bucket.filter((card) => heldCardIds.has(card.id)).length)
   }
   for (const type of sortedUnique(input.cards.map((card) => card.type))) {
     const bucket = input.cards.filter((card) => card.type === type)
     setCount(facts, safeDynamicKey('catalog-type', type), bucket.length)
-    setCount(facts, safeDynamicKey(`${held}-type`, type), bucket.filter((card) => heldCardIds.has(card.id)).length)
+    setCount(facts, safeDynamicKey('bonded-type', type), bucket.filter((card) => heldCardIds.has(card.id)).length)
   }
   for (const uma of umas) {
     const state = contributorMap.get(uma.templateId)!
     setCount(facts, safeDynamicKey('fingerprint-uma', uma.templateId), hashText(JSON.stringify({ uma, facts: state.facts, awards: state.awards })))
   }
-  for (const card of cards) setCount(facts, safeDynamicKey('fingerprint-card', card.templateId), hashText(JSON.stringify(card)))
   setCount(facts, 'fingerprint-content', hashText(JSON.stringify({
     umas: input.umas.map((row) => row.id).sort(),
     cards: input.cards.map((row) => [row.id, row.era, row.type]).sort(([left], [right]) => String(left).localeCompare(String(right))),
     titles: catalog.titleDenominatorKeys,
-    // Generation 2 has no card rows to fingerprint, so the ever-bonded set joins the content's.
-    ...(g2 ? { bonded: bondedIds } : {}),
+    // There are no card rows to fingerprint, so the ever-bonded set joins the content's.
+    bonded: bondedIds,
   })))
   return countRows(facts)
 }
@@ -529,7 +430,6 @@ export function reconcileTrainerState(input: TrainerReconcileInput): TrainerReco
     const checked = parseBadgeState(contributor)
     if (!checked || checked.scope !== 'uma' || checked.umaId !== contributor.umaId) throw new Error(`Trainer contributor is invalid: ${contributor.umaId}`)
   }
-  if (input.generation === 2 && input.bondedCardIds === undefined) throw new RangeError('Generation 2 reconciles the ever-bonded set: bondedCardIds is required')
   const catalog = buildTrainerAchievementCatalog(input)
   const aggregates = aggregateFacts(input, catalog)
   const records = deriveRecords(input)
@@ -577,7 +477,6 @@ export function reconcileTrainerState(input: TrainerReconcileInput): TrainerReco
     evaluatorVersion: TRAINER_ACHIEVEMENT_EVALUATOR_VERSION,
     sourceWatermarks: {
       contributors: input.ownedUmas.filter((uma) => input.umas.some((template) => template.id === uma.templateId)).length,
-      ledgerEntries: input.ledger.length,
       contentVersion: input.contentVersion,
     },
     aggregates,
@@ -604,8 +503,8 @@ export function projectTrainerAchievementProgress(
     if (!complete && definition.kind === 'one-off') nextThreshold = countFact(state.aggregates, definition.allThresholdKey!)
     else if (!complete && nextStage >= 0 && nextStage < 4) nextThreshold = definition.thresholds[nextStage] ?? null
     else if (!complete && nextStage === 4 && definition.allThresholdKey) nextThreshold = countFact(state.aggregates, definition.allThresholdKey)
-    // Generation 2's five-stage meters without an all-threshold (Card Partners' 200) show their fifth step too.
-    else if (!complete && nextStage === 4 && catalog.generation === 2) nextThreshold = definition.thresholds[4] ?? null
+    // Five-stage meters without an all-threshold (Card Partners' 200) show their fifth step too.
+    else if (!complete && nextStage === 4) nextThreshold = definition.thresholds[4] ?? null
     return {
       definition,
       value,
@@ -635,19 +534,15 @@ export function trainerHighestStage(awards: readonly EarnedBadgeStage[], awardKe
 export function trainerContentCounts(state: TrainerBadgeStateV1): {
   ownedUmas: number
   catalogUmas: number
-  ownedCards: number
   catalogCards: number
-  maxedCards: number
   badgeStages: number
-  /** Generation 2's "Cards bonded x/N" (06 §7): the ever-bonded set within the catalogue. */
+  /** "Cards bonded x/N" (06 §7): the ever-bonded set within the catalogue. */
   bondedCards: number
 } {
   return {
     ownedUmas: countFact(state.aggregates, 'owned-umas'),
     catalogUmas: countFact(state.aggregates, 'catalog-umas'),
-    ownedCards: countFact(state.aggregates, 'owned-cards'),
     catalogCards: countFact(state.aggregates, 'catalog-cards'),
-    maxedCards: countFact(state.aggregates, 'maxed-cards'),
     badgeStages: countFact(state.aggregates, 'badge-stages'),
     bondedCards: countFact(state.aggregates, 'bonded-cards'),
   }
