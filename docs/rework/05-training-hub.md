@@ -759,7 +759,7 @@ A locked item is never a dead end: it says what it needs and links to the step t
 | `umas/{outfitId}` unlocks | `constellationOpened` (0–28: the count, since order is fixed); Inspiration `slots` (up to six ids), `uniques` (up to six slot ids, D336) and `golds` (up to twelve keys, `<slot>:gold0` for gold 1 and `<slot>:gold1` for gold 2, today's `inspirationGoldKey`); Extra Stats `nodes` (ids such as `speed-03`, `duo-power-speed-3`, `sun-4`); `active` Extra ids per preset; bonds ([06](06-cards-and-bonds.md)) |
 | `work/{outfitId}` | Her session: facility, room, slot, start time, the ordered unlocks (kind, target id, grade, dish id, minutes), reserved dish ids, Speed Ticket minutes applied, the facility speed it started at |
 | `buildings/{id}` | Each facility's level |
-| `itemLedger` | Reserve, return and consume rows for every dish, keyed by the session's operation id |
+| `itemLedger` | Reserve and return rows for every dish, keyed by the session's operation id (the unlock itself is no item) |
 
 Operations: `start`, `queue`, `collect`, `collect-all`, `repeat`, `recall`, `speed-up` and `set-active-nodes`, plus a
 facility `upgrade`. Each is checked by the domain on the API and returns its first receipt on a retry.

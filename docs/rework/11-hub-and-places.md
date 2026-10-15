@@ -53,7 +53,7 @@ Two clarifications of the old plan:
 | Trainer button | The trainer's initial | Account | Never |
 | **Prize Money** | Balance, with its coin icon | Exchange | Never |
 | **Speed Tickets** | Count, with the ticket icon | Exchange, at the Speed Tickets row | Never (shows 0) |
-| **Uma Tickets** | Count, with the Uma Shards toward the next one ("2 · 3/5") | Stable, Locked tab | Never ([04](04-tiers-and-promotion.md) §6: Shards keep coming from every tier) |
+| **Uma Tickets** | Count, with the Uma Shards toward the next one ("2 · 3/5"; held at 5/5 in gold once a ticket can be made, since the exchange is a tap) | Stable, Locked tab | Never ([04](04-tiers-and-promotion.md) §6: Shards keep coming from every tier) |
 | **Sync** | Offline, Sync paused, or **Sync** in amber or red (D157) | Account, at the sync row | Synced |
 
 Numbers move with a CSS transition when they change (continuous HUD values never use springs). A race's prize flies
@@ -84,7 +84,7 @@ It is account-wide on every page: one tap collects Farm jobs and Training sessio
 `/` decides once, at launch:
 1. **A new account with no Umas** opens the Stable's Locked tab, to pick the first 20 with 20 Uma Tickets
    ([13](13-removals-and-plan-changes.md) §5).
-2. **Anything needs a tap** (the app badge's count: an Uma Ready, Free or Waiting, [02](02-check-ins-and-notifications.md) §7):
+2. **Anything needs a tap** (the app badge's count: an Uma Ready or Free, [02](02-check-ins-and-notifications.md) §7):
    the **Farm page**, where a check-in happens.
 3. **Otherwise the last page viewed**, kept per device (`uma-racer:g2:lastPage`), or Town Hall the first time.
 
@@ -108,7 +108,7 @@ Page ids, routes and the order of swiping: `town`, `training`, `racing`, `farm`.
 | **Warehouse** (`warehouse`) | Every item: Raw, Crafted, Dishes and Tickets shelves; family and grade filters; each row's reserved, coming and needed counts; the stock sheet with **Make more** and **Sell** ([07](07-farm.md) §10, [09](09-racing-rewards-and-exchange.md) §6) | The biggest stacks; what the planner is short of; "Surplus worth 1,240" | — | Open | `/farm/items` |
 | **Exchange** (`exchange`) | Speed Tickets and raw ingredients ([09](09-racing-rewards-and-exchange.md) §5) | Prize Money, Speed Tickets held, the planner's top shortage with its price | — (its currencies are in the account bar) | Open | Nothing (new) |
 | **Card Library** (`card-library`) | Every SSR, open (D329): lens and Uma controls, sorts, filters, the card page with its bond cost and bonded Umas, **Bond** into the Dojo's session sheet ([06](06-cards-and-bonds.md) §6) | The newest cards; bonds made this tier; cards the featured Uma could bond now | — | Open | `/cards`, `/cards/:cardId` |
-| **Account** (`account`, hidden) | Trainer name; check-in times and Notifications ([02](02-check-ins-and-notifications.md)); sync status and Sync now (D157); reduced motion and default race speed; build id and content version; sign-out; dev mode in dev builds only | — | — | Open; reached from the trainer button and the menu, not drawn on the map | `/settings` |
+| **Account** (`account`, hidden) | Trainer name; check-in times and Notifications ([02](02-check-ins-and-notifications.md)); sync status and Sync now (D157); reduced motion and default race speed; app build and content (02 §9 keeps "id" and "version" off the screen); sign-out; dev mode in dev builds only | — | — | Open; reached from the trainer button and the menu, not drawn on the map | `/settings` |
 
 ### 3.2 Training (`/training`)
 
@@ -124,7 +124,7 @@ Each facility's Page is [05](05-training-hub.md) §8's: header with level, slots
 
 | Place (id) | Opens | Peek | Counter | Lock | Replaces |
 |---|---|---|---|---|---|
-| **Observatory** (`observatory`) | Constellation node sessions; per Uma, her tree: open nodes, card and lineage assignments, the next node and its Vegetables dish | Slots with faces and finish times; Umas with nodes left in their layer; Vegetables dishes in stock | Umas with a finished session here | Open | `/constellation/:umaId` |
+| **Observatory** (`observatory`) | Constellation node sessions; per Uma, her tree: open nodes, card assignments (lineage picks are the Lineage Hall's), the next node and its Vegetables dish | Slots with faces and finish times; Umas with nodes left in their layer; Vegetables dishes in stock | Umas with a finished session here | Open | `/constellation/:umaId` |
 | **Lineage Hall** (`lineage-hall`) | Inspiration sessions; per Uma, her parents and grandparents (any Uma ever owned) and their golds | Same, with Mushrooms dishes | Same | Open | `/constellation/:umaId/inspiration` |
 | **Gym** (`gym`) | Five stat rooms of Extra Stats sessions; per Uma, her Extra Stats map and active nodes per preset | Rooms with faces; Umas with nodes left by stat; stat, Duo and Feast dishes in stock | Same | Open | `/constellation/:umaId/extra-stats` |
 | **Dojo** (`dojo`) | Six card-type rooms of bond sessions; per Uma, her bonds and her card set per preset ([06](06-cards-and-bonds.md) §3) | Rooms with faces; bonds left this layer | Same | Open | `/constellation/:umaId/cards`, `/stable/:umaId/deck` |
@@ -274,7 +274,7 @@ Every route in `apps/web/src/app/router.tsx` today:
 | `/dev/*` (thirteen proof routes) | Deleted with their systems. New dev proofs live under `/dev/` beside the places they prove |
 
 **The redirect rule** (the re-architecture's, made concrete): each "After" path above is a redirect that **ships with
-phase 3** and **is deleted with phase 4**, by when the installed app, bookmarks and notification links all use the new
+phase 3** and **is deleted with the next phase that ships** (phase 4 is optional), by when the installed app, bookmarks and notification links all use the new
 paths. Saved data holds no paths, so nothing else changes. An unknown path goes to `/`.
 
 ## 8. Today's Home panels
@@ -419,7 +419,7 @@ Shipping the routes and registry in phase 3, not 6, means links change once.
 | Per-Uma build views live at their facility (`/training/:facility/:umaId`) | Today's four Training-scene tabs map one to one onto the four facilities |
 | The planner's routes are `/town/stable/needs` and each profile's `/needs` | The planner is about Umas, so it lives with the Stable |
 | `/training/:umaId` is dropped, not redirected | It would shadow `/training/:facility`; it was already a legacy redirect |
-| Redirects ship with phase 3 and leave with phase 4 | "One release" made concrete |
+| Redirects ship with phase 3 and leave with the next phase that ships | "One release" made concrete |
 | Routes, registry and menu ship in phase 3 on DOM tiles; the canvas in phase 6 | Links change once; the new game is playable before its art |
 | Reused frames: `stable`, `warehouse`, `exchange`, `observatory`, `party-hall` (Lineage Hall), `brawler-dojo` (Dojo), `scenario-gate`, `tier-finale` (Expedition Map), and the ten `farmlands` buildings | They read right at 48 px |
 | New frames: `racecourse`, `trophy-hall`, `card-library`, `gym`, in the shared `buildings` atlas | Nothing existing reads right; one atlas for every Hub |
@@ -431,7 +431,7 @@ Shipping the routes and registry in phase 3, not 6, means links change once.
 
 - The app opens per §2.4. Every screen is reachable from a place, and every place from the ☰ menu.
 - Each "Today" path in §7.2 redirects to its "After" path in phase 3 (a router test walks the table), deleted paths
-  land on `/`, and the redirects are gone after phase 4.
+  land on `/`, and the redirects are gone with the next phase that ships.
 - The place registry is one table in `@racer/domain/hub`, and the live manual renders the same table.
 - At 390×844 every place button is at least 44 pt, swipes and tabs agree, and VoiceOver reads each place's name, lock,
   counter and pips.

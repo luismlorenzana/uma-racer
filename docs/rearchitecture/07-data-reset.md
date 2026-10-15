@@ -106,7 +106,7 @@ removed from production builds and kept behind `import.meta.env.DEV` for local t
 
 ## 6. Order of the cutover
 
-All in one release (phase 2 in [08](08-phases.md)):
+All in one release (phase 3 in [08](08-phases.md)'s revised table, [M034](../tasks/M034-generation-2-cutover.md)):
 1. Tag `pre-split` on today's `main`.
 2. Merge the generation-2 cutover: new save, new database, protocol v2, the purge endpoint, the RPG deleted.
 3. CI verifies and deploys the API and the web app together.

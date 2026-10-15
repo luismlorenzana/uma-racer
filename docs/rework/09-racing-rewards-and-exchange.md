@@ -346,7 +346,7 @@ Each stack in the Warehouse shows three counts:
 
 The stock sheet offers **Sell ×1**, **×10**, **Surplus** (free minus needed) and **All free**, with the unit price and
 the total. It asks once when the sale:
-- includes any **dish** ("Sell 2 grade-3 Vegetable dishes for 580? Each took about 15 hours of work.");
+- includes any **dish** ("Sell 2 grade-3 Vegetable dishes for 698? Each took about 17 hours of work.");
 - dips into **needed** stock ("This leaves the planner 4 short for Hishi Akebono's Observatory layer.");
 - is worth **1,000 or more**.
 
@@ -382,7 +382,7 @@ A reload shows the stored result, its prize and band from the saved row, without
 | **A stale Exchange screen** | A `buy` carries the unit price the screen showed. If the price has changed, the server refuses it with "Price changed", charges nothing, and the screen refreshes |
 | **Short of money at the server** | Refused with nothing charged; the local purchase rolls back with a notice |
 | **A retried operation** | Returns its first receipt; nothing is charged or paid twice (§9) |
-| **Closing the app mid-race** | The result is settled when the race starts, as today, so quitting the playback can't change the prize or the purse. Reopening shows the result |
+| **Closing the app mid-race** | The result is settled when the race starts (today's app settles when playback ends), so quitting the playback can't change the prize or the purse. Reopening shows the result |
 | **A promoted Uma** | Prize Money, Speed Tickets and the Warehouse are the account's and carry ([04](04-tiers-and-promotion.md)). Her races in tier 2 pay the same table |
 | **An Uma bought mid-tier** | Changes nothing here. The Exchange's stock never drops, and her first races pay like anyone's |
 | **An Uma at Racing Level 50, or held** | Racing EXP follows [03](03-uma-progression.md); Prize Money is paid as usual, so racing a finished Uma still feeds the Farm, through the purse |
@@ -402,7 +402,7 @@ Generation 2's kinds ([13](13-removals-and-plan-changes.md) §6), with what this
 | `profile/main` | `exchangeGrade` (1–10) | The stock rule's high-water mark |
 | `items/speed-ticket` | count | Speed Tickets are an item |
 | `raceResults` row | `prize: { gross, paid, band, expedition, featuredBonus }` | What the result screen shows on reload |
-| `ledger` (log) | `{ id, at, currency, delta, balanceAfter, reason, ref }` | Prize Money movements (and [04](04-tiers-and-promotion.md)'s Uma Ticket and Shard movements) |
+| `ledger` (log) | `{ id, resource, delta, reason, at }`, the built `LedgerEntry` (D340, D345); the id carries the cause | Prize Money movements (and [04](04-tiers-and-promotion.md)'s Uma Ticket and Shard movements) |
 | `itemLedger` (log) | as today | Speed Tickets and items bought, sold and used |
 
 **Ledger reasons:** `race-prize`, `featured-bonus`, `buy`, `sell`, `upgrade` (with the building id), `promotion`

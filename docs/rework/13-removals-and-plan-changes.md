@@ -59,7 +59,7 @@ titles. Past achievement rows don't survive the wipe, so nothing is migrated.
 | **D321** clean skeleton, rules ported | Stands. The "keep" list loses Puzzles battles, the Friendship minigame, card progression, CL spend and today's Farm rules. The rework's new rules are written fresh in the domain ([08 phases](#4-the-phases-revised), phase 2) |
 | **D322** RPG deleted | Stands. Its **Inspiration-from-goal-wins** half is superseded by D326: there are no tokens. Its Convert moves nowhere; it is deleted with the tokens |
 | **D323** generation 2, wipe, 20 Uma Tickets | Stands. The new account changes (§5) |
-| **D324** Phaser 4 | Stands, and its exception closes: the Puzzles are deleted, so PixiJS leaves the repo in the cutover, not later |
+| **D324** Phaser 4 | Stands. The Puzzles are deleted in the cutover, so PixiJS is left only in the race scene until phase 8 ports it (M034) |
 | **D325** uma-platform owns data, art, kit | Stands, and grows. uma-art's `items`, `dishes` and `farmlands` buildings now cover the whole Farm, so the planned new `farm` family shrinks to nothing. The `racer` buildings family is what [11](11-hub-and-places.md) lists as new. `uma-idle` adopts one-after-another production with queues, which both games now share |
 
 And these older decisions are superseded:
@@ -87,7 +87,7 @@ they're deleted. The order becomes:
 | **5** | Platform master data and the first shared packages | Was phase 3 |
 | **6** | The Hub: four pages, the place registry, art ([11](11-hub-and-places.md)) | Was phase 4, with the new place list |
 | **7** | The Farm and Training Hub as pixel-art scenes on `uma-idle` | Was phase 5, now also the Training page |
-| **8** | The race on Phaser | Was phase 6; PixiJS is already gone |
+| **8** | The race on Phaser | Was phase 6; PixiJS leaves the repo with it (M034) |
 | **9** | **World Expeditions:** the 13 pools (136 race families), about 89 new course layouts in a private overlay, about 70 invented local champions, the Expedition Map, and `sim:expeditions` ([10](10-expeditions.md)) | **New.** All 13 must ship before the first Uma completes tier 1's last career, about **16–20 weeks after phase 3** |
 | **9b** | **Race engine v10:** optional going, weather and mood-shift inputs, identical to v9 without them. Tier 3's Expedition mechanics need it. The original's ground penalties ([research/race-mechanics.md](../research/race-mechanics.md)) are researched first | **New.** Needed only before the first Uma reaches tier 3's Expedition, about a year in |
 
@@ -132,7 +132,7 @@ logs and operations in one sync lane. The kinds change:
 |---|---|
 | `profile/main` | Prize Money, Uma Tickets, Uma Shards, the Daily Purse (`purse`) and the Exchange's stock grade (`exchangeGrade`, [09](09-racing-rewards-and-exchange.md) §9), featured Uma, the planner's targets (up to five, in order), check-in times (up to four; default 08:00, 13:00, 22:30), Repeat's sizing setting, created at, `generation: 2` ([02](02-check-ins-and-notifications.md)) |
 | `umas/{outfitId}` | Tier, scenario, Racing Level and EXP, Farm Level and EXP, career, unlocks (constellation count, Inspiration slots, uniques and golds, Extra Stats nodes, active Extra nodes per preset), bonds, four presets (card set, assignments, loadout), lineage picks, her Expedition state (runs, each run's frozen pool, wins by race family; [10](10-expeditions.md)), promotion history |
-| `buildings/{id}` | Each Farm building's and Training facility's level and slots |
+| `buildings/{id}` | Each Farm building's and Training facility's level (its slots follow from it; work rows hold them) |
 | `work/{outfitId}` | Her running job or session and its queue: kind, place, recipe or unlocks, batch size, reserved inputs, start time, Speed Tickets applied, her last job for Repeat, and a dropped queue with its reason until the owner acts on it |
 | `items/{itemId}`, `itemLedger` | The Warehouse |
 | `badges/…` | Badge state, as today |
@@ -142,6 +142,7 @@ Every change is an **operation** re-run by the API with the domain package:
 - `start` (also restarting a dropped queue), `queue` (add, remove, move, dismiss a dropped queue), `collect`,
   `collect-all`, `repeat`, `recall`, `speed-up` (one entry or all), `finish`, `upgrade`, `advance-scenario`;
 - `set-targets`, `set-check-in-times` and `set-repeat-sizing` ([02](02-check-ins-and-notifications.md) §10);
+- `finish-race` (a race's commit, [09](09-racing-rewards-and-exchange.md) §9), `exchange-shards`, `induct`, `feature-uma` and `set-race-defaults` (M034's specs);
 - `set-active-nodes`, `set-lineage` and the preset edits (card set, assignments, loadout); a bond is an ordinary Dojo session, so it needs no operation of its own;
 - `buy`, `sell`;
 - `unlock-uma`, `promote`.
@@ -170,7 +171,7 @@ materials and Energy.
 | The new game ships on plain DOM screens first | The owner plays the new game sooner; the canvas Hub and scenes follow without a reset |
 | Push notifications are an optional port of uma-rpg's (phase 4) | The owner's rule (D336): nothing outside what uma-rpg already set up |
 | Expeditions get their own phase with a deadline | The first Umas reach them about 20 weeks after the new game starts |
-| PixiJS leaves in the cutover | The Puzzles are deleted with it, so D324's exception closes |
+| PixiJS leaves with the race's port (phase 8); the cutover deletes every other PixiJS scene | Porting the race in the cutover would add risk to the riskiest phase (M034) |
 | No per-account card state | Every card is open; bonds belong to Umas |
 
 ## 9. Done when
@@ -179,4 +180,4 @@ materials and Energy.
 - After phase 3, `git grep -i -E "puzzle|friendship|constellation level|training ticket|card coupon|inspiration token"`
   over `apps`, `packages` and `scripts` finds only the decisions log and this folder.
 - The new account on the owner's iPhone matches §5, and the save holds only §6's kinds.
-- `pixi.js` is not in any `package.json`.
+- After phase 8, `pixi.js` is not in any `package.json`; after phase 3, it is imported only under `scenes/race/`.

@@ -341,7 +341,7 @@ ringed by her output's progress) and a **Ready** badge. Tapping one opens its pe
 
 At 390 × 844, top to bottom:
 1. **Header:** name, level, slots in use ("5 of 6"), speed, **Upgrade** (price and items, with stock), and (i) help.
-2. **Needed now:** the planner's lines for this building ([02](02-check-ins-and-notifications.md)), lowest grade first:
+2. **For your targets:** the planner's lines for this building ([02](02-check-ins-and-notifications.md)), lowest grade first:
    "Chopped Carrot × 12 for 3 Umas' constellation nodes · have 4 · coming 6". Tapping a line opens the job sheet with
    it filled in.
 3. **Slot cards**, one per slot:
@@ -439,7 +439,7 @@ Today's Farm, the Stable Kitchen (M031, D304–D320; [design/farm-kitchen-rework
 | **Farm EXP per listed minute, paid at collection, in quarter points** | Farm Level measures work done; building speed and tickets bring it sooner without changing its meaning |
 | **Grade gate on every step; a dish gated by its own grade** | One rule; sides of lower grade never block a cook |
 | **Lv 47–50 open nothing; EXP stops at Lv 50** | Grade 10 opens at 46 by the README's formula; the last levels close the tier's track |
-| **Slots: Kitchen 6/8, Pantry 3/4, Vegetable Garden 4/5, other sites 2/3; Lv 3 ×1.25** | Sized to the slot demand (§6): Lv 1 carries 20 Umas, Lv 2 carries 25 under 90% |
+| **Slots: Kitchen 6/8, Pantry 3/5 (D351), Vegetable Garden 4/5, other sites 2/3; Lv 3 ×1.25** | Sized to the slot demand (§6): Lv 1 carries 20 Umas, Lv 2 carries 25 under 90% |
 | **Upgrade prices** (§7): sites 1,200 / 2,400, Pantry 1,500 / 6,000, Kitchen 3,000 / 12,000 PM, plus items | Six to ten days' payback on the Uma-time saved; Lv 2 with the first racing, Lv 3 from grade 3 |
 | **A slot is held by a job, not an Uma** | One passive thing at a time stays simple, and sessions never fight a standing Farm seat |
 | **Repeat restarts each free Uma's last job** | Matches "Repeat to restart every job and session"; no hidden reservations |

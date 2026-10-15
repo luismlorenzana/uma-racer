@@ -199,7 +199,7 @@ The Card Library is a place in the **Town Hall** ([11](11-hub-and-places.md), D3
 the shared album chrome ([Collection](../design/collection.md#albums)): sticky search, Sort and Filter, filter chips,
 saved views, three view modes, compare and long-press actions.
 
-**Lens and Uma.** A chip row picks the **lens**: **All**, or one of the 15 scenarios (D131). A second control picks an
+**Lens and Uma.** A chip row picks the **lens**: **All**, or one of the playable scenarios (14 until the 15th ships, D131). A second control picks an
 **Uma**: when one is set, the lens follows her scenario and every tile shows her bond state. The Library opens on the
 featured Uma.
 
@@ -217,7 +217,7 @@ bottom-right pill, which held stars, now shows:
 
 **NEW** marks a card a content update added since the owner last opened it (device-local, as today).
 
-**The card page** (`/cards/:id`):
+**The card page** (`/town/card-library/card/:cardId`, [11](11-hub-and-places.md) §7):
 1. **The illustration**, full width, cropped 4:5, name over its foot, type icon on the art. A tap opens the art viewer.
 2. **Chips:** type, era ("Era 3 · Trackblazer"), running style, distance.
 3. **What it pays:** its split with the stat icons; its per-node pay in the lens scenario, and the `eraPct` it keeps in

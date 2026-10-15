@@ -132,7 +132,7 @@ collecting. At 390 × 844 it reads top to bottom, with the primary action in the
 | Section | What it lists | One-tap fixes |
 |---|---|---|
 | **Collected** | Totals, then a line per notable change: unlocks, Farm Level-ups, new grades open, queues that moved on. Everything else folds into "41 items" | Tap a line to open that Uma or place |
-| **Free** | Umas with nothing running or queued, each with the planner's suggestion (§6) and its fitted size | **Start suggestions** starts them all; tapping a line swaps it for another suggestion or opens the place |
+| **Free** | Umas with nothing running or queued, each with the planner's suggestion (§6) and its fitted size | **Start suggestions** starts them all; tapping a line opens its sheet with the suggestion preselected or opens the place |
 | **Queue stopped** | Queues that dropped since the last visit: the entry that couldn't start, when, and which input was short by how many. The dropped entries are kept here so they can be put back | **Buy and restart**: buys the shortfall at the Exchange ([09](09-racing-rewards-and-exchange.md)) and restarts the entry with the rest of its queue. **Start ×8**: restarts it at the size the stock covers. **Make them**: starts the missing input with a free Uma, preselected and sized |
 | **Couldn't repeat** | Jobs Repeat skipped (§5), with the reason: no inputs, layer done for that facility, no free slot ("Kitchen full") | The same fixes, or **Pick another** |
 | **Training done** | Umas whose current scenario layer is complete | **Race**, which opens her next goal race |
@@ -221,7 +221,7 @@ Reserved inputs of running work are already spent; the planner never counts them
 | Where | Shows |
 |---|---|
 | **Her Needs tab** | Layer progress (Observatory 8/12, Lineage Hall 1/2, Gym 4/10, Dojo 3/6), then the cascade: dishes short → crafted short → raw short. Then an estimate, "about 120 Uma-hours of work", and the three jobs that unblock her most, each with **Start** |
-| **Each Farm site, the Pantry and the Kitchen** | **For your targets:** what the targets need from this place, lowest grade first. Each line reads "Vegetables G3 · short 6 · Warehouse 4 · coming 2 (Gold Ship, 14:10)". Tapping a line starts it in a free slot with the suggested Uma and a fitted size. The recipe picker badges target lines ("Target ×3") |
+| **Each Farm site, the Pantry and the Kitchen** | **For your targets:** what the targets need from this place, lowest grade first. Each line reads "Vegetables G3 · short 6 · Warehouse 4 · coming 2 (Gold Ship, 14:10)". Tapping a line opens the job sheet with it filled in ([07](07-farm.md) §10). The recipe picker badges target lines ("Target ×3") |
 | **Each Training facility** | Per target: unlocks left here, dishes ready, dishes coming. **Start** when she's free and a dish is in stock |
 | **The check-in summary** | Its suggestions for free Umas (§4) |
 | **Roster view** | The planner's totals for every Uma's layer at once: unlocks left, dishes short by family and grade. Big-picture only; place lists stay with the targets |
@@ -304,7 +304,7 @@ The rules are today's ([farm-kitchen-rework](../design/farm-kitchen-rework.md) �
   owns the formula. **Closed and offline time counts.**
 - **Nothing runs while the app is closed, and nothing needs to.** On opening, the app recomputes every card from the
   timestamps. It applies queued starts in time order (§3), refreshes the badge and summary counts, flushes the outbox
-  and pulls the other device's changes. While open, one minute clock that pauses when the app is hidden updates the
+  and pulls the other device's changes. While open, a 30-second clock that pauses when the app is hidden updates the
   labels, without writes.
 - **Everything works offline:** Collect all, Repeat, starts, queue edits and races. They commit locally and sync later
   as operations ([rearchitecture 01](../rearchitecture/01-target-architecture.md) §4.3).
@@ -322,7 +322,7 @@ The rules are today's ([farm-kitchen-rework](../design/farm-kitchen-rework.md) �
 
 ### Never paid twice
 
-- **Every tap is one operation with an id chosen before it's written.** A retried operation returns its first receipt
+- **Every tap is one operation with an id chosen before it's written** (or a few in order, each with its own id, as Start suggestions and Buy and restart are). A retried operation returns its first receipt
   and is never applied twice ([13](13-removals-and-plan-changes.md) §6).
 - **A Collect all or Repeat whose answer was lost** is retried from the outbox with the same id. The server returns
   the first receipt, and the summary shows the same result. Nothing is paid, reserved or started twice.
@@ -392,7 +392,7 @@ The planner, suggestions, finish times and the badge count are **derived on read
 | Push is optional and only a port of uma-rpg's D63/D65, built if the owner asks after playing (D336) | The owner's rule: nothing outside what uma-rpg already set up |
 | The racer's changes are limited to sessions, counting Umas, reading per-entity rows, quiet hours and silence while the app is open | What the racer's rules need, and no more |
 | A stale screen re-checks and runs, shows the earlier result, or re-asks with new numbers; never an error | D320 |
-| **Bond picks are an input:** the planner and its suggestions take the cards the owner has chosen to bond next, per Uma (T131) | §6 cascades only chosen bonds, and [13](13-removals-and-plan-changes.md) §6 saves no picks; phase 3 decides whether the Dojo sheet's picks persist |
+| **Bond picks are an input:** the planner and its suggestions take the cards the owner has chosen to bond next, per Uma (T131); generation 2 doesn't save them (T134) | §6 cascades only chosen bonds, and [13](13-removals-and-plan-changes.md) §6 saves no picks; phase 3 decides whether the Dojo sheet's picks persist |
 | If ×1 already overruns the next check-in, the picker fits the one after | §3 is silent; marking ×1 idles her until the following visit anyway |
 | Local time comes from the device's UTC offset, passed in; the sim passes 0. An operation that fits a size (Repeat's fit, Speed up all to the next check-in) carries it in its input | The rules stay pure, and a re-run sees the same local time; a DST night is off by an hour at most, once |
 | There are 1–4 check-in times, never none | "Up to four" (§3), and fitting needs at least one |

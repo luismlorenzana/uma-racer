@@ -514,7 +514,7 @@ Nothing is lost, so there's nothing to confirm, and she needn't be free.
 | **Keeps racing** | Her last scenario's fields, for Prize Money, badges, titles and trophies; no Racing EXP |
 | **Keeps working** | On the Farm and in the Training Hub; any unlock she never finished can still be finished |
 | **Pays one Uma Ticket** | Like a promotion, so the account can bring in a new Uma (ledger `promotion-uma-ticket:{umaId}:3`) |
-| **Lives in the Hall of Fame** | A Town Hall place ([11](11-hub-and-places.md)): each inductee's portrait, induction date, the three Expeditions she completed, her titles, and her final stats per preset in each tier (from her tier history). Her Stable tile wears a gold frame |
+| **Lives in the Hall of Fame** | In phase 3 a gold frame and a chip on her profile; a place of its own comes with the canvas Hub ([11](11-hub-and-places.md)): each inductee's portrait, induction date, the three Expeditions she completed, her titles, and her final stats per preset in each tier (from her tier history). Her Stable tile wears a gold frame |
 | **Keeps her Expedition runs, and may start others** | Any other Expedition, at tier-3 difficulty, for its title alone, as [10](10-expeditions.md) recommends. Her state isn't cleared, since there's no next tier |
 | **Can advance into the 15th** | If she was inducted from Tracen Diner before it shipped (§2) |
 

@@ -21,7 +21,7 @@ and bonded per Uma, uma-rpg's farming catalogue, Prize Money and the Exchange, a
 |---|---|---|
 | 1 | M032 — a sound base: the API on the workspace domain, the startup budget, GitHub Packages, the live manual | **Done, 2026-10-14** (D337) |
 | 2 | M033 — the rework's rules and `sim:loop` (T125–T133) | **Done, 2026-10-14** (D340–D351) |
-| 3 | The generation-2 cutover and the new game on plain screens | **Next:** specified after the owner's pacing calls. **The owner starts the new game here** |
+| 3 | [M034 — the generation-2 cutover and the new game](M034-generation-2-cutover.md) | **Next.** T134–T144 specified; T134 and T137 can start in parallel. **The owner starts the new game here, after saying "go"** |
 | 4 | Push notifications, a port of uma-rpg's | Only if the owner asks after playing (D336) |
 | 5–8 | Platform master data · the Hub · the Farm and Training scenes · the race on Phaser | Specified in turn |
 | 9 | World Expeditions | Starts when phase 3 ships; must land within about 16–20 weeks of it |
@@ -32,7 +32,7 @@ fixed only when they block play, since phase 3 deletes most of those systems.
 **Retired unbuilt (D339):** M024 (T081), M010 (T035) and M011 (T036–T039). The rework removes what they built on.
 Game feel and device acceptance for the new game are planned after phase 3.
 
-**Next free numbers: M034 and T134.** Numbers are never reused, so a decision that mentions T014 always means the same
+**Next free numbers: M035 and T145.** Numbers are never reused, so a decision that mentions T014 always means the same
 work. T057 was consumed by the per-scenario limit-break branch and is not reused.
 
 ## Completed and removed
