@@ -1,7 +1,6 @@
 # T139 — Training places
 
-**M034 · the place wave: needs T136 and T137; runs beside T138 and T140–T142, its Dojo card choices after T138's
-Library · not started.**
+**M034 · the place wave: T134–T138, T140 and T141 have landed; runs beside T142 · not started.**
 
 Read:
 - [AGENTS.md](../../AGENTS.md) and [M034](M034-generation-2-cutover.md), whose "Fixed choices" bind this task.
@@ -11,8 +10,13 @@ Read:
 - The modules it calls: `rework/training` (unlocks, order, facilities, extra, bonds, build, derive, sessions),
   `rework/constellation`, `rework/work`, `rework/farm` (buildings), `rework/planner`, `rework/check-in` and
   `rework/exchange` (`buy`). T134–T137 and T142 are specified beside it: use their exports by the M034 table.
-- [T138](T138-town-hall.md) (the Uma picker, the Card Library's pick mode) and T140 (landed, D358; [rework/07](../rework/07-farm.md) §14): the
-  shared `g2/ui/work/` pieces (`SlotCard` with its `what` slot for an unlock line, `SpeedUpControls`, `RecallSheet`,
+- T138 (landed, D356; [rework/11](../rework/11-hub-and-places.md) §13, [06](../rework/06-cards-and-bonds.md) §11):
+  `g2/ui/UmaPicker` (a portal), `CardLibrary` with `mode: 'browse' | 'pick'` in `g2/places/card-library/`, `g2/ui/{Sheet,
+  Tabs, ArtSquare, words}`, the profile's build links to `/training/:facility/:umaId`, `set-race-defaults` (her selected
+  preset), and the Card Library's Bond link `/training/dojo?session=&room=&unlocks=bond:<id>&back=`, which adds
+  `&queue=1` when the owner picks **Queue** for a busy Uma (her running Dojo session in that room): this task honours
+  it by opening on **Add to queue**.
+- T140 (landed, D358; [rework/07](../rework/07-farm.md) §14): the shared `g2/ui/work/` pieces (`SlotCard` with its `what` slot for an unlock line, `SpeedUpControls`, `RecallSheet`,
   `QueueChips`, `SizeChips`, `useTap`, `TapNoteLine`, `useWorkView`, `showWords`), `g2/ui/ItemIcon`, and the job sheet's
   link `sheetQuery` in `g2/places/farm/building/model.ts`; the first of T138–T140 to land adds a shared piece to its
   owner's contract. Today's `TrainingScene`, `ConstellationScreen`, `ExtraStatsScreen`, `CardSetScreen`
