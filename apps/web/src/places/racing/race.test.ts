@@ -95,7 +95,9 @@ describe('Start race commits finish-race (09 §8–§9)', () => {
     const row = records.raceResults[id]!
     expect(row).toMatchObject({ umaId: 'sim-uma-03', raceId: G1(), opId: id, tier: 1 })
     expect(row.commit).toEqual(receipts[id]!.local)
-    expect(state!.operations![id]!.name).toBe('finish-race')
+    // As the device save keeps it: the confirmed tap's log row is read through the port, never from the state.
+    expect(state!.operations).toBeUndefined()
+    expect((await game.logs!.operation(id))?.name).toBe('finish-race')
     expect(records.badges['uma:sim-uma-03']?.scope).toBe('uma')
     expect(records.badges.trainer?.scope).toBe('trainer')
     expect(Object.keys(records.badges).filter((key) => key.startsWith('uma:'))).toHaveLength(25)

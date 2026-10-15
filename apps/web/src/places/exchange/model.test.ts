@@ -4,7 +4,7 @@ import { buyPrice, SPEED_TICKET_PRICE } from '@racer/domain/economy'
 import { hasBannedWord } from '@racer/domain/check-in'
 import { describe, expect, it } from 'vitest'
 import { account, umaIds } from '../../__fixtures__/testing-ops'
-import { buyCheck, buyQuestion, exchangeView, rawFamily, speedTicketPrice, topShortage, typedQty } from './model'
+import { boughtWords, buyCheck, buyQuestion, exchangeView, rawFamily, SPEED_TICKETS, speedTicketPrice, topShortage, typedQty } from './model'
 
 describe('raw ingredients (09 §5.3)', () => {
   it('stocks grade 1 on a new account, at buyPrice, with grade 2 locked in not-stocked\'s words', () => {
@@ -42,6 +42,13 @@ describe('Buy (09 §5.5)', () => {
     expect(buyCheck(5_000, 108, 10)).toEqual({ total: 1_080, short: null, asks: true })
     expect(buyCheck(500, 108, 99).short).toBe('Need 10,192 more.')
     expect(buyQuestion(10, 'Carrot', 1_080)).toBe('Buy 10 Carrot for 1,080?')
+  })
+
+  it('names one Speed Ticket in the singular, before and after the Buy', () => {
+    expect(buyQuestion(1, SPEED_TICKETS, 30)).toBe('Buy 1 Speed Ticket for 30?')
+    expect(boughtWords(1, SPEED_TICKETS, 30)).toBe('Bought 1 Speed Ticket for 30.')
+    expect(boughtWords(10, SPEED_TICKETS, 300)).toBe('Bought 10 Speed Tickets for 300.')
+    expect(boughtWords(25, 'Carrot', 2_700)).toBe('Bought 25 Carrot for 2,700.')
   })
 
   it('reads a typed amount from 1', () => {

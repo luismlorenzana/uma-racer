@@ -16,7 +16,7 @@
 import type { BadgeStateV1, FlairEventV1 } from '@racer/domain'
 import type { HubView, hubView } from '@racer/domain/hub'
 import type { Answer, OperationEnv, OperationInput, OperationName, OperationReceipt, Words } from '@racer/domain/check-in'
-import type { LedgerEntry } from '@racer/domain/state'
+import type { LedgerEntry, OperationRecord } from '@racer/domain/state'
 import type { WorkState } from '@racer/domain/work'
 import type { ItemLedgerRow, RaceResultRow } from '@racer/domain/save'
 import { createContext, useContext, useMemo, useSyncExternalStore } from 'react'
@@ -139,6 +139,12 @@ export interface G2Logs {
   itemLedgerRows(): Promise<ItemLedgerRow[]>
   /** An operation's receipt: the snapshot's latest, else the server's from the operations log. */
   receipt(id: string): Promise<unknown>
+  /**
+   * An operation's log row (its name, time and receipt): a queued tap's own, else the confirmed `operations` row; null
+   * when the device has neither. The rules' state never carries it once the tap is confirmed (T136), so a screen that
+   * needs more than the receipt (the Scenario Gate's ceremony) reads it here.
+   */
+  operation(id: string): Promise<OperationRecord | null>
 }
 
 /** The rules the shell runs, loaded with the port so the entry chunk holds none of them. */

@@ -8,6 +8,7 @@
 // ends the race as soon as it mounts.
 import { act, cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { hasBannedWord } from '@racer/domain/check-in'
 import { renderG2, seedGame, stubStorage } from '../../__fixtures__/testing'
 import { raceTurns, timelineDuration } from '@racer/race'
 import { hudTurn, TURN_RACE_RATE } from '../../scenes/race/presentation'
@@ -47,6 +48,13 @@ beforeEach(() => {
   stubStorage()
   scene.reducedMotion = null
   scene.rates = []
+})
+
+/** The element `selector` names, once it has rendered. */
+const rendered = (selector: string) => waitFor(() => {
+  const element = document.querySelector(selector)
+  expect(element).not.toBeNull()
+  return element!
 })
 
 /** Starts her G1 from race select and waits for the run page; returns the result's id. */
@@ -94,6 +102,11 @@ describe('the Racecourse', () => {
     setRaceSpeed(2)
     const { where } = renderG2('/racing/racecourse?uma=sim-uma-01&race=sim-g1-medium-a', seedGame('busy'))
     await startRace(where)
+    // The title sits on the page's light top: ink, never white (the rehearsal could barely read it).
+    const title = await rendered('[data-g2="run-title"]')
+    expect(title.textContent).toBe('sim-g1-medium-a')
+    expect(title.className).toMatch(/\btext-ink\b/)
+    expect(title.className + title.nextElementSibling!.className).not.toMatch(/text-white/)
     const speeds = await screen.findByRole('group', { name: 'Playback speed' })
     expect(within(speeds).getByRole('button', { name: '2×' }).getAttribute('aria-pressed')).toBe('true')
     expect(within(speeds).getByRole('button', { name: '1×' }).getAttribute('aria-pressed')).toBe('false')
@@ -157,7 +170,9 @@ describe('the Scenario Gate', () => {
     const { where } = renderG2(`/racing/scenario-gate/${umaId}?sheet=advance`, game)
     await screen.findByText('The new layer')
     const sheetButton = () => document.querySelector<HTMLButtonElement>('[data-advance]')!
-    await act(async () => { await game.run('set-active-nodes', { umaId, preset: 'medium', nodeIds: [] }) })
+    // A real change to her: an equal copy (any sync's) isn't one, and advances on the first tap (ceremony.test.tsx).
+    const preset = game.getSnapshot().state!.umas[umaId]!.raceDefaults.selectedPreset === 'sprint' ? 'mile' : 'sprint'
+    await act(async () => { await game.run('set-race-defaults', { umaId, selectedPreset: preset }) })
     fireEvent.click(sheetButton())
     expect(await screen.findByText('Her build changed.')).toBeTruthy()
     fireEvent.click(sheetButton())
@@ -199,6 +214,17 @@ describe('the Scenario Gate', () => {
 })
 
 describe('the Expedition Map, a placeholder', () => {
+  it('says in its Peek that no Uma is ready yet, and lists nobody there', async () => {
+    renderG2('/racing?peek=expedition-map', seedGame('busy'))
+    const peek = await waitFor(() => {
+      const element = document.querySelector('[data-g2="map-peek"]')
+      expect(element).not.toBeNull()
+      return element!
+    })
+    expect(peek.textContent).toBe('No Uma is ready for an Expedition yet. The Map shows how far each one has to go.')
+    expect(hasBannedWord(peek.textContent!)).toBe(false)
+  })
+
   it('offers no Start and sends an Expedition’s route back to the Map', async () => {
     const { where } = renderG2('/racing/expedition-map/us-speed', seedGame('busy'))
     await screen.findByText('No Uma has finished her tier yet')

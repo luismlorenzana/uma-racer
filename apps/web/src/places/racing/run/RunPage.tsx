@@ -220,8 +220,9 @@ export default function RunPage() {
             <ChevronLeftIcon size={20} />
           </button>
           <div className="min-w-0 flex-1 text-center">
-            <p className="truncate text-lg leading-tight font-semibold text-white text-outline">{race.name}</p>
-            <p className="text-xs font-semibold text-white/90 text-outline">{gradeWords(race.grade)} · {race.distance}m · {STRATEGY_LABEL[row.run.strategy]}</p>
+            {/* The header sits on the page's light top, not the course: ink, as every page header is. */}
+            <p className="truncate text-lg leading-tight font-semibold text-ink" data-g2="run-title">{race.name}</p>
+            <p className="text-xs font-semibold text-ink-soft">{gradeWords(race.grade)} · {race.distance}m · {STRATEGY_LABEL[row.run.strategy]}</p>
           </div>
           <button type="button" onClick={() => sceneRef.current?.skipToEnd()} className="flex h-11 min-w-11 items-center justify-center rounded-full border border-hairline bg-panel/85 px-2" aria-label={racingWords('skip')}>
             <SkipIcon size={20} variant="solid" />

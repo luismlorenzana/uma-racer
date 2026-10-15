@@ -179,7 +179,9 @@ loop itself runs on the domain's source, and its test runs the checks in CI.
   keys and never sync. TanStack Query is for network data only.
 - **One port.** The shell and every place read the game only through `G2Game` (`app/game.ts`): status, the folded
   state, the Hub view, sync, receipts and notices, `run` for a tap (the domain's `recheck`, then the operation), `logs`
-  for race results, the ledger and the Warehouse's movements, and `writeDevice` for badge and flair rows. Every tap and
+  for race results, the ledger, the Warehouse's movements and an operation's own row (its name, time and receipt: the
+  folded state never holds a confirmed tap's, so the Scenario Gate's ceremony reads it here), and `writeDevice` for
+  badge and flair rows. The seeds' in-memory port has the same shape: its operations live beside the state. Every tap and
   device write holds the update prompt's restart until it commits (`criticalGameplayAction`).
 - **The session** (`app/session.tsx`) boots the device save once the private content is ready, since operations need
   its env. Before the save has opened, a signed-out phone or content that can't load gets one full-screen panel in the

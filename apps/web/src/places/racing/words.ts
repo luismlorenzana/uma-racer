@@ -184,7 +184,7 @@ export const RACING_WORDS = Object.freeze({
   'map-ready': 'Ready for her World Expedition. Expeditions open in a later update; she keeps racing, and nothing is lost.',
   'map-promote': 'Her Expedition is complete',
   'map-peek-ready': '{n} ready for an Expedition',
-  'map-peek-none': 'Each Uma is listed with her way to the Expedition.',
+  'map-peek-none': 'No Uma is ready for an Expedition yet. The Map shows how far each one has to go.',
   // The Trophy Hall (badges.md).
   'scope-uma': 'Uma',
   'scope-stable': 'Stable',

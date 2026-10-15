@@ -155,6 +155,15 @@ export function sellSheet(row: StockRow): SellSheet {
   }
 }
 
+/**
+ * A size's button, saying what it sells (09 §6.1): ×1 and ×10 are capped at what is held, so with 9 held the ×10 size
+ * reads "Sell ×9"; a size of 0 keeps its name, off with its reason; Surplus and All free carry their count.
+ */
+export function sellLabel(option: Pick<SellOption, 'size' | 'qty'>): string {
+  if (option.size === 'surplus' || option.size === 'allFree') return `${SELL_LABEL[option.size]} ×${option.qty}`
+  return option.qty === 0 ? SELL_LABEL[option.size] : `Sell ×${option.qty}`
+}
+
 /** Why a size is off: there's nothing of it to sell. */
 export const sizeOffWords = (size: SellSize): string => (size === 'surplus' ? 'No surplus: the planner needs all of it.' : 'None to sell.')
 

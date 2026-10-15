@@ -19,7 +19,7 @@ export function speedUpQuestion(model: SpeedUpModel): string | null {
   if (model.state === 'buy') {
     return model.buy === 1 && model.wastedMinutes > 0 && model.finish === 1
       ? workWords('buy-waste', { price: grouped(model.price), minutes: model.wastedMinutes })
-      : workWords('buy-finish-ask', { n: model.buy, price: grouped(model.price) })
+      : workWords(model.buy === 1 ? 'buy-finish-ask-one' : 'buy-finish-ask', { n: model.buy, price: grouped(model.price) })
   }
   if (model.state === 'waste') return workWords('waste', { minutes: model.wastedMinutes })
   return null
@@ -77,7 +77,7 @@ export function SpeedUpControls({ outfitId, className = '' }: { outfitId: string
         type="button"
         disabled={finishDisabled}
         onClick={() => (question === null ? void finish() : setAsking(true))}
-        aria-label={model.state === 'buy' ? finishLabel : workWords('finish-label', { n: model.finish })}
+        aria-label={model.state === 'buy' ? finishLabel : workWords(model.finish === 1 ? 'finish-label-one' : 'finish-label', { n: model.finish })}
         className={`${BUTTON} border border-hairline-strong bg-panel text-ink`}
       >
         {finishLabel}

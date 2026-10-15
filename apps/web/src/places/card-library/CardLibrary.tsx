@@ -151,7 +151,7 @@ export function CardLibrary({ mode, umaId: given, preset, eligible, onPick, titl
           <div className="space-y-2">
             <div className="-mx-4 flex gap-1.5 overflow-x-auto px-4 [scrollbar-width:none]" role="group" aria-label="Lens">
               {(['all', ...PLAYABLE] as const).map((value) => (
-                <Chip key={value} selected={album.lens === value} disabled={mode === 'pick'} onClick={() => setLens(value)} className="min-h-11"
+                <Chip key={value} selected={album.lens === value} disabled={mode === 'pick'} onClick={() => setLens(value)} className="min-h-11 min-w-11 justify-center"
                   aria-label={value === 'all' ? 'Every card' : `Scenario ${value}, ${scenarioRow(value).name}`}>
                   {value === 'all' ? 'All' : album.lens === value ? `${value} · ${scenarioRow(value).name}` : value}
                 </Chip>
