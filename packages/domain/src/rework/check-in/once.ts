@@ -3,8 +3,11 @@
 // returns the receipt stored under that id and changes nothing, or runs the operation and stores its first receipt in
 // the `operations` log, so a retried Collect all or Repeat pays, reserves and starts nothing twice. A refusal changes
 // nothing and stores nothing. `recheck` is the stale-screen rule: an action is checked against the latest state and
-// then runs, shows the earlier result, or asks again in one sentence with the new numbers; never an error.
-import { buy, type BuyInput } from '../exchange/exchange'
+// then runs, shows the earlier result, or asks again in one sentence with the new numbers; never an error. After an
+// operation applies, the Exchange's stock mark rises to the highest grade a current Farm Level opens (09 §5.3, D345):
+// phase 3's collect commit, so every collect path (a collect, Collect all, Recall, Repeat, a start's collect-first)
+// raises it on the device and the server alike, and the Farm's rules stay free of the Exchange (T140).
+import { buy, farmLevelsOf, stockedGrade, type BuyInput } from '../exchange/exchange'
 import { sell, type SellInput } from '../exchange/selling'
 import type { ScenarioCatalogue } from '../tiers/map'
 import type { TierContent } from '../tiers/career'
@@ -105,7 +108,16 @@ export function runOnce<S extends WorkState, N extends OperationName>(state: S, 
   const result = run(state, call.input, now, env, call.id)
   if (isRefusal(result)) return result
   const operations = { ...(result.state.operations ?? {}), [call.id]: { name: call.name, at: now, receipt: result.receipt } }
-  return { state: { ...result.state, operations }, receipt: result.receipt, repeated: false }
+  return { state: { ...withStockMark(result.state), operations }, receipt: result.receipt, repeated: false }
+}
+
+/**
+ * The state with the Exchange's stock mark raised to `stockedGrade` over every current Farm Level (09 §5.3, §10; D345).
+ * Only a collect lifts a Farm Level, so it is a no-op after anything else; the mark never drops, promotion included.
+ */
+export function withStockMark<S extends WorkState>(state: S): S {
+  const grade = stockedGrade(state.profile, farmLevelsOf(state))
+  return grade === state.profile.exchangeGrade ? state : { ...state, profile: { ...state.profile, exchangeGrade: grade } }
 }
 
 /** What a screen shows after a tap (02 §9): a result, the earlier result, a question with new numbers, or a rule. */
