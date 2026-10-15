@@ -15,6 +15,11 @@ const DIST_MANIFEST = fileURLToPath(new URL('../../dist/.vite/manifest.json', im
 /** Today's pieces `g2/` may import, by path under `src/` without extension. */
 const G2_ALLOWED: readonly RegExp[] = [
   /^ui\/(Button|BottomSheet|Panel|Row|Chip|Pill|SegmentedControl|Meter|Numeral|AtlasSprite|Placeholder)$/,
+  // T141: the race and badge pages' generic pieces, kept by T143 with the race scene and the badge records.
+  /^ui\/(TypeIcon|RaceMarkIcon|FlairCards|CardFocusIcons|IconChoiceRow|PresetBadge|Crest|Section)$/,
+  // T141: today's pure race and badge views, imported as they are (they read `UmaSave` through `careerView`), and the
+  // race's accomplishment facts. T143 moves them with the race scene; none touches today's store or Dexie.
+  /^game\/(race-plan|race-fit|race-facts|goals-view|flair-view|badge-collection-view|trainer-view|badge-frame)$/,
   /^ui\/icons(\/index)?$/,
   /^ui\/icons\/defineIcon$/,
   /^ui\/motionFeatures$/,
@@ -56,6 +61,9 @@ const underSrc = (file: string, specifier: string): string =>
 
 const isInside = (file: string): boolean => resolve(file).startsWith(G2 + sep)
 
+/** The Racing places, which read today's race and badge rules at the domain root (T141). */
+const RACING = /^g2\/places\/racing\//
+
 describe('the g2 boundaries', () => {
   it("imports only today's surviving generic pieces from outside g2/", () => {
     const offenders: string[] = []
@@ -63,7 +71,11 @@ describe('the g2 boundaries', () => {
     expect(sources.length).toBeGreaterThan(30)
     for (const file of sources) {
       for (const { specifier, typeOnly } of imports(file)) {
-        if (specifier === '@racer/domain' && !typeOnly) offenders.push(`${relative(SRC, file)}: today's domain root, beyond types`)
+        // T141: the Racing places call today's race, badge and flair rules, which live at the domain root until T143 moves
+        // them (M034 "What stays as it is"); every other place reads the root for types only.
+        if (specifier === '@racer/domain' && !typeOnly && !RACING.test(relative(SRC, file).split(sep).join('/'))) {
+          offenders.push(`${relative(SRC, file)}: today's domain root, beyond types`)
+        }
         if (!specifier.startsWith('.')) continue
         const target = resolve(dirname(file), specifier)
         if (isInside(target)) continue
