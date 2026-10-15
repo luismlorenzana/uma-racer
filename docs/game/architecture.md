@@ -25,6 +25,8 @@ A pnpm 10 workspace with Turbo, on Node 22, in strict TypeScript.
 | `@racer/domain` | Everything | `src/index.ts`; `dist/cjs/index.js` under `require` |
 | `@racer/domain/farm`, `/farm/kitchen` | The Farm | `src/farm/…`; `dist/cjs/farm/…` |
 | `@racer/domain/puzzles/<module>` | The API's Puzzle operations | `src/minigames/uma-puzzles/<module>.ts`; `dist/cjs/…` |
+| `@racer/domain/rework/<area>` | The rework's rules ([below](#the-rework-modules)); not in play until T143 | `src/rework/<area>/index.ts`; `dist/cjs/rework/<area>/…` |
+| `@racer/domain/save-g2` | The generation-2 save: rows, parsers, operation commits, sync v2 ([rework/13](../rework/13-removals-and-plan-changes.md) §6); not in play until T143 | `src/save-g2/index.ts`; `dist/cjs/save-g2/…` |
 
 The API resolves with Node16 rules, so it takes the `require` condition and reads the built CommonJS. Everything else
 takes `default` and reads the source. Turbo builds the domain before any package's `lint`, `test`, `build` or `dev`.
@@ -87,6 +89,12 @@ The rules every area follows:
 - **Synthetic fixtures only.** No master data, names or ids from the private packs.
 - **The tables are live blocks in the rework pages.** Each area exports `LIVE_BLOCKS`, joined in
   `packages/domain/src/docs/rework.ts`, and the docs check covers `docs/rework/*.md` as well as this manual.
+
+**Generation 2 save.** `packages/domain/src/save-g2/` (`@racer/domain/save-g2`, M034's T134) is the save these rules
+run on: eleven kinds of stamped rows, strict parsers, `initialSave` for a new account, `commitOperation` (an operation
+through `runOnce`, and the rows it writes), the mapping between rows and the rules' state, and sync v2's wire types.
+Like the rules, it is pure and not in play: the generation-2 API and web save layer build on it, and T143 makes it
+`@racer/domain/save`. Its contract is [rework/13](../rework/13-removals-and-plan-changes.md) §6.
 
 ## The web app
 

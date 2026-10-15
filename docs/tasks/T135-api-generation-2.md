@@ -5,7 +5,8 @@
 Read:
 - [AGENTS.md](../../AGENTS.md) and [M034](M034-generation-2-cutover.md). Its fixed choices bind this task: the module
   is built in `apps/api/src/save-g2/` and stays out of `AppModule` until T143; the server is the authority.
-- The [T134 spec](T134-generation-2-save.md): every row, wire type, parser, bound and `commitOperation` this task calls.
+- T134's contract, built as `@racer/domain/save-g2` and written up in [rework/13](../rework/13-removals-and-plan-changes.md)
+  §6 (D352): every row, wire type, parser, bound and `commitOperation` this task calls.
 - [rearchitecture/01](../rearchitecture/01-target-architecture.md) §4.3 and §6, [rearchitecture/07](../rearchitecture/07-data-reset.md)
   (all: the purge, stale devices, creates only), [rework/13](../rework/13-removals-and-plan-changes.md) §6,
   [rework/02](../rework/02-check-ins-and-notifications.md) §8–§9 and [rework/09](../rework/09-racing-rewards-and-exchange.md) §8.

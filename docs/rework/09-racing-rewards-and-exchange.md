@@ -401,13 +401,13 @@ Generation 2's kinds ([13](13-removals-and-plan-changes.md) §6), with what this
 | `profile/main` | `purse: { day, gross, featuredPaid }` | `day` is `YYYY-MM-DD`; `gross` the day's gross prizes; `featuredPaid` the race ids whose bonus was paid today |
 | `profile/main` | `exchangeGrade` (1–10) | The stock rule's high-water mark |
 | `items/speed-ticket` | count | Speed Tickets are an item |
-| `raceResults` row | `prize: { gross, paid, band, expedition, featuredBonus }` | What the result screen shows on reload |
+| `raceResults` row | `commit.prize: { gross, paid, band, expedition, featuredBonus }`, in the `finish-race` receipt the row keeps | What the result screen shows on reload |
 | `ledger` (log) | `{ id, resource, delta, reason, at }`, the built `LedgerEntry` (D340, D345); the id carries the cause | Prize Money movements (and [04](04-tiers-and-promotion.md)'s Uma Ticket and Shard movements) |
-| `itemLedger` (log) | as today | Speed Tickets and items bought, sold and used |
+| `itemLedger` (log) | `{ id, itemId, delta, reason, outfitId, opId, at }` ([13](13-removals-and-plan-changes.md) §6) | Speed Tickets and items bought, sold and used |
 
 **Ledger reasons:** `race-prize`, `featured-bonus`, `buy`, `sell`, `upgrade` (with the building id), `promotion`
-([04](04-tiers-and-promotion.md)), and `dev-grant` in dev builds only. Every row carries what caused it in `ref`: the
-race result id, the operation id, the building.
+([04](04-tiers-and-promotion.md)), and `dev-grant` in dev builds only. Every row's id names what caused it: the race
+result, the operation, the building.
 
 **Ids make everything idempotent.** A row's id comes from what caused it, so a retry finds the row and writes nothing:
 
@@ -416,11 +416,13 @@ race result id, the operation id, the building.
 | A race's prize | `race:<resultId>:prize`, and `race:<resultId>:featured` for a bonus |
 | `buy { opId, sku, qty, unitPrice }` | `buy:<opId>:pay` (Prize Money) and `buy:<opId>:get` (the item) |
 | `sell { opId, itemId, qty, unitPrice }` | `sell:<opId>:give` (the item) and `sell:<opId>:pay` (Prize Money) |
-| `speed-up { opId, outfitId, workStartedAt, tickets }` | `speed-up:<opId>` (the tickets). `workStartedAt` names the job, so a ticket meant for a finished job can't land on the next one |
+| `speed-up { opId, outfitId, startedAt, tickets }` | `<opId>:m<n>`, the tickets' item movement ([13](13-removals-and-plan-changes.md) §6). `startedAt` names the job, so a ticket meant for a finished job can't land on the next one |
 
 - **The race's prize is written with its result**, in the same atomic commit as the result row, the Uma, the profile's
-  balance and purse, and the ledger rows, as today's race commit writes EXP. If generation 2 models race completion as
-  an operation, it joins [13](13-removals-and-plan-changes.md)'s list as `finish-race`.
+  balance and purse, and the ledger rows. **As built (T134), a race commits as the operation `finish-race`** in
+  [13](13-removals-and-plan-changes.md)'s list: in one tap it collects her finished unlocks, pays Racing EXP, goals and
+  the gate's Shard on the preset of the race's distance, then the prize through the purse with any featured bonus, and
+  writes the `raceResults` row under the operation's id, which is the race result's.
 - **The server re-runs** `buy`, `sell` and `speed-up` with the domain package and refuses one whose price, stock,
   balance or target doesn't match. Prices live in `@racer/domain/economy`, one table, which the live manual renders.
 - **An audit:** the sum of a currency's ledger deltas equals its balance on `profile/main`. A domain test checks it on

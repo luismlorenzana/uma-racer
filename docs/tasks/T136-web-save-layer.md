@@ -5,7 +5,8 @@
 Read:
 - [AGENTS.md](../../AGENTS.md) and [M034](M034-generation-2-cutover.md). Its fixed choices bind this task: new code
   goes in `apps/web/src/g2/save/`, and nothing in today's entry imports it; server authority, local first, one lane.
-- The [T134](T134-generation-2-save.md) spec (rows, wire, `commitOperation`, `initialSave`, `toSaveState`) and the
+- T134's contract, built as `@racer/domain/save-g2` and written up in [rework/13](../rework/13-removals-and-plan-changes.md)
+  §6 (D352: rows, wire, `commitOperation`, `initialSave`, `toSaveState`), and the
   [T135](T135-api-generation-2.md) spec (what each status means: 409, 426, 503, the purge).
 - [rearchitecture/01](../rearchitecture/01-target-architecture.md) §4.2–§4.3, [rearchitecture/07](../rearchitecture/07-data-reset.md)
   §2–§4, [rework/02](../rework/02-check-ins-and-notifications.md) §8–§10 and [rework/09](../rework/09-racing-rewards-and-exchange.md) §8.
