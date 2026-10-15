@@ -50,7 +50,8 @@ export async function bootGame(search: string): Promise<G2Boot> {
   const params = new URLSearchParams(search)
   if (devSaveAsked(params)) {
     const wipe = params.has('wipe')
-    return bootDevice(async () => ({ env: (await import('../dev/seed')).SEED_ENV, wipe, purge: wipe }))
+    // `dev` as `operationEnv` sets it: a dev build runs `dev-grant` (M034), so Account's dev section works here too.
+    return bootDevice(async () => ({ env: { ...(await import('../dev/seed')).SEED_ENV, dev: import.meta.env.DEV }, wipe, purge: wipe }))
   }
   const [{ createMemoryGame }, { seedFor }, { RULES }] = await Promise.all([import('../dev/memory'), import('../dev/seed'), import('./rules')])
   return { game: createMemoryGame(seedFor(search)), rules: RULES }
