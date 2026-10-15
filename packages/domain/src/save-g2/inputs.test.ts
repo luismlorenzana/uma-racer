@@ -37,6 +37,12 @@ const SAMPLES: Readonly<Record<OperationName, readonly Record<string, unknown>[]
   sell: [{ itemId: 'carrot', qty: 1, unitPrice: 36 }],
   'unlock-uma': [{ outfitId: 'uma-01' }],
   'exchange-shards': [{}],
+  'feature-uma': [{ outfitId: 'uma-01' }],
+  'set-race-defaults': [
+    { umaId: 'uma-01', selectedPreset: 'mile' },
+    { umaId: 'uma-01', preferences: { strategy: 'late', distance: 'long', surface: 'turf' } },
+    { umaId: 'uma-01', selectedPreset: 'sprint', preferences: null },
+  ],
   'set-targets': [{ outfitIds: [] }, { outfitIds: ['uma-01', 'uma-02'] }],
   'set-check-in-times': [{ times: [480, 780, 1_350] }],
   'set-repeat-sizing': [{ sizing: 'fit' }],
@@ -61,6 +67,12 @@ const MALFORMED: Readonly<Partial<Record<OperationName, readonly unknown[]>>> = 
   'set-lineage': [{ umaId: 'uma-01', preset: 'long', lineage: { parent2: 'uma-02' } }],
   'set-card-set': [{ umaId: 'uma-01', preset: 'turf', cardSetIds: [] }],
   'set-targets': [{ outfitIds: ['uma-01', 'uma-01'] }],
+  'feature-uma': [{ outfitId: '' }, { umaId: 'uma-01' }],
+  'set-race-defaults': [
+    { umaId: 'uma-01' }, { umaId: 'uma-01', selectedPreset: 'turf' },
+    { umaId: 'uma-01', preferences: { strategy: 'late', distance: 'long' } },
+    { umaId: 'uma-01', preferences: { strategy: 'sprint', distance: 'long', surface: 'turf' } },
+  ],
   promote: [{ umaId: 'uma-01', presets: { sprint: { stats: STATS, skillPoints: 1 } } }],
   'finish-race': [
     { umaId: 'uma-02', raceId: 'race-1', placement: 2, localDay: '2026-10-14', board: [], run: raceRun('uma-01', 2) },

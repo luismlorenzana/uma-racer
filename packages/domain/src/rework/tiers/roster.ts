@@ -1,14 +1,18 @@
 // Uma Tickets, Uma Shards and the roster (docs/rework/04-tiers-and-promotion.md §6, D336): a new account holds 20
 // tickets; a ticket unlocks an Uma not yet owned, always into tier 1, scenario 1; gates pay Shards, and five Shards make
-// a ticket in an explicit exchange, as today. No Prize Money path makes a ticket.
+// a ticket in an explicit exchange, as today. No Prize Money path makes a ticket. The featured Uma (rework/11 §5) and
+// each Uma's race defaults (03 §6–§7) are the roster's two settings, written by `feature-uma` and `set-race-defaults`
+// (T138).
 import { nextUmaShardExchangeSequence } from '../../collection'
 import { UMA_SHARDS_PER_COUPON } from '../../economy'
-import { bestBaseDistance } from '../../save'
+import { bestBaseDistance, type RacePreferences } from '../../save'
+import { recommendedRacePreferences } from '../../scenario-goals'
+import type { DistanceCategory } from '../../types'
 import { FIRST_EXCHANGE_GRADE } from '../exchange/exchange'
 import { emptyPurse } from '../exchange/purse'
 import { DEFAULT_CHECK_INS } from '../check-in/schedule'
 import { emptyBuild, type OpResult, type ReworkState, type UmaState } from '../types'
-import { freezeCareer, umaTemplate, type TierContent } from './career'
+import { careerAptitudes, freezeCareer, umaTemplate, type TierContent } from './career'
 import { assertNow, hasLedgerEntry, withUma, writeLedger } from './ledger'
 import { tierRefusal } from './refusals'
 
@@ -113,4 +117,60 @@ export function exchangeShards<S extends ReworkState>(
   const spent = writeLedger(state, { id: `${prefix}:shards`, resource: 'uma-shards', delta: -UMA_SHARDS_PER_TICKET, reason: 'uma-shard-exchange' }, now)
   const next = writeLedger(spent, { id: `${prefix}:coupon`, resource: 'uma-tickets', delta: TICKETS_PER_EXCHANGE, reason: 'uma-shard-exchange' }, now)
   return { state: next, receipt: { sequence, shardsSpent: UMA_SHARDS_PER_TICKET, ticketsGained: TICKETS_PER_EXCHANGE } }
+}
+
+export interface FeatureUmaReceipt {
+  readonly outfitId: string
+  /** Who was featured before: the same Uma when she already was, which changes nothing. */
+  readonly previous: string | null
+}
+
+/**
+ * `feature-uma { outfitId }` (rework/11 §5, 13 §6; T138): the Town Hall plaza's Uma, any owned one. Featuring the Uma
+ * already featured changes nothing and answers as done.
+ */
+export function featureUma<S extends ReworkState>(state: S, input: { readonly outfitId: string }, now: number): OpResult<FeatureUmaReceipt, S> {
+  assertNow(now)
+  if (!state.umas[input.outfitId]) return tierRefusal('unknown-uma', { uma: input.outfitId })
+  const previous = state.profile.featuredUmaId
+  if (previous === input.outfitId) return { state, receipt: { outfitId: input.outfitId, previous } }
+  return { state: { ...state, profile: { ...state.profile, featuredUmaId: input.outfitId } }, receipt: { outfitId: input.outfitId, previous } }
+}
+
+/** What `set-race-defaults` sets: the selected preset, her preferences (null: the recommendation), or both. */
+export interface RaceDefaultsInput {
+  readonly umaId: string
+  readonly selectedPreset?: DistanceCategory
+  readonly preferences?: RacePreferences | null
+}
+
+export interface RaceDefaultsReceipt {
+  readonly umaId: string
+  readonly raceDefaults: UmaState['raceDefaults']
+}
+
+/**
+ * `set-race-defaults { umaId, selectedPreset?, preferences? }` (03 §6–§7, 13 §6; T138): the preset her profile and every
+ * training screen show, and her preferred distance, surface and running style; kept at promotion (04 §4). Her career
+ * stays as it was frozen, since preferences shape the next one (03 §4). Neither field given is a caller's bug.
+ */
+export function setRaceDefaults<S extends ReworkState>(state: S, input: RaceDefaultsInput, now: number): OpResult<RaceDefaultsReceipt, S> {
+  assertNow(now)
+  if (input.selectedPreset === undefined && input.preferences === undefined) throw new RangeError('Set a preset, preferences or both')
+  const uma = state.umas[input.umaId]
+  if (!uma) return tierRefusal('unknown-uma', { uma: input.umaId })
+  const raceDefaults: UmaState['raceDefaults'] = {
+    preferences: input.preferences === undefined ? uma.raceDefaults.preferences : input.preferences === null ? null : { ...input.preferences },
+    selectedPreset: input.selectedPreset ?? uma.raceDefaults.selectedPreset,
+  }
+  return { state: withUma(state, { ...uma, raceDefaults }), receipt: { umaId: uma.outfitId, raceDefaults } }
+}
+
+/**
+ * Her race preferences as a screen shows them (03 §7): the ones she has set, else today's recommendation from her career
+ * aptitudes and the race catalogue, the one her career was frozen with.
+ */
+export function racePreferencesOf(uma: UmaState, content: TierContent): RacePreferences {
+  return uma.raceDefaults.preferences
+    ?? recommendedRacePreferences(careerAptitudes(uma, content), umaTemplate(content, uma.outfitId), content.races)
 }

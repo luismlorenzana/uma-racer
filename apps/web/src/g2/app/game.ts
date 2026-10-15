@@ -116,6 +116,12 @@ export interface G2Game {
   syncNow?(): Promise<void>
   /** The logs the store doesn't hold, read on demand with the queued taps' own rows (T136). */
   readonly logs?: G2Logs
+  /** Account's sign-out (T138; over today's auth once T143 mounts it). Absent where nobody signs in, as in the dev mount. */
+  signOut?(): Promise<void>
+  /** Dev builds only (M034, T138): the synthetic fixtures this port can load into its local account, by name. */
+  readonly fixtures?: readonly string[]
+  /** Dev builds only: replaces the local account with a fixture, so Account's dev section can reach any state. */
+  loadFixture?(name: string): Promise<void>
 }
 
 /** The save's logs, read when a screen needs them: never loaded into the snapshot. */

@@ -70,6 +70,16 @@ export function addRacingExp(uma: UmaState, exp: number, catalogue: ScenarioCata
   return { uma: racing === uma.racing ? uma : { ...uma, racing }, expGained: exp, levelsGained, reachedGate }
 }
 
+/**
+ * What her Racing EXP bar fills toward (03 §2; the profile's bar, T138): the next level's cost, or at a gate the next
+ * scenario's first step her bank holds for the advance; null at the tier's last gate, where EXP stops.
+ */
+export function racingExpToNext(uma: Pick<UmaState, 'tier' | 'racing'>, catalogue: ScenarioCatalogue = TODAY_CATALOGUE): number | null {
+  const { level } = uma.racing
+  if (level >= lastGate(uma.tier, catalogue)) return null
+  return expToNextUmaLevel(isGateLevel(level) ? level + 1 : level)
+}
+
 export interface RaceFinishInput {
   readonly umaId: string
   readonly raceId: string

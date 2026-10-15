@@ -8,7 +8,10 @@
 // - A filled open Inspiration slot pays aptitudes and whites; its inherited unique only once the slot's unique is open,
 //   its golds only through opened positions; a single-side grandparent's cost 2× SP, a mirror normal SP (D250).
 // - Race Bonus is every card's full value (06 §4), for the tier rules' `applyRaceFinish`.
+// - `cardPay` is one card's share of that at a scenario, for the Card Library (06 §6, T138); a card's running-style and
+//   distance focus is today's (06 §5), passed through for the Library's corners.
 import { MAX_STARS, cardGoldSkillIds, cardRaceBonus } from '../../cards'
+export { CARD_DISTANCE_FOCI, CARD_STYLE_FOCI, cardFocus, type CardFocus } from '../../card-focus'
 import { cardShares, eraPct, paysSkillPoints } from '../../constellation'
 import type { SkillTemplate, SupportCardTemplate, UmaTemplate } from '../../content'
 import { ownSkillIds } from '../../derived'
@@ -20,7 +23,7 @@ import { fairShare, perCardCap, treeCardNodesAt } from '../constellation/sizes'
 import { cardNodeId } from '../constellation/tree'
 import type { PromotionPresetStats } from '../tiers/promotion'
 import { capProfileAt, nodeValue, spCapAt } from '../tiers/scaling'
-import { scenarioNumber } from '../tiers/map'
+import { SCENARIOS_PER_TIER, scenarioNumber, scenarioPlayable, tierAndScenario } from '../tiers/map'
 import type { ScenarioAt, UmaBuild, UmaState } from '../types'
 import { REWORK_BUFF_VALUES as V, reworkBuff, type ReworkBuffId } from './buffs'
 import { extraCapacity, extraNode, extraNodeStats, extraNodeVector } from './extra'
@@ -281,6 +284,85 @@ export const goalsWon = (uma: Pick<UmaState, 'career'>): number => uma.career.go
 /** One of her presets as she stands: her scenario, her build, her template and her career's wins. */
 export const deriveUmaPreset = (uma: UmaState, preset: DistanceCategory, content: TrainingContent): DerivedBuild =>
   deriveBuild({ at: { tier: uma.tier, scenario: uma.scenario }, build: uma.build, preset, template: trainingTemplate(content, uma.outfitId), content, goalsWon: goalsWon(uma) })
+
+// ---- One card's pay, for a screen (T138) -----------------------------------------------------------------------------
+
+/** One card at scenario T, as the Card Library shows it (06 §1, §4, §6): before her preset's buff, growth and caps. */
+export interface CardPay {
+  readonly T: number
+  /** Whether a set at T may hold it: era ≤ T (06 §3). */
+  readonly eligible: boolean
+  /** `eraPct` at T (D126). */
+  readonly eraPct: number
+  /** The type's split of a node in whole percent, largest first (D180); empty for Friend and Group, which pay SP. */
+  readonly split: readonly (readonly [StatKey, number])[]
+  /** What one of its nodes pays at T, stat by stat: nodeValue(T) × eraPct × the split, unrounded; zeros for Friend and Group. */
+  readonly perNode: Stats
+  readonly perNodeTotal: number
+  /** SP one Friend or Group node pays at T: `reworkSpNodeValue(T)` × eraPct, unrounded; 0 for the stat types (D132). */
+  readonly spPerNode: number
+  /** Nodes of one tree it can hold at T: the per-card cap (D134). */
+  readonly nodeCap: number
+  /** Its full Race Bonus (06 §4): 0.049 is +4.9% Racing EXP. */
+  readonly raceBonus: number
+  /** The `eraPct` it keeps in each later playable scenario of T's tier. */
+  readonly later: readonly { readonly T: number; readonly eraPct: number }[]
+}
+
+/**
+ * `card` at scenario T (06 §1): the node split, `eraPct`, SP per node for Friend and Group and the full Race Bonus. The
+ * per-node pay is `deriveBuild`'s own arithmetic for one node with the buff off, so n of its nodes give her preset's
+ * `cardRaw` before the buff; the scenario's buff is her preset's (04 §8), shown where her build is.
+ */
+export function cardPay(card: SupportCardTemplate, T: number): CardPay {
+  const at = tierAndScenario(T)
+  const pct = eraPct(card.era, T)
+  const shares = cardShares(card)
+  const skillPoints = paysSkillPoints(card)
+  const value = nodeValue(T)
+  const perNode = zeroStats()
+  let perNodeTotal = 0
+  if (!skillPoints) {
+    // Exactly deriveBuild's units: value × eraPct × buff (100) × share × the Orders slot (100) × Shared Light's (100).
+    for (const stat of STATS) {
+      perNode[stat] = (value * pct * 100 * (shares[stat] ?? 0) * 100 * 100) / SCALE
+      perNodeTotal += perNode[stat]
+    }
+  }
+  const split = skillPoints ? [] : STATS.filter((stat) => (shares[stat] ?? 0) > 0)
+    .map((stat) => [stat, shares[stat]!] as const)
+    .sort((a, b) => b[1] - a[1] || STATS.indexOf(a[0]) - STATS.indexOf(b[0]))
+  const last = SCENARIOS_PER_TIER * at.tier
+  const later: { T: number; eraPct: number }[] = []
+  for (let next = T + 1; next <= last && scenarioPlayable(next); next += 1) later.push({ T: next, eraPct: eraPct(card.era, next) })
+  return {
+    T,
+    eligible: card.era <= T,
+    eraPct: pct,
+    split,
+    perNode,
+    perNodeTotal,
+    spPerNode: skillPoints ? (reworkSpNodeValue(T) * pct * 100) / SP_SCALE : 0,
+    nodeCap: perCardCap(treeCardNodesAt(T)),
+    raceBonus: cardRaceBonus(card, MAX_STARS),
+    later,
+  }
+}
+
+/** One skill a card's nodes pay (D182): its k-th gold and k-th white come with the k-th node it fills. */
+export interface CardNodeSkill {
+  readonly skillId: string
+  /** The node of hers it fills that pays it, from 1. */
+  readonly node: number
+  readonly gold: boolean
+}
+
+/** Every skill `card`'s nodes pay, golds first, each with its node (06 §6 "Skills"). */
+export function cardNodeSkills(card: SupportCardTemplate, skills: ReadonlyMap<string, SkillTemplate>): readonly CardNodeSkill[] {
+  const golds = cardGoldSkillIds(card, skills).map((skillId, i) => ({ skillId, node: i + 1, gold: true }))
+  const whites = card.hintSkillIds.map((skillId, i) => ({ skillId, node: i + 1, gold: false }))
+  return [...golds, ...whites]
+}
 
 /** Each preset's stats and SP as she stands, for the tier rules' `promote` and its history entry (04 §3). */
 export function promotionPresetStats(uma: UmaState, content: TrainingContent): PromotionPresetStats {

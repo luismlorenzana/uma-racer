@@ -12,7 +12,7 @@ import { capProfileAt, extraBudgetAt, nodeValue, spCapAt } from '../tiers/scalin
 import { emptyBuild, type ScenarioAt, type UmaBuild } from '../types'
 import { STATS, type Stats } from '../../types'
 import { commitUnlocks } from './build'
-import { deriveBuild, type DeriveBuildInput } from './derive'
+import { cardNodeSkills, cardPay, deriveBuild, type DeriveBuildInput } from './derive'
 import { EXTRA_NODE_IDS, extraCapacity } from './extra'
 import { reworkSpNodeValue } from './skill-points'
 import { FIXED_UNLOCKS, fixedUnlock } from './unlocks'
@@ -283,5 +283,59 @@ describe('skills and Race Bonus', () => {
     expect(derived.openNodes).toBe(28)
     expect(derived.activeExtraNodes).toHaveLength(15)
     expect(derived.skillPoints).toBe(1280)
+  })
+})
+
+describe('cardPay: one card at a scenario, for the Card Library (06 §1, §4, §6; T138)', () => {
+  it("times its nodes gives deriveBuild's cardRaw for that card alone with the buff off, at every era and node count", () => {
+    for (const [cardId, T] of [['speed-e1', 1], ['speed-e1', 5], ['guts-e3', 4], ['power-e6', 9], ['wit-e11', 14]] as const) {
+      const pay = cardPay(cardOf(cardId), T)
+      const cap = perCardCap(treeCardNodesAt(T))
+      expect(pay.nodeCap).toBe(cap)
+      for (let n = 1; n <= cap; n += 1) {
+        const nodes = Array.from({ length: n }, () => cardId)
+        const derived = derive({ T, cards: [cardId], nodes, opened: n }, { buffs: false })
+        for (const stat of STATS) expect(n * pay.perNode[stat]).toBeCloseTo(derived.cardRaw[stat], 9)
+        expect(n * pay.perNodeTotal).toBeCloseTo(derived.cardRawTotal, 9)
+      }
+    }
+  })
+
+  it('splits a node by type at eraPct, largest share first', () => {
+    const pay = cardPay(cardOf('speed-e1'), 3)
+    expect(pay.eraPct).toBe(eraPct(1, 3))
+    expect(pay.eraPct).toBe(90)
+    expect(pay.split).toEqual([['speed', 70], ['power', 30]])
+    expect(pay.perNode.speed).toBeCloseTo((nodeValue(3) * 90 * 70) / 10_000, 9)
+    expect(pay.spPerNode).toBe(0)
+    expect(cardPay(cardOf('guts-e1'), 1).split).toEqual([['guts', 60], ['speed', 20], ['power', 20]])
+  })
+
+  it("pays a Friend or Group card's SP per node as reworkSpNodeValue × eraPct, and no stats", () => {
+    for (const [cardId, T] of [['friend-e1', 1], ['friend-e2', 5], ['group-e6', 8]] as const) {
+      const pay = cardPay(cardOf(cardId), T)
+      expect(pay.spPerNode).toBeCloseTo((reworkSpNodeValue(T) * eraPct(cardOf(cardId).era, T)) / 100, 9)
+      expect(pay.split).toEqual([])
+      expect(pay.perNodeTotal).toBe(0)
+    }
+  })
+
+  it('carries the full Race Bonus, its eligibility, and the eraPct it keeps in each later playable scenario of the tier', () => {
+    const pay = cardPay(cardOf('wit-e3'), 3)
+    expect(pay.raceBonus).toBe(cardRaceBonus(cardOf('wit-e3'), MAX_STARS))
+    expect(pay.eligible).toBe(true)
+    expect(pay.later).toEqual([{ T: 4, eraPct: 95 }, { T: 5, eraPct: 90 }])
+    expect(cardPay(cardOf('wit-e3'), 2).eligible).toBe(false)
+    expect(cardPay(cardOf('wit-e3'), 5).later).toEqual([])
+    // Tier 3 ends at the 14th until the 15th is in the catalogue (04 §2).
+    expect(cardPay(cardOf('wit-e11'), 13).later).toEqual([{ T: 14, eraPct: 85 }])
+  })
+
+  it("lists the skills its nodes pay, golds first, each with the node that pays it (D182)", () => {
+    expect(cardNodeSkills(cardOf('speed-e1'), TRAINING_CONTENT.skills)).toEqual([
+      { skillId: 'gold-speed-e1', node: 1, gold: true },
+      { skillId: 'hint1-speed-e1', node: 1, gold: false },
+      { skillId: 'hint2-speed-e1', node: 2, gold: false },
+    ])
   })
 })

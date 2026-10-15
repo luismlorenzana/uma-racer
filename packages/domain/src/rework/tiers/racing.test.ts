@@ -11,7 +11,7 @@ import { advanceScenario } from './advance'
 import { freezeCareer } from './career'
 import { RACING_LEVELS_PER_TIER, firstLevel, gateLevel, lifetimeLevel, scenarioCatalogue, scenariosInTier, tierAndScenario, tierOf } from './map'
 import { promote } from './promotion'
-import { addRacingExp, applyRaceFinish, type RaceFinishInput } from './racing'
+import { addRacingExp, applyRaceFinish, racingExpToNext, type RaceFinishInput } from './racing'
 import { newAccount, unlockUma } from './roster'
 import { recordExpeditionRace } from './expedition'
 
@@ -78,6 +78,17 @@ describe('the curve', () => {
   it('refuses nonsense EXP', () => {
     expect(() => addRacingExp(COLT_UMA, -1)).toThrow(RangeError)
     expect(() => addRacingExp(COLT_UMA, 1.5)).toThrow(RangeError)
+  })
+
+  it("fills the profile's bar toward the next level, the advance's first step at a gate, and nothing at the last gate (T138)", () => {
+    expect(racingExpToNext(at(1, 1, 1))).toBe(100)
+    expect(racingExpToNext(at(1, 1, 9))).toBe(300)
+    // At a gate the bank holds up to the next scenario's first step, which the advance applies.
+    expect(racingExpToNext(at(1, 1, 10, true))).toBe(100)
+    expect(addRacingExp(at(1, 1, 10, true), 10_000).uma.racing.exp).toBe(racingExpToNext(at(1, 1, 10, true)))
+    expect(racingExpToNext(at(1, 5, 50, true))).toBeNull()
+    expect(racingExpToNext(at(3, 4, 40, true))).toBeNull()
+    expect(racingExpToNext(at(3, 4, 40, true), FIFTEEN)).toBe(100)
   })
 })
 

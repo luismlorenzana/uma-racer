@@ -10,7 +10,8 @@ import { DISTANCE_CATEGORIES, type DistanceCategory } from '../../types'
 import { newAccount, unlockUma } from '../tiers/roster'
 import { emptyBuild, isRefusal, type OpResult, type Preset, type ReworkState, type ScenarioAt, type UmaBuild, type UmaState } from '../types'
 import {
-  advanceScenario, carryOnAdvance, commitUnlocks, fillCard, handOverNodes, setActiveNodes, setAssignments, setCardSet, setLineage, setLoadout,
+  advanceScenario, carryOnAdvance, commitUnlocks, fillCard, handOverNodes, loadoutSummary, setActiveNodes, setAssignments, setCardSet, setLineage,
+  setLoadout,
 } from './build'
 import { deriveBuild } from './derive'
 import { EXTRA_NODE_IDS } from './extra'
@@ -305,6 +306,14 @@ describe('preset edits', () => {
       const overdrawn = { ...state, umas: { ...state.umas, [GROWER.id]: { ...uma, build: { ...uma.build, presets: { ...uma.build.presets, mile: { ...uma.build.presets.mile, loadoutSkillIds: ['u-grower', 'expensive'] } } } } } }
       expect(ok(loadout(overdrawn, ['expensive'])).receipt.cost).toBe(5000)
       expect(ok(loadout(overdrawn, [])).receipt.loadoutSkillIds).toEqual(['u-grower'])
+    })
+
+    it('prices a loadout as set-loadout does, before it is made, and names the skills no Equip can take (T138)', () => {
+      const uma = grower().umas[GROWER.id]!
+      expect(loadoutSummary(uma, 'mile', TRAINING_CONTENT)).toEqual({ cost: 0, skillPoints: 960, entries: [], unequippable: ['no-effect'] })
+      const priced = loadoutSummary(uma, 'mile', TRAINING_CONTENT, ['u-grower', 'expensive'])
+      expect(priced).toMatchObject({ cost: 5000, skillPoints: 960, entries: [{ skillId: 'expensive', cost: 5000 }] })
+      expect(loadout(grower(), ['expensive'])).toMatchObject({ code: 'over-sp', data: { cost: priced.cost, sp: priced.skillPoints } })
     })
   })
 })

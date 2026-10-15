@@ -238,6 +238,14 @@ reduced motion; her outfit icon if the chibi is missing). Tapping her opens a **
 - **Feature another Uma**, the Uma picker.
 
 She replaces today's Home hero. The first Uma unlocked is featured on a new account ([13](13-removals-and-plan-changes.md) §5).
+After that the owner picks her: **`feature-uma { outfitId }`** sets `profile.featuredUmaId` to any owned Uma (an Uma not
+in the Stable is refused with `unknown-uma`'s words; the one already featured changes nothing), from the quick sheet's
+picker or her profile's **Feature her** (T138, `rework/tiers/roster.ts`).
+
+**As built in phase 3 (T138):** until the plaza's chibi (phase 6) she is still art in the plaza's cell, `FeaturedUmaCard`,
+also the Stable Peek's first card. "What she's doing" is her work row settled to the clock: the place, the current
+entry's finished items of its count and its end ("Kitchen · 2 of 4 · 16:40", "+N queued" behind), "Kitchen · Ready", or
+"Free".
 
 ## 6. Full-screen flows
 
@@ -489,6 +497,21 @@ Shipping the routes and registry in phase 3, not 6, means links change once.
 | The Racecourse's counter loads its draw lazily, so the entry holds none; the Scenario Gate's and the Expedition Map's are the hub view's (`ready-to-advance`, `promotable`: 0 before phase 9) (T141) | One rule per counter; §3.3's Map counter is promotable Umas |
 | The Scenario Gate's ceremony is a full-screen flow at `/racing/scenario-gate/:umaId/ceremony?op=:id`; the Advance and Promote sheets are `?sheet=advance` and `?sheet=promote` on her career (T141) | §6 lists the promotion ceremony; a sheet is a route, so Back closes it |
 | The Trophy Hall's scopes are `?scope=` uma, stable or trainer at `/racing/trophy-hall` (the featured Uma's badges by default), one Uma's at `/uma/:umaId` and the trainer profile at `/trainer` (T141) | §7.1's three routes; a scope is a view of one page |
+| In phase 3 the featured Uma is the Stable Peek's first card and `FeaturedUmaCard`, with §5's quick sheet (T138) | The plaza chibi is phase 6 (§11); her sheet's actions work now |
+| The Locked tab's multi-select unlocks up to the tickets in hand, one `unlock-uma` each with its own id, then reveals them in turn with Next (2 of 5) and Skip all; the reveal's route carries the rest as `?then=` and the count as `?of=` (T138) | A new account picks 20 ([13](13-removals-and-plan-changes.md) §5); 20 single unlocks would take about 80 taps; `?of=` keeps "2 of 5" after a reload |
+| A Stable tile reads "T2 · Lv 13" (never the lifetime number) with its tier crest, a Ready dot from `advanceReadiness` or `promotionReadiness`, the planner's crosshair, NEW and a gold frame for an inductee; a Locked tile is desaturated art behind a lock (T138) | 03 §2 keeps the lifetime number for order only; [04](04-tiers-and-promotion.md) §10 |
+| Album preferences live in `uma-racer:g2:album:<album>` keys, bounded as today's (20 views, 4,000 seen ids), not the generation-2 database; a device with none sees what it owns as already seen (T138) | Device conveniences only (rearchitecture/01 §4.2); today's live in today's Dexie, which the wipe removes |
+| No Hall of Fame place in phase 3; a gold frame and a profile chip show inductees (T138) | The registry has none ([04](04-tiers-and-promotion.md) §10 calls it a Town Hall place); no Uma can be inducted for months |
+| The profile links to T141's Advance and Promote sheets (`/racing/scenario-gate/:umaId`) and hosts T142's Needs tab (its sub-page slot) and target toggle (`PROFILE_UI.TargetToggle`); its Needs route shows layer progress until T142 lands (T138) | One owner per sheet; the profile is their door |
+| The profile's tabs are Overview, Needs (`/needs`), Skills (`/skills`) and Racing (`?tab=racing`); ‹ › and a swipe move through the Owned tab's current album order (T138) | §7.1 names two sub-routes; Racing needs no route of its own |
+| Her latest results read the save's `raceResults` log through the port's `logs`; her title, Prestige frame and showcase pins are the Trophy Hall's, linked from the Racing tab (T138) | Badge state is the Trophy Hall's (T141) and isn't in the rework state |
+| The Exchange's header shows T141's purse bar, drawn from its `purseBar` view at the device's day (T138) | The purse bar's words and bands are T141's; the Exchange only shows them (09 §5.5) |
+| Deep links: Exchange `?row=speed-tickets` and `?family=&grade=` (the grade opens its quantity sheet); Account `?row=sync`. Counters hide at 0 (T138) | §2.1's chips open "at the row", and the planner's "Buy at the Exchange" needs one; §2.2 keeps the bar quiet |
+| Bond opens the Uma picker: Umas who can bond it now first, each with the dish, its stock and the real time; a busy Uma reads "Busy until 14:20" and shows Queue only when her running session is in that card's Dojo room; the rest follow with their reason. A pick goes to T139's `/training/dojo?session=&room=&unlocks=bond:<cardId>&back=`, `&queue=1` for Queue; "0 in Warehouse" offers Cook, T140's Kitchen job sheet (T138) | [06](06-cards-and-bonds.md) §6, §10; the session sheet is T139's |
+| Times on screen are real (× *k*), e.g. "4 h 48 m" (T138) | [05](05-training-hub.md) §2: the pages' examples are base minutes, the game multiplies by *k* |
+| The one Uma picker (`g2/ui/UmaPicker`) is the Stable's album in a sheet with today's `UmaPickerSheet` props (caller sorts, `describe`, `disabledReason`, `candidateIds`, plus an `action` per row), through a portal so it opens over another sheet; T139 and T140 use it (T138) | D181; the Stable owns the album it browses |
+| Taps and their words use T140's `g2/ui/work` (`useTap`, `TapNoteLine`) and `g2/ui/ItemIcon`; a 44 pt tab row (`g2/ui/Tabs`) stands in for today's 32 pt SegmentedControl (T138) | One set of pieces (M034); 44 pt targets |
+| The dev seeds carry invented skills and card names and run `dev-grant`; Account's dev section loads a seed in place through the port's `fixtures` and `loadFixture` (T138) | A profile's Skills tab needs a library to equip and the Library names to search; M034's rehearsal reaches a gate in one tap |
 
 ## 14. Done when
 

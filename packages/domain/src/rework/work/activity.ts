@@ -10,8 +10,8 @@ import { payWork, type CollectReceipt } from './collect'
 import { kindRules, type WorkEnv } from './kinds'
 import { joinSettles, settle } from './settle'
 import { speedAt } from './state'
-import { chainTimes, endsAt } from './timeline'
-import { SESSION_KIND, type Done, type WorkRow, type WorkState } from './types'
+import { chainTimes, endsAt, finishedCount } from './timeline'
+import { SESSION_KIND, type Done, type ItemStock, type WorkRow, type WorkState } from './types'
 
 export type WorkStatus = 'free' | 'working' | 'ready'
 
@@ -61,6 +61,24 @@ export function isFree(state: Pick<ReworkState, 'work'>, outfitId: string): bool
   const row = state.work[outfitId] as Partial<WorkRow> | undefined
   if (row === undefined) return true
   return Array.isArray(row.entries) && row.entries.length === 0 && Array.isArray(row.queue) && row.queue.length === 0
+}
+
+/**
+ * The Warehouse's reserved stock at `now` (07 §2, §10; 09 §6.1; T138): the inputs of every item not yet made in a
+ * started entry, summed by item over every Uma. They left the Warehouse count when the entry started; an item made or
+ * collected has used its inputs, and a queued request reserves nothing until it starts. It is what Recall would hand
+ * back, so read it on a settled state (`projectWork(...).current`), as the screens do. An item none holds is absent.
+ */
+export function reservedStock(state: Pick<WorkState, 'work'>, now: number): ItemStock {
+  assertNow(now)
+  const reserved: Record<string, number> = {}
+  for (const row of Object.values(state.work)) {
+    for (const entry of row.entries) {
+      const made = Math.max(entry.collected, finishedCount(entry, now))
+      for (const inputs of entry.inputs.slice(made)) for (const { item, qty } of inputs) reserved[item] = (reserved[item] ?? 0) + qty
+    }
+  }
+  return reserved
 }
 
 /**

@@ -16,10 +16,12 @@ import { FEATURED_SLOTS } from '../rework/exchange/featured'
 import { BUILDINGS, isBuildingId, type BuildingId, type RoomId } from '../rework/farm/buildings'
 import { itemById } from '../rework/items/catalogue'
 import type { PromotionPresetStats } from '../rework/tiers/promotion'
+import type { RaceDefaultsInput } from '../rework/tiers/roster'
 import type { RepeatSizing } from '../rework/types'
+import type { RacePreferences } from '../save'
 import { isRowId } from './kinds'
 import {
-  exactKeys, isLocalDay, isNonNegativeInt, isObject, isPositiveInt, isTimestamp, parseIds, parseSlotRef, parseWorkRequest,
+  exactKeys, isLocalDay, isNonNegativeInt, isObject, isPositiveInt, isTimestamp, parseIds, parsePreferences, parseSlotRef, parseWorkRequest,
 } from './parse'
 
 type InputParsers = { readonly [N in OperationName]: (value: unknown) => OperationInput<N> | null }
@@ -172,6 +174,25 @@ function finishRace(value: unknown): FinishRaceInput | null {
   return { umaId: value.umaId, raceId: value.raceId, placement: value.placement, localDay: value.localDay, board, run }
 }
 
+/** `set-race-defaults`: her id, then a preset, preferences (null: the recommendation), or both. */
+function raceDefaults(value: unknown): RaceDefaultsInput | null {
+  if (!isObject(value) || !exactKeys(value, ['umaId'], ['selectedPreset', 'preferences']) || !isRowId(value.umaId)) return null
+  const { selectedPreset } = value
+  if (selectedPreset === undefined && value.preferences === undefined) return null
+  if (selectedPreset !== undefined && !isDistance(selectedPreset)) return null
+  let preferences: RacePreferences | null | undefined
+  if (value.preferences === undefined || value.preferences === null) preferences = value.preferences
+  else {
+    preferences = parsePreferences(value.preferences)
+    if (preferences === null) return null
+  }
+  return {
+    umaId: value.umaId,
+    ...(selectedPreset === undefined ? {} : { selectedPreset }),
+    ...(preferences === undefined ? {} : { preferences }),
+  }
+}
+
 function devGrant(value: unknown): DevGrantInput | null {
   const keys = ['items', 'prizeMoney', 'umaTickets', 'finish', 'gate'] as const
   if (!isObject(value) || !exactKeys(value, [], keys) || Object.values(value).every((v) => v === undefined)) return null
@@ -207,6 +228,8 @@ export const OPERATION_INPUTS: InputParsers = Object.freeze({
   sell: trade('itemId'),
   'unlock-uma': idOnly('outfitId'),
   'exchange-shards': (value: unknown) => (isObject(value) && exactKeys(value, []) ? {} : null),
+  'feature-uma': idOnly('outfitId'),
+  'set-race-defaults': raceDefaults,
   'set-targets': (value: unknown) => {
     if (!isObject(value) || !exactKeys(value, ['outfitIds'])) return null
     const outfitIds = parseIds(value.outfitIds)

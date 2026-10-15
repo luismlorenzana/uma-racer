@@ -6,6 +6,7 @@ import {
   atFarmLevel, clock, ENV, farmAccount, minutes, node, ok, PLAIN, SESSION_ENV, STUDENT, withNodes, withStock,
 } from '../../__fixtures__/rework-work'
 import { farmItemSeconds } from '../farm/jobs'
+import { reservedStock } from './activity'
 import { collect, finish, queue, recall, speedUp, start } from './operations'
 import { endsAt } from './timeline'
 import type { FarmRequest, SlotRef } from './types'
@@ -70,6 +71,25 @@ describe('07 §2: the Kitchen recall', () => {
     expect(receipt.outputs).toEqual([{ item: 'dish-vegetables-1' }])
     expect(receipt.returned).toEqual([{ item: 'chopped-carrot', qty: 8 }, { item: 'wheat-flour', qty: 2 }])
     expect(next.items).toEqual({ 'dish-vegetables-1': 1, 'chopped-carrot': 8, 'wheat-flour': 2 })
+  })
+
+  it('holds as reserved exactly what Recall would return, item by item, over every Uma (T138)', () => {
+    const KITCHEN: SlotRef = { building: 'kitchen', slot: 0 }
+    const PANTRY: SlotRef = { building: 'pantry', slot: 0 }
+    let state = withStock(farmAccount(), { 'chopped-carrot': 12, 'wheat-flour': 3, carrot: 4 })
+    state = ok(start(state, { outfitId: PLAIN.id, slot: KITCHEN, request: { kind: 'cook', item: 'dish-vegetables-1', count: 3 } }, clock('08:00'), ENV)).state
+    state = ok(start(state, { outfitId: STUDENT.id, slot: PANTRY, request: { kind: 'craft', item: 'chopped-carrot', count: 4 } }, clock('08:00'), ENV)).state
+    const cook = farmItemSeconds('cook', 1) * 1000
+    expect(reservedStock(state, clock('08:00'))).toEqual({ 'chopped-carrot': 12, 'wheat-flour': 3, carrot: 4 })
+    const halfway = clock('08:00') + 1.5 * cook
+    // By then the Pantry job has finished: its carrots are used, so only the Kitchen's unmade dishes hold anything.
+    expect(halfway).toBeGreaterThan(clock('08:00') + 4 * farmItemSeconds('craft', 1) * 1000)
+    const held = reservedStock(state, halfway)
+    expect(held).toEqual({ 'chopped-carrot': 8, 'wheat-flour': 2 })
+    const returned = recall(state, { outfitId: PLAIN.id }, halfway, ENV).receipt.returned
+    expect(Object.fromEntries(returned.map(({ item, qty }) => [item, qty]))).toEqual(held)
+    expect(reservedStock(state, clock('08:00') + 3 * cook)).toEqual({})
+    expect(reservedStock(farmAccount(), clock('08:00'))).toEqual({})
   })
 })
 

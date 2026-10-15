@@ -242,6 +242,18 @@ bottom-right pill, which held stars, now shows:
 Below her bonded cards, a **Bond more** section lists eligible unbonded cards, each with its dish and a Bond button.
 There is no weaker parallel picker.
 
+**As built (T138).** What a card pays on screen is **`cardPay(card, T)`** (`rework/training/derive.ts`): the type's
+split, one node's stat points at T (`deriveBuild`'s own arithmetic for one node with the buff off, so *n* of its nodes are
+her preset's `cardRaw` for that card before the buff), `eraPct` at T and in each later playable scenario of the tier,
+SP per node for Friend and Group (`reworkSpNodeValue` × `eraPct`), the per-card cap, and the full Race Bonus. Its skills
+by node are **`cardNodeSkills`** (D182: node *k* pays its *k*-th gold and *k*-th white). The card's running-style and
+distance focus pass through `rework/training` from today's `card-focus` (§5). The Library is `CardLibrary` in
+`g2/places/card-library/` with `mode: 'browse' | 'pick'`: pick mode fixes the lens on the Uma it is given, offers only
+the caller's `eligible` cards and calls `onPick(cardId)`, for T139's card set tab and session sheet. Its lens and its
+saved views are device preferences (`uma-racer:g2:album:card-library`). With no Uma chosen the "her bond" filters rest.
+A pending bond reads "In session · bonds 01:30" (the bond's own unlock's end), "Bond ready to collect" once it has
+finished, or "Queued to bond".
+
 ## 7. Badges and achievements
 
 Badges and titles stay, scenario-linked (D122). Achievements that count removed things retire ([13](13-removals-and-plan-changes.md) §1).
@@ -317,6 +329,10 @@ and collect with the session operations; a set edit is one ordinary Uma write.
 | Cross-task acceptance #2 (demand equals [08](08-item-catalogue-and-recipes.md) §7) belongs to the loop simulation (D344) | 08 §7 puts 9 of 18 bonds at even grades, which the era rule can't produce; the simulation rewrites 08 §7 |
 | §2's "Cards" column leaves the live block for a sentence (D344) | It counts the private pack, which code may not render |
 | The ever-bonded set is a projection, `everBondedCardIds` over every Uma's bonds and tier histories, reconciled in each race, advance and promotion commit and when the Trophy Hall opens, so no other place calls flair (T141) | §9 keeps each tier's bonds, so it equals §7's record without a fact of its own |
+| The Library's lens chips are All and the playable scenarios: 14 until the 15th ships (T138) | §6 names 15; the 15th has no cards yet (§2) |
+| The Library's per-node pay is before the scenario buff; in All, a card pays as in its own scenario (T138) | The buff is her preset's ([04](04-tiers-and-promotion.md) §8) and shows in T139's build views |
+| One per-card pay for screens, `cardPay`, and its skills by node, `cardNodeSkills`, in `rework/training` (T138) | A screen restates no rule (M034); T139's build views and set tab need the same numbers |
+| The Library opens on the featured Uma; a lens chip clears her, the Uma control picks another (T138) | §6: "the Library opens on the featured Uma" and "the lens follows her scenario" |
 
 ## 12. Done when
 

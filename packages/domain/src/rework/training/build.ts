@@ -378,6 +378,38 @@ export function setActiveNodes<S extends ReworkState>(
   }
 }
 
+/** A loadout priced as `set-loadout` prices it (D188, D250's 2×), for the Skills tab's SP line (T138). */
+export interface LoadoutSummary {
+  /** SP the loadout costs, each learned skill once. Her unique costs nothing. */
+  readonly cost: number
+  /** Her SP in this preset. */
+  readonly skillPoints: number
+  /** Each equipped skill but her unique, in equip order, with what it adds to the cost. */
+  readonly entries: readonly { readonly skillId: string; readonly cost: number }[]
+  /** Library skills that can't be equipped (no SP price, or race mechanics not built yet), so no Equip shows. */
+  readonly unequippable: readonly string[]
+}
+
+/**
+ * Her loadout in `preset` at what it costs against her SP: the equipped one, or `skillIds` (her unique left out, as
+ * `set-loadout` takes them) to price a change before it is made. Pure: `set-loadout` stays the rule that refuses.
+ */
+export function loadoutSummary(uma: UmaState, preset: DistanceCategory, content: TrainingContent, skillIds?: readonly string[]): LoadoutSummary {
+  const template = trainingTemplate(content, uma.outfitId)
+  const derived = deriveBuild({ at: uma, build: uma.build, preset, template, content, goalsWon: goalsWon(uma) })
+  const source = { library: derived.library, skillPoints: derived.skillPoints, loadoutSkillIds: derived.loadoutSkillIds, skillCostMultipliers: derived.skillCostMultipliers }
+  const ids = (skillIds ?? derived.loadoutSkillIds).filter((id) => id !== template.uniqueSkillId)
+  const summary = summarizeSkillLoadout(source, template, content.skills, ids)
+  const unequippable = derived.library.map((skill) => skill.skillId)
+    .filter((id) => id !== template.uniqueSkillId && summarizeSkillLoadout(source, template, content.skills, [id]).entries.length === 0)
+  return {
+    cost: summary.cost,
+    skillPoints: derived.skillPoints,
+    entries: summary.entries.map((entry) => ({ skillId: entry.skill.id, cost: entry.cost })),
+    unequippable,
+  }
+}
+
 export interface LoadoutReceipt {
   readonly umaId: string
   readonly preset: DistanceCategory

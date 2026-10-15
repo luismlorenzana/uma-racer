@@ -60,6 +60,13 @@ export const PLACE_UI: Readonly<Partial<Record<PlaceId, PlaceUi>>> = {
   gym: { fullScreen: oneSegment },
   ...FARM_UI,
   ...RACING_UI, // T141
+  // T138: the Town Hall's places. The Stable's Page holds the roster and each profile (`outfit/:umaId`, `/skills`,
+  // `/needs` until T142's sub-page takes it); the Card Library's holds each card page (`card/:cardId`).
+  stable: { Peek: lazy(() => import('./stable/Peek')), Page: lazy(() => import('./stable/Page')) },
+  warehouse: { Peek: lazy(() => import('./warehouse/Peek')), Page: lazy(() => import('./warehouse/Page')) },
+  exchange: { Peek: lazy(() => import('./exchange/Peek')), Page: lazy(() => import('./exchange/Page')) },
+  'card-library': { Peek: lazy(() => import('./card-library/Peek')), Page: lazy(() => import('./card-library/Page')) },
+  account: { Page: lazy(() => import('./account/Page')) },
 }
 
 export interface SheetProps {
@@ -79,21 +86,34 @@ export interface FeaturedSheetProps extends SheetProps {
 export const SHEET_UI: {
   readonly 'check-in'?: Lazy<CheckInSheetProps>
   readonly featured?: Lazy<FeaturedSheetProps>
-} = {}
+} = {
+  featured: lazy(() => import('./stable/Featured').then((mod) => ({ default: mod.FeaturedSheet }))),
+}
 
 /** The Town Hall plaza's cell (§5): T138's `FeaturedUmaCard`. It opens `?sheet=featured` itself. */
 export interface PlazaProps {
   readonly umaId: string | null
 }
 
-export const TOWN_PLAZA: { readonly Card?: Lazy<PlazaProps> } = {}
+export const TOWN_PLAZA: { readonly Card?: Lazy<PlazaProps> } = {
+  Card: lazy(() => import('./stable/Featured').then((mod) => ({ default: mod.FeaturedUmaCard }))),
+}
 
 /** A full-screen flow outside the shell: `/collection/reveal/uma/:umaId` (T138). */
 export interface FlowProps {
   readonly params: RouteParams
 }
 
-export const FLOW_UI: { readonly reveal?: Lazy<FlowProps> } = {}
+export const FLOW_UI: { readonly reveal?: Lazy<FlowProps> } = {
+  reveal: lazy(() => import('./reveal/Reveal')),
+}
+
+/** The Uma profile's header slot (T138's profile, 11 §3.1): T142 fills it with the planner's target toggle. */
+export interface ProfileSlotProps {
+  readonly umaId: string
+}
+
+export const PROFILE_UI: { readonly TargetToggle?: Lazy<ProfileSlotProps> } = {}
 
 export type SlotId = PlaceId | 'sheet:check-in' | 'sheet:featured' | 'plaza' | 'flow:reveal'
 
@@ -102,7 +122,6 @@ export type SlotId = PlaceId | 'sheet:check-in' | 'sheet:featured' | 'plaza' | '
  * Peek; a sheet, the plaza or the reveal once it is set. The registry test holds both directions.
  */
 export const PENDING: readonly SlotId[] = Object.freeze([
-  'stable', 'warehouse', 'exchange', 'card-library', 'account', 'plaza', 'sheet:featured', 'flow:reveal', // T138
   'observatory', 'lineage-hall', 'gym', 'dojo', // T139
   'sheet:check-in', // T142
 ] as const)

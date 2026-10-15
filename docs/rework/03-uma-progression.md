@@ -253,6 +253,10 @@ As today:
 - a race uses the preset of its distance (D254);
 - her running style stays one per Uma.
 
+As built (T138): the selected preset is `raceDefaults.selectedPreset`, written by **`set-race-defaults`** with her
+preferences (§7). The profile's Overview and Skills tabs switch it, and its Skills tab prices a loadout as `set-loadout`
+does (`loadoutSummary`), so the SP line reads "SP 160 / 267" and an over-SP pick reads `over-sp`'s words.
+
 ### The carry at the advance (automatic)
 
 Today's Load button (D288) becomes an automatic step of the advance, for all four presets at once:
@@ -316,6 +320,12 @@ Her save in plain words. It maps to `umas/{outfitId}` and `work/{outfitId}`
 | **Records** | Race results, skill history, badges, titles, trophies (their own logs and entity) | Kept | [Badges](../design/badges.md) |
 
 **Not stored, as today:** stats, aptitudes, SP and the skill library. They are derived when read (§8).
+
+**Race defaults as built (T138).** `set-race-defaults { umaId, selectedPreset?, preferences? }` sets the selected preset,
+her preferences, or both; `preferences: null` goes back to the recommendation. Until she sets them, the profile shows
+today's recommendation from her career aptitudes and the race catalogue (`racePreferencesOf`), the one her career was
+frozen with. Changing them never refreezes the career she is in: they shape the next one (§4). Her Racing EXP bar fills
+toward `racingExpToNext`: the next level's cost, the next scenario's first step at a gate, nothing at the tier's last gate.
 
 ## 8. Derived stats after the rework
 

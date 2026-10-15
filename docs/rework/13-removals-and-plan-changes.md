@@ -160,6 +160,8 @@ Every change is an **operation** re-run by the API with the domain package. The 
 | `sell` | Sells surplus items for Prize Money | 09 §6 |
 | `unlock-uma` | Unlocks an Uma with an Uma Ticket | 04 §6 |
 | `exchange-shards` | Turns five Uma Shards into an Uma Ticket | 04 §6 |
+| `feature-uma` | Features an owned Uma in the Town Hall plaza | 11 §5 |
+| `set-race-defaults` | An Uma's selected preset and her preferred distance, surface and running style | 03 §6–§7 |
 | `set-targets` | The planner's targets, up to five in order | 02 §6 |
 | `set-check-in-times` | The check-in times, one to four | 02 §3 |
 | `set-repeat-sizing` | Repeat's same size or fit to the next check-in | 02 §5 |
@@ -172,8 +174,11 @@ Every change is an **operation** re-run by the API with the domain package. The 
 | `dev-grant` | Dev builds and a dev API only: items, Prize Money, Uma Tickets, finished work, a jump to her gate | M034 |
 <!-- /live -->
 
-M034's T138 adds `feature-uma` and `set-race-defaults`. A bond is an ordinary Dojo session, so it needs no operation of
-its own. A retried operation returns its first receipt and is never applied twice. **Gone from the plan's save:**
+T138 added `feature-uma` and `set-race-defaults` (`rework/tiers/roster.ts`): both fields were saved (`featuredUmaId` on
+the profile, `raceDefaults` on the Uma) and nothing wrote them after the first unlock. `feature-uma { outfitId }` takes
+any owned Uma; `set-race-defaults { umaId, selectedPreset?, preferences? }` sets either or both, `preferences: null`
+going back to the recommendation, and never refreezes her career. A bond is an ordinary Dojo session, so it needs no
+operation of its own. A retried operation returns its first receipt and is never applied twice. **Gone from the plan's save:**
 `cards/{cardId}`, the `puzzle*` kinds, `farm/main`, `farmWorkers`, `farmRecipes`, `farmExtra` and the item families for
 tokens, Puzzle materials and Energy.
 

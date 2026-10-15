@@ -3,7 +3,7 @@
 // modules; T143 moves them into `ui/icons` with the rest of `g2/`.
 import { defineIcon, type IconComponent, type IconName } from '../../../ui/icons'
 
-export const G2_ICON_NAMES = Object.freeze(['coin', 'menu', 'info'] as const)
+export const G2_ICON_NAMES = Object.freeze(['coin', 'menu', 'info', 'target'] as const)
 export type G2IconName = (typeof G2_ICON_NAMES)[number]
 
 type Drawing = Parameters<typeof defineIcon>[1]

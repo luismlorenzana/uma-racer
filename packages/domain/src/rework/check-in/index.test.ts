@@ -14,7 +14,7 @@ describe('the check-in and planner entries', () => {
     expect(checkIn.DEFAULT_CHECK_INS).toEqual([480, 780, 1350])
     expect(checkIn.MAX_CHECK_INS).toBe(4)
     expect(checkIn.BANNED_WORDS).toHaveLength(9)
-    expect(Object.keys(checkIn.OPERATIONS)).toHaveLength(26)
+    expect(Object.keys(checkIn.OPERATIONS)).toHaveLength(28)
   })
 
   it('export the planner', () => {

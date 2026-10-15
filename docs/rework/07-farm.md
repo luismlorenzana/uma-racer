@@ -376,6 +376,14 @@ The Warehouse is in Town Hall ([11](11-hub-and-places.md)). It is the one invent
   sheet); **Sell × 1 / × 10 / surplus** at a third of its work value ([09](09-racing-rewards-and-exchange.md),
   [08](08-item-catalogue-and-recipes.md) §8). Surplus is stock beyond the planner's needs; reserved items can't be sold.
 
+**As built (T138).** A row's counts come from one projection of the work at the clock: **held** is the Warehouse
+settled to now; **reserved** is `reservedStock(state, now)` (`rework/work/activity.ts`), the inputs of every item not yet
+made in a started entry, which is exactly what Recall would hand back; **coming** is `projectWork(...).coming` by item;
+**needed** is `neededFromStock` over the plan for `targetsOf`. A stack with all four at 0 is hidden, and an empty
+Warehouse reads [09](09-racing-rewards-and-exchange.md) §8's "Nothing to sell yet: the Farm's first harvest lands here".
+A dish reads its destination ("Carrot Salad · Constellation · grade 1"), an ingredient its family; **Make more** opens T140's
+job sheet at the building that makes it (`/farm/:building?job=&back=`).
+
 ## 11. Edge cases
 
 | Case | What happens |

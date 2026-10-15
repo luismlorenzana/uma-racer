@@ -1,0 +1,240 @@
+// @vitest-environment jsdom
+// The Town Hall's places on screen (T138): the real routes over the in-memory port on the dev seeds, and T136's device
+// save over fake IndexedDB for a reload. A new account unlocks from the Locked tab into the reveal and the profile, three
+// at once, and turns five Shards into a ticket; a dish sells only after its question, reserved stock is never offered,
+// and a stale price reads "Price changed."; Speed Tickets move Prize Money and the Tickets shelf; Bond goes on to the
+// Dojo session; Feature another Uma changes the plaza; Account's dev section runs `dev-grant`; and an offline phone and
+// a reload keep every change.
+import 'fake-indexeddb/auto'
+import { SPEED_TICKET_PRICE } from '@racer/domain/rework/exchange'
+import { act, cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { G2Game } from '../app/game'
+import { createSaveApi } from '../save/api'
+import { createSaveGame } from '../save/index'
+import { FakeServer, fakeSignals, freshDb, memoryStorage, nextId, noWipe, ENV as SAVE_ENV } from '../save/server.test-support'
+import { renderG2, seedGame, stubStorage } from '../testing'
+import { setReducedMotion } from '../ui/devicePrefs'
+
+afterEach(() => {
+  cleanup()
+  vi.unstubAllGlobals()
+})
+beforeEach(stubStorage)
+
+const ticketsOf = (game: G2Game) => game.getSnapshot().state!.profile.umaTickets
+const click = (element: Element) => fireEvent.click(element)
+
+async function freshWith(umas: number, extra?: (game: G2Game) => Promise<void>): Promise<G2Game> {
+  const game = seedGame('fresh')
+  for (let i = 1; i <= umas; i += 1) expect((await game.run('unlock-uma', { outfitId: `sim-uma-${String(i).padStart(2, '0')}` })).kind).toBe('done')
+  await extra?.(game)
+  return game
+}
+
+describe('the Stable (04 §6, 11 §2.4, §6)', () => {
+  it('opens a new account on the Locked tab with 20 tickets; Unlock leaves 19, reveals her, then opens her profile', async () => {
+    const game = seedGame('fresh')
+    const { where } = renderG2('/', game)
+    await waitFor(() => expect(where()).toBe('/town/stable?tab=locked'))
+    expect((await screen.findByText(/^Uma Tickets 20 · 0\/5$/)).textContent).toBe('Uma Tickets 20 · 0/5')
+    click(await screen.findByRole('button', { name: 'Amber Sprint, locked' }))
+    const sheet = await screen.findByRole('dialog', { name: 'Amber Sprint' })
+    click(within(sheet).getByRole('button', { name: 'Unlock · 1 Uma Ticket' }))
+    await waitFor(() => expect(where()).toBe('/collection/reveal/uma/sim-uma-01'))
+    expect(ticketsOf(game)).toBe(19)
+    expect(await screen.findByText('T1 · URA Finale · Racing Lv 1 · Farm Lv 1')).toBeTruthy()
+    expect(screen.queryByRole('link', { name: /^Next/ })).toBeNull()
+    click(screen.getByRole('link', { name: 'Open profile' }))
+    await waitFor(() => expect(where()).toBe('/town/stable/outfit/sim-uma-01'))
+    expect(await screen.findByRole('heading', { name: 'Amber Sprint' })).toBeTruthy()
+  })
+
+  it('unlocks three at once from the Locked tab, leaving 17, and reveals them in turn', async () => {
+    const game = seedGame('fresh')
+    const { where } = renderG2('/town/stable?tab=locked', game)
+    click(await screen.findByRole('button', { name: 'Select' }))
+    for (const name of ['Amber Sprint', 'Bluebell Dash', 'Cinder Gale']) click(screen.getByRole('button', { name: `${name}, locked` }))
+    click(screen.getByRole('button', { name: 'Unlock 3 · 3 Uma Tickets' }))
+    await waitFor(() => expect(where()).toBe('/collection/reveal/uma/sim-uma-01?then=sim-uma-02%2Csim-uma-03&of=3'))
+    expect(ticketsOf(game)).toBe(17)
+    click(await screen.findByRole('link', { name: 'Next (2 of 3)' }))
+    await waitFor(() => expect(where()).toBe('/collection/reveal/uma/sim-uma-02?then=sim-uma-03&of=3'))
+    click(await screen.findByRole('link', { name: 'Skip all' }))
+    await waitFor(() => expect(where()).toBe('/town/stable?tab=owned'))
+  })
+
+  it("drops the reveal's flip under Account's reduced motion", async () => {
+    const game = await freshWith(1)
+    const { unmount } = renderG2('/collection/reveal/uma/sim-uma-01', game)
+    expect((await screen.findByText('New Uma')).closest('[data-flip]')).not.toBeNull()
+    unmount()
+    act(() => setReducedMotion(true))
+    renderG2('/collection/reveal/uma/sim-uma-01', game)
+    expect((await screen.findByText('New Uma')).closest('[data-flip]')).toBeNull()
+    act(() => setReducedMotion(false))
+  })
+
+  it('shows Exchange at five Shards, and one tap makes one ticket', async () => {
+    const game = await freshWith(5, async (g) => {
+      for (let i = 1; i <= 5; i += 1) expect((await g.run('dev-grant', { gate: `sim-uma-0${i}` })).kind).toBe('done')
+    })
+    expect(game.getSnapshot().state!.profile.umaShards).toBe(5)
+    renderG2('/town/stable', game)
+    click(await screen.findByRole('button', { name: 'Exchange' }))
+    await waitFor(() => expect(ticketsOf(game)).toBe(16))
+    expect(game.getSnapshot().state!.profile.umaShards).toBe(0)
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Exchange' })).toBeNull())
+  })
+})
+
+describe('the Warehouse (09 §6.1)', () => {
+  it('sells a dish only after its question', async () => {
+    const game = await freshWith(1, async (g) => void (await g.run('dev-grant', { items: { 'dish-sweets-3': 2 } })))
+    renderG2('/town/warehouse', game)
+    click(await screen.findByRole('tab', { name: 'Dishes' }))
+    click(await screen.findByText('Sugar Beet Cake · Speed · grade 3'))
+    const sheet = await screen.findByRole('dialog', { name: 'Sugar Beet Cake' })
+    click(within(sheet).getByRole('button', { name: /^Sell ×1:/ }))
+    const question = await screen.findByRole('dialog', { name: 'Sell' })
+    expect(within(question).getByText('Sell 1 Sugar Beet Cake (grade 3) for 349? Each took about 17 hours of work.')).toBeTruthy()
+    expect(game.getSnapshot().state!.items['dish-sweets-3']).toBe(2)
+    click(within(question).getByRole('button', { name: 'Sell' }))
+    await waitFor(() => expect(game.getSnapshot().state!.items['dish-sweets-3']).toBe(1))
+    expect(game.getSnapshot().state!.profile.prizeMoney).toBe(349)
+    expect(await screen.findByText('Sold 1 for 349.')).toBeTruthy()
+  })
+
+  it('never offers reserved stock, and a stale price reads "Price changed."', async () => {
+    const game = await freshWith(1, async (g) => {
+      await g.run('dev-grant', { items: { 'chopped-carrot': 4, 'wheat-flour': 1, 'beet-sugar': 3 } })
+      await g.run('start', { outfitId: 'sim-uma-01', slot: { building: 'kitchen', slot: 0 }, request: { kind: 'cook', item: 'dish-vegetables-1', count: 1 } })
+    })
+    // A port whose price moved since the screen read it: the rule refuses, the screen says so.
+    const stale: G2Game = {
+      ...game,
+      subscribe: game.subscribe.bind(game),
+      getSnapshot: game.getSnapshot.bind(game),
+      run: (async (name: string, input: unknown, key?: string) => (name === 'sell'
+        ? { kind: 'say', words: { text: 'Price changed.' }, id: 'stale' }
+        : game.run(name as 'sell', input as never, key))) as G2Game['run'],
+    }
+    renderG2('/town/warehouse', stale)
+    click(await screen.findByRole('tab', { name: 'Crafted' }))
+    click(await screen.findByText('Chopped Carrot · Vegetables · grade 1'))
+    const reserved = await screen.findByRole('dialog', { name: 'Chopped Carrot' })
+    for (const button of within(reserved).getAllByRole('button', { name: /^(Sell ×|Surplus|All free)/ })) expect((button as HTMLButtonElement).disabled).toBe(true)
+    fireEvent.keyDown(window, { key: 'Escape' })
+    click(within(reserved).getByRole('button', { name: 'Close' }))
+    click(await screen.findByText('Beet Sugar · Sweets · grade 3'))
+    const sugar = await screen.findByRole('dialog', { name: 'Beet Sugar' })
+    click(within(sugar).getByRole('button', { name: /^Sell ×1:/ }))
+    expect(await within(sugar).findByText('Price changed.')).toBeTruthy()
+    expect(game.getSnapshot().state!.items['beet-sugar']).toBe(3)
+  })
+})
+
+describe('the Exchange (09 §5.5)', () => {
+  it('buys 10 Speed Tickets: Prize Money falls by 10 × SPEED_TICKET_PRICE and the Tickets shelf rises by 10', async () => {
+    const game = await freshWith(0, async (g) => void (await g.run('dev-grant', { prizeMoney: 1_000 })))
+    const { unmount } = renderG2('/town/exchange?row=speed-tickets', game)
+    click(await screen.findByRole('button', { name: '×10' }))
+    click(screen.getByRole('button', { name: /^Buy/ }))
+    await waitFor(() => expect(game.getSnapshot().state!.profile.prizeMoney).toBe(1_000 - 10 * SPEED_TICKET_PRICE))
+    expect(game.getSnapshot().state!.items['speed-ticket']).toBe(10)
+    unmount()
+    renderG2('/town/warehouse', game)
+    click(await screen.findByRole('tab', { name: 'Tickets' }))
+    const row = await screen.findByText('Speed Ticket · Speeds up work')
+    expect(row.closest('button')!.textContent).toContain('10')
+  })
+
+  it('keeps Buy off with "Need N more" when Prize Money is short', async () => {
+    const game = await freshWith(0, async (g) => void (await g.run('dev-grant', { prizeMoney: 100 })))
+    renderG2('/town/exchange', game)
+    click(await screen.findByRole('button', { name: '×10' }))
+    expect((screen.getByRole('button', { name: /^Buy/ }) as HTMLButtonElement).disabled).toBe(true)
+    expect(screen.getByText('Need 200 more.')).toBeTruthy()
+  })
+})
+
+describe('the Card Library and the featured Uma (06 §6, 11 §5)', () => {
+  it('Bond on a card page goes on to the Dojo session with her, the card, its room and the way back', async () => {
+    const game = await freshWith(1)
+    const { where } = renderG2('/town/card-library/card/sim-card-speed-e1', game)
+    click(await screen.findByRole('button', { name: 'Bond' }))
+    const picker = await screen.findByRole('dialog', { name: /^Bond / })
+    click(await within(picker).findByRole('button', { name: /^Amber Sprint/ }))
+    await waitFor(() => expect(where()).toBe(
+      `/training/dojo?session=sim-uma-01&room=speed&unlocks=bond%3Asim-card-speed-e1&back=${encodeURIComponent('/town/card-library/card/sim-card-speed-e1')}`,
+    ))
+  })
+
+  it('Feature another Uma changes the featured card', async () => {
+    const game = await freshWith(2)
+    renderG2('/town?sheet=featured', game)
+    click(await screen.findByRole('button', { name: 'Feature another Uma' }))
+    const picker = await screen.findByRole('dialog', { name: 'Feature an Uma' })
+    click(await within(picker).findByRole('button', { name: /^Bluebell Dash/ }))
+    await waitFor(() => expect(game.getSnapshot().state!.profile.featuredUmaId).toBe('sim-uma-02'))
+    expect(await screen.findByRole('link', { name: 'Featured Uma: Bluebell Dash' })).toBeTruthy()
+  })
+})
+
+describe('Account (02 §3, M034)', () => {
+  it("changes a check-in time, and the dev section's grants run on a dev seed", async () => {
+    const game = await freshWith(1)
+    renderG2('/town/account', game)
+    const first = await screen.findByLabelText('Check-in 1')
+    fireEvent.change(first, { target: { value: '07:30' } })
+    click(screen.getByRole('button', { name: 'Save times' }))
+    await waitFor(() => expect(game.getSnapshot().state!.profile.checkIns).toEqual([450, 780, 1_350]))
+    click(screen.getByRole('button', { name: '+5,000 Prize Money' }))
+    await waitFor(() => expect(game.getSnapshot().state!.profile.prizeMoney).toBe(5_000))
+    click(screen.getByRole('button', { name: 'Jump to her gate' }))
+    await waitFor(() => expect(game.getSnapshot().state!.umas['sim-uma-01']!.racing.level).toBe(10))
+    expect(game.getSnapshot().state!.ledger.filter((row) => row.reason === 'dev-grant')).toHaveLength(1)
+  })
+})
+
+describe('offline and after a reload (02 §9)', () => {
+  it('applies every tap offline, as it does online', async () => {
+    const game = seedGame('fresh', { sync: 'offline' })
+    renderG2('/town/stable?tab=locked', game)
+    click(await screen.findByRole('button', { name: 'Amber Sprint, locked' }))
+    click(within(await screen.findByRole('dialog', { name: 'Amber Sprint' })).getByRole('button', { name: 'Unlock · 1 Uma Ticket' }))
+    await waitFor(() => expect(ticketsOf(game)).toBe(19))
+    expect(await screen.findByText("Saved on this phone. It'll sync when you're back online.")).toBeTruthy()
+  })
+
+  it('keeps an unlock and a featured Uma through a reload of the device save', async () => {
+    const server = new FakeServer()
+    const db = freshDb()
+    const storage = memoryStorage()
+    const boot = () => createSaveGame({
+      env: SAVE_ENV, wipe: false, purge: false, wipeDeps: noWipe, newId: nextId, db, storage, signals: fakeSignals().signals,
+      api: createSaveApi({ fetch: server.fetch as unknown as typeof fetch, base: '', token: async () => 't' }),
+    })
+    const first = boot()
+    await first.session.opened
+    const { unmount, where } = renderG2('/town/stable?tab=locked', first)
+    const name = SAVE_ENV.content.umas.get('sim-uma-02')!.name
+    click(await screen.findByRole('button', { name: `${name}, locked` }))
+    click(within(await screen.findByRole('dialog', { name })).getByRole('button', { name: 'Unlock · 1 Uma Ticket' }))
+    await waitFor(() => expect(where()).toBe('/collection/reveal/uma/sim-uma-02'))
+    await act(async () => {
+      await first.session.lane.idle()
+    })
+    unmount()
+    first.stop()
+
+    const again = boot()
+    await again.session.opened
+    await waitFor(() => expect(again.getSnapshot().status).toBe('ready'))
+    expect(Object.keys(again.getSnapshot().state!.umas)).toEqual(['sim-uma-02'])
+    expect(again.getSnapshot().state!.profile).toMatchObject({ umaTickets: 19, featuredUmaId: 'sim-uma-02' })
+    renderG2('/town/stable', again)
+    expect(await screen.findByRole('link', { name: `${name}, T1 · Lv 1, new` })).toBeTruthy()
+    again.stop()
+  })
+})
