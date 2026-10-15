@@ -5,7 +5,7 @@
 import { hubWords } from '@racer/domain/hub'
 import { useMemo, type ReactNode } from 'react'
 import { Link } from 'react-router'
-import { ArrowDownIcon, ArrowUpIcon, CloseIcon } from '../../../ui/icons'
+import { ArrowDownIcon, ArrowUpIcon, CloseIcon } from '../../ui/icons'
 import { useGame, useNow } from '../../app/game'
 import { PlaceHeader } from '../../ui/PlaceHeader'
 import { UmaFace } from '../../ui/UmaArt'

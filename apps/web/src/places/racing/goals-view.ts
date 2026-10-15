@@ -1,7 +1,7 @@
 // Pure Home, Race, Results, and Journey projections for T014 scenario goals.
 
 import { activeScenario, CAREER_STAGE_LABELS, careerStage, isCareerJourney, SCENARIOS, SCENARIO_SERIES_LABELS, scenarioJourneySummary, type RaceResultRecord, type RaceTemplate, type ScenarioGoal, type ScenarioJourney, type UmaSave } from '@racer/domain'
-import type { LoadedContent } from '../content/runtime'
+import type { LoadedContent } from '../../content/runtime'
 
 /** Every journey an Uma has, in tier order. Journeys live on their scenario run now (D122). */
 const journeysOf = (uma: UmaSave): ScenarioJourney[] =>

@@ -13,7 +13,7 @@ import {
   type TrainerBadgeStateV1,
   type FlairGeneration,
 } from '@racer/domain'
-import type { LoadedContent } from '../content/runtime'
+import type { LoadedContent } from '../../content/runtime'
 import { badgeFrameStyle, type BadgeFrameStyle } from './badge-frame'
 
 export interface FlairEventView {

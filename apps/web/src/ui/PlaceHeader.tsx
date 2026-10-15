@@ -3,7 +3,7 @@
 // was opened from, or goes up: a sub-route to its place, a place to its page.
 import { HUB_PAGE_NAMES, hubWords, type Place } from '@racer/domain/hub'
 import { useId, useState, type ReactNode } from 'react'
-import { ChevronLeftIcon } from '../../ui/icons'
+import { ChevronLeftIcon } from './icons'
 import { useLeave } from '../hub/nav'
 import { InfoIcon } from './icons'
 

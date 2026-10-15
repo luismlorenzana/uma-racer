@@ -5,7 +5,7 @@ import 'fake-indexeddb/auto'
 import Dexie from 'dexie'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { SaveGame } from '../save'
-import { memoryStorage } from '../save/server.test-support'
+import { memoryStorage } from '../save/__fixtures__/server'
 import { forgetDeviceBoot } from '../app/boot'
 import { bootGame } from './boot'
 

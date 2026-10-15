@@ -5,7 +5,7 @@
 import { useCallback, useState } from 'react'
 import {
   ALBUM_VIEWS, isActiveSelection, type AlbumQuery, type AlbumView, type FacetDef, type FacetSelection, type SortDef, type SortDirection,
-} from '../../game/album/query'
+} from './album/query'
 
 export const ALBUM_KEY_PREFIX = 'uma-racer:g2:album:'
 export const MAX_SAVED_VIEWS = 20

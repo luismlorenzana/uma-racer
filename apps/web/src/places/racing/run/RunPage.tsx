@@ -9,14 +9,14 @@ import { formatMargin } from '@racer/race'
 import { AnimatePresence, m, useReducedMotion } from 'motion/react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router'
-import { buildFlairFanfare, buildTrainerFlairFanfare } from '../../../../game/flair-view'
-import { buildResultGoalView } from '../../../../game/goals-view'
-import type { RaceHudState, RaceScene, SceneRunner } from '../../../../scenes/race/RaceScene'
-import { staminaStory, TURN_RACE_RATE, type RacePresentationStage } from '../../../../scenes/race/presentation'
-import { Button } from '../../../../ui/Button'
-import { FlairCards } from '../../../../ui/FlairCards'
-import { ChevronLeftIcon, ChevronRightIcon, HonorsIcon, PauseIcon, PlayIcon, RibbonIcon, SkipIcon } from '../../../../ui/icons'
-import { Meter } from '../../../../ui/Meter'
+import { buildFlairFanfare, buildTrainerFlairFanfare } from '../flair-view'
+import { buildResultGoalView } from '../goals-view'
+import type { RaceHudState, RaceScene, SceneRunner } from '../../../scenes/race/RaceScene'
+import { staminaStory, TURN_RACE_RATE, type RacePresentationStage } from '../../../scenes/race/presentation'
+import { Button } from '../../../ui/Button'
+import { FlairCards } from '../../../ui/FlairCards'
+import { ChevronLeftIcon, ChevronRightIcon, HonorsIcon, PauseIcon, PlayIcon, RibbonIcon, SkipIcon } from '../../../ui/icons'
+import { Meter } from '../../../ui/Meter'
 import { useGame, useRuntime } from '../../../app/game'
 import { useLeave } from '../../../hub/nav'
 import { AnimatedNumber } from '../../../ui/AnimatedNumber'
@@ -104,7 +104,7 @@ export default function RunPage() {
     // PixiJS loads with the scene, only once there is a committed race to play.
     let live = true
     let scene: RaceScene | null = null
-    void import('../../../../scenes/race/RaceScene').then(({ RaceScene: Scene }) => {
+    void import('../../../scenes/race/RaceScene').then(({ RaceScene: Scene }) => {
       if (!live) return
       scene = new Scene(timeline, runners, replay.playerIndex, setHud, () => setShowResults(true), reducedMotion,
         replay.input.course.layout, replay.input.course.rotation ?? (race ? COURSE_ROTATION[race.direction] : undefined))

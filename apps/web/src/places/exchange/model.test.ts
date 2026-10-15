@@ -3,7 +3,7 @@
 import { buyPrice, SPEED_TICKET_PRICE } from '@racer/domain/rework/exchange'
 import { hasBannedWord } from '@racer/domain/rework/check-in'
 import { describe, expect, it } from 'vitest'
-import { account, umaIds } from '../../testing-ops'
+import { account, umaIds } from '../../__fixtures__/testing-ops'
 import { buyCheck, buyQuestion, exchangeView, rawFamily, speedTicketPrice, topShortage, typedQty } from './model'
 
 describe('raw ingredients (09 §5.3)', () => {

@@ -1,5 +1,5 @@
 import { m } from 'motion/react'
-import type { FlairEventView } from '../game/flair-view'
+import type { FlairEventView } from '../places/racing/flair-view'
 import { BadgesIcon, SparkIcon, StarIcon, type IconComponent } from './icons'
 
 const tierTone: Record<FlairEventView['stage'], string> = {

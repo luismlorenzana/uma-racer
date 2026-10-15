@@ -7,11 +7,11 @@ import { collectAll, DEFAULT_CHECK_INS, hasBannedWord, repeat, SUMMARY_SECTIONS,
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { seed, stubStorage } from '../../testing'
+import { seed, stubStorage } from '../../__fixtures__/testing'
 import { sizeChipsView } from '../../ui/work/model'
 import { workView } from '../../ui/work/view'
 import { WORK_WORDS, type WordsContext } from '../../ui/work/words'
-import { apply, farmAccount, HOUR, MINUTE, uma, withFarmLevel } from '../farm/fixtures'
+import { apply, farmAccount, HOUR, MINUTE, uma, withFarmLevel } from '../farm/__fixtures__/farm'
 import { readCollapsed, readShownAt, SHOWN_AT_KEY, writeCollapsed, writeShownAt } from './device'
 import {
   agoWords, bestUseLines, collectedView, freeLines, headerWords, nextWords, sectionOf, sessionLink, skipViews, speedOptions, suggestionLink,
@@ -185,7 +185,7 @@ describe('Speed up all and Best use (02 §4)', () => {
 })
 
 describe("size chips (02 §3's check-in-fits table, cell by cell)", () => {
-  const doc = readFileSync(fileURLToPath(new URL('../../../../../../docs/rework/02-check-ins-and-notifications.md', import.meta.url)), 'utf8')
+  const doc = readFileSync(fileURLToPath(new URL('../../../../../docs/rework/02-check-ins-and-notifications.md', import.meta.url)), 'utf8')
   const block = doc.slice(doc.indexOf('<!-- live:check-in-fits -->'), doc.indexOf('<!-- /live -->', doc.indexOf('<!-- live:check-in-fits -->')))
   const rows = block.split('\n').filter((line) => /^\| (Gather|Craft|Cook|Session) \(/.test(line))
 

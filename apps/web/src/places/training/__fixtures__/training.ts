@@ -8,12 +8,12 @@ import { simCardId } from '@racer/domain/rework/sim'
 import { bondUnlock, commitUnlocks, layerUnlocks, type Unlock } from '@racer/domain/rework/training'
 import { isRefusal } from '@racer/domain/rework/tiers'
 import type { WorkState } from '@racer/domain/rework/work'
-import { workView, type WorkView } from '../../ui/work/view'
-import type { WordsContext } from '../../ui/work/words'
-import { apply, DEV_ENV, farmAccount, farmSeed, uma } from '../farm/fixtures'
+import { workView, type WorkView } from '../../../ui/work/view'
+import type { WordsContext } from '../../../ui/work/words'
+import { apply, DEV_ENV, farmAccount, farmSeed, uma } from '../../farm/__fixtures__/farm'
 
 export { apply, DEV_ENV, farmSeed, uma }
-export { HOUR, MINUTE } from '../farm/fixtures'
+export { HOUR, MINUTE } from '../../farm/__fixtures__/farm'
 
 export const content = DEV_ENV.content
 

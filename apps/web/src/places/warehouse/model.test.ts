@@ -5,7 +5,7 @@ import { hasBannedWord } from '@racer/domain/rework/check-in'
 import { sellPrice, stackCounts } from '@racer/domain/rework/exchange'
 import { neededFromStock, plan, targetsOf } from '@racer/domain/rework/planner'
 import { describe, expect, it } from 'vitest'
-import { account, umaIds } from '../../testing-ops'
+import { account, umaIds } from '../../__fixtures__/testing-ops'
 import {
   biggestStacks, EMPTY_WORDS, filterRows, itemLine, largestShortfalls, recipesUsing, sellQuestion, sellSheet, sizeOffWords, surplusWorth, warehouse,
 } from './model'

@@ -1,6 +1,6 @@
 // The names the new game's screens give the domain's small vocabularies (T138): stats, distances, running styles and
 // surfaces in the order today's screens list them. Words only: the rules live in the domain, and the `satisfies`
-// checks keep these in step with its types, since `g2/` reads today's domain root for types only.
+// checks keep these in step with its types.
 import type { DistanceCategory, StatKey, Strategy, Surface } from '@racer/domain'
 
 export const STAT_KEYS = ['speed', 'stamina', 'power', 'guts', 'wit'] as const satisfies readonly StatKey[]

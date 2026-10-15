@@ -3,7 +3,7 @@
 // readiness rules, when Exchange shows, the roster line, and what an Uma is doing for a job, a session and Free.
 import { advanceReadiness, isRefusal, lifetimeLevel } from '@racer/domain/rework/tiers'
 import { describe, expect, it } from 'vitest'
-import { account, umaIds } from '../../testing-ops'
+import { account, umaIds } from '../../__fixtures__/testing-ops'
 import {
   buildStableAlbum, doingOf, doingWords, levelLabel, openingTab, profileLine, queryStable, readyUmas, rosterLine, skillsView, STABLE_DEFAULT_QUERY,
   ticketNote, unlockBlocked,

@@ -4,7 +4,7 @@
 // and `/` opens by the start rule's three cases and the last page.
 import { cleanup, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { renderG2, seedGame, stubStorage } from '../testing'
+import { renderG2, seedGame, stubStorage } from '../__fixtures__/testing'
 import { BOOTING_GAME } from './game'
 import { REDIRECTS, redirectPath } from './redirects'
 import { LAST_PAGE_KEY, startPath } from './start'

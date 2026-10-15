@@ -2,7 +2,7 @@
 // content packs, the same four maps the API builds from its own, and cached per content version. `dev` is on only in
 // dev builds, so `dev-grant` runs nowhere else on the device (M034).
 import { buildOperationEnv, type OperationEnv } from '@racer/domain/save-g2'
-import type { LoadedContent } from '../../content/runtime'
+import type { LoadedContent } from '../content/runtime'
 
 export type OperationContent = Pick<LoadedContent, 'manifest' | 'umas' | 'races' | 'cards' | 'skills'>
 

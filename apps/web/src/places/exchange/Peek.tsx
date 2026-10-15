@@ -3,7 +3,7 @@
 import { itemById, SPEED_TICKET_ID } from '@racer/domain/rework/items'
 import { useMemo } from 'react'
 import { Link } from 'react-router'
-import { TicketIcon } from '../../../ui/icons'
+import { TicketIcon } from '../../ui/icons'
 import { useGame, useNow } from '../../app/game'
 import { CoinIcon } from '../../ui/icons'
 import { amount } from '../../ui/labels'

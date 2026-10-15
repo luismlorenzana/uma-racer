@@ -6,7 +6,7 @@ import { ENTITY_KINDS, LOG_KINDS } from '@racer/domain/save-g2'
 import Dexie from 'dexie'
 import { describe, expect, it } from 'vitest'
 import { parseStoredEntity, readConfirmed, SAVE_DB_NAME, SaveDb, UnreadableRow } from './db'
-import { FakeServer, freshDb, trainerBadge } from './server.test-support'
+import { FakeServer, freshDb, trainerBadge } from './__fixtures__/server'
 
 describe('uma-racer-g2', () => {
   it('opens at version 1 with one table per kind and the outbox, and nothing else', async () => {

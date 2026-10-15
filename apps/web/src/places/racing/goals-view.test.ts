@@ -2,7 +2,7 @@ import { withRun } from './__fixtures__/save'
 import { umaFixture } from './__fixtures__/save'
 import { describe, expect, it } from 'vitest'
 import { createUmaSave, type ContentAtlas, type RaceResultRecord, type RaceTemplate, type ScenarioJourney, type UmaTemplate } from '@racer/domain'
-import type { LoadedContent } from '../content/runtime'
+import type { LoadedContent } from '../../content/runtime'
 import { buildGoalRaceCatalog, buildHomeGoalState, buildJourneyView, buildResultGoalView, goalsAtStake } from './goals-view'
 
 const template: UmaTemplate = {

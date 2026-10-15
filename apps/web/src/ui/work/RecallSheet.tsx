@@ -3,7 +3,7 @@
 // come back ("8 Chopped Carrot and 2 Wheat Flour come back"), the minutes of progress lost and the queue dropped. Then
 // `recall`. `RecallPreviewLines` is the preview alone, for the job sheet's **Recall and start here**.
 import { useGame } from '../../app/game'
-import { BottomSheet } from '../../../ui/BottomSheet'
+import { BottomSheet } from '../BottomSheet'
 import { recallPreview, type RecallPreview } from './model'
 import { TapNoteLine } from './TapNote'
 import { useTap } from './useTap'

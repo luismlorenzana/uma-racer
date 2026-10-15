@@ -12,7 +12,7 @@ import { DEBOUNCE_MS, PULL_KEY, PULL_OVERLAP_MS, RETRY_EVERY_MS } from './sync'
 import { refusalWords } from './words'
 import {
   device, ENV, FakeServer, flairEvent, flairId, nextId, settle, trainerBadge, turn, umaId, useClock, type Device,
-} from './server.test-support'
+} from './__fixtures__/server'
 
 beforeEach(() => useClock())
 afterEach(() => vi.useRealTimers())

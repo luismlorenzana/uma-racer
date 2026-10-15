@@ -9,7 +9,7 @@ export const REDUCED_MOTION_KEY = 'uma-racer:g2:reducedMotion'
 const CHANGED = 'uma-racer:g2:reduced-motion-changed'
 const QUERY = '(prefers-reduced-motion: reduce)'
 
-const loadMotionFeatures = () => import('../../ui/motionFeatures').then((mod) => mod.default)
+const loadMotionFeatures = () => import('../ui/motionFeatures').then((mod) => mod.default)
 
 function deviceSwitch(): boolean {
   try {

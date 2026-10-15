@@ -12,8 +12,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { G2Game } from '../app/game'
 import { createSaveApi } from '../save/api'
 import { createSaveGame } from '../save/index'
-import { FakeServer, fakeSignals, freshDb, memoryStorage, nextId, noWipe, ENV as SAVE_ENV } from '../save/server.test-support'
-import { renderG2, seedGame, stubStorage } from '../testing'
+import { FakeServer, fakeSignals, freshDb, memoryStorage, nextId, noWipe, ENV as SAVE_ENV } from '../save/__fixtures__/server'
+import { renderG2, seedGame, stubStorage } from '../__fixtures__/testing'
 import { setReducedMotion } from '../ui/devicePrefs'
 
 afterEach(() => {

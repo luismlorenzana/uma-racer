@@ -12,8 +12,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { G2Game } from '../../app/game'
 import { createMemoryGame } from '../../dev/memory'
 import type { G2Seed } from '../../dev/seed'
-import { renderG2, stubStorage } from '../../testing'
-import { advanced, apply, content, farmSeed, granted, MINUTE, trainingAccount, uma, withCommitted, withLayers, withSetCard } from './fixtures'
+import { renderG2, stubStorage } from '../../__fixtures__/testing'
+import { advanced, apply, content, farmSeed, granted, MINUTE, trainingAccount, uma, withCommitted, withLayers, withSetCard } from './__fixtures__/training'
 import { layerUnlocks } from '@racer/domain/rework/training'
 
 afterEach(() => {

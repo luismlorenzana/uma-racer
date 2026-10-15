@@ -1,5 +1,5 @@
 // Plain words (T136; docs/rework/02-check-ins-and-notifications.md §9): every failure says one of 02 §9's sentences, a
-// refusal says its rule's own words, and no sentence in `g2/save` holds a banned word, a code or a status number.
+// refusal says its rule's own words, and no sentence in `save/` holds a banned word, a code or a status number.
 import { readdirSync, readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { CHECK_IN_WORDS, fill, hasBannedWord, say } from '@racer/domain/rework/check-in'
@@ -39,7 +39,7 @@ describe('plain words', () => {
     expect(sentence(words)).toBe('Kitasan Black is busy until 18:30.')
   })
 
-  it('holds no banned word, code or status number in any sentence of g2/save', () => {
+  it('holds no banned word, code or status number in any sentence of save/', () => {
     const sources = readdirSync(HERE).filter((file) => /\.tsx?$/.test(file) && !/\.test(-support)?\.tsx?$/.test(file))
     expect(sources).toEqual(expect.arrayContaining(['words.ts', 'sync.ts', 'boot.ts', 'actions.ts', 'index.ts']))
     const prose = sources.flatMap((file) => literals(readFileSync(`${HERE}${file}`, 'utf8')).filter((text) => /^[A-Z][^]* /.test(text)).map((text) => [file, text]))

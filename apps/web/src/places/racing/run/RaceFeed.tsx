@@ -1,12 +1,12 @@
 // The race feed (D178), ported from today's `screens/race/RaceFeed.tsx` unchanged in behaviour: small toasts on the
 // right of the course, newest on top, each a pure function of playback time. Faces are the new game's (`UmaFace`, her
-// initial on the dev mount); names come from the race's content.
-import type { RacePackCue, RaceCue } from '../../../../scenes/race/presentation'
+// initial on the seeds' mount); names come from the race's content.
+import type { RacePackCue, RaceCue } from '../../../scenes/race/presentation'
 import {
   ArrowDownIcon, ArrowUpIcon, BurstIcon, CrownIcon, GateIcon, MoveToIcon, WarningIcon, type IconComponent,
-} from '../../../../ui/icons'
-import { TypeIcon, type TypeIconKind } from '../../../../ui/TypeIcon'
-import type { LoadedContent } from '../../../../content/runtime'
+} from '../../../ui/icons'
+import { TypeIcon, type TypeIconKind } from '../../../ui/TypeIcon'
+import type { LoadedContent } from '../../../content/runtime'
 import { UmaFace } from '../../../ui/UmaArt'
 import type { RaceRunner } from '../prepare'
 import { effectLabel } from './labels'

@@ -2,7 +2,7 @@
 // quantity sheet) without sitting in that sheet's transformed box. Context (router, game) carries through the portal.
 import type { ComponentProps } from 'react'
 import { createPortal } from 'react-dom'
-import { BottomSheet } from '../../ui/BottomSheet'
+import { BottomSheet } from './BottomSheet'
 
 export function Sheet(props: ComponentProps<typeof BottomSheet>) {
   if (typeof document === 'undefined') return null

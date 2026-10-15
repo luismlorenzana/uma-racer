@@ -5,7 +5,7 @@ import { isEntityKind, type EntityRow, type LogRow, type OperationEnvelope } fro
 import { describe, expect, it } from 'vitest'
 import { CREATE_KEY, operationKey, type ConfirmedRows, type OutboxRow } from './db'
 import { fold } from './fold'
-import { ENV, FakeServer, umaId } from './server.test-support'
+import { ENV, FakeServer, umaId } from './__fixtures__/server'
 
 const T = Date.UTC(2026, 9, 15, 8)
 const create: OutboxRow = { seq: 1, key: CREATE_KEY, change: { type: 'create', createdAt: T }, queuedAt: T }

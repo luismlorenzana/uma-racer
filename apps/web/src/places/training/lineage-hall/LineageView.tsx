@@ -5,7 +5,7 @@
 // sorted by what each would add), and runs `set-lineage`.
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router'
-import { LockedIcon } from '../../../../ui/icons'
+import { LockedIcon } from '../../../ui/icons'
 import { UmaSquare } from '../../../ui/ArtSquare'
 import { UmaPicker } from '../../../ui/UmaPicker'
 import { TapNoteLine } from '../../../ui/work/TapNote'

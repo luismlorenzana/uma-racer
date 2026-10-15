@@ -6,7 +6,7 @@
 import type { Strategy } from '@racer/domain'
 import type { OperationEnv } from '@racer/domain/rework/check-in'
 import type { WorkState } from '@racer/domain/rework/work'
-import type { LoadedContent } from '../../../content/runtime'
+import type { LoadedContent } from '../../content/runtime'
 import type { G2Applied, G2Game } from '../../app/game'
 import { deviceRows, raceFlair } from './flair'
 import { placementOf, prepareRace, raceRunOf, simulate } from './prepare'

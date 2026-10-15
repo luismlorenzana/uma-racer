@@ -4,8 +4,8 @@
 // sync follows the auth state.
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { EMPTY_BUCKET_CONTENT, SIGNED_OUT_CONTENT } from '../../content/diagnostics'
-import type { ContentState } from '../../content/ContentProvider'
+import { EMPTY_BUCKET_CONTENT, SIGNED_OUT_CONTENT } from '../content/diagnostics'
+import type { ContentState } from '../content/ContentProvider'
 import { useGame } from './game'
 
 const auth = vi.hoisted(() => ({
@@ -14,8 +14,8 @@ const auth = vi.hoisted(() => ({
 const content = vi.hoisted(() => ({ state: { status: 'loading' } as unknown }))
 const boot = vi.hoisted(() => ({ calls: [] as unknown[], setSignedIn: vi.fn() }))
 
-vi.mock('../../auth/AuthProvider', () => ({ useAuth: () => auth.state }))
-vi.mock('../../content/ContentProvider', () => ({ useContent: () => content.state }))
+vi.mock('../auth/AuthProvider', () => ({ useAuth: () => auth.state }))
+vi.mock('../content/ContentProvider', () => ({ useContent: () => content.state }))
 vi.mock('./boot', async () => {
   const { errorGame } = await import('./game')
   return {

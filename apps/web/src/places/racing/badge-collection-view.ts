@@ -23,7 +23,7 @@ import {
   type RaceResultRecord,
   type FlairGeneration,
 } from '@racer/domain'
-import type { LoadedContent } from '../content/runtime'
+import type { LoadedContent } from '../../content/runtime'
 import { badgeFrameStyle, type BadgeFrameStyle } from './badge-frame'
 
 export { badgeFrameStyle, type BadgeFrameStyle } from './badge-frame'

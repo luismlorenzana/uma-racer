@@ -7,7 +7,7 @@ import { CREATE_KEY } from './db'
 import { useSave } from './store'
 import {
   device, FakeServer, flairEvent, freshDb, memoryStorage, nextId, settle, turn, umaId, useClock, type Device,
-} from './server.test-support'
+} from './__fixtures__/server'
 import type { WipeDeps } from './wipe'
 
 beforeEach(() => useClock())

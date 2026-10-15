@@ -5,9 +5,9 @@
 import { farmExpMultiplier, farmItemSeconds, QUARTERS_PER_EXP } from '@racer/domain/rework/farm'
 import { craftedItem, FAMILIES, FAMILY_RING } from '@racer/domain/rework/items'
 import { describe, expect, it } from 'vitest'
-import { seed } from '../../../testing'
+import { seed } from '../../../__fixtures__/testing'
 import { workView } from '../../../ui/work/view'
-import { apply, farmAccount, HOUR, uma, withFarmLevel } from '../fixtures'
+import { apply, farmAccount, HOUR, uma, withFarmLevel } from '../__fixtures__/farm'
 import {
   aptitudeLine, CAN_COOK_NOW, chooseSlot, inAppPath, modeOf, readSheetQuery, sheetAction, sheetItems, sheetPreview, sheetTabs, shortfallLinks,
   umaNote, umaRows, withoutSheet,

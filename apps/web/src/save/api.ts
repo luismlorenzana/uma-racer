@@ -34,7 +34,7 @@ export interface SaveApi {
 
 let tokenProvider: () => Promise<string | null> = async () => null
 
-/** Where the save's requests take their token (T143 points it at the signed-in owner's Firebase token). */
+/** Where the save's requests take their token: the signed-in owner's Firebase ID token (T143's boot). */
 export function setSaveTokenProvider(provider: () => Promise<string | null>): void {
   tokenProvider = provider
 }

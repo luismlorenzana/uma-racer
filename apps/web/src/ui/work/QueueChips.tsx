@@ -3,7 +3,7 @@
 // `queueWarnings`' mark where the stock won't cover it ("Short 2 Honey."). Each can move earlier or be removed (`queue`
 // with `move` or `remove`). A queue that already stopped is the check-in's (T142).
 import { SESSION_KIND, type WorkRequest } from '@racer/domain/rework/work'
-import { ArrowUpIcon, CloseIcon, WarningIcon } from '../../../ui/icons'
+import { ArrowUpIcon, CloseIcon, WarningIcon } from '../icons'
 import { clockTime } from '@racer/domain/rework/check-in'
 import { queueChips } from './model'
 import { TapNoteLine } from './TapNote'

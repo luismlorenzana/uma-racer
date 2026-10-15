@@ -63,7 +63,7 @@ const sameSnapshot = (a: G2Snapshot, b: G2Snapshot): boolean => SNAPSHOT_FIELDS.
 
 export interface SaveGame extends G2Game {
   readonly session: SaveSession
-  /** Sync waits while signed out ("Sync paused"); T143 calls this from the auth provider. */
+  /** Sync waits while signed out ("Sync paused"); the session follows the auth provider with it (T143). */
   setSignedIn(signedIn: boolean): void
   stop(): void
 }

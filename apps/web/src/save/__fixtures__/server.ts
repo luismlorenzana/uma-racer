@@ -12,11 +12,11 @@ import {
   type SyncRequestV2,
 } from '@racer/domain/save-g2'
 import { vi } from 'vitest'
-import { createSaveApi } from './api'
-import { bootSave, type SaveBootOptions, type SaveSession } from './boot'
-import { SaveDb } from './db'
-import type { LaneSignals } from './sync'
-import type { WipeDeps } from './wipe'
+import { createSaveApi } from '../api'
+import { bootSave, type SaveBootOptions, type SaveSession } from '../boot'
+import { SaveDb } from '../db'
+import type { LaneSignals } from '../sync'
+import type { WipeDeps } from '../wipe'
 
 /** The rework sim's invented content; `dev` so `dev-grant` runs (M034's dev builds). */
 export const ENV: OperationEnv = Object.freeze({ content: SIM_CONTENT, dev: true })

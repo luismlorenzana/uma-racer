@@ -11,7 +11,7 @@ import type { G2Game, G2Rules } from './game'
 import type { SaveGame } from '../save'
 import type { SaveBootOptions } from '../save/boot'
 import type { OperationContent } from '../save/env'
-import { criticalGameplayAction } from '../../app/update-lifecycle'
+import { criticalGameplayAction } from './update-lifecycle'
 
 export interface G2Boot {
   readonly game: G2Game

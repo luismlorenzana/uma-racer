@@ -20,7 +20,7 @@ import {
   type RaceInput,
   type RaceTimeline,
 } from '@racer/race'
-import type { LoadedContent } from '../content/runtime'
+import type { LoadedContent } from '../../content/runtime'
 
 export function accomplishmentFactsFromTimeline(input: {
   race: RaceTemplate

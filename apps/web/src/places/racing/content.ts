@@ -1,16 +1,16 @@
 // The private content a race reads beyond the rules' (docs/design/racing.md "Pack racing"): courses, skills and every
 // Uma of the field, in today's `LoadedContent` shape so today's pure race and badge views read it as they are. The app
-// feeds today's content (T143); the dev mount mounts none, so it reads the seed's synthetic content, with an invented
+// feeds the private content (T143); the seeds' mount has none, so it reads the seed's synthetic content, with an invented
 // course for any race whose course it lacks and no art. Nothing here is original-game content.
 import type { CourseTemplate, RaceTemplate } from '@racer/domain'
 import type { OperationEnv } from '@racer/domain/rework/check-in'
 import { useMemo } from 'react'
 import type { ContentAtlas } from '@racer/domain'
-import type { LoadedContent } from '../../../content/runtime'
+import type { LoadedContent } from '../../content/runtime'
 import { useG2Content } from '../../app/content'
 import { useGame } from '../../app/game'
 
-/** The dev mount's content version: what a synthetic race's seed and record name. */
+/** The seeds' content version: what a synthetic race's seed and record name. */
 export const DEV_CONTENT_VERSION = 'dev-synthetic'
 
 /**

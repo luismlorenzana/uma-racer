@@ -1,6 +1,6 @@
 // The job sheet's Uma rows (docs/rework/07-farm.md §3, §5, §10): Farm Level, the highest grade she can work, her tier,
 // her aptitude line ("Sprint A · Farm EXP ×1.6") and what she is doing. A session greys her with its end; her running
-// job here offers Add to queue; one elsewhere, Recall and start here. T138 owns the one Uma picker (`g2/ui/UmaPicker`,
+// job here offers Add to queue; one elsewhere, Recall and start here. T138 owns the one Uma picker (`ui/UmaPicker`,
 // D181's sorts and filters); until it lands this sheet keeps its own short list, in 07 §10's order, which the picker
 // can replace with these rows as its `describe` and `disabledReason`.
 import { useState } from 'react'

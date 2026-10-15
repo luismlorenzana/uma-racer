@@ -2,7 +2,7 @@ import { emptySubject } from './__fixtures__/save'
 import { describe, expect, it } from 'vitest'
 import { createUmaBadgeState, createUmaSave, evaluateUmaFlair, buildUmaFlairCatalog, type ContentAtlas, type RaceTemplate, type UmaTemplate } from '@racer/domain'
 import { buildFlairFanfare, buildUmaFlairSummary } from './flair-view'
-import type { LoadedContent } from '../content/runtime'
+import type { LoadedContent } from '../../content/runtime'
 
 const template: UmaTemplate = {
   id: 'flair-uma', charaId: 'flair-character', name: 'Flair Runner', outfit: null, jpRelease: '2000-01-01', globalRelease: null,

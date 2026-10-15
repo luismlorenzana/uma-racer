@@ -15,7 +15,7 @@ import { CHECK_IN_WORDS, type CollectAllReceipt, type RepeatReceipt, type Words 
 import { isFree, type WorkState } from '@racer/domain/rework/work'
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router'
-import { ChevronDownIcon } from '../../../ui/icons'
+import { ChevronDownIcon } from '../../ui/icons'
 import { useGame, useHub, useNow, useRuntime, type G2Answer } from '../../app/game'
 import { navState, type G2NavState } from '../../hub/nav'
 import type { CheckInSheetProps } from '../registry'

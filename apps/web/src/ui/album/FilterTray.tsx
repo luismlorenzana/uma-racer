@@ -5,7 +5,7 @@ import {
   type FacetDef,
   type FacetSelection,
   type RangeSelection,
-} from '../../game/album/query'
+} from './query'
 import { BottomSheet } from '../BottomSheet'
 import { Button } from '../Button'
 import { Chip } from '../Chip'

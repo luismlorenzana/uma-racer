@@ -2,9 +2,9 @@
 // over the private content's icon atlas, with an Uma's bust or a card's art once it loads. Without content (the dev
 // mount) it is ArtTile's labelled placeholder. The four corners carry what the album puts there.
 import type { ReactNode } from 'react'
-import { getContentAsset } from '../../content/runtime'
-import { ArtTile } from '../../ui/ArtTile'
-import { useArt } from '../../ui/album/useArt'
+import { getContentAsset } from '../content/runtime'
+import { ArtTile } from './ArtTile'
+import { useArt } from './album/useArt'
 import { useG2Content } from '../app/content'
 
 interface Corners {

@@ -3,9 +3,9 @@
 import { hubWords } from '@racer/domain/hub'
 import { useState } from 'react'
 import { Outlet } from 'react-router'
-import { Button } from '../../ui/Button'
-import { Panel } from '../../ui/Panel'
-import { APP_BUILD_ID } from '../../app/build'
+import { Button } from '../ui/Button'
+import { Panel } from '../ui/Panel'
+import { APP_BUILD_ID } from './build'
 import { useSnapshot } from './game'
 
 function SaveError({ words }: { words: string }) {

@@ -5,7 +5,7 @@ import { farmExpAtLevel, QUARTERS_PER_EXP } from '@racer/domain/rework/farm'
 import { simUmaId } from '@racer/domain/rework/sim'
 import { isRefusal } from '@racer/domain/rework/tiers'
 import type { WorkState } from '@racer/domain/rework/work'
-import { SEED_ENV, SEEDS, type G2Seed } from '../../dev/seed'
+import { SEED_ENV, SEEDS, type G2Seed } from '../../../dev/seed'
 
 /** The env with `dev-grant` allowed, as a dev build's is (M034). */
 export const DEV_ENV: OperationEnv = Object.freeze({ ...SEED_ENV, dev: true })

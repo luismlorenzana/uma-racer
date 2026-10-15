@@ -5,7 +5,7 @@
 import { hubWords, type HubView } from '@racer/domain/hub'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router'
-import { OfflineIcon, TicketIcon, UmaCouponIcon, WarningIcon } from '../../ui/icons'
+import { OfflineIcon, TicketIcon, UmaCouponIcon, WarningIcon } from '../ui/icons'
 import { useGame, useHub, type G2Sync } from '../app/game'
 import { AnimatedNumber } from '../ui/AnimatedNumber'
 import { CoinIcon } from '../ui/icons'

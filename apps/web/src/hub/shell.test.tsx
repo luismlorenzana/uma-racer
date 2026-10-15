@@ -6,7 +6,7 @@ import { hubView, placesOn, tileLabel, placeById } from '@racer/domain/hub'
 import { act, cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { REDUCED_MOTION_KEY, setDeviceReducedMotion } from '../app/motion'
-import { renderG2, seed, seedGame, stubStorage } from '../testing'
+import { renderG2, seed, seedGame, stubStorage } from '../__fixtures__/testing'
 
 afterEach(() => {
   cleanup()

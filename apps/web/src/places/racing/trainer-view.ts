@@ -19,7 +19,7 @@ import {
   type UmaSave,
   type FlairGeneration,
 } from '@racer/domain'
-import type { LoadedContent } from '../content/runtime'
+import type { LoadedContent } from '../../content/runtime'
 import { buildUmaBadgeCollection, type BadgeCollectionItem, type BadgeSourceView } from './badge-collection-view'
 
 export interface TrainerBadgeCollection {

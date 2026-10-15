@@ -9,7 +9,7 @@ import { SESSION_MAX_UNLOCKS, sessionSeconds } from '@racer/domain/rework/traini
 import type { Place } from '@racer/domain/hub'
 import { lazy, Suspense, useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router'
-import { TypeIcon } from '../../../../ui/TypeIcon'
+import { TypeIcon } from '../../../ui/TypeIcon'
 import { useGame } from '../../../app/game'
 import { navState } from '../../../hub/nav'
 import { ItemIcon } from '../../../ui/ItemIcon'

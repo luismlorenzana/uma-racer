@@ -21,7 +21,7 @@ import { deriveUmaPreset } from '@racer/domain/rework/training'
 import { slotCards } from '../../ui/work/model'
 import {
   advanced, apply, CONTEXT, content, DEV_ENV, granted, trainingAccount, uma, viewAt, withLayers, withSetCard,
-} from './fixtures'
+} from './__fixtures__/training'
 
 const AT = trainingAccount(0).at
 

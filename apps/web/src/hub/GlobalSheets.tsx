@@ -5,7 +5,7 @@
 import { HUB_PAGE_NAMES, HUB_PAGES, hubWords, placeById, placesOn, type HubView, type Place } from '@racer/domain/hub'
 import { Suspense, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, useLocation } from 'react-router'
-import { BottomSheet } from '../../ui/BottomSheet'
+import { BottomSheet } from '../ui/BottomSheet'
 import { useHub } from '../app/game'
 import { SHEET_UI } from '../places/registry'
 import { UmaArt } from '../ui/UmaArt'

@@ -5,7 +5,7 @@
 // she can bond now, a pick going to the Dojo's session sheet with her, the card and its room.
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router'
-import { TypeIcon } from '../../../../ui/TypeIcon'
+import { TypeIcon } from '../../../ui/TypeIcon'
 import { Sheet } from '../../../ui/Sheet'
 import { TapNoteLine } from '../../../ui/work/TapNote'
 import { useTap } from '../../../ui/work/useTap'

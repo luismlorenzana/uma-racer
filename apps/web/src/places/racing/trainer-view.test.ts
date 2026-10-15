@@ -15,7 +15,7 @@ import {
   type UmaTemplate,
 } from '@racer/domain'
 import { describe, expect, it } from 'vitest'
-import type { LoadedContent } from '../content/runtime'
+import type { LoadedContent } from '../../content/runtime'
 import { filterBadgeItems } from './badge-collection-view'
 import {
   buildStableRecentFlair,

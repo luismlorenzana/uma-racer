@@ -17,8 +17,8 @@ import { rollRivalFieldAt, scenarioNumber, type ScenarioAt } from '@racer/domain
 import { deriveUmaPreset, type DerivedBuild } from '@racer/domain/rework/training'
 import { collectBeforeRace, type WorkState } from '@racer/domain/rework/work'
 import { createRng, simulateRace, type RaceInput, type RaceTimeline } from '@racer/race'
-import type { LoadedContent } from '../../../content/runtime'
-import { accomplishmentFactsFromTimeline } from '../../../game/race-facts'
+import type { LoadedContent } from '../../content/runtime'
+import { accomplishmentFactsFromTimeline } from './race-facts'
 
 /** One runner as the scene, the feed and the result name her. */
 export interface RaceRunner {

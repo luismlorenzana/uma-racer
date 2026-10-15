@@ -2,8 +2,8 @@
 // manifest carries, fetched once she is on screen, then her `uma-icons` outfit icon, then the fallback (her initial).
 // Faces are today's `face` art until phase 5's `character-faces` (M034); the plaza uses `chibi` `-a`, then `bust`.
 import { useEffect, useRef, useState, type ReactNode, type RefObject } from 'react'
-import { getContentAsset, type ArtKind, type LoadedContent } from '../../content/runtime'
-import { AtlasSprite } from '../../ui/AtlasSprite'
+import { getContentAsset, type ArtKind, type LoadedContent } from '../content/runtime'
+import { AtlasSprite } from './AtlasSprite'
 
 export type UmaArtKind = Extract<ArtKind, 'face' | 'chibi' | 'bust'>
 

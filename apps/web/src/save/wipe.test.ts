@@ -4,7 +4,7 @@ import 'fake-indexeddb/auto'
 import Dexie from 'dexie'
 import { describe, expect, it, vi } from 'vitest'
 import { SAVE_DB_NAME, SaveDb } from './db'
-import { memoryStorage } from './server.test-support'
+import { memoryStorage } from './__fixtures__/server'
 import { OLD_CONTENT_CACHE, OLD_DATABASE, WIPED_KEY, wipeOnce, type WipeDeps } from './wipe'
 
 async function makeDatabase(name: string): Promise<void> {

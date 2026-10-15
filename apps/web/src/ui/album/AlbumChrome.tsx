@@ -7,8 +7,8 @@ import {
   type EmptyStateHint,
   type FacetDef,
   type SortDef,
-} from '../../game/album/query'
-import type { SavedView } from '../../g2/ui/albumPrefs'
+} from './query'
+import type { SavedView } from '../albumPrefs'
 import { BottomSheet } from '../BottomSheet'
 import { Button } from '../Button'
 import { Chip } from '../Chip'

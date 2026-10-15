@@ -4,7 +4,7 @@
 // Owned tab. Reduced motion: no flip.
 import { m } from 'motion/react'
 import { Link, useLocation } from 'react-router'
-import { useArt } from '../../../ui/album/useArt'
+import { useArt } from '../../ui/album/useArt'
 import { useG2Content } from '../../app/content'
 import { useGame } from '../../app/game'
 import { useReducedMotionSetting } from '../../app/motion'

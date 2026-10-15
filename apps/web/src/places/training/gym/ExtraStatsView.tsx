@@ -6,8 +6,8 @@
 // `roomsFor` lists).
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router'
-import { LockedIcon } from '../../../../ui/icons'
-import { TypeIcon } from '../../../../ui/TypeIcon'
+import { LockedIcon } from '../../../ui/icons'
+import { TypeIcon } from '../../../ui/TypeIcon'
 import { Sheet } from '../../../ui/Sheet'
 import { TapNoteLine } from '../../../ui/work/TapNote'
 import { useTap } from '../../../ui/work/useTap'

@@ -7,7 +7,7 @@ import { chipWords, fill, fitWords, hasBannedWord, sizeChips } from '@racer/doma
 import { FARM_BUILDING_IDS, farmItemSeconds, totalSlots, type BuildingLevel } from '@racer/domain/rework/farm'
 import { endsAt, itemEnds, recall, type WorkState } from '@racer/domain/rework/work'
 import { describe, expect, it } from 'vitest'
-import { apply, farmAccount, HOUR, MINUTE, uma, withFarmLevel } from '../../places/farm/fixtures'
+import { apply, farmAccount, HOUR, MINUTE, uma, withFarmLevel } from '../../places/farm/__fixtures__/farm'
 import { recallLines } from './RecallSheet'
 import { speedUpQuestion } from './SpeedUpControls'
 import { queueChips, recallPreview, sizeChipsView, slotCards, speedUpModel } from './model'

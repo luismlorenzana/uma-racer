@@ -11,10 +11,10 @@ import { Link, Navigate, useSearchParams } from 'react-router'
 import {
   buildStableBadgeCollection, buildTimelineItems, buildTrophyWall, buildUmaBadgeCollection, filterBadgeItems, sortBadgeItems,
   type BadgeCollectionItem, type StableBadgeItem,
-} from '../../../game/badge-collection-view'
-import { buildTrainerBadgeCollection, buildTrainerShowcase } from '../../../game/trainer-view'
-import { Button } from '../../../ui/Button'
-import { Meter } from '../../../ui/Meter'
+} from './badge-collection-view'
+import { buildTrainerBadgeCollection, buildTrainerShowcase } from './trainer-view'
+import { Button } from '../../ui/Button'
+import { Meter } from '../../ui/Meter'
 import { NO_RECORDS, useGame, useHub, useNow, useRuntime, type G2Records } from '../../app/game'
 import { PlaceHeader } from '../../ui/PlaceHeader'
 import { UmaFace } from '../../ui/UmaArt'

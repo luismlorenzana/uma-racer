@@ -25,7 +25,7 @@ import { DISTANCE_CATEGORIES } from '@racer/domain'
 import { deriveUmaPreset, everBondedCardIds, layerDone } from '@racer/domain/rework/training'
 import type { WorkState } from '@racer/domain/rework/work'
 import type { RaceResultRow } from '@racer/domain/save-g2'
-import type { LoadedContent } from '../../../content/runtime'
+import type { LoadedContent } from '../../content/runtime'
 import type { G2DeviceRows, G2Records } from '../../app/game'
 import { lifetimeOf, recordOf, rowsOf, umaSaveOf } from './today'
 

@@ -7,7 +7,7 @@ import { fill } from '@racer/domain/rework/check-in'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { badgeKey, flairKey, operationKey } from './db'
 import { useSave } from './store'
-import { device, FakeServer, flairEvent, flairId, settle, trainerBadge, turn, umaId, useClock, type Device } from './server.test-support'
+import { device, FakeServer, flairEvent, flairId, settle, trainerBadge, turn, umaId, useClock, type Device } from './__fixtures__/server'
 
 beforeEach(() => useClock())
 afterEach(() => vi.useRealTimers())

@@ -23,7 +23,7 @@ export const PURGED_KEY = 'uma-racer:g2:purged'
 
 export interface SaveBootOptions {
   readonly env: OperationEnv
-  /** The first-boot wipe: the new game's own boot only, never today's app or the dev mount's seeds. */
+  /** The first-boot wipe: the app's own boot only, never the seeds' mount unless it asks (`&wipe`). */
   readonly wipe: boolean
   /** The purge call: with the wipe, until the release after the owner confirms it ran (07 §6). */
   readonly purge: boolean

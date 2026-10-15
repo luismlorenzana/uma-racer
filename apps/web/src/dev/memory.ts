@@ -1,9 +1,9 @@
 // The in-memory game port (T137): a seed's account in memory, every tap through the domain's `recheck` (T131), nothing
-// saved. Its clock starts at the seed's time and runs with real time. The dev mount's default; T136's device save is
+// saved. Its clock starts at the seed's time and runs with real time. The seeds' mount's default; T136's device save is
 // the real one. T141 adds what the device save keeps beside the rules' state: a `finish-race` that applies writes its
 // `raceResults` row as T134's commit does (`raceResultRow`), a tap's device rows (badges and flair) are written with it
-// in one step or not at all, the snapshot carries the badges, and `logs` read the race results and flair events. In the
-// dev mount, Account can load another of the synthetic seeds in place (T138).
+// in one step or not at all, the snapshot carries the badges, and `logs` read the race results and flair events. On the
+// seeds' mount, Account can load another of the synthetic seeds in place (T138).
 import type { FlairEventV1 } from '@racer/domain'
 import { recheck, type FinishRaceInput, type OperationInput, type OperationName, type OperationReceipt } from '@racer/domain/rework/check-in'
 import { raceResultRow, type RaceResultRow } from '@racer/domain/save-g2'

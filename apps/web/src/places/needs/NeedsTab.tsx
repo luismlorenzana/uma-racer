@@ -6,7 +6,7 @@
 // the targets.
 import { useMemo } from 'react'
 import { Link, useLocation } from 'react-router'
-import { Panel } from '../../../ui/Panel'
+import { Panel } from '../../ui/Panel'
 import { useGame, useNow } from '../../app/game'
 import { ItemIcon } from '../../ui/ItemIcon'
 import { TapNoteLine } from '../../ui/work/TapNote'

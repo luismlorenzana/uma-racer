@@ -1,4 +1,4 @@
-// Synthetic accounts for the dev mount (T137), picked by `?seed=`: every one is built by the rework's own operations on
+// Synthetic accounts for the seeds' mount (T137; `/dev/seeds/*` in dev builds), picked by `?seed=`: every one is built by the rework's own operations on
 // `rework/sim`'s invented content, never from the private packs. Later tasks add their seeds to `SEEDS`. The Umas get
 // invented display names with distinct initials, so a pip's fallback initial says who it is.
 //

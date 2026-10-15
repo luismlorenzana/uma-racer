@@ -7,7 +7,7 @@ import { chipOf, createSaveGame, WAITING_MS, type SaveGame } from './index'
 import { useSave, type SaveStore } from './store'
 import {
   ENV, FakeServer, fakeSignals, freshDb, memoryStorage, nextId, noWipe, trainerBadge, turn, umaId, useClock,
-} from './server.test-support'
+} from './__fixtures__/server'
 
 beforeEach(() => useClock())
 afterEach(() => vi.useRealTimers())

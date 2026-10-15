@@ -14,7 +14,7 @@ import {
 } from '@racer/domain/rework/training'
 import { endsAt, freeAt, itemEnds, speedAt, statusOf, type WorkRow, type WorkState } from '@racer/domain/rework/work'
 import type { DistanceCategory, SupportCardTemplate } from '@racer/domain'
-import type { AlbumQuery, AlbumRow, FacetDef, SortDef, SortDirection } from '../../../game/album/query'
+import type { AlbumQuery, AlbumRow, FacetDef, SortDef, SortDirection } from '../../ui/album/query'
 import { DISTANCE_LABEL, duration, STAT_LABEL, STYLE_LABEL } from '../../ui/labels'
 
 export type Content = OperationEnv['content']

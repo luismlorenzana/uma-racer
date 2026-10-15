@@ -12,10 +12,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { G2Answer, G2Game, G2Snapshot } from '../../app/game'
 import { createMemoryGame } from '../../dev/memory'
 import { seedAt, type G2Seed } from '../../dev/seed'
-import { renderG2, seed, stubStorage } from '../../testing'
+import { renderG2, seed, stubStorage } from '../../__fixtures__/testing'
 import { workView } from '../../ui/work/view'
 import { placeName } from '../../ui/work/words'
-import { apply, farmAccount, farmSeed, HOUR, uma, withFarmLevel } from '../farm/fixtures'
+import { apply, farmAccount, farmSeed, HOUR, uma, withFarmLevel } from '../farm/__fixtures__/farm'
 import { SHOWN_AT_KEY } from './device'
 
 afterEach(() => {

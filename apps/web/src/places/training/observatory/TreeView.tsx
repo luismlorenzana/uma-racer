@@ -4,7 +4,7 @@
 // under the per-card cap (`set-assignments`, refusals in words); a locked node what it needs and, for the next one,
 // **Unlock** into the session sheet with her and that node.
 import { TYPE_COLOR } from '../../card-library/model'
-import { CheckIcon, LockedIcon } from '../../../../ui/icons'
+import { CheckIcon, LockedIcon } from '../../../ui/icons'
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router'
 import { DISTANCE_LABEL } from '../../../ui/labels'

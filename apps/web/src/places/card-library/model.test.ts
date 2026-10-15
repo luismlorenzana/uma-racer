@@ -4,7 +4,7 @@
 import { bondGrade, cardPay } from '@racer/domain/rework/training'
 import { hasBannedWord } from '@racer/domain/rework/check-in'
 import { describe, expect, it } from 'vitest'
-import { account, umaIds } from '../../testing-ops'
+import { account, umaIds } from '../../__fixtures__/testing-ops'
 import {
   bondChoice, bondCosts, bondedTo, bondSessionPath, buildLibrary, cookPath, eraLabel, lensMode, lensOf, payWords, pendingBond, pillFor, PLAYABLE,
   raceBonusWords, umaLens,

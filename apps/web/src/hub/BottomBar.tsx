@@ -5,7 +5,7 @@
 import { HUB_PAGE_NAMES, hubWords, type HubPage } from '@racer/domain/hub'
 import { m } from 'motion/react'
 import { Link, useLocation } from 'react-router'
-import { CarrotIcon, HomeIcon, RaceIcon, StatsIcon, type IconComponent } from '../../ui/icons'
+import { CarrotIcon, HomeIcon, RaceIcon, StatsIcon, type IconComponent } from '../ui/icons'
 import { useHub } from '../app/game'
 import { MenuIcon } from '../ui/icons'
 import { withParam } from './nav'

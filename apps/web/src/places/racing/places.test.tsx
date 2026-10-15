@@ -6,11 +6,11 @@
 // PixiJS scene is stubbed: jsdom has no WebGL, and it ends the race as soon as it mounts.
 import { act, cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { renderG2, seedGame, stubStorage } from '../../testing'
+import { renderG2, seedGame, stubStorage } from '../../__fixtures__/testing'
 import { readLogs } from './records'
 import { TROPHY_HALL_SEEN_KEY } from './seen'
 
-vi.mock('../../../scenes/race/RaceScene', () => ({
+vi.mock('../../scenes/race/RaceScene', () => ({
   RaceScene: class {
     private readonly onFinish: () => void
     constructor(..._args: unknown[]) {
