@@ -141,6 +141,7 @@ image build receives the token as a BuildKit secret, so it never lands in a laye
 | Package | Dependency | Version | Kind |
 |---|---|---|---|
 | uma-racer | turbo | ^2.10.13 | dev |
+| @racer/web | @luismlorenzana/uma-art | 2.4.0 | runtime |
 | @racer/web | @racer/domain | workspace:* | runtime |
 | @racer/web | @racer/race | workspace:* | runtime |
 | @racer/web | @tanstack/react-query | ^5.102.8 | runtime |

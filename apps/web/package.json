@@ -13,6 +13,7 @@
     "icons": "node scripts/generate-icons.mjs"
   },
   "dependencies": {
+    "@luismlorenzana/uma-art": "2.4.0",
     "@racer/domain": "workspace:*",
     "@racer/race": "workspace:*",
     "@tanstack/react-query": "^5.102.8",

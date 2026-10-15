@@ -60,6 +60,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@luismlorenzana/uma-art':
+        specifier: 2.4.0
+        version: 2.4.0
       '@racer/domain':
         specifier: workspace:*
         version: link:../../packages/domain
