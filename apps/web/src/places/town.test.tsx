@@ -3,8 +3,8 @@
 // save over fake IndexedDB for a reload. A new account unlocks from the Locked tab into the reveal and the profile, three
 // at once, and turns five Shards into a ticket; a dish sells only after its question, reserved stock is never offered,
 // and a stale price reads "Price changed."; Speed Tickets move Prize Money and the Tickets shelf; Bond goes on to the
-// Dojo session; Feature another Uma changes the plaza; Account's dev section runs `dev-grant`; and an offline phone and
-// a reload keep every change.
+// Dojo session, and its picker offers no saved views; a card's page clears its NEW mark; Feature another Uma changes the
+// plaza; Account's dev section runs `dev-grant`; and an offline phone and a reload keep every change.
 import 'fake-indexeddb/auto'
 import { SPEED_TICKET_PRICE } from '@racer/domain/economy'
 import { act, cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
@@ -14,6 +14,7 @@ import { createSaveApi } from '../save/api'
 import { createSaveGame } from '../save/index'
 import { FakeServer, fakeSignals, freshDb, memoryStorage, nextId, noWipe, ENV as SAVE_ENV } from '../save/__fixtures__/server'
 import { renderG2, seedGame, stubStorage } from '../__fixtures__/testing'
+import { ALBUM_KEY_PREFIX } from '../ui/albumPrefs'
 import { setReducedMotion } from '../ui/devicePrefs'
 
 afterEach(() => {
@@ -168,6 +169,53 @@ describe('the Card Library and the featured Uma (06 §6, 11 §5)', () => {
     await waitFor(() => expect(where()).toBe(
       `/training/dojo?session=sim-uma-01&room=speed&unlocks=bond%3Asim-card-speed-e1&back=${encodeURIComponent('/town/card-library/card/sim-card-speed-e1')}`,
     ))
+  })
+
+  it("clears a card's NEW mark once its page opens", async () => {
+    const game = await freshWith(1)
+    // A phone that has opened the Library before and hasn't seen any card since: every card reads NEW.
+    localStorage.setItem(`${ALBUM_KEY_PREFIX}card-library`, JSON.stringify({ seen: [] }))
+    const tile = (cardId: string) => document.querySelector(`[data-card="${cardId}"]`) as HTMLElement | null
+    const first = renderG2('/town/card-library', game)
+    await waitFor(() => expect(tile('sim-card-speed-e1')).not.toBeNull())
+    expect(within(tile('sim-card-speed-e1')!).queryByText('NEW')).not.toBeNull()
+    click(tile('sim-card-speed-e1')!)
+    await waitFor(() => expect(first.where()).toBe('/town/card-library/card/sim-card-speed-e1'))
+    await screen.findByRole('button', { name: 'Bond' })
+    first.unmount()
+    renderG2('/town/card-library', game)
+    await waitFor(() => expect(tile('sim-card-speed-e1')).not.toBeNull())
+    expect(within(tile('sim-card-speed-e1')!).queryByText('NEW')).toBeNull()
+    // Only the card that was opened.
+    const others = [...document.querySelectorAll<HTMLElement>('[data-card]')].filter((element) => element.dataset.card !== 'sim-card-speed-e1')
+    expect(others.length).toBeGreaterThan(0)
+    for (const other of others) expect(within(other).queryByText('NEW'), other.dataset.card).not.toBeNull()
+  })
+
+  it('takes every card as seen when a phone opens a card page before the Library, as the Library would', async () => {
+    const game = await freshWith(1)
+    const { unmount } = renderG2('/town/card-library/card/sim-card-speed-e1', game)
+    await screen.findByRole('button', { name: 'Bond' })
+    await waitFor(() => expect(localStorage.getItem(`${ALBUM_KEY_PREFIX}card-library`)).toContain('sim-card-speed-e1'))
+    unmount()
+    renderG2('/town/card-library', game)
+    await waitFor(() => expect(document.querySelectorAll('[data-card]').length).toBeGreaterThan(1))
+    expect(screen.queryByText('NEW')).toBeNull()
+  })
+
+  it("keeps saved views to the albums that keep them: the Library offers them, the Uma picker doesn't", async () => {
+    const game = await freshWith(1)
+    const { unmount } = renderG2('/town/card-library', game)
+    click(await screen.findByRole('button', { name: 'Filters' }))
+    expect(await screen.findByRole('button', { name: 'Saved views' })).toBeTruthy()
+    unmount()
+    renderG2('/town/card-library/card/sim-card-speed-e1', game)
+    click(await screen.findByRole('button', { name: 'Bond' }))
+    const picker = await screen.findByRole('dialog', { name: /^Bond / })
+    click(within(picker).getByRole('button', { name: 'Filters' }))
+    await screen.findByRole('button', { name: /^Show / })
+    expect(screen.queryByRole('button', { name: /^Saved views/ })).toBeNull()
+    expect(screen.queryByText('Quick picks')).toBeNull()
   })
 
   it('Feature another Uma changes the featured card', async () => {
