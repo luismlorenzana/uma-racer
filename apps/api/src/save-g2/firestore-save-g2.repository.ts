@@ -5,7 +5,7 @@
 import * as admin from 'firebase-admin'
 import { KIND_ORDER, rowKey, RULE_LEDGER_REASONS, SAVE_GENERATION, SAVE_LIMITS, type PurgeResponse, type SaveSnapshotV2,
   type SyncRequestV2, type SyncResponseV2 } from '@racer/domain/save-g2'
-import { fromStored, toStored } from '../save/firestore-codec'
+import { fromStored, toStored } from './firestore-codec'
 import { needsOperationEnv, NO_SAVE, parseCursor, pullFloor, resolveSync, selectReadSet, snapshotPage, syncReadSet, type NoSave,
   type SaveRow } from './resolve'
 import { parsePurgeMarker, purgeResponse, type OperationEnvLoader, type PurgeMarker, type SaveG2Repository } from './save-g2.repository'

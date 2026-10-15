@@ -6,8 +6,8 @@
   "scripts": {
     "build": "nest build",
     "start": "node dist/main.js",
-    "dev": "nest start --watch",
-    "start:dev": "nest start --watch",
+    "dev": "DEV_OPERATIONS=true nest start --watch",
+    "start:dev": "DEV_OPERATIONS=true nest start --watch",
     "start:prod": "node dist/main.js",
     "lint": "tsc --noEmit",
     "test": "vitest run"
