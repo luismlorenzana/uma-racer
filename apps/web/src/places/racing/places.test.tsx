@@ -49,6 +49,13 @@ beforeEach(() => {
   scene.rates = []
 })
 
+/** The element `selector` names, once it has rendered. */
+const rendered = (selector: string) => waitFor(() => {
+  const element = document.querySelector(selector)
+  expect(element).not.toBeNull()
+  return element!
+})
+
 /** Starts her G1 from race select and waits for the run page; returns the result's id. */
 async function startRace(where: () => string): Promise<string> {
   fireEvent.click(await screen.findByRole('button', { name: 'Start race' }))
@@ -94,6 +101,11 @@ describe('the Racecourse', () => {
     setRaceSpeed(2)
     const { where } = renderG2('/racing/racecourse?uma=sim-uma-01&race=sim-g1-medium-a', seedGame('busy'))
     await startRace(where)
+    // The title sits on the page's light top: ink, never white (the rehearsal could barely read it).
+    const title = await rendered('[data-g2="run-title"]')
+    expect(title.textContent).toBe('sim-g1-medium-a')
+    expect(title.className).toMatch(/\btext-ink\b/)
+    expect(title.className + title.nextElementSibling!.className).not.toMatch(/text-white/)
     const speeds = await screen.findByRole('group', { name: 'Playback speed' })
     expect(within(speeds).getByRole('button', { name: '2×' }).getAttribute('aria-pressed')).toBe('true')
     expect(within(speeds).getByRole('button', { name: '1×' }).getAttribute('aria-pressed')).toBe('false')
