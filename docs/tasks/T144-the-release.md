@@ -7,7 +7,7 @@ Read:
   smoke checks) and [M034](M034-generation-2-cutover.md), whose "Fixed choices" bind this task. It closes cross-task
   acceptance #1, #3 and #4 in production and confirms the rest there.
 - [rearchitecture/07](../rearchitecture/07-data-reset.md) §3–§7, [06](../rearchitecture/06-rpg-decommission.md) §3
-  "Data" and §6, [rework/13](../rework/13-removals-and-plan-changes.md) §5, §6 and §9, [rework/11](../rework/11-hub-and-places.md) §2.4.
+  "Data" and §6, [rework/13](../rework/13-removals-and-plan-changes.md) §5, §6 and §9, [11](../game/11-hub-and-places.md) §2.4.
 - [Infrastructure](../technical/infrastructure.md) "CI/CD" and "Release runbook"; `.github/workflows/deploy.yml`.
 
 This task is Claude's (CLAUDE.md: Claude deploys). Every gcloud command is prefixed with
