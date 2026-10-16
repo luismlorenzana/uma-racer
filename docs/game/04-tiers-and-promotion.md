@@ -523,11 +523,12 @@ Nothing is lost, so there's nothing to confirm, and she needn't be free.
 The Hall of Fame is the game's endgame for one Uma. The account's endgame is filling it: 25 inductees is
 [12](12-economy-and-pacing.md)'s ~66-week mark.
 
-### Not built yet (phase 6): the Hall of Fame place
+### Not built yet (phase 9): the Hall of Fame place
 
-A place of its own comes with the canvas Hub ([11](11-hub-and-places.md) §11): each inductee's portrait, induction
-date, the three Expeditions she completed, her titles, and her final stats per preset in each tier (from her tier
-history). Phase 3 has no Hall of Fame place (§12), and no Uma can be inducted before phase 9's Expeditions.
+A place of its own, a Town Hall place: each inductee's portrait, induction date, the three Expeditions she completed,
+her titles, and her final stats per preset in each tier (from her tier history). It was planned with the canvas Hub,
+but T145 shipped that (phase 6) without it, since no Uma can be inducted before phase 9's Expeditions; so it comes
+with them (D365). Until then the registry has no Hall of Fame place (§12).
 
 ## 11. Edge cases
 

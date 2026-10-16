@@ -34,6 +34,12 @@ Farm: ingredients ──▶ Pantry: crafted ──▶ Kitchen: dishes ──▶ 
                                        scenario 1 → 2 → 3 → 4 → 5 → World Expedition → promotion ◀─────┘
 ```
 
+**Where it's played: the Hub.** Four pages, Town Hall, Training, Racing and Farm, each a pixel-art town map (uma-rpg's
+Hub on a Phaser canvas, drawn from uma-art) with a DOM link on every building, swiped between and reached from the
+bottom bar's tabs, whose raised middle button is Race. A tap on a building opens its quick look in a side panel, and
+**Enter** its Page; the ☰ menu lists every place. [11](11-hub-and-places.md) holds the whole menu tree, from page to
+place to sub-page and sheet, and every route.
+
 ## Two ways to play, one game
 
 The owner plays in two modes, and the game serves both:
@@ -52,7 +58,7 @@ The owner plays in two modes, and the game serves both:
 
 | Page | Find there |
 |---|---|
-| [Architecture](architecture.md) | The repo, the domain's areas and exports, the web app, the save and sync v2, the routes, the API, private content, the race engine, budgets, deploy and every dependency |
+| [Architecture](architecture.md) | The repo, the domain's areas and exports, the web app by folder, the dev seeds and hooks, the save and sync v2, the routes, the API and its modules, private content, the art, the race engine, the budgets and checks, CI and deploy, and every dependency |
 | [01 · Game loop](01-game-loop.md) | The loop step by step, one Uma's scenario, the roster in rotation, activity rules, a week of play in both modes |
 | [02 · Check-ins and notifications](02-check-ins-and-notifications.md) | Collect all, Repeat, queues, the check-in summary, the "what she still needs" planner, offline time, retries and plain words; push (phase 4) |
 | [03 · Uma progression](03-uma-progression.md) | Racing Level 1–50, scenarios inside a tier, career goals, advancing a scenario, one build per tier, what an Uma is made of |
@@ -62,7 +68,7 @@ The owner plays in two modes, and the game serves both:
 | [07 · Farm](07-farm.md) | Sites, Pantry and Kitchen; Farm Level 1–50; jobs, queues and Repeat; slots and building upgrades; worker rules |
 | [08 · Item catalogue and recipes](08-item-catalogue-and-recipes.md) | uma-rpg's farming half reused: 8 families × 10 grades, crafted items, every dish recipe, destinations, art ids |
 | [09 · Racing rewards and the Exchange](09-racing-rewards-and-exchange.md) | Racing EXP, Prize Money, the Daily Purse, featured races, the Exchange, Speed Tickets, selling surplus |
-| [11 · Hub and places](11-hub-and-places.md) | Town Hall, Training, Racing and Farm pages; every place; routes and redirects; art reused from uma-art and new drawings |
+| [11 · Hub and places](11-hub-and-places.md) | The menu tree at a glance; the shell (account bar, bottom bar, pill, menu, side panel); Town Hall, Training, Racing and Farm pages and every place; routes, queries, redirects and the dev mount; the art |
 | [12 · Economy and pacing](12-economy-and-pacing.md) | Currencies, sources and sinks, the 25-Uma pacing target, the time model, the loop simulation |
 | [Racing](racing.md) | The race itself: the engine, what a finish pays in EXP, grade handicaps and how rivals are rolled |
 | [Scenarios](scenarios.md) | The fifteen scenarios in three tiers, and which page owns each scenario rule |
@@ -77,8 +83,8 @@ Looking for one thing? Search this folder first (`rg -n "handicap" docs/game`). 
 The manual describes what runs, so a later phase's part is marked where it sits:
 - **A section about a later phase** stays in its page under a heading **"Not built yet (phase N)"**, so links into the
   page keep working. Today: [02](02-check-ins-and-notifications.md) §7, push notifications (phase 4);
-  [04](04-tiers-and-promotion.md) §10's Hall of Fame place (phase 6); [11](11-hub-and-places.md) §11's place scenes
-  (phase 7). §10.3's new drawings are uma-platform's (A01, A02), drawn as placeholders until they ship (§10.4).
+  [04](04-tiers-and-promotion.md) §10's Hall of Fame place (phase 9, D365); [11](11-hub-and-places.md) §11's place
+  scenes (phase 7).
 - **A sentence or row** about a later phase says so in place: "(phase 4, not built)".
 - **A whole system of a later phase** keeps its page outside the manual: World Expeditions,
   [rework/10](../rework/10-expeditions.md) (phase 9).
@@ -220,5 +226,7 @@ One unlock is about 20 Uma-hours at grade 1 and 30 at grade 10 at *k* = 1.2: its
 | [`docs/design/`](../design/00-overview.md) | The overview, UX, the visual system, racing design, badges, careers, skills and lineage |
 | `docs/technical/` | Infrastructure values, the release runbook and the GCP setup guide |
 | `docs/research/` | Race mechanics, engine findings, UI and web-tech references, and World Expeditions' race pools |
-| [`docs/tasks/`](../tasks/README.md) | Work that is planned or in progress |
-| `AGENTS.md`, `CLAUDE.md` | How to work in this repo |
+| [`docs/tasks/`](../tasks/README.md) | The current plan: what shipped, what's open and next, the next free M, T and D numbers, and the specs of work still ahead |
+| [`docs/handoff/`](../handoff/README.md) | Packets for ChatGPT sessions (the Hub's art so far), and the master prompt that starts one |
+| [`docs/open-questions.md`](../open-questions.md) | What waits on the owner |
+| [`README.md`](../../README.md), `AGENTS.md`, `CLAUDE.md` | How to run, test and verify it, and how to work in this repo |
