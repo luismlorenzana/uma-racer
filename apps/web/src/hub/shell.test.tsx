@@ -52,14 +52,15 @@ describe('the floating pill (§2.3)', () => {
 })
 
 describe('the bars (§2.1, §2.2)', () => {
-  it("sit in uma-kit's frame, fixed to the screen's edges, with the bottom bar lifted only by the safe area (T147)", async () => {
+  it("sit in uma-kit's frame, fixed to the screen's edges, with the bottom bar docked over the safe area (T147, D369)", async () => {
     renderG2('/town', seedGame('busy'))
     const bar = await screen.findByRole('navigation', { name: 'Hub pages' })
     const frame = document.querySelector<HTMLElement>('[data-kit="frame"]')!
     expect(frame.className.split(' ')).toEqual(expect.arrayContaining(['fixed', 'inset-0']))
     expect(frame.className).not.toContain('h-dvh')
-    expect(bar.firstElementChild!.className.split(' ')).toContain('mb-bar-safe')
-    expect(bar.className).not.toContain('pb-safe')
+    // uma-kit 0.2.0 docks the bar flush to the bottom edge; its panel runs under the home indicator (D369).
+    expect(bar.className.split(' ')).toContain('pb-bar-safe')
+    expect(bar.className).not.toContain('mb-bar-safe')
   })
 
   it('badges only Farm and Training, with Umas who have something to collect there', async () => {

@@ -29,8 +29,8 @@ Uma Racer is played on the owner's iPhone, in portrait, as a Home Screen web app
 8. **Every place is a link.** Back and the iPhone's edge swipe work everywhere.
 
 The build rules behind them (CLAUDE.md "Conventions"):
-- **Mobile first** at 390×844: 44 pt targets, safe-area padding (`pt-safe`, `pb-safe`, and the bottom bar's
-  `mb-bar-safe`), and uma-kit's frame fixed to the screen's edges for the shell and every full-screen flow (T147).
+- **Mobile first** at 390×844: 44 pt targets, safe-area padding (`pt-safe`, `pb-safe`, and the docked bottom bar's
+  `pb-bar-safe`), and uma-kit's frame filling the screen for the shell and every full-screen flow (T147, D369).
 - **Motion** runs under `LazyMotion strict` (uma-kit's `MotionRoot`), so only `m.*` components draw. The DOM animates
   transform and opacity only.
 - **Continuous values** (the account bar's numbers, HUD values) change by a CSS transition, never a spring (uma-kit's

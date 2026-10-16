@@ -1,7 +1,7 @@
 # Architecture
 
 How the code that runs fits together: generation 2, since the phase-3 cutover (M034, D361), with phase 6's canvas Hub
-(T145, D363), uma-art 2.7.0 (D364), and the shell, Hub and primitives from the shared uma-kit 0.1.2 (T147, D367). The infrastructure values and the release runbook are
+(T145, D363), uma-art 2.7.0 (D364), and the shell, Hub and primitives from the shared uma-kit 0.2.0 (T147, D367; D369). The infrastructure values and the release runbook are
 [technical/infrastructure.md](../technical/infrastructure.md); what is done and what comes next is
 [the task plan](../tasks/README.md), and the phases still ahead are [docs/rearchitecture/08](../rearchitecture/08-phases.md)
 with [rework/13](../rework/13-removals-and-plan-changes.md) §4.
@@ -208,12 +208,12 @@ loop itself runs on the domain's source, and its test runs the checks in CI.
 The shell, the Hub map and the primitives are **`@luismlorenzana/uma-kit`**, uma-platform's package that uma-racer and
 uma-rpg both run on (uma-platform P48, its sibling plan; D367). The uma-rpg session built it by moving this game's own
 code (as of `ff8b95a`) into uma-platform's `packages/kit` and making it game-agnostic: components take values, words and
-links as props, and keep no game state. uma-racer pins it exactly (0.1.2, from GitHub Packages like uma-art) and passes
+links as props, and keep no game state. uma-racer pins it exactly (0.2.0, from GitHub Packages like uma-art) and passes
 everything that is its own in as props.
 
 | From uma-kit | Stays uma-racer's |
 |---|---|
-| `theme.css`: the Paddock tokens in light and dark, base styles, utilities (`pt-safe`, `pb-safe`, `mb-bar-safe`, `scroll-strip` …) | The fonts' `@font-face`, `--g2-room-friend`, the race feed's keyframes (`index.css`) |
+| `theme.css`: the Paddock tokens in light and dark, base styles, utilities (`pt-safe`, `pb-safe`, `pb-bar-safe`, `mb-bar-safe`, `scroll-strip` …), and `fillScreen()` for iOS 26's Home Screen viewport | The fonts' `@font-face`, `--g2-room-friend`, the race feed's keyframes (`index.css`) |
 | `/ui`: the icon set, `UiMark` and `TierCrest`, `Button`, `Chip`, `Tabs`, `Panel`, `BottomSheet` and `Sheet`, `AnimatedNumber`, `MotionRoot` and the reduced-motion setting, Appearance, device preferences (`readPref`, `writePref`, `subscribePrefs`), `KitArtProvider` | The type and focus icons (`TypeIcon`, `CardFocusIcons`), `ItemIcon`, `UmaArt`, `BuildingSprite`, `UmaPicker`, the work pieces, the album |
 | `/shell`: `AppFrame`, `AccountBar`, `BottomBar`, `PlaceMenu`, `PeekPanel`, `PlaceHeader`, `FloatingPill`, and `withParam`, `navState`, `useLeave`, `peekPath` | `RacerShell` (the chips, the Sync chip, the tabs and badges, the menu's `?sheet=` link), the global sheets and their registry (`GlobalSheets`, `nav.ts`), `PlacePeek`, `PlacePageHeader`, the check-in sheet's navigation state (`collect`, `collectId`, `repeatId`) |
 | `/hub`: `HubMap` (the lazy Phaser canvas, the place links, swipes), `Pips`, the grid, `layTerrain`, the tile props, palettes and markers | Which places stand on which page and where (`@racer/domain/hub`, `AWAITING_ART`), `tilePageFor` (the ground each page draws), the rooms' pip colours (`ROOM_TONE`), the Town Hall plaza, the counters (`counts.ts`), the dev hooks' switch (`debug`, `?canvas`) |
@@ -527,7 +527,7 @@ How generation 2 became the app (D361). The plan-level choices (the tag, the del
 |---|---|---|---|
 | uma-racer | turbo | ^2.10.13 | dev |
 | @racer/web | @luismlorenzana/uma-art | 2.7.0 | runtime |
-| @racer/web | @luismlorenzana/uma-kit | 0.1.2 | runtime |
+| @racer/web | @luismlorenzana/uma-kit | 0.2.0 | runtime |
 | @racer/web | @racer/domain | workspace:* | runtime |
 | @racer/web | @racer/race | workspace:* | runtime |
 | @racer/web | @tanstack/react-query | ^5.102.8 | runtime |
