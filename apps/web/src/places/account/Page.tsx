@@ -4,7 +4,7 @@
 // auth provider's, T143), and in dev builds only a dev section that loads the synthetic fixtures and runs `dev-grant`.
 // `?row=sync` opens at the sync row. Notifications are phase 4.
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { Link, useSearchParams } from 'react-router'
+import { useSearchParams } from 'react-router'
 import { APP_BUILD_ID } from '../../app/build'
 import { Button } from '../../ui/Button'
 import { Chip } from '../../ui/Chip'
@@ -157,9 +157,6 @@ export default function AccountPage({ place, rest }: PageProps) {
       <div className="space-y-3 px-4 pt-3 pb-24">
         <Panel className="p-3" aria-label="Trainer">
           <Row label="Trainer">{name || 'Trainer'}</Row>
-          <Link to="/racing/trophy-hall/trainer" state={{ back: true }} className="flex min-h-11 items-center text-[13px] font-semibold text-accent-strong">
-            Change the name in the Trophy Hall
-          </Link>
         </Panel>
         <CheckInTimes />
         <section ref={syncRow} aria-label="Sync" className="scroll-mt-16" data-row="sync">
