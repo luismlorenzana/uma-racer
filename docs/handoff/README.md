@@ -21,7 +21,7 @@ release afterwards; Claude does that side.
 
 | Packet | What | Repo | Size |
 |---|---|---|---|
-| [A03](tasks/A03-iphone-band-and-level-rule.md) | The iPhone band under the bottom bar, and the level rule for Uma pickers (uma-platform P48, Phase 0) | uma-racer | S |
+| [A03](tasks/A03-iphone-band-and-level-rule.md) | The level rule for Uma pickers (uma-platform P48, Phase 0.2; the iPhone band comes with uma-kit) | uma-racer | S |
 
 A03 is code in uma-racer, not art: ChatGPT opens the pull request, and Claude merges, deploys and verifies it.
 
