@@ -35,8 +35,8 @@ the Claude session that runs production; when the two differ, **this file govern
 ## Setup and commands
 
 Requirements: Node 22+, pnpm 10 (`corepack enable`), and a GitHub token that can read the owner's private
-`@luismlorenzana/*` packages (uma-platform's master data and art, from GitHub Packages; `.npmrc` reads it from
-`NODE_AUTH_TOKEN`). With the GitHub CLI: `gh auth refresh -s read:packages` once.
+`@luismlorenzana/*` packages (uma-platform's art and the shared app kit, `uma-art` and `uma-kit`, from GitHub
+Packages; `.npmrc` reads it from `NODE_AUTH_TOKEN`). With the GitHub CLI: `gh auth refresh -s read:packages` once.
 
     NODE_AUTH_TOKEN=$(gh auth token) pnpm install --frozen-lockfile
     pnpm lint           # type-check every package (tsc --noEmit)
@@ -59,7 +59,7 @@ before opening a PR. CI runs the same.
 | `packages/domain` | Pure game rules and shared types | No I/O. Everything unit-tested. One subpath export per area (`@racer/domain/save`, `/state`, `/tiers`, `/training`, `/farm` …) |
 | `packages/race` | Deterministic race engine | Seeded RNG only, never `Math.random`. One-second turns, a timeline at 15 samples a second |
 | `apps/api` | NestJS 11 API for Cloud Run | `AuthGuard` (Firebase token + allowlist), `/api/save`, `/api/sync`, `/api/legacy/purge` (one release), `/api/content/*`, `/api/health` |
-| `apps/web` | React 19 + Vite 7 + Tailwind 4 + Motion PWA; Phaser 4 for the Hub's map (`src/hub/scene`), PixiJS 8 for the race scene only (`src/scenes/race`) | Mobile-first (390×844 portrait). `src/app` (routes, session, port), `hub` (shell and canvas), `places`, `save`, `ui`, `content`, dev-only `dev` |
+| `apps/web` | React 19 + Vite 7 + Tailwind 4 + Motion PWA on `@luismlorenzana/uma-kit` (the theme in light and dark, the shell, the Hub map on Phaser 4, the primitives and icons); PixiJS 8 for the race scene only (`src/scenes/race`) | Mobile-first (390×844 portrait). `src/app` (routes, session, port, the kit's setup), `hub` (the racer's adapters to the kit's shell and map), `places`, `save`, `ui` (the racer's own pieces), `content`, dev-only `dev` |
 | `scripts/sim` | Balance simulations | |
 | `scripts/data`, `scripts/assets` | Content pipeline (GameTora → private packs) | Output goes to gitignored `/content/` |
 | `docs/` | The manual (`game/`), design, plans (`rework/`, `rearchitecture/`), tasks, technical, research, handoff packets | |
@@ -88,6 +88,11 @@ before opening a PR. CI runs the same.
   shows up beside your changes.
 - **Docs-only pushes don't deploy.** The workflow ignores pushes that change only `docs/**` or Markdown files; any
   other push to `main` verifies and deploys production.
+- **The shell, Hub and primitives are uma-kit's** ([architecture](docs/game/architecture.md#uma-kit)). Pass what is
+  this game's in as props (`hub/RacerShell.tsx`, `hub/HubPage.tsx`, `hub/PlacePeek.tsx`, `places/PlacePageHeader.tsx`);
+  never copy or fork a kit component. A missing option is a change to uma-platform's `packages/kit`, released there
+  with a changeset (ask the owner, who routes it to the uma-rpg or a uma-platform session); try it locally with
+  `pnpm link` or a `file:` override and never commit that. What the kit draws carries `data-kit` attributes for tests.
 - **Original pixel art goes through a handoff packet.** A ChatGPT session takes a packet from `docs/handoff/`, draws in
   uma-platform's `scripts/pixel-art` and publishes a `@luismlorenzana/uma-art` release; Claude then pins that release
   here and updates `docs/game/11-hub-and-places.md` §10. The racer draws no sprites of its own.
@@ -105,6 +110,9 @@ before opening a PR. CI runs the same.
   - Game state lives in one Zustand store (`useSave`, read with selectors) over Dexie, and changes only by operations
     through the game port. TanStack Query is only for network data.
   - Use 44 pt touch targets and safe-area padding (`pt-safe`/`pb-safe`).
+  - Draw in the theme's tokens so light and dark both work: `text-accent-ink` on the gold `bg-accent`, `bg-stage` or
+    `bg-scrim` for a surface that stays dark, no `bg-white`, `text-black` or raw hex
+    ([visual system](docs/design/visual-system.md#dark-mode)). Check a screen in both modes.
 - **API:**
   - Every route except `/api/health` sits behind `AuthGuard`.
   - Validate untrusted bodies with explicit parsers (the save's are `@racer/domain/save`'s, which

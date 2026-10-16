@@ -13,6 +13,11 @@ sit in the DOM: the currency marks, the tier crests, item icons and a building o
 ([Pixel art](#pixel-art)).
 Whether Paddock itself moves to a pixel-art look is the owner's open call ([open questions](../open-questions.md)).
 
+**Shared with uma-rpg (T147, D367).** Paddock's tokens, base styles, utilities, primitives and icon set are uma-kit's
+(`@luismlorenzana/uma-kit`, uma-platform P48), the same in both games: `theme.css` holds the tokens and `/ui` the
+components. Light is this game's palette, dark is uma-rpg's, under the same names ([Dark mode](#dark-mode)). A change
+to a token or a primitive is made in the kit, not here ([architecture](../game/architecture.md#uma-kit)).
+
 **Three rules that decide most arguments:**
 
 1. **The art leads.** Portraits are large, cropped to the face, and everything else is a frame around them.
@@ -27,10 +32,11 @@ Whether Paddock itself moves to a pixel-art look is the owner's open call ([open
 |---|---|---|
 | `--surface-page` | `#EDF1F6` with a faint turf wash at the bottom edge and 2% grain | The page behind everything. No saturated gradients |
 | `--surface-panel` | `#FFFFFF` · hairline border `rgb(16 26 36 / 0.08)` | Ordinary content panels |
-| `--surface-raised` | `#FFFFFF` · shadow-2 | Sheets, menus, anything floating |
+| `--surface-raised` | `#F3F6FA` (`raised`) · shadow-2 | Sheets, menus, anything floating |
 | `--surface-sunken` | `#E4EAF2` | Wells: inputs, meters, empty slots |
-| `--surface-inverse` | `#101A24 → #16222E` vertical, light text | Immersive scenes: race, reveals, results |
+| `--surface-inverse` | `#101A24 → #16222E` vertical (`stage`, `stage-soft`), light text | Immersive scenes: race, reveals, results |
 | `--surface-scrim` | `transparent → rgb(16 26 36 / 0.72)` | Over portrait art, always, so text stays legible |
+| `scrim` | `#0B1118`, at 45% behind sheets and panels | The dim behind a sheet or the side panel, dark in both modes |
 
 Three levels is the whole system. A panel inside a panel drops to a hairline divider instead of stacking another card.
 
@@ -40,12 +46,12 @@ Three levels is the whole system. A panel inside a panel drops to a hairline div
 |---|---|---|
 | Ink | `--ink` / `--ink-muted` / `--ink-faint` | `#101A24` / `#5A6B84` / `#8A98AC` |
 | On inverse | `--ink-on-dark` / `--ink-on-dark-muted` | `#F2F6FA` / `#A8B6C6` |
-| Accent (silks gold) | `--accent` / `--accent-strong` | `#D39A2B` / `#B87F18` |
+| Accent (silks gold) | `--accent` / `--accent-strong` / `--accent-ink` | `#D39A2B` / `#B87F18` / `#1B1406` (text on the gold, in both modes) |
 | Turf | `--turf` | `#2F7A4F` |
 | Dirt | `--dirt` | `#8A6A4B` |
 | Speed · Stamina · Power · Guts · Wit | `--stat-*` | `#0980E6` · `#DD4433` · `#E66E00` · `#F1368B` · `#05A371`: the original's own, the rims of its type icons (D183) |
 | Tier metals | `--tier-*` | bronze `#B07A46` · silver `#9AA6B5` · gold `#D9A62B` · platinum `#6FB7D9` · rainbow gradient (flair) |
-| Semantic | `--success` / `--danger` / `--warning` / `--info` | `#2F7A4F` / `#C23B33` / `#D08A0E` / `#2F6FE0` |
+| Semantic | `--success` / `--danger` / `--warning` / `--info` / `--locked` | `#2F7A4F` / `#C23B33` / `#D08A0E` / `#2F6FE0` / `#8A94A3` |
 
 Stat colours are the original's (D183), and they appear as **meters, dots, 2 px accents and the type icons** — never as
 a filled pill behind text. The `--tier-*` tokens belong to flair only; an Uma's tier crest is uma-art's own pixel
@@ -84,10 +90,10 @@ Two faces, both OFL and self-hosted, latin subset only:
 
 | Component | Direction |
 |---|---|
-| Primary button | Accent fill, ink text, `--r-sm`, 48 pt tall, press = scale 0.98 and drop to shadow-1. Loading state keeps the label |
+| Primary button | Accent fill, accent-ink text, `--r-sm`, 48 pt tall, press = scale 0.98 and drop to shadow-1. Loading state keeps the label |
 | Secondary | Panel fill with hairline border. Tertiary is text plus icon. Destructive is a danger outline |
 | Chip / filter | 32 pt pill, hairline border, selected = accent 12% fill with accent border and a check |
-| Tab row (`ui/Tabs`) | Sunken track, raised thumb, 2–4 tabs at 44 pt |
+| Tab row (uma-kit's `Tabs`) | Sunken track, raised thumb, 2–4 tabs at 44 pt |
 | Panel | Panel surface, `--r-md`, hairline, 16 px padding, optional `micro` section label above |
 | Row | 56 pt, art or icon left, primary 15 / secondary 13, value right in display numerals |
 | Meter | Sunken track, 6 pt tall, stat colour fill, soft cap marked by a 1 px tick at 1200 |
@@ -110,7 +116,8 @@ Two faces, both OFL and self-hosted, latin subset only:
   mortarboard), and the light Friend and Group tiles with their figures, in colours sampled from the original's icons.
   They ship with the app, so they draw before content loads and stay crisp at any size; the line set keeps no stat
   glyphs.
-- The set lives in `apps/web/src/ui/icons/`: one module per icon, a typed `IconName` union, sizes 16 / 20 / 24 / 32 in
+- The set is uma-kit's (`@luismlorenzana/uma-kit/ui`, T147: this game's 73 plus uma-rpg's book, pickaxe and swords):
+  one module per icon, a typed `IconName` union, sizes 16 / 20 / 24 / 32 in
   `currentColor`. Each drawing has three layers: the outline, the inner marks (knocked out of a solid silhouette), and
   the tone that duotone paints in the accent (or `accent`, such as the panel white on the raised Race tab). An icon
   is decorative unless it gets a `title`.
@@ -144,7 +151,7 @@ top left, a 1 px selective outline, six-tone ramps), drawn from code in uma-plat
 |---|---|---|
 | Each Hub page's map | 16 px tiles per page (town, learning, racing, farmlands), props, 48×48 buildings, clouds, chimney smoke and glows, on a Phaser canvas ([11](../game/11-hub-and-places.md) §10, §12) | 1.5 CSS px per art pixel on 2× screens |
 | The Expedition Map's page, and the side panel of a place with no Peek of its own (none today) | The place's building (`ui/BuildingSprite`) | 96 pt (2×) |
-| The account bar, the Exchange, the race result, the profile | The currency marks (`ui/UiMark`) | 16 pt |
+| The account bar, the Exchange, the race result, the profile | The currency marks (uma-kit's `UiMark`) | 16 pt |
 | Uma tiles, the featured Uma, her profile | Her tier crest (`TierCrest`), read as "Tier N" | 24 pt (2×) |
 | Item rows, job cards, prices | Items, dishes and the Speed Ticket (`ui/ItemIcon`) | 32 px frames |
 
@@ -152,10 +159,41 @@ top left, a 1 px selective outline, six-tone ramps), drawn from code in uma-plat
   pixel mark is never smoothed or drawn at a fractional scale.
 - **The DOM still draws every word and takes every tap.** Names, counters, pips and badges are DOM over the canvas
   (uma-rpg D33), in Paddock's type and colours.
-- **Each page has a palette** (`hub/scene/palettes.ts`): its background, and the colours a code-drawn placeholder
-  building takes until uma-art draws it, so a missing frame is never a white box.
+- **Each page has a palette** (uma-kit's `PALETTES`, by tile page): its background, and the colours a code-drawn
+  placeholder building takes until uma-art draws it, so a missing frame is never a white box.
+- **Pixel art looks the same in light and dark:** the map, its buildings and the pixel marks keep their own palettes.
 - **New pixel art** comes through a [handoff packet](../handoff/README.md) and a uma-art release; the racer never draws
   its own sprites.
+
+## Dark mode
+
+Built with uma-kit (T147, D367). Every token keeps its name in both modes, so a screen drawn in tokens needs nothing
+of its own to work in dark.
+
+| Token | Light (uma-racer's) | Dark (uma-rpg's) |
+|---|---|---|
+| `page` / `page-deep` | `#EDF1F6` / `#E3E9F1` | `#0F1620` / `#0B1118` |
+| `panel` / `raised` / `sunken` | `#FFFFFF` / `#F3F6FA` / `#E4EAF2` | `#17202B` / `#1F2A37` / `#0B1118` |
+| `ink` / `ink-soft` / `ink-faint` | `#101A24` / `#5A6B84` / `#8A98AC` | `#E9EEF4` / `#A6B3C2` / `#6F7D8E` |
+| `accent` / `accent-strong` / `accent-wash` | `#D39A2B` / `#B87F18` / `#FBF1DD` | `#D6A23E` / `#E8B65A` / `#2B2312` |
+| `success` / `danger` / `warning` / `info` | as [Colour](#colour) | `#4FB37A` / `#E0645C` / `#E0A33A` / `#5B8DEF` |
+| `hairline` / `hairline-strong` | ink at 8% / 16% | white at 8% / 16% |
+
+The same in both: `stage` and `stage-soft` (the immersive surfaces), `scrim`, `accent-ink`, `ink-on-dark`, the stat
+colours, the tier metals, turf and dirt.
+
+- **Who chooses:** the phone's setting by default; Account's **Appearance** (System, Light or Dark) overrides it on this
+  phone only (`uma-racer:g2:appearance`), applied as `<html data-theme>` before the first paint, with the browser's theme
+  colour following the page colour. `data-theme="dark"` on any element keeps that subtree dark.
+- **The rules a screen follows so it reads in both:**
+  - text on the gold accent is `text-accent-ink`, never `text-ink` (which turns light);
+  - a surface that must stay dark (a toast over the race, a count badge, the update prompt) is `bg-stage` or
+    `bg-scrim`, never `bg-ink` (which turns light); `bg-ink/10`-style tracks and pressed states may invert;
+  - a dim behind a sheet or panel is `bg-scrim/45`;
+  - no `bg-white`, `text-black` or raw hex in a screen's classes; white text stays only on fixed dark or coloured
+    fills (the art viewer's black, the race HUD over its scene, the type icons).
+- **Kept as drawn:** the PixiJS race scene's own palette, the pixel art, and the original's type and focus icons (their
+  white tiles are part of the drawing).
 
 ## Motion
 
@@ -175,7 +213,8 @@ comfortable.
 
 ## Working rules
 
-- Tokens live in `apps/web/src/index.css` under `@theme`; components read tokens, never raw hex.
+- Tokens live in uma-kit's `theme.css`, imported by `apps/web/src/index.css`, which adds only this game's fonts, the
+  Dojo's Friend room colour and the race feed's keyframes; components read tokens, never raw hex.
 - Tailwind utilities are fine; one-off colours are not.
 - Animate transform and opacity only in the DOM; keep Phaser, PixiJS, Firebase and fonts lazy; startup JS stays at or
   below 180 KB gzip. The two font families ship as latin-only woff2 with `font-display: swap`, precached, at no more than
