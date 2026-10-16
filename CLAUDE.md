@@ -10,7 +10,7 @@ Hub and primitives are uma-kit's, the app both Uma games share.
   agent, including delegated ChatGPT tasks (branch + PR, no pushes to `main`), with the shared workflows. This file adds
   Claude's production notes.
 - `docs/tasks/README.md` is the current plan: what shipped, what's open (T144's step 10, the owner's pixel-art call,
-  phases 4, 5, 7, 8 and 9) and the next free numbers (M035, T148, D368; **D362 is reserved for T144's release
+  phases 4, 5, 7, 8 and 9) and the next free numbers (M035, T148, D369; **D362 is reserved for T144's release
   record**). A task spec is deleted once its work merges (D104), so that folder only holds work still ahead.
 - **The docs are the source of truth:** [the manual](docs/game/README.md) (`docs/game/`) describes the game as it runs.
   Every screen, route and sheet is [11's menu tree](docs/game/11-hub-and-places.md#the-menu-tree-at-a-glance); the code
@@ -97,7 +97,7 @@ pnpm assets:import  # image sources → private WebP atlases; run after data:imp
 | API | Cloud Run `racer-api` (us-central1), `https://racer-api-tmzkhylhfq-uc.a.run.app`; `/api/health` (not `/healthz`, which Cloud Run's front end reserves) |
 | GCP project | `uma-racer` (number 1026964321499), plus a private bucket `uma-racer-content` |
 | Deploy | `.github/workflows/deploy.yml`, keyless WIF. Repo variables: GCP_PROJECT_ID, WIF_PROVIDER, CONTENT_BUCKET, ALLOWED_EMAIL, DEPLOY_ENABLED |
-| Live on 2026-10-16 | `652cc58` as racer-api-00192 (T147, uma-kit 0.1.2 and dark mode), content `9ba4cdd37cca`, uma-art 2.7.0 |
+| Live on 2026-10-16 | `7c8cab6` as racer-api-00193 (A03, the level rule, on T147's uma-kit 0.1.2 and dark mode), content `9ba4cdd37cca`, uma-art 2.7.0 |
 
 - **Local gcloud has two accounts, and the active one is the owner's work account. Never change it.** Scope every uma-racer
   command with environment variables only:
