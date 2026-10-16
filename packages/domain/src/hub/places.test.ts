@@ -1,6 +1,6 @@
 // The place registry (docs/game/11-hub-and-places.md §1, §3, §10) and its frames against the pinned uma-art index,
-// as uma-rpg's `frames.test` checks its own: a frame the pinned release lacks fails here, never a blank building, and a
-// release that draws one of the four new buildings fails until the registry wires it.
+// as uma-rpg's `frames.test` checks its own: a frame the pinned release lacks fails here, except `AWAITING_ART`'s four
+// new drawings (A01), each reported by name until the release that draws them is pinned and the list is emptied.
 import { readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { describe, expect, it } from 'vitest'
@@ -8,7 +8,7 @@ import { BUILDING_IDS, BUILDINGS, FACILITY_IDS, FARM_BUILDING_IDS, type Building
 import { FAMILY_SITE } from '../farm/jobs'
 import { FAMILY_RING } from '../items/families'
 import {
-  buildingOf, HUB_PAGE_NAMES, HUB_PAGES, isHubPage, isPlaceId, pageRows, PLACE_IDS, PLACES, placeById, placeOnPage, placesOn, PLAZA_CELL, type Place,
+  AWAITING_ART, buildingOf, HUB_PAGE_NAMES, HUB_PAGES, isHubPage, isPlaceId, PLACE_IDS, PLACES, placeById, placeOnPage, placesOn, PLAZA_AT, type Place,
 } from './places'
 
 const require = createRequire(import.meta.url)
@@ -77,30 +77,47 @@ describe('the place registry (game/11 §3)', () => {
     }
   })
 
-  it("puts every drawn place in its own cell of §3's three-column sketches", () => {
+  it("stands every drawn place on its page map, uma-rpg's way: beside the road down the middle, or on it (§3)", () => {
+    const columns = [0.2, 0.24, 0.5, 0.76, 0.79]
     for (const page of HUB_PAGES) {
-      const cells = placesOn(page).map((place) => `${place.cell!.row}:${place.cell!.col}`)
-      if (page === 'town') cells.push(`${PLAZA_CELL.row}:${PLAZA_CELL.col}`)
-      expect(new Set(cells).size, page).toBe(cells.length)
-      for (const place of placesOn(page)) {
-        expect([1, 2, 3]).toContain(place.cell!.col)
-        expect(place.cell!.row).toBeGreaterThanOrEqual(1)
+      const spots = placesOn(page).map((place) => place.at!)
+      if (page === 'town') spots.push(PLAZA_AT)
+      for (const spot of spots) {
+        expect(columns).toContain(spot.x)
+        expect(spot.y).toBeGreaterThanOrEqual(0.12)
+        expect(spot.y).toBeLessThanOrEqual(0.78)
       }
+      // Never two on one spot, and any two in one column well apart (the map checks the real boxes at 390 × 844).
+      for (const [i, a] of spots.entries()) {
+        for (const b of spots.slice(i + 1)) {
+          if (a.x === b.x) expect(Math.abs(a.y - b.y), page).toBeGreaterThanOrEqual(0.2)
+          else expect(Math.abs(a.x - b.x) + Math.abs(a.y - b.y), page).toBeGreaterThan(0.2)
+        }
+      }
+      // The two sides mirror each other about the road.
+      const sides = spots.filter((spot) => spot.x !== 0.5)
+      for (const spot of sides) expect(sides.some((other) => other.y === spot.y && Math.abs(other.x + spot.x - 1) < 0.04), page).toBe(true)
     }
-    expect(placeById('account')!.cell).toBeNull()
-    expect(HUB_PAGES.map(pageRows)).toEqual([3, 3, 3, 4])
-    // The Racecourse sits lowest and central, nearest the raised RACE button (§3.3).
-    expect(placeById('racecourse')!.cell).toEqual({ row: 3, col: 2 })
+    expect(placeById('account')!.at).toBeNull()
+    // The plaza and the Racecourse stand on the road; the Racecourse lowest, nearest the raised RACE button (§3.3).
+    expect(PLAZA_AT.x).toBe(0.5)
+    const racecourse = placeById('racecourse')!.at!
+    expect(racecourse.x).toBe(0.5)
+    for (const place of placesOn('racing')) if (place.id !== 'racecourse') expect(place.at!.y).toBeLessThan(racecourse.y)
   })
 
-  it("rings the Farm's sites in uma-art's Duo order, so neighbours on the page are Duo partners (§3.4)", () => {
-    const cellOf = (building: BuildingId) => placeById(building)!.cell!
-    FAMILY_RING.forEach((family, i) => {
-      const a = cellOf(FAMILY_SITE[family])
-      const b = cellOf(FAMILY_SITE[FAMILY_RING[(i + 1) % FAMILY_RING.length]!])
-      expect(Math.max(Math.abs(a.row - b.row), Math.abs(a.col - b.col)), `${family} → next`).toBe(1)
-    })
-    expect([cellOf('pantry'), cellOf('kitchen')]).toEqual([{ row: 2, col: 2 }, { row: 3, col: 2 }])
+  it("rings the Farm's sites in uma-art's Duo order around the Pantry and Kitchen, so map neighbours are Duo partners (§3.4)", () => {
+    const centre = { x: 0.5, y: 0.45 }
+    const angle = (building: BuildingId) => {
+      const spot = placeById(building)!.at!
+      return Math.atan2(spot.y - centre.y, spot.x - centre.x)
+    }
+    // Clockwise on the screen (y grows downward): sorted by angle, the sites read the ring from some starting site.
+    const around = Object.values(FAMILY_SITE).sort((a, b) => angle(a) - angle(b))
+    const ring = FAMILY_RING.map((family) => FAMILY_SITE[family])
+    const start = ring.indexOf(around[0]!)
+    expect(around).toEqual([...ring.slice(start), ...ring.slice(0, start)])
+    expect([placeById('pantry')!.at, placeById('kitchen')!.at]).toEqual([{ x: 0.5, y: 0.34 }, { x: 0.5, y: 0.56 }])
   })
 })
 
@@ -115,8 +132,8 @@ describe('frames (game/11 §10)', () => {
     expect(art.version).toBe('2.5.0')
   })
 
-  it("finds every frame in the pinned index, 48 × 48 on §10.1's atlas page", () => {
-    const framed = PLACES.filter((place) => place.frame !== null)
+  it("finds every frame in the pinned index, 48 × 48 on §10.1's atlas page, but AWAITING_ART's", () => {
+    const framed = drawn.filter((place) => !AWAITING_ART.includes(place.frame!))
     expect(framed.map(id).sort()).toEqual(Object.keys(PAGES).sort())
     for (const place of framed) {
       const frame = atlas.frames[place.frame!]
@@ -126,12 +143,18 @@ describe('frames (game/11 §10)', () => {
     expect(placeById('lineage-hall')!.frame).toBe('party-hall')
     expect(placeById('dojo')!.frame).toBe('brawler-dojo')
     expect(placeById('expedition-map')!.frame).toBe('tier-finale')
+    expect(placeById('account')!.frame).toBeNull()
   })
 
-  it("leaves exactly §10.3's four new buildings plain, and fails once a release draws one", () => {
-    const plain = drawn.filter((place) => place.frame === null).map(id).sort()
-    expect(plain).toEqual(['card-library', 'gym', 'racecourse', 'trophy-hall'])
-    for (const building of plain) expect(atlas.frames[building], `${building} is drawn now: wire its frame`).toBeUndefined()
-    expect(placeById('account')!.frame).toBeNull()
+  it("gives §10.3's four new places A01's frame ids, and allows only those to wait for their release", () => {
+    for (const building of ['card-library', 'gym', 'racecourse', 'trophy-hall']) expect(placeById(building)!.frame).toBe(building)
+    expect(AWAITING_ART.every((frame) => drawn.some((place) => place.frame === frame))).toBe(true)
+    expect([...AWAITING_ART].sort()).toEqual(AWAITING_ART.length === 0 ? [] : ['card-library', 'gym', 'racecourse', 'trophy-hall'])
+  })
+
+  // The report: one line per frame still waiting. A release that draws one fails here until it leaves the list, so an
+  // empty list (uma-art 2.6.0 pinned) makes the frames test above strict.
+  it.each(AWAITING_ART.map((frame) => [frame]))('%s waits for uma-art 2.6.0 (A01): the Hub draws its placeholder', (frame) => {
+    expect(atlas.frames[frame], `${frame} is drawn in ${art.version}: take it off AWAITING_ART`).toBeUndefined()
   })
 })

@@ -103,31 +103,31 @@ The place registry, `@racer/domain/hub`'s `PLACES` (T137), as it stands. A cell 
 three-column grid of phase 3 (§11); a **new** frame is one of §10.3's drawings, shown as a plain tile until released.
 
 <!-- live:hub-places -->
-| Page | Place | Id | Kind | Route | Counter | Frame | Pips | Cell |
+| Page | Place | Id | Kind | Route | Counter | Frame | Pips | At (x, y) |
 |---|---|---|---|---|---|---|---|---|
-| Town Hall | Stable | `stable` | town | `/town/stable` | `uma-tickets` | `stable` | — | 1, 1 |
-| Town Hall | Warehouse | `warehouse` | town | `/town/warehouse` | — | `warehouse` | — | 3, 1 |
-| Town Hall | Exchange | `exchange` | town | `/town/exchange` | — | `exchange` | — | 3, 3 |
-| Town Hall | Card Library | `card-library` | town | `/town/card-library` | — | **new** | — | 1, 3 |
+| Town Hall | Stable | `stable` | town | `/town/stable` | `uma-tickets` | `stable` | — | 0.24, 0.18 |
+| Town Hall | Warehouse | `warehouse` | town | `/town/warehouse` | — | `warehouse` | — | 0.24, 0.72 |
+| Town Hall | Exchange | `exchange` | town | `/town/exchange` | — | `exchange` | — | 0.76, 0.72 |
+| Town Hall | Card Library | `card-library` | town | `/town/card-library` | — | `card-library` (**new**) | — | 0.76, 0.18 |
 | Town Hall | Account (hidden) | `account` | town | `/town/account` | — | — | — | — |
-| Training | Observatory | `observatory` | facility | `/training/observatory` | `finished-here` | `observatory` | yes | 1, 1 |
-| Training | Lineage Hall | `lineage-hall` | facility | `/training/lineage-hall` | `finished-here` | `party-hall` | yes | 1, 3 |
-| Training | Gym | `gym` | facility | `/training/gym` | `finished-here` | **new** | yes | 3, 1 |
-| Training | Dojo | `dojo` | facility | `/training/dojo` | `finished-here` | `brawler-dojo` | yes | 3, 3 |
-| Racing | Racecourse (direct) | `racecourse` | racing | `/racing/racecourse` | `featured-open` | **new** | — | 3, 2 |
-| Racing | Scenario Gate | `scenario-gate` | racing | `/racing/scenario-gate` | `ready-to-advance` | `scenario-gate` | — | 1, 2 |
-| Racing | Expedition Map | `expedition-map` | racing | `/racing/expedition-map` | `promotable` | `tier-finale` | — | 2, 3 |
-| Racing | Trophy Hall | `trophy-hall` | racing | `/racing/trophy-hall` | `new-flair` | **new** | — | 2, 1 |
-| Farm | Sugar Grove | `sugar-grove` | site | `/farm/sugar-grove` | `finished-here` | `sugar-grove` | yes | 3, 1 |
-| Farm | Orchard | `orchard` | site | `/farm/orchard` | `finished-here` | `orchard` | yes | 2, 3 |
-| Farm | Fishery | `fishery` | site | `/farm/fishery` | `finished-here` | `fishery` | yes | 4, 2 |
-| Farm | Nut Grove | `nut-grove` | site | `/farm/nut-grove` | `finished-here` | `nut-grove` | yes | 2, 1 |
-| Farm | Herb Garden | `herb-garden` | site | `/farm/herb-garden` | `finished-here` | `herb-garden` | yes | 3, 3 |
-| Farm | Fields | `fields` | site | `/farm/fields` | `finished-here` | `fields` | yes | 1, 1 |
-| Farm | Vegetable Garden | `vegetable-garden` | site | `/farm/vegetable-garden` | `finished-here` | `vegetable-garden` | yes | 1, 2 |
-| Farm | Mushroom Cave | `mushroom-cave` | site | `/farm/mushroom-cave` | `finished-here` | `mushroom-cave` | yes | 1, 3 |
-| Farm | Pantry | `pantry` | station | `/farm/pantry` | `finished-here` | `pantry` | yes | 2, 2 |
-| Farm | Kitchen | `kitchen` | station | `/farm/kitchen` | `finished-here` | `kitchen` | yes | 3, 2 |
+| Training | Observatory | `observatory` | facility | `/training/observatory` | `finished-here` | `observatory` | yes | 0.24, 0.18 |
+| Training | Lineage Hall | `lineage-hall` | facility | `/training/lineage-hall` | `finished-here` | `party-hall` | yes | 0.76, 0.18 |
+| Training | Gym | `gym` | facility | `/training/gym` | `finished-here` | `gym` (**new**) | yes | 0.24, 0.6 |
+| Training | Dojo | `dojo` | facility | `/training/dojo` | `finished-here` | `brawler-dojo` | yes | 0.76, 0.6 |
+| Racing | Racecourse (direct) | `racecourse` | racing | `/racing/racecourse` | `featured-open` | `racecourse` (**new**) | — | 0.5, 0.74 |
+| Racing | Scenario Gate | `scenario-gate` | racing | `/racing/scenario-gate` | `ready-to-advance` | `scenario-gate` | — | 0.5, 0.2 |
+| Racing | Expedition Map | `expedition-map` | racing | `/racing/expedition-map` | `promotable` | `tier-finale` | — | 0.76, 0.46 |
+| Racing | Trophy Hall | `trophy-hall` | racing | `/racing/trophy-hall` | `new-flair` | `trophy-hall` (**new**) | — | 0.24, 0.46 |
+| Farm | Sugar Grove | `sugar-grove` | site | `/farm/sugar-grove` | `finished-here` | `sugar-grove` | yes | 0.2, 0.56 |
+| Farm | Orchard | `orchard` | site | `/farm/orchard` | `finished-here` | `orchard` | yes | 0.79, 0.56 |
+| Farm | Fishery | `fishery` | site | `/farm/fishery` | `finished-here` | `fishery` | yes | 0.2, 0.78 |
+| Farm | Nut Grove | `nut-grove` | site | `/farm/nut-grove` | `finished-here` | `nut-grove` | yes | 0.2, 0.34 |
+| Farm | Herb Garden | `herb-garden` | site | `/farm/herb-garden` | `finished-here` | `herb-garden` | yes | 0.79, 0.78 |
+| Farm | Fields | `fields` | site | `/farm/fields` | `finished-here` | `fields` | yes | 0.2, 0.12 |
+| Farm | Vegetable Garden | `vegetable-garden` | site | `/farm/vegetable-garden` | `finished-here` | `vegetable-garden` | yes | 0.79, 0.12 |
+| Farm | Mushroom Cave | `mushroom-cave` | site | `/farm/mushroom-cave` | `finished-here` | `mushroom-cave` | yes | 0.79, 0.34 |
+| Farm | Pantry | `pantry` | station | `/farm/pantry` | `finished-here` | `pantry` | yes | 0.5, 0.34 |
+| Farm | Kitchen | `kitchen` | station | `/farm/kitchen` | `finished-here` | `kitchen` | yes | 0.5, 0.56 |
 <!-- /live -->
 
 ### 3.1 Town Hall (`/town`)
