@@ -1,8 +1,8 @@
 // Account (docs/game/11-hub-and-places.md §3.1; docs/game/02-check-ins-and-notifications.md §3, §9, §10; D157; M034;
-// T138): the trainer's name (edited in the Trophy Hall), check-in times (`set-check-in-times`), sync and Sync now, this
-// device's reduced motion and default race speed, App build and Content, Sign in or Sign out (the auth provider's, T143),
-// and in dev builds only a dev section that loads the synthetic fixtures and runs `dev-grant`. `?row=sync` opens at the
-// sync row. Notifications are phase 4.
+// T138): the trainer's name (read-only: no screen edits it yet, 02 §11), check-in times (`set-check-in-times`), sync
+// and Sync now, this device's reduced motion and default race speed, App build and Content, Sign in or Sign out (the
+// auth provider's, T143), and in dev builds only a dev section that loads the synthetic fixtures and runs `dev-grant`.
+// `?row=sync` opens at the sync row. Notifications are phase 4.
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { APP_BUILD_ID } from '../../app/build'

@@ -9,7 +9,7 @@ import { BottomSheet } from '../../ui/BottomSheet'
 import { Button } from '../../ui/Button'
 import { Chip } from '../../ui/Chip'
 import { useGame, useNow } from '../../app/game'
-import { CoinIcon } from '../../ui/icons'
+import { UiMark } from '../../ui/UiMark'
 import { amount } from '../../ui/labels'
 import { PlaceHeader } from '../../ui/PlaceHeader'
 import { Tabs } from '../../ui/Tabs'
@@ -107,7 +107,7 @@ function StockSheet({ row, house, onClose }: { row: StockRow | null; house: Ware
                   onClick={() => choose(option)} aria-label={`${sellLabel(option)}: ${option.qty} for ${amount(option.total)}`}>
                   <span className="flex flex-col items-center leading-tight">
                     <span>{sellLabel(option)}</span>
-                    <span className="flex items-center gap-1 text-[12px] font-normal"><CoinIcon size={16} variant="duotone" />{amount(option.total)}</span>
+                    <span className="flex items-center gap-1 text-[12px] font-normal"><UiMark mark="currency/prize-money" />{amount(option.total)}</span>
                   </span>
                 </Button>
                 {option.qty === 0 && <p className="mt-0.5 text-center text-[11px] text-ink-soft">{sizeOffWords(option.size)}</p>}

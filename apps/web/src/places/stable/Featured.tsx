@@ -1,7 +1,8 @@
 // The featured Uma (docs/game/11-hub-and-places.md §5; T138): `FeaturedUmaCard`, the Town Hall plaza's cell and the
 // Stable Peek's first card, and her quick sheet: her name, tier crest, scenario, Racing Level and what she's doing
 // ("Kitchen · 2 of 4 · 16:40"); Train (her Needs), Race (the Racecourse with her picked), Profile, and Feature another
-// Uma through the one Uma picker, which runs `feature-uma`. The plaza's chibi and its animation are phase 6 (§11).
+// Uma through the one Uma picker, which runs `feature-uma`. The plaza's chibi and its animation wait for phase 5's
+// `outfit-chibis` release (§5).
 import { hubWords } from '@racer/domain/hub'
 import { scenarioNumber, scenarioRow } from '@racer/domain/tiers'
 import { useMemo, useState } from 'react'

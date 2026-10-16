@@ -1,7 +1,7 @@
 // An Uma as still art (docs/game/11-hub-and-places.md §4, §5): `UmaFace` for a pip (her `face`, then her outfit icon,
 // then her initial) and `UmaArt` for the plaza (her `chibi` `-a`, then her bust, then her icon, then her initial). The
-// chibi's animation is phase 6. Without content (the seeds' mount) both are her initial; with it, the art loads in its own
-// chunk, only for Umas on screen.
+// chibi's animation waits for phase 5's `outfit-chibis` release (11 §5). Without content (the seeds' mount) both are her
+// initial; with it, the art loads in its own chunk, only for Umas on screen.
 import { lazy, Suspense } from 'react'
 import { useG2Content } from '../app/content'
 import { initialOf, useUmaName } from './uma'

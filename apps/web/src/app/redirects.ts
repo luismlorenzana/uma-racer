@@ -1,9 +1,10 @@
 // Today's routes, sent to the new ones (docs/game/11-hub-and-places.md §7.2): the router makes each row a
-// `<Navigate replace>` that carries its params and search. DELETED WITH PHASE 4: the redirects ship with phase 3 and
-// leave with the next phase that ships, by when the installed app, bookmarks and notification links all use the new
-// paths (§7.2's rule). Deleted paths need no row: they fall to `/` through the route rules (a page that isn't one, or a
-// place not on its page), so `/training/:umaId`, the retired modes' and minigames' routes, today's `/dev/*` proofs and
-// the card reveal all land on the start rule. `/cards/redeem` is listed only so `/cards/:cardId` can't catch it.
+// `<Navigate replace>` that carries its params and search. DELETED WITH PHASE 4 OR 5 (D365): the redirects shipped with
+// phase 3 and leave with phase 4 if the owner asks for it, else with phase 5, by when the installed app, bookmarks and
+// notification links all use the new paths (§7.2's rule). Deleted paths need no row: they fall to `/` through the
+// route rules (a page that isn't one, or a place not on its page), so `/training/:umaId`, the retired modes' and
+// minigames' routes, today's `/dev/*` proofs and the card reveal all land on the start rule. `/cards/redeem` is listed
+// only so `/cards/:cardId` can't catch it.
 
 export interface RedirectRow {
   /** Today's path, with its params. */
