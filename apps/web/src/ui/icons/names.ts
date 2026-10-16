@@ -33,6 +33,7 @@ export const ICON_NAMES = [
   'lineage',
   'locked',
   'menu',
+  'moon',
   'more',
   'move-to',
   'offline',

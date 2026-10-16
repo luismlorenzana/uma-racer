@@ -1,9 +1,9 @@
-// A Farm building's page and Peek (docs/game/07-farm.md §10; docs/game/11-hub-and-places.md §3.4;
-// docs/game/02-check-ins-and-notifications.md §6; T140), read from one work view: the header with its level, slots in
-// use, speed and the next upgrade against stock; "For your targets", the planner's lines here in 02 §6's words, each
-// opening the job sheet filled in; one card per slot; the Umas with finished outputs here (the Counter), and who Repeat
-// here would take. Pure: every number is the domain's.
-import { CHECK_IN_WORDS, buyFor, clockTime, fill, fitSize, hasReady, repeatable, say } from '@racer/domain/check-in'
+// A Farm building's page and Peek (docs/game/07-farm.md §10; docs/game/11-hub-and-places.md §2.6, §3.4;
+// docs/game/02-check-ins-and-notifications.md §6; T140, D366), read from one work view: the header with its level, slots
+// in use, speed and the next upgrade against stock; "For your targets", the planner's lines here, one icon each with
+// what is short, each opening the job sheet filled in; one row per slot; the Umas with finished outputs here (the
+// Counter), and who Repeat here would take. Pure: every number is the domain's.
+import { CHECK_IN_WORDS, buyFor, clockTime, durationText, fill, fitSize, hasReady, repeatable, say } from '@racer/domain/check-in'
 import {
   BUILDINGS, buildingSpeed, farmItemSeconds, type BuildingLevel, type FarmBuildingId,
 } from '@racer/domain/farm'
@@ -23,10 +23,10 @@ import { grouped, type WordsContext } from '../../../ui/work/words'
 export type { UpgradeView }
 import { farmWords } from '../words'
 
-/** One line of "For your targets" (02 §6). */
+/** One line of "For your targets" (02 §6), drawn as its item's icon with what is short (D366). */
 export interface TargetLineView {
   readonly line: PlanLine
-  /** "Vegetables G3 · short 6 · Warehouse 4 · coming 2 (Gold Ship, 14:10)". */
+  /** VoiceOver's reading: "Vegetables G3 · short 6 · Warehouse 4 · coming 2 (Gold Ship, in 1h 20m)". */
   readonly words: string
   /** "Grade 4 needs Farm Lv 16 · highest free Uma: Lv 14". */
   readonly gate: string | null
@@ -51,7 +51,7 @@ export interface BuildingView {
   readonly upgrade: UpgradeView | null
   readonly lines: readonly TargetLineView[]
   readonly cards: readonly SlotCardModel[]
-  /** Umas with finished outputs here: the Counter (11 §3.4) and Collect here's slots. */
+  /** Umas with finished outputs here: the Counter (11 §3.4) and Collect here's slots. A running job's outputs count too. */
   readonly ready: number
   readonly readySlots: readonly SlotRef[]
   /** The Umas Repeat here takes: Free, with a last job here. */
@@ -73,14 +73,20 @@ export function lineLabel(item: ItemId): string {
   return `${FAMILIES[def.family].name} G${def.grade}`
 }
 
-/** A plan line in 02 §6's words. */
-export function lineWords(line: PlanLine, context: WordsContext): string {
+/**
+ * A plan line in 02 §6's words. Each coming output says when it lands: by default the clock time (the planner's Needs
+ * views, 02 §6); the Farm passes `now` and says how long until then ("in 1h 20m", D366).
+ */
+export function lineWords(line: PlanLine, context: WordsContext, now?: number): string {
   const parts = [lineLabel(line.item)]
   if (line.short > 0) parts.push(farmWords('line-short', { n: grouped(line.short) }))
   parts.push(farmWords('line-warehouse', { n: grouped(line.have) }))
   if (line.coming > 0) {
     const from = line.comingFrom
-      .map((coming) => farmWords('line-from', { uma: context.umaName(coming.outfitId) || coming.outfitId, time: clockTime(coming.at, context.utcOffsetMin) }))
+      .map((coming) => {
+        const uma = context.umaName(coming.outfitId) || coming.outfitId
+        return now === undefined ? `${uma}, ${clockTime(coming.at, context.utcOffsetMin)}` : farmWords('line-from', { uma, time: durationText(coming.at - now) })
+      })
       .join('; ')
     parts.push(farmWords('line-coming', { n: grouped(line.coming), from }))
   }
@@ -106,6 +112,17 @@ export function sheetQuery(fields: {
   if (fields.queue) params.set('queue', '1')
   if (fields.slot != null) params.set('slot', String(fields.slot))
   if (fields.back) params.set('back', fields.back)
+  return `?${params.toString()}`
+}
+
+/**
+ * A sheet query ("?job=…") over `search`'s other params (D366): the side panel's `?peek=kitchen` keeps its place, so the
+ * job sheet opens over the map and closing it returns to the Peek.
+ */
+export function withSheet(search: string, query: string): string {
+  const params = new URLSearchParams(search)
+  for (const key of ['job', 'uma', 'count', 'queue', 'slot', 'back']) params.delete(key)
+  for (const [key, value] of new URLSearchParams(query)) params.set(key, value)
   return `?${params.toString()}`
 }
 
@@ -136,7 +153,7 @@ function targetLines(view: WorkView, planned: Plan, building: FarmBuildingId, co
     const { uma, count } = prefill(view, planned, suggestions, building, line.item, timing)
     return {
       line,
-      words: lineWords(line, context),
+      words: lineWords(line, context, view.now),
       gate,
       buy: offer === null || def?.kind !== 'raw' ? null : { price: offer.items[0]!.unitPrice, to: exchangeRow(def.family, def.grade) },
       sheet: sheetQuery({ job: line.item, uma, count }),

@@ -213,14 +213,15 @@ describe("size chips (02 §3's check-in-fits table, cell by cell)", () => {
     }
   })
 
-  it('marks Fits 13:00 in the morning, Overnight after 22:30, and fits the one after when ×1 overruns', () => {
+  it('marks the size that fits the next check-in in the morning, the overnight one after 22:30, and fits the one after when ×1 overruns', () => {
     const gather = Array.from({ length: 10 }, () => 90 * 60)
-    expect(sizeChipsView(9 * HOUR, gather, 10, DEFAULT_CHECK_INS, 0).fit).toBe('Fits 13:00')
-    expect(sizeChipsView(23 * HOUR, gather, 10, DEFAULT_CHECK_INS, 0).fit).toBe('Overnight')
+    expect(sizeChipsView(9 * HOUR, gather, 10, DEFAULT_CHECK_INS, 0)).toMatchObject({ marked: 2, overnight: false, fit: 'fits the next check-in' })
+    expect(sizeChipsView(23 * HOUR, gather, 10, DEFAULT_CHECK_INS, 0)).toMatchObject({ overnight: true, fit: 'runs overnight' })
     const cook = Array.from({ length: 10 }, () => 240 * 60)
+    // At 12:00 a cook ends at 16:00, past 13:00: it fits the 22:30 check-in, and says how long she then waits (D366).
     const late = sizeChipsView(12 * HOUR, cook, 10, DEFAULT_CHECK_INS, 0)
-    expect(late.fit).toBe('Fits 22:30')
-    expect(late.chips[0]!.words).toBe('ends 16:00 · then free until 22:30')
+    expect(late).toMatchObject({ marked: 2, overnight: false })
+    expect(late.chips[0]).toMatchObject({ duration: '4h', words: '4h, then free 6h 30m before a check-in' })
   })
 })
 

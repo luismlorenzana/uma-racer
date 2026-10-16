@@ -1,7 +1,8 @@
 // The check-in's dev proof (T142; docs/game/11-hub-and-places.md §7.2's rule for new proofs: under `/dev/`, beside
 // what it proves), at `/dev/seeds/dev/check-in` in dev builds only, on T137's seeds: the size chips for a grade-1 gather,
-// craft, cook and session from the seed's clock (`?at=09:00` marks "Fits 13:00", `?at=23:00` "Overnight"), every queue
-// with its finish times and warnings, every stopped queue's card, and the ways into the summary. Synthetic seeds only.
+// craft, cook and session from the seed's clock, as durations (`?at=09:00` marks the one that fits the next check-in,
+// `?at=23:00` the overnight one, D366), every queue with its durations and warnings, every stopped queue's card, and the
+// ways into the summary. Synthetic seeds only.
 import { clockTime, nextCheckIn, queueStopped } from '@racer/domain/check-in'
 import { farmItemSeconds } from '@racer/domain/farm'
 import { sessionSeconds } from '@racer/domain/training'

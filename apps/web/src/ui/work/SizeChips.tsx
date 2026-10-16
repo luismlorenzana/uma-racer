@@ -1,10 +1,12 @@
 // The size picker every start and queue sheet shows (docs/game/02-check-ins-and-notifications.md §3; T142 part 1,
-// owned here by T140): a chip per size from 1 to what the stock covers, each with its end in `chipWords`' words ("ends
-// 14:00 · then free until 22:30"), the marked one carrying `fitWords` ("Fits 13:00" or "Overnight") and preselected.
-// Nothing is confirmed for the owner: a chip only sets the size. `start` is now for a start, and `freeAt` (her chain's
-// end) for an entry added to a queue. Each chip is a 44 pt target.
+// owned here by T140; D366): a chip per size from 1 to what the stock covers, each with how long it takes ("×4 ·
+// 3h 36m"), never the clock time it ends. The size that fits until the next check-in carries a check-in mark (a moon
+// when that check-in is the morning's) and is preselected; VoiceOver reads it as "fits the next check-in" or "runs
+// overnight", and each chip's wait after it. Nothing is confirmed for the owner: a chip only sets the size. `start` is
+// now for a start, and her chain's end (`freeAt`) for an entry added to a queue. Each chip is a 44 pt target.
 import { useEffect, useId, useMemo } from 'react'
 import { useGame, useRuntime } from '../../app/game'
+import { CheckIcon, MoonIcon } from '../icons'
 import { sizeChipsView } from './model'
 import { workWords } from './words'
 
@@ -18,9 +20,11 @@ export interface SizeChipsProps {
   /** The size picked; null preselects the marked chip. */
   readonly value: number | null
   readonly onChange: (size: number) => void
+  /** Show the "How many" heading; a sheet that names the section itself passes false. */
+  readonly heading?: boolean
 }
 
-export function SizeChips({ start, itemSeconds, max, value, onChange }: SizeChipsProps) {
+export function SizeChips({ start, itemSeconds, max, value, onChange, heading = true }: SizeChipsProps) {
   const { game } = useRuntime()
   const times = useGame((snapshot) => snapshot.state?.profile.checkIns ?? null)
   const label = useId()
@@ -37,9 +41,10 @@ export function SizeChips({ start, itemSeconds, max, value, onChange }: SizeChip
 
   if (view === null) return null
   const selected = view.chips.find((chip) => chip.size === (chosen ?? view.marked)) ?? view.chips[0]!
+  const Mark = view.overnight ? MoonIcon : CheckIcon
   return (
     <div data-g2="size-chips">
-      <p id={label} className="text-micro mb-1.5">{workWords('size-label')}</p>
+      <p id={label} className={heading ? 'text-micro mb-1.5' : 'sr-only'}>{workWords('size-label')}</p>
       <div role="radiogroup" aria-labelledby={label} className="grid grid-cols-5 gap-1.5">
         {view.chips.map((chip) => {
           const isMarked = chip.size === view.marked
@@ -55,24 +60,21 @@ export function SizeChips({ start, itemSeconds, max, value, onChange }: SizeChip
               data-size={chip.size}
               data-marked={isMarked || undefined}
               onClick={() => onChange(chip.size)}
-              className={`relative flex min-h-12 flex-col items-center justify-center rounded-sm border px-1 text-center ${
+              className={`relative flex min-h-11 flex-col items-center justify-center rounded-sm border px-0.5 text-center ${
                 on ? 'border-accent bg-accent-wash text-ink' : 'border-hairline-strong bg-panel text-ink-soft'
               }`}
             >
-              <span className="font-display text-[15px] leading-5 font-bold">{workWords('size-chip', { n: chip.size })}</span>
-              <span className="text-[11px] leading-4 tabular-nums">{chip.end}</span>
+              <span className="font-display text-[14px] leading-4 font-bold">{workWords('size-chip', { n: chip.size })}</span>
+              <span className="text-[11px] leading-4 whitespace-nowrap tabular-nums">{chip.duration}</span>
               {isMarked && (
-                <span aria-hidden className="absolute -top-2 left-1/2 -translate-x-1/2 rounded-full bg-accent px-1.5 text-[9px] leading-4 font-bold whitespace-nowrap text-ink shadow-1">
-                  {view.fit}
+                <span aria-hidden data-fit={view.overnight ? 'overnight' : 'next'} className="absolute -top-1.5 -right-1.5 flex size-5 items-center justify-center rounded-full bg-accent text-ink shadow-1">
+                  <Mark size={16} variant="solid" />
                 </span>
               )}
             </button>
           )
         })}
       </div>
-      <p aria-live="polite" className="mt-1.5 text-[13px] text-ink-soft tabular-nums">
-        {workWords('size-chip-label', { n: selected.size, words: selected.words })}
-      </p>
     </div>
   )
 }

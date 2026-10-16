@@ -1,17 +1,19 @@
-// A Training facility's Peek (docs/game/11-hub-and-places.md §3.2; T139): its slots with faces and finish times; the
-// Umas with unlocks left here in their open layers; and the facility's dishes in the Warehouse (Vegetables, Mushrooms,
-// or the Gym's stat, Duo and Feast dishes), or at the Dojo the bonds left this layer (`layerProgress`). Display only:
-// the Peek's Enter opens the page.
-import { clockTime } from '@racer/domain/check-in'
+// A Training facility's Peek (docs/game/11-hub-and-places.md §3.2; T139, D366): its level, slots in use and speed as
+// chips; its held slots as the Farm's compact rows (`PeekRow`: face in its ring, dish, "×3 · 1/3" and how long is left,
+// or Done), then how many are free; the Umas with unlocks left here in their open layers; and the facility's dishes in
+// the Warehouse (Vegetables, Mushrooms, or the Gym's stat, Duo and Feast dishes), or at the Dojo the bonds left this
+// layer (`layerProgress`). A finished row's **Collect** opens its unlocks; the Peek's Enter opens the page.
 import type { FacilityId } from '@racer/domain/farm'
 import { useMemo } from 'react'
 import type { PeekProps } from '../registry'
 import { ItemIcon } from '../../ui/ItemIcon'
-import { UmaFace } from '../../ui/UmaArt'
+import { useGame } from '../../app/game'
+import { PlaceStats } from '../../ui/work/PlaceStats'
+import { PeekRow } from '../../ui/work/SlotRow'
 import { useWordsContext } from '../../ui/work/useTap'
 import { useWorkView } from '../../ui/work/view'
 import { grouped } from '../../ui/work/words'
-import { dishFamilyName, facilityDishes, facilityView, leftHere, peekNoun } from './facility/model'
+import { currentUnlock, dishFamilyName, facilityDishes, facilityView, leftHere, peekNoun, unlockLine } from './facility/model'
 import { trainingWords } from './words'
 
 /** Names a Peek lists before "and N more". */
@@ -24,6 +26,7 @@ export default function TrainingPeek({ place }: PeekProps) {
   const model = useMemo(() => (view === null ? null : facilityView(view, facility, context)), [view, facility, context])
   const left = useMemo(() => (view === null ? [] : leftHere(view, facility)), [view, facility])
   const dishes = useMemo(() => (view === null ? [] : facilityDishes(view, facility)), [view, facility])
+  const content = useGame((snapshot) => snapshot.env?.content ?? null)
   if (model === null) return null
   const cards = model.rooms.flatMap((room) => room.cards)
   const held = cards.flatMap((card) => (card.kind === 'held' ? [card] : []))
@@ -32,19 +35,19 @@ export default function TrainingPeek({ place }: PeekProps) {
   const name = (outfitId: string) => context.umaName(outfitId) || outfitId
   return (
     <div data-g2="training-peek" className="space-y-3 pb-1">
-      <p className="font-display text-[13px] font-semibold text-ink-soft">
-        {trainingWords('level', { level: model.level })} · {trainingWords('slots-in-use', { used: model.used, slots: model.slots })}
-      </p>
-      <ul aria-label={trainingWords('slots-title')} className="space-y-1">
-        {held.map((card) => (
-          <li key={`${card.slot.room ?? ''}:${card.slot.slot}`} data-peek-slot={card.slot.slot} className="flex items-center gap-2 text-[13px]">
-            <span className="block size-6 shrink-0 overflow-hidden rounded-full bg-sunken"><UmaFace outfitId={card.outfitId} size={24} /></span>
-            <span className="min-w-0 flex-1 truncate">{name(card.outfitId)}</span>
-            <span className="shrink-0 text-ink-soft tabular-nums">
-              {card.running && card.nextAt !== null ? trainingWords('peek-next', { time: clockTime(card.nextAt, context.utcOffsetMin) }) : trainingWords('peek-ready')}
-            </span>
-          </li>
-        ))}
+      <PlaceStats level={model.level} used={model.used} slots={model.slots} speed={model.speed} />
+      <ul aria-label={trainingWords('slots-title')} className="space-y-1.5">
+        {held.map((card) => {
+          const now = currentUnlock(view?.settled.work[card.outfitId], card)
+          const line = now === null ? null : unlockLine(now.ref, now.dishId, content)
+          return (
+            <PeekRow
+              key={`${card.slot.room ?? ''}:${card.slot.slot}`}
+              card={card}
+              what={now === null || line === null ? undefined : { icon: <ItemIcon item={now.dishId} decorative />, name: line }}
+            />
+          )
+        })}
         {free > 0 && <li className="text-[13px] text-ink-soft">{free === 1 ? trainingWords('peek-free-one') : trainingWords('peek-free', { n: free })}</li>}
       </ul>
       {facility === 'dojo' ? (

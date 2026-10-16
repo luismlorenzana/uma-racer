@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
-// The check-in's dev proof (T142) at `/dev/check-in` in dev builds: the size chips from the seed's clock, marked
-// "Fits 13:00" at 09:00 and "Overnight" at 23:00 and preselected with nothing confirmed; each queue's finish times as
-// `projectWork` projects them, with the warning before a short entry would start; and every stopped queue's card.
-import { clockTime } from '@racer/domain/check-in'
+// The check-in's dev proof (T142) at `/dev/check-in` in dev builds: the size chips from the seed's clock, read as
+// durations and marked "fits the next check-in" at 09:00 and "runs overnight" at 23:00 (D366), preselected with nothing
+// confirmed; each queued entry's duration as `projectWork` projects it, with the warning before a short entry would
+// start; and every stopped queue's card.
+import { durationText } from '@racer/domain/check-in'
 import { endsAt } from '@racer/domain/work'
 import { projectWork } from '@racer/domain/planner'
 import { cleanup, screen, waitFor, within } from '@testing-library/react'
@@ -37,27 +38,28 @@ async function proof(made: G2Seed) {
   return { page, game, calls }
 }
 
-describe('the size chips from the clock (02 §3)', () => {
-  it('mark "Fits 13:00" at 09:00 and "Overnight" at 23:00, preselected, with nothing confirmed', async () => {
+describe('the size chips from the clock (02 §3, D366)', () => {
+  it('mark the size that fits the next check-in at 09:00 and the overnight one at 23:00, preselected, with nothing confirmed', async () => {
     const morning = await proof(seedAt(seed('busy'), '09:00'))
     within(morning.page).getByText(/^Clock 09:00 · next check-in 13:00$/)
     const gather = morning.page.querySelector<HTMLElement>('[data-proof-kind="Gather, grade 1"]')!
     const marked = gather.querySelector<HTMLElement>('[data-marked]')!
-    expect(marked.getAttribute('aria-label')).toMatch(/, Fits 13:00$/)
+    expect(marked.getAttribute('aria-label')).toMatch(/, fits the next check-in$/)
     await waitFor(() => expect(marked.getAttribute('aria-checked')).toBe('true'))
-    expect(within(gather).getByRole('radio', { name: /^×\d+, ends \d\d:\d\d · then free until 13:00, Fits 13:00$/ })).toBe(marked)
+    expect(within(gather).getByRole('radio', { name: /^×\d+, [\dhm ]+, then free [\dhm ]+ before a check-in, fits the next check-in$/ })).toBe(marked)
+    expect(marked.textContent).not.toMatch(/\d\d:\d\d/)
     expect(morning.calls).toEqual([])
     cleanup()
 
     const night = await proof(seedAt(seed('busy'), '23:00'))
     for (const kind of night.page.querySelectorAll<HTMLElement>('[data-proof-kind]')) {
-      expect(kind.querySelector('[data-marked]')!.getAttribute('aria-label')).toMatch(/, Overnight$/)
+      expect(kind.querySelector('[data-marked]')!.getAttribute('aria-label')).toMatch(/, runs overnight$/)
     }
   })
 })
 
-describe('queues (02 §3)', () => {
-  it("show each queued entry's finish as projectWork projects it", async () => {
+describe('queues (02 §3, D366)', () => {
+  it("show each queued entry's duration as projectWork projects it", async () => {
     const made = seed('busy')
     const { page } = await proof(made)
     const projection = projectWork(made.state, made.at, made.env)
@@ -66,7 +68,7 @@ describe('queues (02 §3)', () => {
     for (const row of queued) {
       const block = page.querySelector<HTMLElement>(`[data-proof-queue="${row.outfitId}"]`)!
       const started = projection.ahead.work[row.outfitId]!.entries[row.entries.length]!
-      within(block).getByText(new RegExp(`→ ${clockTime(endsAt(started), 0)}$`))
+      within(block).getByText(new RegExp(` · ${durationText(endsAt(started) - started.startedAt)}$`))
     }
   })
 

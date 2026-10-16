@@ -1,31 +1,32 @@
 // The job sheet (docs/game/07-farm.md §3, §5, §10, §11; docs/game/02-check-ins-and-notifications.md §3, §6, §9;
-// T140), one for all ten buildings, opened over a building page by its query. Pure readings of the domain:
-// 1. **Uma**: Free first; once an item is chosen, the best suited (`bestExpTenths` over `expFamilies`); then Farm Level,
-//    highest first. A session greys her; her running job here offers Add to queue; one elsewhere, Recall and start here.
+// T140, D366), one screen for all ten buildings, opened over a building page or the map's side panel by its query, with
+// everything preselected so one tap starts the job. Pure readings of the domain:
+// 1. **Uma**: Free Umas only (`freeUmas`), never one working, in a session or Ready with a finished job, each with her
+//    Farm Level and a suited mark (`suits`); suited first, then Farm Level. Queue next names her and skips the step.
 // 2. **What**: a site's ten raw grades; the Pantry's crafted items in family tabs in `FAMILY_RING` order; the Kitchen's
-//    eleven tabs by destination, Duos, Feasts and Can cook now. A grade above her Farm Level shows its lock.
-// 3. **How many** and its preview from the kind's own `plan`: minutes per output, the end, the Farm EXP and every input
-//    against free stock.
-// 4. **Start**, **Add to queue** or **Recall and start here**: each run on the current state first, so a disabled
-//    button says why in the rule's own words, and a shortfall links to the building that makes it.
-import { buyFor, say, type OperationEnv, type Words } from '@racer/domain/check-in'
+//    tabs by destination, Duos, Feasts and Can cook now, each tab an icon. A grade above her Farm Level shows its lock.
+// 3. **Preselected**: the planner's suggestion here (`suggestFrom`), else the best Free Uma and the item the plan wants
+//    most that she can make, else the highest grade she can work; the size the check-in fits.
+// 4. **How many** and its preview from the kind's own `plan`: how long it takes, the Farm EXP and every input against
+//    free stock.
+// 5. **Start** or **Queue**, run on the current state first, so a disabled button says why in the rule's own words, and
+//    a shortfall links to the building that makes it.
+import { buyFor, durationText, say, type Words } from '@racer/domain/check-in'
 import {
   bestExpTenths, BUILDINGS, expFamilies, FAMILY_APTITUDE, familyAptitude, FARM_BUILDING_IDS, farmExpMultiplier, farmItemSeconds, makesHere,
-  QUARTERS_PER_EXP, TENTHS, type FarmAptitude, type FarmBuildingId,
+  QUARTERS_PER_EXP, suits, TENTHS, type FarmAptitude, type FarmBuildingId,
 } from '@racer/domain/farm'
 import {
   craftedItem, DUOS, FAMILIES, FAMILY_RING, familyFor, FEASTS, gradeOpensAtFarmLevel, highestOpenGrade, ITEM_GRADE_LIST, itemById, planetDish,
   rawItem, recipeOf, type Destination, type DishDef, type FamilyId, type ItemDef, type ItemId,
 } from '@racer/domain/items'
-import { planFrom, remainingFor, targetsOf, type Plan } from '@racer/domain/planner'
+import { freeUmas, planFrom, remainingFor, suggestFrom, targetsOf, type Plan, type Timing } from '@racer/domain/planner'
 import { isRefusal } from '@racer/domain/state'
 import {
-  freeAt, holdsSlot, kindRules, largestCoverable, MAX_ITEMS_PER_ENTRY, MAX_QUEUE, queue, recall, shortfall, slotHolder, slotsOf, speedAt,
-  start, statusOf, stockOf, sumInputs, SESSION_KIND, WORK_REFUSALS, type FarmKind, type FarmRequest, type PlannedItem, type QueueInput,
-  type SlotRef, type StartInput, type WorkState,
+  freeAt, holdsSlot, kindRules, largestCoverable, MAX_ITEMS_PER_ENTRY, queue, shortfall, slotHolder, slotsOf, speedAt, start, statusOf,
+  stockOf, sumInputs, type FarmKind, type FarmRequest, type PlannedItem, type QueueInput, type SlotRef, type StartInput, type WorkState,
 } from '@racer/domain/work'
 import type { WorkView } from '../../../ui/work/view'
-import { placeName } from '../../../ui/work/words'
 import { exchangeRow, farmKindOf, sheetQuery } from '../building/model'
 import { farmWords } from '../words'
 
@@ -37,7 +38,7 @@ export interface SheetQuery {
   readonly uma: string | null
   readonly count: number | null
   readonly queue: boolean
-  /** The slot card's slot (Start a job, + Queue); the first free one otherwise. */
+  /** The free row's slot ("+"); the first free one otherwise. */
   readonly slot: number | null
   /** Where Start returns: an in-app path only. */
   readonly back: string | null
@@ -69,10 +70,12 @@ export function readSheetQuery(params: URLSearchParams): SheetQuery | null {
   }
 }
 
-/** The building page's search without the sheet's fields. */
+export const SHEET_KEYS = Object.freeze(['job', 'uma', 'count', 'queue', 'slot', 'back'] as const)
+
+/** The search without the sheet's fields. */
 export function withoutSheet(search: string): string {
   const params = new URLSearchParams(search)
-  for (const key of ['job', 'uma', 'count', 'queue', 'slot', 'back']) params.delete(key)
+  for (const key of SHEET_KEYS) params.delete(key)
   const rest = params.toString()
   return rest === '' ? '' : `?${rest}`
 }
@@ -88,15 +91,36 @@ const STAT_WORDS: Readonly<Record<string, string>> = { speed: 'Speed', stamina: 
 
 export const CAN_COOK_NOW = 'can-cook-now'
 
+/**
+ * A tab's icon chip (D366): a stat's or bond's type icon, a mark for Constellation, Inspiration and Can cook now, or an
+ * item's icon (a Pantry family's first crafted item, the first Duo and Feast).
+ */
+export type TabIcon =
+  | { readonly kind: 'type'; readonly type: 'speed' | 'stamina' | 'power' | 'guts' | 'wit' | 'friend' }
+  | { readonly kind: 'mark'; readonly mark: 'star' | 'spark' | 'check' }
+  | { readonly kind: 'item'; readonly item: ItemId }
+
 export interface SheetTab {
   readonly id: string
   readonly label: string
+  readonly icon: TabIcon
   readonly items: readonly ItemId[]
 }
 
 const grades = <T extends { readonly id: ItemId }>(make: (g: (typeof ITEM_GRADE_LIST)[number]) => T): ItemId[] => ITEM_GRADE_LIST.map((g) => make(g).id)
 
-/** Whether a dish can be cooked now (Decided here): the free stock covers it once and `level` opens its grade. */
+const DESTINATION_ICONS: Readonly<Record<Destination, TabIcon>> = {
+  speed: { kind: 'type', type: 'speed' },
+  stamina: { kind: 'type', type: 'stamina' },
+  power: { kind: 'type', type: 'power' },
+  guts: { kind: 'type', type: 'guts' },
+  wit: { kind: 'type', type: 'wit' },
+  skill: { kind: 'type', type: 'friend' },
+  constellation: { kind: 'mark', mark: 'star' },
+  inspiration: { kind: 'mark', mark: 'spark' },
+}
+
+/** Whether a dish can be cooked now (07 §14): the free stock covers it once and `level` opens its grade. */
 export function canCookNow(state: Pick<WorkState, 'items'>, dish: DishDef, level: number): boolean {
   return level >= gradeOpensAtFarmLevel(dish.grade) && shortfall(state.items, recipeOf(dish.id)?.inputs ?? []).length === 0
 }
@@ -114,17 +138,20 @@ const ALL_DISHES: readonly DishDef[] = Object.freeze([
  */
 export function sheetTabs(building: FarmBuildingId, state: Pick<WorkState, 'items'>, level: number): readonly SheetTab[] {
   const family = BUILDINGS[building].family
-  if (family !== null) return [{ id: family, label: FAMILIES[family].name, items: grades((g) => rawItem(family, g)) }]
+  if (family !== null) return [{ id: family, label: FAMILIES[family].name, icon: { kind: 'item', item: rawItem(family, 1).id }, items: grades((g) => rawItem(family, g)) }]
   if (building === 'pantry') {
-    return FAMILY_RING.map((f) => ({ id: f, label: FAMILIES[f].name, items: grades((g) => craftedItem(f, g)) }))
+    return FAMILY_RING.map((f) => ({ id: f, label: FAMILIES[f].name, icon: { kind: 'item', item: craftedItem(f, 1).id }, items: grades((g) => craftedItem(f, g)) }))
   }
   return [
     ...KITCHEN_DESTINATIONS.map((destination) => ({
-      id: destination, label: DESTINATION_WORDS[destination], items: grades((g) => planetDish(familyFor(destination), g)),
+      id: destination, label: DESTINATION_WORDS[destination], icon: DESTINATION_ICONS[destination], items: grades((g) => planetDish(familyFor(destination), g)),
     })),
-    { id: 'duos', label: farmWords('tab-duos'), items: DUOS.map((duo) => duo.id) },
-    { id: 'feasts', label: farmWords('tab-feasts'), items: FEASTS.map((feast) => feast.id) },
-    { id: CAN_COOK_NOW, label: farmWords('can-cook-now'), items: ALL_DISHES.filter((dish) => canCookNow(state, dish, level)).map((dish) => dish.id) },
+    { id: 'duos', label: farmWords('tab-duos'), icon: { kind: 'item', item: DUOS[0]!.id }, items: DUOS.map((duo) => duo.id) },
+    { id: 'feasts', label: farmWords('tab-feasts'), icon: { kind: 'item', item: FEASTS[0]!.id }, items: FEASTS.map((feast) => feast.id) },
+    {
+      id: CAN_COOK_NOW, label: farmWords('can-cook-now'), icon: { kind: 'mark', mark: 'check' },
+      items: ALL_DISHES.filter((dish) => canCookNow(state, dish, level)).map((dish) => dish.id),
+    },
   ]
 }
 
@@ -148,9 +175,9 @@ export interface SheetItem {
   readonly grade: number
   /** Free stock. */
   readonly stock: number
-  /** **Needed × N**: what the plan's lines still have to start of it; 0 hides it. */
+  /** The "×N" badge: what the plan's lines still have to start of it; 0 hides it. */
   readonly needed: number
-  /** The Farm Level that opens it, when `level` doesn't: "Farm Lv 16". */
+  /** The Farm Level that opens it, when `level` doesn't: the cell's "Lv16". */
   readonly locked: number | null
   /** A dish's destination. */
   readonly destination: string | null
@@ -205,26 +232,19 @@ const APTITUDE_WORDS: Readonly<Record<FarmAptitude['key'], string>> = {
   sprint: 'Sprint', mile: 'Mile', medium: 'Medium', long: 'Long', front: 'Front Runner', pace: 'Pace Chaser', late: 'Late Surger', end: 'End Closer',
 }
 
-export type UmaStatus = 'free' | 'ready' | 'here' | 'elsewhere' | 'session'
-
-export interface UmaRow {
+/** A Free Uma the sheet can start (D366): busy, Ready and in-session Umas are never listed. */
+export interface SheetUma {
   readonly outfitId: string
   readonly name: string
   readonly farmLevel: number
   /** The highest grade she can work (`highestOpenGrade`). */
   readonly highestGrade: number
-  readonly tier: number
   /** Her best family's Farm EXP, in tenths, for the families that count; null when no family is known yet. */
   readonly tenths: number | null
+  /** An S or A letter for what she'd make (`suits`): the strip's mark, and she goes first. */
+  readonly suited: boolean
   /** "Sprint A · Farm EXP ×1.6" (07 §3). */
   readonly aptitude: string | null
-  readonly status: UmaStatus
-  /** When her work ends (`freeAt`), for "in a session until 14:20". */
-  readonly until: number | null
-  /** Where she works now. */
-  readonly place: FarmBuildingId | string | null
-  /** False when the sheet can't use her: in a session, or her queue here is full. */
-  readonly pickable: boolean
 }
 
 /** The families whose aptitude counts: the chosen item's (`expFamilies`), else a site's own. */
@@ -236,7 +256,7 @@ export function suitedFamilies(building: FarmBuildingId, item: ItemId | null): r
 }
 
 /** Her aptitude line for the best of `families` (07 §3), with its tenths. */
-export function aptitudeLine(env: OperationEnv, outfitId: string, families: readonly FamilyId[]): { readonly tenths: number; readonly words: string } | null {
+export function aptitudeLine(env: WorkView['env'], outfitId: string, families: readonly FamilyId[]): { readonly tenths: number; readonly words: string } | null {
   const template = env.content.umas.get(outfitId)
   if (template === undefined || families.length === 0) return null
   const tenths = bestExpTenths(env.content, outfitId, families)
@@ -245,50 +265,101 @@ export function aptitudeLine(env: OperationEnv, outfitId: string, families: read
   return { tenths, words: farmWords('aptitude', { aptitude: APTITUDE_WORDS[FAMILY_APTITUDE[best].key], letter, multiplier: tenths / TENTHS }) }
 }
 
-/** Every owned Uma for the sheet (07 §10): Free first, then suited for `item`, then Farm Level, highest first. */
-export function umaRows(view: WorkView, building: FarmBuildingId, item: ItemId | null): UmaRow[] {
-  const { settled, now, env } = view
+/** One Uma as the strip shows her, for what she'd make here. */
+function sheetUma(view: WorkView, building: FarmBuildingId, outfitId: string, item: ItemId | null): SheetUma {
+  const { settled, env } = view
+  const uma = settled.umas[outfitId]!
   const families = suitedFamilies(building, item)
-  const rows = Object.values(settled.umas).map((uma): UmaRow => {
-    const row = settled.work[uma.outfitId]
-    const work = statusOf(row, now)
-    const last = row?.entries[row.entries.length - 1]
-    const isSession = last?.request.kind === SESSION_KIND
-    const status: UmaStatus = work === 'free' ? 'free' : work === 'ready' ? 'ready'
-      : isSession ? 'session' : row!.slot!.building === building ? 'here' : 'elsewhere'
-    const aptitude = aptitudeLine(env, uma.outfitId, families)
-    return {
-      outfitId: uma.outfitId,
-      name: env.content.umas.get(uma.outfitId)?.name ?? uma.outfitId,
-      farmLevel: uma.farm.level,
-      highestGrade: highestOpenGrade(uma.farm.level),
-      tier: uma.tier,
-      tenths: aptitude?.tenths ?? null,
-      aptitude: aptitude?.words ?? null,
-      status,
-      until: work === 'working' ? freeAt(settled, uma.outfitId, now, env) : null,
-      place: row?.slot?.building ?? null,
-      pickable: status !== 'session' && !(status === 'here' && row!.queue.length >= MAX_QUEUE),
-    }
-  })
-  // Free first (07 §10), then Ready (a start collects her first), then busy Umas the sheet can still take, then the rest.
-  const group = (row: UmaRow) => (row.status === 'free' ? 0 : row.status === 'ready' ? 1 : row.pickable ? 2 : 3)
-  return rows.sort((a, b) => group(a) - group(b)
-    || (item !== null ? (b.tenths ?? 0) - (a.tenths ?? 0) : 0)
-    || b.farmLevel - a.farmLevel
-    || a.name.localeCompare(b.name)
-    || (a.outfitId < b.outfitId ? -1 : 1))
+  const aptitude = aptitudeLine(env, outfitId, families)
+  return {
+    outfitId,
+    name: env.content.umas.get(outfitId)?.name ?? outfitId,
+    farmLevel: uma.farm.level,
+    highestGrade: highestOpenGrade(uma.farm.level),
+    tenths: aptitude?.tenths ?? null,
+    suited: env.content.umas.has(outfitId) && suits(env.content, outfitId, families),
+    aptitude: aptitude?.words ?? null,
+  }
 }
 
-/** A row's state line: "in a session until 14:20", "Kitchen until 14:20", "Ready · collected first", "Three are already queued." */
-export function umaNote(row: UmaRow, time: (at: number) => string): string | null {
-  switch (row.status) {
-    case 'free': return null
-    case 'ready': return farmWords('ready-first')
-    case 'session': return row.until === null ? null : farmWords('in-session', { time: time(row.until) })
-    case 'here': return row.pickable ? farmWords('queue-here') : WORK_REFUSALS['queue-full']
-    case 'elsewhere': return row.until === null ? null : farmWords('working', { place: placeName(String(row.place)), time: time(row.until) })
+/**
+ * The strip (07 §10, D366): **Free Umas only**, suited for `item` (or the site's family) first, then Farm Level, highest
+ * first, then name. An Uma working anywhere, in a session or Ready with a finished job still holding its slot is left
+ * out: she can't start here without a Collect or a Recall first.
+ */
+export function freeRows(view: WorkView, building: FarmBuildingId, item: ItemId | null): SheetUma[] {
+  return freeUmas(view.settled)
+    .map((uma) => sheetUma(view, building, uma.outfitId, item))
+    .sort((a, b) => Number(b.suited) - Number(a.suited)
+      || b.farmLevel - a.farmLevel
+      || (b.tenths ?? 0) - (a.tenths ?? 0)
+      || a.name.localeCompare(b.name)
+      || (a.outfitId < b.outfitId ? -1 : 1))
+}
+
+/** The Uma a queue entry is for (Queue next names her): shown, never picked. */
+export const queuedUma = (view: WorkView, building: FarmBuildingId, outfitId: string, item: ItemId | null): SheetUma | null =>
+  view.settled.umas[outfitId] === undefined ? null : sheetUma(view, building, outfitId, item)
+
+// --- Preselection (D366) ----------------------------------------------------------------------------------------------
+
+export interface Preselection {
+  readonly uma: string | null
+  readonly item: ItemId | null
+  /** Null lets the size chips mark the size the check-in fits. */
+  readonly count: number | null
+}
+
+/** Items this building makes, every tab together, Can cook now left out. */
+const itemsHere = (building: FarmBuildingId, state: Pick<WorkState, 'items'>): ItemId[] =>
+  [...new Set(sheetTabs(building, state, 1).filter((tab) => tab.id !== CAN_COOK_NOW).flatMap((tab) => tab.items))]
+
+/** How many of `item` the free stock covers once each: unbounded for gathering. */
+const covers = (state: Pick<WorkState, 'items'>, item: ItemId): number =>
+  (recipeOf(item)?.inputs ?? []).reduce((n, { item: input, qty }) => Math.min(n, Math.floor(stockOf(state.items, input) / qty)), Number.POSITIVE_INFINITY)
+
+/**
+ * What she'd make here (D366): the item the plan wants most (`needed`) that her Farm Level opens and the stock covers
+ * once; else the highest grade she can work and make; else, at a site, the highest grade she can gather. Ties go to the
+ * lower grade, then the catalogue's order.
+ */
+export function bestItem(state: Pick<WorkState, 'items'>, building: FarmBuildingId, farmLevel: number, needed: ReadonlyMap<ItemId, number>): ItemId | null {
+  const all = itemsHere(building, state).map((item) => ({ item, def: itemById(item)! })).filter(({ def }) => def.kind !== 'ticket')
+  const grade = (def: ItemDef) => (def.kind === 'ticket' ? 1 : def.grade)
+  const makeable = all.filter(({ item, def }) => farmLevel >= gradeOpensAtFarmLevel(grade(def)) && covers(state, item) >= 1)
+  const wanted = makeable.filter(({ item }) => (needed.get(item) ?? 0) > 0)
+    .sort((a, b) => (needed.get(b.item) ?? 0) - (needed.get(a.item) ?? 0) || grade(a.def) - grade(b.def))
+  if (wanted[0] !== undefined) return wanted[0].item
+  const top = [...makeable].sort((a, b) => grade(b.def) - grade(a.def))[0]
+  return top?.item ?? null
+}
+
+/**
+ * The sheet's preselection (D366), so most starts are one tap:
+ * - Queue next names her and her current job's item; the link's count, else the fitted size.
+ * - A link that names an item (a target's icon, Make more) keeps it and its count, with the planner's Free Uma for it or
+ *   the best Free Uma whose Farm Level opens it (suited first, then Farm Level), else the best Free Uma.
+ * - Otherwise the planner's suggestion at this building (`suggestFrom`: Uma, item and size), else the best Free Uma and
+ *   `bestItem` for her, sized to the check-in.
+ */
+export function preselect(view: WorkView, building: FarmBuildingId, query: SheetQuery, planned: Plan, timing: Timing): Preselection {
+  const asked = query.job !== null && itemById(query.job) !== undefined ? query.job : null
+  if (query.queue && query.uma !== null) return { uma: query.uma, item: asked, count: query.count }
+  const rows = freeRows(view, building, asked)
+  if (rows.length === 0) return { uma: null, item: asked, count: query.count }
+  const named = query.uma === null ? undefined : rows.find((row) => row.outfitId === query.uma)
+  if (asked !== null) {
+    const def = itemById(asked)!
+    const opens = def.kind === 'ticket' ? 1 : gradeOpensAtFarmLevel(def.grade)
+    const uma = named ?? rows.find((row) => row.farmLevel >= opens) ?? rows[0]!
+    return { uma: uma.outfitId, item: asked, count: query.count }
   }
+  if (named !== undefined) return { uma: named.outfitId, item: bestItem(view.settled, building, named.farmLevel, neededByItem(planned)), count: query.count }
+  const { suggestions } = suggestFrom(view.settled, planned, {}, timing)
+  const suggested = suggestions.find((s) => s.kind === 'job' && s.slot.building === building && s.item !== null)
+  if (suggested !== undefined) return { uma: suggested.outfitId, item: suggested.item, count: query.count ?? suggested.size }
+  const best = rows.find((row) => row.suited) ?? rows[0]!
+  return { uma: best.outfitId, item: bestItem(view.settled, building, best.farmLevel, neededByItem(planned)), count: query.count }
 }
 
 // --- How many and the preview (07 §10, 02 §3) -------------------------------------------------------------------------
@@ -311,16 +382,16 @@ export interface SheetPreview {
   readonly request: FarmRequest
   /** Real minutes per output at today's speed. */
   readonly minutesEach: number
+  /** How long the chosen size takes (D366): Start's "3h 36m". */
+  readonly ms: number
   readonly endsAt: number
   /** Whole Farm EXP; null without an Uma whose Farm Level opens it. */
   readonly farmExp: number | null
   readonly inputs: readonly SheetInput[]
 }
 
-/** The action the sheet's button takes. */
-export type SheetMode = 'start' | 'queue' | 'recall-start'
-
-export const modeOf = (row: UmaRow | undefined): SheetMode => (row?.status === 'here' ? 'queue' : row?.status === 'elsewhere' ? 'recall-start' : 'start')
+/** The action the sheet's button takes: a start for a Free Uma, or her next queued job. */
+export type SheetMode = 'start' | 'queue'
 
 /** The kind's own plan of `count` (07 §10): what Start would freeze into the entry. */
 function planned(view: WorkView, building: FarmBuildingId, outfitId: string | null, item: ItemId, mode: SheetMode, slot: SlotRef): readonly PlannedItem[] | null {
@@ -350,6 +421,7 @@ export function sheetPreview(view: WorkView, building: FarmBuildingId, outfitId:
     const have = stockOf(settled.items, input)
     return { item: input, need: qty, have, short: Math.max(0, qty - have) }
   })
+  const ms = seconds.slice(0, n).reduce((sum, s) => sum + s, 0) * 1000
   return {
     kind,
     start: begin,
@@ -357,15 +429,16 @@ export function sheetPreview(view: WorkView, building: FarmBuildingId, outfitId:
     max,
     request: { kind, item, count: n },
     minutesEach: seconds[0]! / 60,
-    endsAt: begin + seconds.slice(0, n).reduce((sum, s) => sum + s, 0) * 1000,
+    ms,
+    endsAt: begin + ms,
     farmExp: plan === null ? null : Math.round(plan.slice(0, n).reduce((sum, one) => sum + one.farmExp, 0) / QUARTERS_PER_EXP),
     inputs,
   }
 }
 
-// --- Start, Add to queue, Recall and start here (07 §5, §10) ----------------------------------------------------------
+// --- Start and Queue (07 §5, §10) -------------------------------------------------------------------------------------
 
-/** The slot a start takes: the card's when it is free (or hers), else hers here, else the first free one in `slotsOf` order. */
+/** The slot a start takes: the "+" row's when it is free (or hers), else hers here, else the first free one in `slotsOf` order. */
 export function chooseSlot(settled: WorkState, building: FarmBuildingId, outfitId: string | null, asked: number | null): SlotRef | null {
   const slots = slotsOf(settled, building)
   const usable = (slot: SlotRef) => {
@@ -378,43 +451,42 @@ export function chooseSlot(settled: WorkState, building: FarmBuildingId, outfitI
   return mine ?? slots.find((slot) => slotHolder(settled, slot) === undefined) ?? null
 }
 
-/** Why no slot is free: one is ready to collect, or when the next job here ends. */
-export function noSlotWords(view: WorkView, building: FarmBuildingId, time: (at: number) => string): string {
+/** Whether a slot here holds a finished job: Collect here would free it, and its Uma. */
+export function readyHere(view: WorkView, building: FarmBuildingId): boolean {
+  return Object.values(view.settled.work).some((row) => holdsSlot(row) && row.slot!.building === building && statusOf(row, view.now) === 'ready')
+}
+
+/** Why no slot is free: one is ready to collect, or how long until the next job here ends (D366: a duration). */
+export function noSlotWords(view: WorkView, building: FarmBuildingId): string {
   const { settled, now, env } = view
   const holders = Object.values(settled.work).filter((row) => holdsSlot(row) && row.slot!.building === building)
   if (holders.some((row) => statusOf(row, now) === 'ready')) return farmWords('no-slot-ready')
   const ends = holders.map((row) => freeAt(settled, row.outfitId, now, env)).filter((at): at is number => at !== null)
-  return farmWords('no-slot', { time: time(Math.min(...ends)) })
+  return farmWords('no-slot', { time: durationText(Math.min(...ends) - now) })
 }
 
 export type SheetAction =
   | { readonly mode: 'start'; readonly input: StartInput; readonly refusal: Words | null }
   | { readonly mode: 'queue'; readonly input: QueueInput; readonly refusal: Words | null }
-  | { readonly mode: 'recall-start'; readonly input: StartInput; readonly refusal: Words | null }
-  /** Nothing to run yet: pick an Uma or an item, no Umas, or no free slot. */
+  /** Nothing to run yet: no Umas, no Free Uma, nothing chosen, or no free slot. */
   | { readonly mode: 'blocked'; readonly words: string }
 
 const refusalOf = (result: unknown): Words | null => (isRefusal(result) ? say(result.reason, result.data) : null)
 
 /** What the button does, each operation run on the current state first so a refusal reads in its own words. */
-export function sheetAction(view: WorkView, building: FarmBuildingId, row: UmaRow | undefined, item: ItemId | null, count: number, slotAsked: number | null, time: (at: number) => string): SheetAction {
+export function sheetAction(view: WorkView, building: FarmBuildingId, uma: string | null, mode: SheetMode, item: ItemId | null, count: number, slotAsked: number | null): SheetAction {
   const { settled, now, env } = view
   if (Object.keys(settled.umas).length === 0) return { mode: 'blocked', words: farmWords('no-umas') }
-  if (row === undefined) return { mode: 'blocked', words: farmWords('pick-uma') }
+  if (uma === null) return { mode: 'blocked', words: farmWords('no-free-uma') }
   if (item === null) return { mode: 'blocked', words: farmWords('pick-item') }
   const request: FarmRequest = { kind: farmKindOf(building), item, count }
-  const mode = modeOf(row)
   if (mode === 'queue') {
-    const input: QueueInput = { outfitId: row.outfitId, add: { request, building } }
+    const input: QueueInput = { outfitId: uma, add: { request, building } }
     return { mode, input, refusal: refusalOf(queue(settled, input, now, env)) }
   }
-  const slot = chooseSlot(settled, building, row.outfitId, slotAsked)
-  if (slot === null) return { mode: 'blocked', words: noSlotWords(view, building, time) }
-  const input: StartInput = { outfitId: row.outfitId, slot, request }
-  if (mode === 'recall-start') {
-    const recalled = recall(settled, { outfitId: row.outfitId }, now, env).state
-    return { mode, input, refusal: refusalOf(start(recalled, input, now, env)) }
-  }
+  const slot = chooseSlot(settled, building, uma, slotAsked)
+  if (slot === null) return { mode: 'blocked', words: noSlotWords(view, building) }
+  const input: StartInput = { outfitId: uma, slot, request }
   return { mode, input, refusal: refusalOf(start(settled, input, now, env)) }
 }
 
@@ -446,5 +518,16 @@ export function shortfallLinks(settled: WorkState, inputs: readonly SheetInput[]
   })
 }
 
+/** The Exchange's row for a raw item above her Farm Level, when it stocks the grade (07 §10's gated target line). */
+export function gatedOffer(settled: WorkState, item: ItemId): { readonly price: number; readonly to: string } | null {
+  const def = itemById(item)
+  if (def?.kind !== 'raw') return null
+  const offer = buyFor(settled, [{ item, qty: 1 }])
+  return offer === null ? null : { price: offer.items[0]!.unitPrice, to: exchangeRow(def.family, def.grade) }
+}
+
 /** The plan the sheet's badges read: the profile's targets, or automatic. */
 export const sheetPlan = (view: WorkView): Plan => planFrom(view.projection, targetsOf(view.settled), {})
+
+/** When the sheet's suggestions start and the check-ins their sizes fit. */
+export const sheetTiming = (view: WorkView, utcOffsetMin: number): Timing => ({ now: view.now, times: view.settled.profile.checkIns, utcOffsetMin })

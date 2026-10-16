@@ -2,7 +2,7 @@
 // §3; docs/game/11-hub-and-places.md §3.2; T139) on synthetic accounts built with the rework's own operations: slots by
 // level and room, a session card's words and times, the Counter, Needs here, the session sheet's list, statuses, pre-pick
 // and Start, each build view's states, and every template against 02 §9's banned words.
-import { clockTime, fitSize, hasBannedWord } from '@racer/domain/check-in'
+import { clockTime, durationText, fitSize, hasBannedWord } from '@racer/domain/check-in'
 import { hubView } from '@racer/domain/hub'
 import { nextUnlocks, sessionRequest, sessionSeconds, TRAINING_REFUSALS } from '@racer/domain/training'
 import { workAhead } from '@racer/domain/planner'
@@ -168,11 +168,11 @@ describe('the session sheet (05 §8)', () => {
       full = apply(full, 'start', { outfitId: id, slot: { building: 'observatory', slot: i }, request: sessionRequest(nextUnlocks(her.build, her, 'observatory', null, 1)) }, AT).state
     }
     const blocked = sheet(full, { facility: 'observatory' })
-    expect(blocked.action).toEqual({ mode: 'blocked', words: `Every slot here is taken. The next one frees at ${clockTime(AT + sessionSeconds(1) * 1000, 0)}.` })
+    expect(blocked.action).toEqual({ mode: 'blocked', words: `Every slot here is taken. The next one frees in ${durationText(sessionSeconds(1) * 1000)}.` })
     const queued = sessionView(viewAt(full, AT), { facility: 'observatory', umaId: uma(2), room: null, picks: null, query: { unlocks: [], slot: null } }, CONTEXT, content)
     expect(queued.mode).toBe('queue')
     expect(queued.start).toBe(AT + sessionSeconds(1) * 1000)
-    expect(queued.items[0]).toMatchObject({ state: 'pending', words: `In session · opens ${clockTime(AT + sessionSeconds(1) * 1000, 0)}` })
+    expect(queued.items[0]).toMatchObject({ state: 'pending', words: `In session · opens in ${durationText(sessionSeconds(1) * 1000)}` })
     expect(workAhead(full.work[uma(2)])).toHaveLength(1)
   })
 
@@ -202,7 +202,7 @@ describe('build views (05 §4–§6, §8; 06 §3)', () => {
     const view = observatoryView(now, me, preset, deriveUmaPreset(me, preset, content), at, CONTEXT, content)!
     const byId = new Map(view.nodes.map((node) => [node.id, node]))
     expect(byId.get('n1')).toMatchObject({ state: 'finished', words: 'Finished · Collect' })
-    expect(byId.get('n2')).toMatchObject({ state: 'session', words: `In session · opens ${clockTime(AT + 2 * sessionSeconds(1) * 1000, 0)}` })
+    expect(byId.get('n2')).toMatchObject({ state: 'session', words: `In session · opens in ${durationText(AT + 2 * sessionSeconds(1) * 1000 - at)}` })
     expect(byId.get('n3')).toMatchObject({ state: 'available', words: 'Needs: Carrot Salad (grade 1) at the Observatory · 1 in stock' })
     expect(byId.get('n3')!.unlock).not.toBeNull()
     expect(byId.get('n4')).toMatchObject({ state: 'waiting', words: 'Opens after node 3' })

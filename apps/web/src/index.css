@@ -205,6 +205,15 @@
   .art-scrim {
     background: linear-gradient(180deg, transparent 0%, rgb(16 26 36 / 0.45) 42%, rgb(16 26 36 / 0.88) 100%);
   }
+
+  /* A sideways strip of icons (the Farm's targets, faces and tabs, D366): it scrolls by touch, with no bar drawn. */
+  .scroll-strip {
+    scrollbar-width: none;
+    overscroll-behavior-x: contain;
+  }
+  .scroll-strip::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 /* The race feed's toasts (D178) and the start countdown slide in; they leave by an opacity transition. */

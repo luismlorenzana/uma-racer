@@ -79,15 +79,15 @@ describe('the card page (06 §6)', () => {
   it('costs a bond its family dish at the grade of its era, per tier, in real time (× k), equal tiers joined', () => {
     const acc = account('fresh')
     expect(bondCosts(card(acc, 'sim-card-wit-e3'))).toEqual([
-      { tiers: 'Tier 1', dish: 'Ginger Curry', time: '4 h 48 m' },
-      { tiers: 'Tiers 2–3', dish: 'Basil Curry', time: '3 h 36 m' },
+      { tiers: 'Tier 1', dish: 'Ginger Curry', time: '4h 48m' },
+      { tiers: 'Tiers 2–3', dish: 'Basil Curry', time: '3h 36m' },
     ])
     expect(bondCosts(card(acc, 'sim-card-friend-e7'))).toEqual([
       { tiers: 'Tier 1', dish: null, time: null },
-      { tiers: 'Tier 2', dish: 'Barley Bread', time: '4 h 12 m' },
-      { tiers: 'Tier 3', dish: 'Wheat Bread', time: '3 h 36 m' },
+      { tiers: 'Tier 2', dish: 'Barley Bread', time: '4h 12m' },
+      { tiers: 'Tier 3', dish: 'Wheat Bread', time: '3h 36m' },
     ])
-    expect(bondCosts(card(acc, 'sim-card-speed-e1'))).toEqual([{ tiers: 'Tiers 1–3', dish: 'Honeycomb Cake', time: '3 h 36 m' }])
+    expect(bondCosts(card(acc, 'sim-card-speed-e1'))).toEqual([{ tiers: 'Tiers 1–3', dish: 'Honeycomb Cake', time: '3h 36m' }])
   })
 
   it('names who is bonded, her tier and scenario, the presets and nodes holding it, and who could bond it now', () => {
@@ -108,7 +108,7 @@ describe('Bond (06 §6, §10)', () => {
     acc.run('dev-grant', { items: { 'dish-sweets-1': 1 } })
     const speed = card(acc, 'sim-card-speed-e1')
     const free = bondChoice(acc.state, acc.state.umas['sim-uma-01']!, speed, acc.at, acc.env, 0)
-    expect(free).toMatchObject({ reason: null, dishId: 'dish-sweets-1', stock: 1, line: 'Honeycomb Cake · 1 in Warehouse · 3 h 36 m', canQueue: false })
+    expect(free).toMatchObject({ reason: null, dishId: 'dish-sweets-1', stock: 1, line: 'Honeycomb Cake · 1 in Warehouse · 3h 36m', canQueue: false })
     const later = bondChoice(acc.state, acc.state.umas['sim-uma-01']!, card(acc, 'sim-card-speed-e3'), acc.at, acc.env, 0)
     expect(later.reason).toBe('Opens in scenario 3 · Trackblazer')
     // Busy in the Speed room: "Busy until …", with Queue there.
@@ -122,7 +122,7 @@ describe('Bond (06 §6, §10)', () => {
     const sameRoom = bondChoice(acc.state, acc.state.umas['sim-uma-02']!, { ...speed, id: 'sim-card-speed-e1b' }, acc.at, acc.env, 0)
     expect(sameRoom.canQueue).toBe(true)
     // No dish: "0 in Warehouse", and Cook opens the Kitchen's job sheet.
-    expect(bondChoice(acc.state, acc.state.umas['sim-uma-03']!, card(acc, 'sim-card-wit-e1'), acc.at, acc.env, 0).line).toBe('Basil Curry · 0 in Warehouse · 3 h 36 m')
+    expect(bondChoice(acc.state, acc.state.umas['sim-uma-03']!, card(acc, 'sim-card-wit-e1'), acc.at, acc.env, 0).line).toBe('Basil Curry · 0 in Warehouse · 3h 36m')
     const back = '/town/card-library/card/sim-card-speed-e1'
     expect(bondSessionPath('sim-uma-01', speed, back)).toBe(`/training/dojo?session=sim-uma-01&room=speed&unlocks=bond%3Asim-card-speed-e1&back=${encodeURIComponent(back)}`)
     expect(cookPath('dish-herbs-spices-1', back)).toBe(`/farm/kitchen?job=dish-herbs-spices-1&back=${encodeURIComponent(back)}`)

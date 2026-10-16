@@ -4,7 +4,7 @@
 // accounts, its clock held and moved by hand: a three-node session from the sheet, its Collect chip and fill, Recall;
 // −30m and "Buy N and finish"; an upgrade's slot at once; the Card Library's Dojo link and Queue; the Extra Stats
 // switches over capacity; and a reopen keeping every change.
-import { clockTime } from '@racer/domain/check-in'
+import { durationText } from '@racer/domain/check-in'
 import { craftedItem } from '@racer/domain/items'
 import { sessionSeconds } from '@racer/domain/training'
 import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
@@ -50,11 +50,12 @@ describe('a session from the sheet (05 §2, §8)', () => {
     fireEvent.click(within(sheet).getByRole('checkbox', { name: /^Node 2,/ }))
     fireEvent.click(within(sheet).getByRole('checkbox', { name: /^Node 3,/ }))
     within(sheet).getByText('Reserves 3 Carrot Salad')
-    within(sheet).getByText(`Node 3 · ${clockTime(at + 3 * ONE, 0)}`)
+    // Each finish reads how long until it lands (D366), never its clock time.
+    within(sheet).getByText(`Node 3 · in ${durationText(3 * ONE)}`)
     fireEvent.click(within(sheet).getByRole('button', { name: 'Start' }))
     await waitFor(() => expect(where()).toBe('/training/observatory'))
     expect(state(game).items['dish-vegetables-1'] ?? 0).toBe(0)
-    await screen.findByRole('article', { name: `${name(uma(1))}. Node 1 · Carrot Salad, 0 of 3 made, next at ${clockTime(at + ONE, 0)}` })
+    await screen.findByRole('article', { name: `${name(uma(1))}. Node 1 · Carrot Salad, 0 of 3 made, ${durationText(3 * ONE)} left` })
 
     advance(2 * ONE + MINUTE)
     reopen(`/training/observatory/${uma(1)}`, game)
@@ -64,7 +65,8 @@ describe('a session from the sheet (05 §2, §8)', () => {
 
     reopen('/training/observatory', game)
     const card = await screen.findByRole('article', { name: new RegExp(`^${name(uma(1))}\\. Node 3 · Carrot Salad, 2 of 3 made`) })
-    fireEvent.click(within(card).getByRole('button', { name: 'Recall' }))
+    fireEvent.click(within(card).getByRole('button', { name: `More for ${name(uma(1))}: Queue next and Recall` }))
+    fireEvent.click(within(await screen.findByRole('dialog', { name: `${name(uma(1))} · Node 3 · Carrot Salad ×3` })).getByRole('button', { name: 'Recall' }))
     const recall = await screen.findByRole('dialog', { name: `Recall ${name(uma(1))}` })
     within(recall).getByText('1 Carrot Salad comes back')
     fireEvent.click(within(recall).getByRole('button', { name: 'Recall' }))
@@ -74,7 +76,7 @@ describe('a session from the sheet (05 §2, §8)', () => {
 })
 
 describe('Speed Tickets on a session (09 §5.1)', () => {
-  it('−30m spends one ticket and moves every unfinished finish 30 minutes earlier; Finish with too few asks to buy, then buys and finishes', async () => {
+  it('−30m spends one ticket and takes 30 minutes off the time left; Finish with too few asks to buy, then buys and finishes', async () => {
     const { state: account, at } = trainingAccount(1)
     const stocked = granted(account, at, { 'dish-vegetables-1': 2, 'speed-ticket': 1 }, 5_000)
     const her = stocked.umas[uma(1)]!
@@ -85,19 +87,21 @@ describe('Speed Tickets on a session (09 §5.1)', () => {
     expect(her.build.constellationOpened).toBe(0)
     const { game } = clocked(farmSeed(started, at))
     renderG2('/training/observatory', game)
-    const card = await screen.findByRole('article', { name: new RegExp(`next at ${clockTime(at + ONE, 0)}$`) })
-    fireEvent.click(within(card).getByRole('button', { name: 'Take 30 minutes off with one Speed Ticket' }))
+    const card = await screen.findByRole('article', { name: new RegExp(`, ${durationText(2 * ONE)} left$`) })
+    fireEvent.click(within(card).getByRole('button', { name: /^Speed Tickets for / }))
+    const speed = await screen.findByRole('dialog', { name: /^Speed up / })
+    fireEvent.click(within(speed).getByRole('button', { name: 'Take 30 minutes off with one Speed Ticket' }))
     await waitFor(() => expect(state(game).work[uma(1)]!.entries[0]!.acceleratedMs).toBe(30 * MINUTE))
-    await screen.findByRole('article', { name: new RegExp(`next at ${clockTime(at + ONE - 30 * MINUTE, 0)}$`) })
+    await screen.findByRole('article', { name: new RegExp(`, ${durationText(2 * ONE - 30 * MINUTE)} left$`) })
     expect(state(game).items['speed-ticket'] ?? 0).toBe(0)
 
     const left = 2 * ONE - 30 * MINUTE
     const buy = Math.ceil(left / (30 * MINUTE))
-    fireEvent.click(await screen.findByRole('button', { name: new RegExp(`^Buy ${buy} and finish · `) }))
-    fireEvent.click(screen.getByRole('button', { name: 'Yes' }))
+    fireEvent.click(await within(speed).findByRole('button', { name: new RegExp(`^Buy ${buy} and finish · `) }))
+    fireEvent.click(within(speed).getByRole('button', { name: 'Yes' }))
     await waitFor(() => expect(state(game).work[uma(1)]!.entries[0]!.acceleratedMs).toBe(2 * ONE))
     expect(state(game).items['speed-ticket'] ?? 0).toBe(0)
-    await screen.findByRole('button', { name: 'Collect · 2' })
+    await screen.findByRole('button', { name: /^Collect 2 / })
   })
 })
 
@@ -107,10 +111,11 @@ describe('upgrades (05 §7)', () => {
     const paid = granted(account, at, { [craftedItem('vegetables', 1).id]: 4 }, 1_200)
     const { game } = clocked(farmSeed(paid, at))
     renderG2('/training/observatory', game)
-    await screen.findByText('0 / 2 in use')
-    screen.getByText('1,200 Prize Money · 3 slots at Lv 2')
-    fireEvent.click(screen.getByRole('button', { name: 'Upgrade to Lv 2' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Yes' }))
+    await screen.findByText('Lv 1 · 0 of 2 slots in use')
+    fireEvent.click(screen.getByRole('button', { name: 'Upgrade to Lv 2 for 1,200 Prize Money' }))
+    const sheet = await screen.findByRole('dialog', { name: 'Upgrade to Lv 2' })
+    within(sheet).getByText('3 slots at Lv 2')
+    fireEvent.click(within(sheet).getByRole('button', { name: 'Yes' }))
     await waitFor(() => expect(document.querySelectorAll('[data-slot-card]')).toHaveLength(3))
     screen.getByText('The Observatory is Lv 2 now.')
   })

@@ -11,7 +11,7 @@ import { workView } from '../../../ui/work/view'
 import type { WordsContext } from '../../../ui/work/words'
 import { apply, farmAccount, HOUR, uma, withFarmLevel } from '../__fixtures__/farm'
 import { FARM_WORDS } from '../words'
-import { buildingView, exchangeRow, lineLabel, sheetQuery, stockByGrade } from './model'
+import { buildingView, exchangeRow, lineLabel, lineWords, sheetQuery, stockByGrade, withSheet } from './model'
 
 const context = (env: { content: { umas: ReadonlyMap<string, { name?: string }> } }): WordsContext =>
   ({ umaName: (id) => env.content.umas.get(id)?.name ?? '', utcOffsetMin: 0 })
@@ -62,9 +62,15 @@ describe('For your targets (02 §6)', () => {
       expect(line.words.startsWith(`${lineLabel(line.line.item)} · `)).toBe(true)
       expect(line.words).toContain(`Warehouse ${line.line.have}`)
       if (line.line.short > 0) expect(line.words).toContain(`short ${line.line.short}`)
-      if (line.line.coming > 0) expect(line.words).toMatch(/coming \d+ \([^,]+, \d\d:\d\d/)
+      if (line.line.coming > 0) expect(line.words).toMatch(/coming \d+ \([^,]+, in \d+[dhm]/)
+      expect(line.words).not.toMatch(/\d\d:\d\d/)
       expect(line.sheet.startsWith(`?job=${line.line.item}`)).toBe(true)
     }
+    // The Farm says how long until each coming output lands; the planner's Needs views keep the clock time (02 §6).
+    const coming = model.lines.find((line) => line.line.coming > 0)!
+    expect(coming).toBeDefined()
+    expect(lineWords(coming.line, context(busy.env))).toMatch(/coming \d+ \([^,]+, \d\d:\d\d/)
+    expect(lineWords(coming.line, context(busy.env), busy.at)).toBe(coming.words)
     expect(lineLabel('cabbage')).toBe('Vegetables G3')
     expect(lineLabel('dish-vegetables-1')).toBe('Vegetables G1')
     expect(lineLabel('duo-stamina-wit-3')).toBe('Duo G3')
@@ -95,6 +101,9 @@ describe('For your targets (02 §6)', () => {
     const line = buildingView(view, 'vegetable-garden', context(env)).lines.find((candidate) => candidate.line.grade === 1)
     expect(line?.sheet).toMatch(new RegExp(`^\\?job=${line!.line.item}&uma=${uma(1)}&count=\\d+$`))
     expect(sheetQuery({ job: null, slot: 2 })).toBe('?job=&slot=2')
+    // Over the map, the side panel's place stays and a previous sheet's fields go (D366).
+    expect(withSheet('?peek=kitchen&job=old&uma=x', sheetQuery({ job: null, slot: 3 }))).toBe('?peek=kitchen&job=&slot=3')
+    expect(withSheet('', '?job=potato&count=2')).toBe('?job=potato&count=2')
     expect(sheetQuery({ job: 'potato', uma: 'x', count: 3, queue: true, back: '/town/warehouse' })).toBe('?job=potato&uma=x&count=3&queue=1&back=%2Ftown%2Fwarehouse')
   })
 })

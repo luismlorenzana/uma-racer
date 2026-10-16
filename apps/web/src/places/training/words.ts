@@ -1,15 +1,12 @@
 // The Training places' own sentences (docs/game/05-training-hub.md §8; docs/game/11-hub-and-places.md §3.2;
-// docs/game/02-check-ins-and-notifications.md §6, §9; T139): the facility pages, their Peeks, the session sheet and
-// the build views. Rules speak through the domain's refusal tables (filled by `ruleWords`); these are labels and
-// headings around them. 02 §9's banned words never appear here (`model.test.ts` holds every template to
+// docs/game/02-check-ins-and-notifications.md §6, §9; T139, D366): the facility pages, their Peeks, the session sheet
+// and the build views. Rules speak through the domain's refusal tables (filled by `ruleWords`); these are labels and
+// headings around them. Work reads how long it takes or has left, never the clock time it ends. 02 §9's banned words never appear here (`model.test.ts` holds every template to
 // `hasBannedWord`).
 import { fill } from '@racer/domain/check-in'
 
 export const TRAINING_WORDS = Object.freeze({
-  /** A facility page's header (05 §8). */
-  level: 'Lv {level}',
-  'slots-in-use': '{used} / {slots} in use',
-  speed: 'Speed ×{speed}',
+  /** A facility page (05 §8); its header's chips are the shared `PlaceStats`. */
   room: '{room} room',
   help: 'A session is one Uma working through 1 to {max} unlocks here, one after another; each unlock takes one exact dish, reserved when the session starts.',
   'help-rooms': 'Each room takes its own unlocks; a session stays in one room.',
@@ -30,15 +27,13 @@ export const TRAINING_WORDS = Object.freeze({
   /** Collect here (02 §2). */
   'collect-here': 'Collect here',
   'collect-here-n': 'Collect here · {n}',
-  'nothing-to-collect': 'Nothing to collect here yet.',
+  'nothing-to-collect': 'Nothing to collect',
   'collected-line': '{uma}: {n} unlocks opened',
   'collected-line-one': '{uma}: 1 unlock opened',
   'skipped-line': '{uma}: {words}',
   /** The Peek (11 §3.2). */
   'peek-free': '{n} free',
   'peek-free-one': '1 free',
-  'peek-next': 'next {time}',
-  'peek-ready': 'ready',
   'peek-left': '{n} Umas have {noun} left here',
   'peek-left-one': '1 Uma has {noun} left here',
   'peek-left-none': 'Nobody has {noun} left here.',
@@ -66,9 +61,9 @@ export const TRAINING_WORDS = Object.freeze({
   reserves: 'Reserves {items}',
   total: '{n} unlocks · {time} in all',
   'total-one': '1 unlock · {time}',
-  'finish-at': '{what} · {time}',
+  'finish-at': '{what} · in {time}',
   'add-to-queue': 'Add to queue',
-  'no-slot': 'Every slot here is taken. The next one frees at {time}.',
+  'no-slot': 'Every slot here is taken. The next one frees in {time}.',
   'no-slot-ready': 'Every slot here is taken. Collect here to free one.',
   'no-umas': 'No Umas yet · unlock them in the Stable',
   'open-stable': 'Open the Stable',
@@ -77,7 +72,7 @@ export const TRAINING_WORDS = Object.freeze({
   'left-here': '{n} left here · {ready} in stock',
   'left-here-none': 'Nothing left here',
   'left-bonds': '{n} bonds left this layer',
-  'busy-until': 'Busy until {time}',
+  'busy-until': 'Busy · {time} left',
   queue: 'Queue',
   recall: 'Recall',
   /** Item states (05 §8's labels). */
@@ -85,7 +80,7 @@ export const TRAINING_WORDS = Object.freeze({
   'in-stock': '{n} in stock',
   first: '{needs} first',
   'opens-after': 'Opens after {needs}',
-  'in-session': 'In session · opens {time}',
+  'in-session': 'In session · opens in {time}',
   finished: 'Finished · Collect',
   queued: 'Queued behind her session',
   dish: '{name} (grade {grade})',

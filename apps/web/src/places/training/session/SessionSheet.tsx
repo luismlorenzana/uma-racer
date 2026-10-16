@@ -4,7 +4,7 @@
 // minutes, or at the Dojo the cards picked from T138's Card Library), and **Confirm** (the dishes to reserve, the time
 // and each finish), then **Start** or **Add to queue**. A disabled button says why in the rule's words; an `ask`
 // re-offers what the stock covers; Start closes to `back` or the facility page.
-import { clockTime } from '@racer/domain/check-in'
+import { durationText } from '@racer/domain/check-in'
 import type { FacilityId, RoomId } from '@racer/domain/farm'
 import type { Place } from '@racer/domain/hub'
 import { dojoRoomOf, ROOM_NAMES, type UnlockRef } from '@racer/domain/training'
@@ -132,7 +132,7 @@ export default function SessionSheet({ place, facility, query, onClose }: {
   if (view === null || content === null || model === null) return null
 
   const here = `${location.pathname}${location.search}`
-  const time = (at: number) => clockTime(at, context.utcOffsetMin)
+  const time = (at: number) => durationText(at - view.now)
   const title = trainingWords(model.mode === 'queue' ? 'sheet-queue-title' : 'sheet-title', { place: place.name })
   const noUmas = Object.keys(view.settled.umas).length === 0
   const name = uma === null ? '' : context.umaName(uma) || uma

@@ -1,9 +1,9 @@
 // The shared work pieces' models (docs/game/07-farm.md §2, §6, §8, §10; docs/game/09-racing-rewards-and-exchange.md
-// §5.1; docs/game/02-check-ins-and-notifications.md §3, §9; T140): slot cards follow `totalSlots` at every level; 07
-// §2's Potato job reads "3 / 10 made" with its times from `itemEnds` and `endsAt`; SpeedUpControls' four states; a
-// Recall's preview equals the receipt `recall` gives; queue chips' ends and warnings; the size chips in `sizeChips`'
-// words; and every template passes 02 §9's banned words.
-import { chipWords, fill, fitWords, hasBannedWord, sizeChips } from '@racer/domain/check-in'
+// §5.1; docs/game/02-check-ins-and-notifications.md §3, §9; T140, D366): slot rows follow `totalSlots` at every level;
+// 07 §2's Potato job reads "3/10" with its time left from `endsAt`; SpeedUpControls' four states; a Recall's preview
+// equals the receipt `recall` gives; queue chips' durations and warnings; the size chips as durations with `sizeChips`'
+// marked size, never a clock time; and every template passes 02 §9's banned words.
+import { durationText, hasBannedWord, sizeChips } from '@racer/domain/check-in'
 import { FARM_BUILDING_IDS, farmItemSeconds, totalSlots, type BuildingLevel } from '@racer/domain/farm'
 import { endsAt, itemEnds, recall, type WorkState } from '@racer/domain/work'
 import { describe, expect, it } from 'vitest'
@@ -32,7 +32,7 @@ describe('slot cards (07 §6, §10)', () => {
     expect(slotCards({ ...state, buildings: { ...state.buildings, kitchen: { level: 2 } } }, 'kitchen', at)).toHaveLength(8)
   })
 
-  it("reads 07 §2's Potato job: 3 / 10 made, the next output and the end from itemEnds and endsAt", () => {
+  it("reads 07 §2's Potato job: 3/10, the next output, the end and the time left from itemEnds and endsAt", () => {
     const { state, env } = farmAccount(1)
     const started = apply(withFarmLevel(state, uma(1), 7), 'start', {
       outfitId: uma(1), slot: { building: 'vegetable-garden', slot: 0 }, request: { kind: 'gather', item: 'potato', count: 10 },
@@ -44,7 +44,13 @@ describe('slot cards (07 §6, §10)', () => {
     const view = workView(started, now, env)
     const [card] = slotCards(view.settled, 'vegetable-garden', now)
     expect(card).toMatchObject({ kind: 'held', outfitId: uma(1), made: 3, count: 10, waiting: 3, running: true, nextAt: ends[3], endsAt: endsAt(entry) })
-    expect(workWords('made', { made: 3, count: 10 })).toBe('3 / 10 made')
+    expect(card).toMatchObject({ leftMs: endsAt(entry) - now })
+    expect(workWords('made', { made: 3, count: 10 })).toBe('3/10')
+    expect(workWords('card-running', { uma: 'Amber Sprint', what: 'Potato', made: 3, count: 10, left: durationText(endsAt(entry) - now) }))
+      .toBe(`Amber Sprint. Potato, 3 of 10 made, ${durationText(endsAt(entry) - now)} left`)
+    // Once it ends, nothing is left.
+    const done = workView(started, endsAt(entry) + MINUTE, env)
+    expect(slotCards(done.settled, 'vegetable-garden', done.now)[0]).toMatchObject({ running: false, leftMs: 0, waiting: 10 })
     expect(slotCards(view.settled, 'vegetable-garden', now).slice(1).every((c) => c.kind === 'free')).toBe(true)
   })
 })
@@ -119,8 +125,8 @@ describe('the Recall preview (07 §2, §5)', () => {
   })
 })
 
-describe('queue chips (02 §3)', () => {
-  it("show each queued entry's projected end, and queueWarnings' mark where the stock won't cover it", () => {
+describe('queue chips (02 §3, D366)', () => {
+  it("show each queued entry's duration and projected end, and queueWarnings' mark where the stock won't cover it", () => {
     const { state, env } = farmAccount(1)
     let next = apply(state, 'dev-grant', { items: { wheat: 1 } }, at).state
     next = apply(next, 'start', { outfitId: uma(1), slot: { building: 'pantry', slot: 0 }, request: { kind: 'craft', item: 'wheat-flour', count: 1 } }, at).state
@@ -129,7 +135,7 @@ describe('queue chips (02 §3)', () => {
     const first = next.work[uma(1)]!.entries[0]!
     const chips = queueChips(view.projection, view.warnings, uma(1))
     expect(chips).toHaveLength(1)
-    expect(chips[0]).toMatchObject({ index: 0, endsAt: null })
+    expect(chips[0]).toMatchObject({ index: 0, endsAt: null, ms: null })
     expect(chips[0]!.warning).toEqual({ text: 'Short {n} {item}.', data: { n: 2, item: 'wheat' } })
 
     const stocked = apply(next, 'dev-grant', { items: { wheat: 2 } }, at).state
@@ -137,24 +143,27 @@ describe('queue chips (02 §3)', () => {
     const [chip] = queueChips(covered.projection, covered.warnings, uma(1))
     expect(chip!.warning).toBeNull()
     expect(chip!.endsAt).toBe(endsAt(first) + 2 * farmItemSeconds('craft', 1) * 1000)
+    expect(chip!.ms).toBe(2 * farmItemSeconds('craft', 1) * 1000)
   })
 })
 
-describe('size chips (02 §3)', () => {
-  it("a chip per size the stock covers, each in chipWords' words, the marked one with fitWords", () => {
+describe('size chips (02 §3, D366)', () => {
+  it('a chip per size the stock covers, each read as how long it takes, the size sizeChips marks preselected by an icon, never a time', () => {
     const seconds = Array.from({ length: 10 }, () => farmItemSeconds('gather', 1))
     const times = [480, 780, 1350]
     const view = sizeChipsView(at, seconds, 10, times, 0)
     const domain = sizeChips(at, seconds, times, 0)
-    expect(view.chips.map((chip) => chip.words)).toEqual(domain.chips.map((chip) => fill(chipWords(chip, 0))))
+    expect(view.chips.map((chip) => chip.ms)).toEqual(domain.chips.map((chip) => chip.endsAt - at))
+    expect(view.chips.map((chip) => chip.duration)).toEqual(['1h 48m', '3h 36m', '5h 24m', '7h 12m', '9h', '10h 48m', '12h 36m', '14h 24m', '16h 12m', '18h'])
     expect(view.marked).toBe(domain.marked)
-    expect(view.fit).toBe(fill(fitWords(domain, 0)))
-    expect(view.fit).toBe('Fits 13:00')
-    expect(view.chips[0]!.words).toBe('ends 09:48 · then free until 13:00')
+    expect(view).toMatchObject({ marked: 2, overnight: false, fit: 'fits the next check-in' })
+    // 08:00 + 1h 48m ends at 09:48, 3h 12m before the 13:00 check-in.
+    expect(view.chips[0]!.words).toBe('1h 48m, then free 3h 12m before a check-in')
+    expect(view.chips.every((chip) => !/\d\d:\d\d/.test(`${chip.duration} ${chip.words}`))).toBe(true)
     expect(sizeChipsView(at, seconds, 3, times, 0).chips).toHaveLength(3)
     expect(sizeChipsView(at, seconds, 0, times, 0).chips).toHaveLength(1)
     const night = sizeChipsView(at + 15 * HOUR, seconds, 10, times, 0)
-    expect(night.fit).toBe('Overnight')
+    expect(night).toMatchObject({ overnight: true, fit: 'runs overnight' })
   })
 })
 

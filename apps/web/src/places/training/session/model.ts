@@ -1,7 +1,7 @@
 // The one session sheet (docs/game/05-training-hub.md §2, §8, §10; docs/game/06-cards-and-bonds.md §6, §10;
-// docs/game/02-check-ins-and-notifications.md §3, §9; T139), read from one work view. Pure:
-// 1. **Uma** for T138's picker: what she still needs here (`remainingFor`), Free and Ready first; a busy one "Busy until
-//    14:20" (her chain's end) with Queue only when her running session is at this facility and room and her queue has
+// docs/game/02-check-ins-and-notifications.md §3, §9; T139, D366), read from one work view. Pure:
+// 1. **Uma** for T138's picker: what she still needs here (`remainingFor`), Free and Ready first; a busy one "Busy · 2h
+//    10m left" (to her chain's end) with Queue only when her running session is at this facility and room and her queue has
 //    room (`MAX_QUEUE`), and Recall first for a running Farm job (05 §2).
 // 2. **Unlocks**: her items here, oldest layer first in canonical order (`layerUnlocks` of each open layer, kept by
 //    `facilityOf` and `roomAccepts`, the next layer shown locked), each read with `unlockStatus` where the work ahead is
@@ -9,10 +9,10 @@
 //    above, and their minutes; none in stock reads "0 in Warehouse · Cook". The sheet pre-picks `fitSize` of the next
 //    items (`nextUnlocks`), capped by stock and `SESSION_MAX_UNLOCKS`; unlocks the link names arrive picked instead. At
 //    the Dojo the list is the bonds picked from the Card Library, each card's own dish and room.
-// 3. **Confirm**: the dishes to reserve, the minutes and each finish time; then `start` on the slot (the slot card's,
+// 3. **Confirm**: the dishes to reserve, how long in all and how long until each finishes; then `start` on the slot (the slot card's,
 //    else hers, else the first free one of the room in `slotsOf` order) or `queue` behind her running session here,
 //    each run on the current state first so a disabled button says why in the rule's own words.
-import { clockTime, fitSize, hasReady, say, type Words } from '@racer/domain/check-in'
+import { durationText, fitSize, hasReady, say, type Words } from '@racer/domain/check-in'
 import { BUILDINGS, type FacilityId, type RoomId } from '@racer/domain/farm'
 import type { ItemId } from '@racer/domain/items'
 import { remainingFor, workAhead } from '@racer/domain/planner'
@@ -95,7 +95,7 @@ export function sessionUmaRows(view: WorkView, facility: FacilityId, room: RoomI
       canQueue,
       farmJob,
       line,
-      reason: until === null ? null : trainingWords('busy-until', { time: clockTime(until, context.utcOffsetMin) }),
+      reason: until === null ? null : trainingWords('busy-until', { time: durationText(until - now) }),
       order: (status === 'free' ? 2_000 : status === 'ready' ? 1_000 : 0) + left,
     })
   }
@@ -229,13 +229,13 @@ export function chooseSlot(settled: WorkState, facility: FacilityId, room: RoomI
   return slots.find((slot) => slotHolder(settled, slot) === outfitId) ?? slots.find((slot) => slotHolder(settled, slot) === undefined) ?? null
 }
 
-/** Why no slot of the room is free: one is ready to collect, or when the next one frees. */
+/** Why no slot of the room is free: one is ready to collect, or how long until the next one frees (D366). */
 export function noSlotWords(view: WorkView, facility: FacilityId, room: RoomId | null, context: WordsContext): string {
   const { settled, now, env } = view
   const holders = Object.values(settled.work).filter((row) => holdsSlot(row) && row.slot!.building === facility && sameRoom(row.slot!, room))
   if (holders.some((row) => hasReady(row, now))) return trainingWords('no-slot-ready')
   const ends = holders.map((row) => chainEnd(settled, row, now, env))
-  return trainingWords('no-slot', { time: clockTime(Math.min(...ends), context.utcOffsetMin) })
+  return trainingWords('no-slot', { time: durationText(Math.min(...ends) - now) })
 }
 
 /** Her items here in the sheet's order: oldest layer first, canonical within it, then the next layer, locked. */

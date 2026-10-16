@@ -46,6 +46,7 @@ export { DeckSlotIcon } from './DeckSlotIcon'
 // Marks
 export { SparkIcon } from './SparkIcon'
 export { StarIcon } from './StarIcon'
+export { MoonIcon } from './MoonIcon'
 export { VenueIcon } from './VenueIcon'
 export { BurstIcon } from './BurstIcon'
 export { StatsIcon } from './StatsIcon'

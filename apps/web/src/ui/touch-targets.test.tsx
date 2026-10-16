@@ -28,6 +28,29 @@ describe('44 pt targets', () => {
     for (const chip of chips) expect(tall(chip) && wide(chip), `${chip.textContent}: ${chip.className}`).toBe(true)
   })
 
+  it("keeps 44 pt on the Farm's compact rows, header and one-screen job sheet (D366)", async () => {
+    const square = (element: Element) => /\bsize-1[1-4]\b/.test(element.className)
+    const atLeast = (element: Element) => square(element) || (tall(element) || /\b(min-)?h-1[2-4]\b/.test(element.className))
+    renderG2('/farm/vegetable-garden', seedGame('busy'))
+    const rows = await screen.findAllByRole('article')
+    const controls = rows.flatMap((row) => [...row.querySelectorAll('button, a')])
+    expect(controls.length).toBeGreaterThan(4)
+    for (const control of controls) expect(atLeast(control), `${control.getAttribute('aria-label')}: ${control.className}`).toBe(true)
+    for (const icon of controls.filter((control) => control.tagName === 'BUTTON' && control.textContent === '')) {
+      expect(square(icon), `${icon.getAttribute('aria-label')}: ${icon.className}`).toBe(true)
+    }
+    const upgrade = screen.getByRole('button', { name: /^Upgrade to Lv 2/ })
+    expect(tall(upgrade), upgrade.className).toBe(true)
+    for (const target of screen.getAllByRole('link').filter((link) => link.hasAttribute('data-target-line'))) expect(square(target), target.className).toBe(true)
+
+    cleanup()
+    renderG2('/farm/kitchen?job=', seedGame('busy'))
+    const sheet = await screen.findByRole('dialog', { name: 'Start a job · Kitchen' })
+    for (const tab of within(sheet).getAllByRole('tab')) expect(square(tab), tab.className).toBe(true)
+    for (const radio of within(sheet).getAllByRole('radio')) expect(atLeast(radio) || square(radio), radio.className).toBe(true)
+    for (const cell of sheet.querySelectorAll('[data-item]')) expect(atLeast(cell), cell.className).toBe(true)
+  })
+
   it("gives the Advance sheet's preset tabs 44 pt", async () => {
     const game = seedGame('gate')
     const umaId = Object.values(game.getSnapshot().state!.umas).find((uma) => uma.racing.level === 10)!.outfitId

@@ -1,11 +1,13 @@
-// Her queue on a card (docs/game/02-check-ins-and-notifications.md §3; docs/game/07-farm.md §2; T140): "+2" beside
-// the running entry, then each queued request in order with its projected end ("then Carrot ×6 → 08:20") and
-// `queueWarnings`' mark where the stock won't cover it ("Short 2 Honey."). Each can move earlier or be removed (`queue`
-// with `move` or `remove`). A queue that already stopped is the check-in's (T142).
+// Her queue (docs/game/02-check-ins-and-notifications.md §3; docs/game/07-farm.md §2; T140, D366), each queued job
+// with how long it takes, never when it ends: on a slot row, `QueueLine`'s small chips ("then [Carrot]×4 · 2h", with
+// `queueWarnings`' mark where the stock won't cover it); in the row's ⋯ sheet, `QueueChips`' list, where each can move
+// earlier or be removed (`queue` with `move` or `remove`). A queue that already stopped is the check-in's (T142).
+import { durationText } from '@racer/domain/check-in'
 import { SESSION_KIND, type WorkRequest } from '@racer/domain/work'
+import type { ReactNode } from 'react'
 import { ArrowUpIcon, CloseIcon, WarningIcon } from '../icons'
-import { clockTime } from '@racer/domain/check-in'
-import { queueChips } from './model'
+import { ItemIcon } from '../ItemIcon'
+import { queueChips, type QueueChip } from './model'
 import { TapNoteLine } from './TapNote'
 import { useTap, useWordsContext } from './useTap'
 import { useWorkView } from './view'
@@ -19,7 +21,13 @@ export function requestWords(request: WorkRequest): string {
   return workWords('what-farm', { item: itemName(request.item), n: request.count })
 }
 
-/** The "+2" on a running card's shoulder. */
+/** A request drawn small: a Farm job's item icon and "×6"; a session's words. */
+export function requestMark(request: WorkRequest, label: (request: WorkRequest) => string = requestWords): ReactNode {
+  if (request.kind === SESSION_KIND) return <span className="truncate">{label(request)}</span>
+  return <><ItemIcon item={request.item} scale={0.5} decorative /><span>×{request.count}</span></>
+}
+
+/** The "+2" on a running row. */
 export function QueueCount({ n }: { n: number }) {
   if (n <= 0) return null
   return (
@@ -29,6 +37,46 @@ export function QueueCount({ n }: { n: number }) {
   )
 }
 
+/** "then Carrot ×4 · 2h", for VoiceOver and the ⋯ sheet's list. */
+export const queuedWords = (chip: QueueChip, what: string): string =>
+  chip.ms === null ? workWords('queue-then-unknown', { what }) : workWords('queue-then', { what, time: durationText(chip.ms) })
+
+/** A slot row's queue, display only: one small chip per queued job with its duration. */
+export function QueueLine({ outfitId, label = requestWords }: {
+  outfitId: string
+  /** A queued request's name; a Farm job's item and size by default. */
+  label?: (request: WorkRequest) => string
+}) {
+  const view = useWorkView()
+  const context = useWordsContext()
+  if (view === null) return null
+  const chips = queueChips(view.projection, view.warnings, outfitId)
+  if (chips.length === 0) return null
+  return (
+    <ol aria-label={workWords('queue-title')} data-g2="queue-line" className="flex flex-wrap gap-1 pl-[52px]">
+      {chips.map((chip) => {
+        const words = queuedWords(chip, label(chip.request))
+        const warning = chip.warning === null ? null : showWords(chip.warning, context)
+        return (
+          <li
+            key={chip.index}
+            data-queued={chip.index}
+            aria-label={warning === null ? words : `${words}. ${warning}`}
+            className={`flex h-6 max-w-full items-center gap-1 rounded-full px-1.5 text-[11px] font-semibold tabular-nums ${warning === null ? 'bg-sunken text-ink-soft' : 'bg-warning/15 text-warning'}`}
+          >
+            <span aria-hidden className="flex min-w-0 items-center gap-0.5">
+              <span className="font-normal">then</span> {requestMark(chip.request, label)}
+              {chip.ms !== null && <span>· {durationText(chip.ms)}</span>}
+            </span>
+            {warning !== null && <WarningIcon size={16} />}
+          </li>
+        )
+      })}
+    </ol>
+  )
+}
+
+/** Her queue in the ⋯ sheet: each queued job with its duration and warning, movable and removable. */
 export function QueueChips({ outfitId, label = requestWords }: {
   outfitId: string
   /** A queued request's name; a Farm job's item and size by default. */
@@ -49,11 +97,7 @@ export function QueueChips({ outfitId, label = requestWords }: {
           return (
             <li key={chip.index} data-queued={chip.index} className="flex items-center gap-1 rounded-sm bg-sunken/70 pl-2 text-[13px]">
               <span className="min-w-0 flex-1 py-1">
-                <span className="block truncate">
-                  {chip.endsAt === null
-                    ? workWords('queue-then-unknown', { what })
-                    : workWords('queue-then', { what, time: clockTime(chip.endsAt, context.utcOffsetMin) })}
-                </span>
+                <span className="block truncate tabular-nums">{queuedWords(chip, what)}</span>
                 {chip.warning !== null && (
                   <span data-queue-warning className="flex items-center gap-1 text-[12px] font-semibold text-warning">
                     <WarningIcon size={16} />

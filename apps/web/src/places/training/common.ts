@@ -2,7 +2,7 @@
 // dish in words, where an unlock stands for her now (open, in her work, available with its stock, waiting on what it
 // names, or in a later layer), the line a locked item shows with what it needs, and the session sheet's link. Pure:
 // the states are the domain's `unlockStatus`, `dependenciesOf` and the work timeline, read, never restated.
-import { clockTime, type OperationEnv, type Words } from '@racer/domain/check-in'
+import { durationText, type OperationEnv, type Words } from '@racer/domain/check-in'
 import { BUILDINGS, type FacilityId, type RoomId } from '@racer/domain/farm'
 import { itemById, type ItemId } from '@racer/domain/items'
 import { workAhead } from '@racer/domain/planner'
@@ -57,8 +57,8 @@ export function ruleWords(words: Words, context: WordsContext, content: Content 
 /** One unlock for her now, as every Training screen reads it (05 §8). */
 export type ItemState =
   | { readonly kind: 'open' }
-  /** In a started entry of hers, opening at `at`. */
-  | { readonly kind: 'session'; readonly at: number }
+  /** In a started entry of hers, opening at `at`, `leftMs` from now (D366: shown as how long, never the clock time). */
+  | { readonly kind: 'session'; readonly at: number; readonly leftMs: number }
   /** Finished in her work, not yet collected. */
   | { readonly kind: 'finished' }
   | { readonly kind: 'queued' }
@@ -86,7 +86,7 @@ export function itemState(uma: UmaState, row: WorkRow | undefined, entry: Unlock
   if (isOpen(uma.build, entry)) return { kind: 'open' }
   const work = inWork(row, entry)
   if (work === 'queued') return { kind: 'queued' }
-  if (work !== null) return work.at <= now ? { kind: 'finished' } : { kind: 'session', at: work.at }
+  if (work !== null) return work.at <= now ? { kind: 'finished' } : { kind: 'session', at: work.at, leftMs: work.at - now }
   const ahead = workAhead(row)
   const status = unlockStatus(uma.build, uma, entry, ahead)
   if (!isRefusal(status)) {
@@ -108,14 +108,14 @@ export function namesList(names: readonly string[]): string {
 /**
  * What a locked item shows (05 §8): "Needs: Cabbage Salad (grade 3) at the Observatory · 2 in stock", "Opens after
  * node 14" for a node further on, "Needs: … · Power grade 3 and Speed grade 3 first", "Opens in scenario 3 ·
- * Trackblazer", "In session · opens 04:45", "Finished · Collect". Null once open.
+ * Trackblazer", "In session · opens in 1h 20m", "Finished · Collect". Null once open.
  */
 export function itemWords(state: ItemState, entry: Unlock, context: WordsContext, content: Content | null): string | null {
   const place = BUILDINGS[facilityOf(entry.kind)].name
   const dish = dishWords(entry.dishId)
   switch (state.kind) {
     case 'open': return null
-    case 'session': return trainingWords('in-session', { time: clockTime(state.at, context.utcOffsetMin) })
+    case 'session': return trainingWords('in-session', { time: durationText(state.leftMs) })
     case 'finished': return trainingWords('finished')
     case 'queued': return trainingWords('queued')
     case 'available': return trainingWords('needs-dish', { dish, place, blocker: trainingWords('in-stock', { n: state.stock }) })

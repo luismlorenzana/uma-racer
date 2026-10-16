@@ -110,7 +110,7 @@ describe('place links and the side panel (§1, §4)', () => {
     expect(panel.getAttribute('aria-modal')).toBe('true')
     expect(panel.querySelector('[data-g2="side-panel"]')).toBeTruthy()
     // The registry's Peek, then Enter.
-    await waitFor(() => expect(within(panel).getAllByText(/free|busy|ready/).length).toBeGreaterThan(0))
+    await waitFor(() => expect(within(panel).getAllByText(/slots in use/).length).toBeGreaterThan(0))
     const enter = within(panel).getByRole('link', { name: 'Enter Kitchen' })
     expect(enter.getAttribute('href')).toBe('/farm/kitchen')
     // Its blurb sits behind (i).

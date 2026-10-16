@@ -1,7 +1,8 @@
-// A Training facility's page (docs/game/05-training-hub.md §7, §8; docs/game/11-hub-and-places.md §3.2; T139), one
-// for all four, at 390 × 844 top to bottom: the header (level, slots in use, speed, **Upgrade** with what it adds, (i));
-// **Needs here**; a card per slot, by room under its stat or card-type icon at the Gym and Dojo; and **Collect here** in
-// the thumb zone. The session sheet opens over the page from its query (`?session=…`), so a slot, a build view's
+// A Training facility's page (docs/game/05-training-hub.md §7, §8; docs/game/11-hub-and-places.md §3.2; T139, D366),
+// one for all four, at 390 × 844 top to bottom: one header row (level, slots in use and speed as chips, and the
+// **Upgrade** button, whose sheet says what the level adds; (i) in the title bar); **Needs here**; the Farm's compact
+// row per slot (`SlotRow`: face in its ring, dish, "×3 · 1/3", time left, Collect, Speed Tickets and ⋯), by room under
+// its stat or card-type icon at the Gym and Dojo; and **Collect here** in the thumb zone. The session sheet opens over the page from its query (`?session=…`), so a slot, a build view's
 // Unlock, a Needs line, the planner and the Card Library's Bond all reach it by a link.
 import type { CollectAllReceipt } from '@racer/domain/check-in'
 import type { FacilityId } from '@racer/domain/farm'
@@ -15,9 +16,10 @@ import { navState } from '../../../hub/nav'
 import { ItemIcon } from '../../../ui/ItemIcon'
 import { duration } from '../../../ui/labels'
 import { PlaceHeader } from '../../../ui/PlaceHeader'
-import { SlotCard } from '../../../ui/work/SlotCard'
+import { PlaceStats } from '../../../ui/work/PlaceStats'
+import { SlotRow } from '../../../ui/work/SlotRow'
 import { TapNoteLine } from '../../../ui/work/TapNote'
-import { UpgradeControls } from '../../../ui/work/Upgrade'
+import { UpgradeButton } from '../../../ui/work/Upgrade'
 import { useTap, useWordsContext, type Tap } from '../../../ui/work/useTap'
 import { useWorkView } from '../../../ui/work/view'
 import { showWords, type WordsContext } from '../../../ui/work/words'
@@ -32,13 +34,9 @@ const BUTTON = 'font-display inline-flex min-h-11 items-center justify-center ro
 
 function Header({ model }: { model: FacilityView }) {
   return (
-    <section aria-label={model.name} className="space-y-3 border-b border-hairline px-4 py-3">
-      <p className="font-display flex flex-wrap gap-x-3 text-[14px] font-semibold tabular-nums" data-g2="facility-header">
-        <span>{trainingWords('level', { level: model.level })}</span>
-        <span>{trainingWords('slots-in-use', { used: model.used, slots: model.slots })}</span>
-        {model.speed > 1 && <span>{trainingWords('speed', { speed: model.speed })}</span>}
-      </p>
-      {model.upgrade !== null && <UpgradeControls upgrade={model.upgrade} building={model.facility} name={model.name} adds />}
+    <section aria-label={model.name} data-g2="facility-header" className="flex min-h-13 items-center gap-2 border-b border-hairline px-4 py-1">
+      <PlaceStats level={model.level} used={model.used} slots={model.slots} speed={model.speed} className="flex-1" />
+      {model.upgrade !== null && <UpgradeButton upgrade={model.upgrade} building={model.facility} name={model.name} />}
     </section>
   )
 }
@@ -84,12 +82,12 @@ function Slots({ model, content }: { model: FacilityView; content: Content | nul
   const view = useWorkView()
   const facility = model.facility
   return (
-    <section aria-labelledby="training-slots" className="flex-1 space-y-3 px-4 py-3">
-      <h2 id="training-slots" className="text-micro">{trainingWords('slots-title')}</h2>
+    <section aria-labelledby="training-slots" className="flex-1 space-y-2 px-4 py-2.5">
+      <h2 id="training-slots" className="sr-only">{trainingWords('slots-title')}</h2>
       {model.rooms.map((room) => (
-        <div key={room.room ?? 'all'} className="space-y-2" data-room={room.room ?? undefined}>
+        <div key={room.room ?? 'all'} className="space-y-1.5" data-room={room.room ?? undefined}>
           {room.room !== null && (
-            <h3 className="flex items-center gap-2 text-[14px] font-semibold">
+            <h3 className="flex items-center gap-2 text-[13px] font-semibold">
               <TypeIcon type={room.room === 'friend-group' ? 'friend' : room.room} size={20} />
               {trainingWords('room', { room: room.name ?? '' })}
             </h3>
@@ -98,15 +96,14 @@ function Slots({ model, content }: { model: FacilityView; content: Content | nul
             const held = card.kind === 'held' ? currentUnlock(view?.settled.work[card.outfitId], card) : null
             const line = held === null ? null : unlockLine(held.ref, held.dishId, content)
             return (
-              <SlotCard
+              <SlotRow
                 key={`${room.room ?? ''}:${card.slot.slot}`}
                 card={card}
-                farmLevel={false}
                 startLabel={trainingWords('start-session')}
                 startTo={sessionPath(facility, { room: room.room, slot: card.slot.slot })}
                 queueTo={card.kind === 'held' ? sessionPath(facility, { uma: card.outfitId, room: room.room, queue: true }) : undefined}
                 queueLabel={(request) => queuedWords(request, content)}
-                what={held === null || line === null ? undefined : { icon: <ItemIcon item={held.dishId} decorative />, line, name: line }}
+                what={held === null || line === null ? undefined : { icon: <ItemIcon item={held.dishId} decorative />, name: line }}
               />
             )
           })}
@@ -141,13 +138,12 @@ function CollectHere({ model, tap }: { model: FacilityView; tap: Tap }) {
     setReceipt(answer?.kind === 'done' ? (answer.receipt as CollectAllReceipt) : null)
   }
   return (
-    <div className="pb-safe sticky bottom-0 z-10 space-y-2 border-t border-hairline bg-panel/95 px-4 py-3 backdrop-blur">
+    <div className="pb-safe sticky bottom-0 z-10 space-y-1.5 border-t border-hairline bg-panel/95 px-4 py-2 backdrop-blur">
       <ReceiptLines receipt={receipt} context={context} />
       <TapNoteLine tap={tap} />
       <button type="button" data-action="collect-here" disabled={tap.pending !== null || model.ready === 0} onClick={() => void collect()} className={`${BUTTON} w-full bg-accent text-ink`}>
-        {model.ready > 0 ? trainingWords('collect-here-n', { n: model.ready }) : trainingWords('collect-here')}
+        {model.ready > 0 ? trainingWords('collect-here-n', { n: model.ready }) : trainingWords('nothing-to-collect')}
       </button>
-      {model.ready === 0 && <p className="text-[12px] text-ink-soft">{trainingWords('nothing-to-collect')}</p>}
     </div>
   )
 }

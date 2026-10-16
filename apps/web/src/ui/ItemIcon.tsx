@@ -1,8 +1,8 @@
 // An item's icon (docs/game/11-hub-and-places.md §10.3, §11; docs/game/08-item-catalogue-and-recipes.md §9, §10;
-// T140): the catalogue's `art` frame from uma-art's `items` or `dishes` atlas, a CSS sprite at a whole-number scale with
-// its pixels kept crisp, named for VoiceOver ("Carrot Salad, grade 1"). The Speed Ticket has no frame in the pinned
-// release (08 §9), so until one ships it is its name on a plain tile. Imported only by lazy chunks, so neither atlas
-// weighs on the entry.
+// T140, D366): the catalogue's `art` frame from uma-art's `items` or `dishes` atlas, a CSS sprite with its pixels kept
+// crisp, named for VoiceOver ("Carrot Salad, grade 1"). 32 pt is the cell; the compact Farm and Training rows also draw
+// it at 16 and 24 pt in chips and badges. The Speed Ticket is the `items` atlas's `speed-ticket` frame (uma-art 2.7.0);
+// an item a release lacks is its name on a plain tile. Imported only by lazy chunks, so neither atlas weighs on the entry.
 import { itemById, type ItemDef } from '@racer/domain/items'
 import dishesUrl from '@luismlorenzana/uma-art/dishes/atlas.png?url'
 import dishes from '@luismlorenzana/uma-art/dishes/atlas.json'
@@ -35,8 +35,8 @@ export function itemLabel(def: ItemDef | undefined, id: string): string {
 
 export function ItemIcon({ item, scale = 1, decorative = false, className = '' }: {
   item: string
-  /** Whole-number scales only: 1 draws 32 pt, 2 draws 64 pt. */
-  scale?: 1 | 2
+  /** 1 draws 32 pt and 2 draws 64 pt; 0.5 and 0.75 draw a chip's 16 pt and a badge's 24 pt (D366). */
+  scale?: 0.5 | 0.75 | 1 | 2
   /** True beside a visible name, so VoiceOver doesn't read it twice. */
   decorative?: boolean
   className?: string

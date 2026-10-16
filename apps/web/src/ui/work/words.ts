@@ -1,7 +1,7 @@
-// The words every timed thing shows (docs/game/02-check-ins-and-notifications.md §9; T140): a rule's or a question's
-// template from the domain filled for the screen, `{uma}` with her template's name, `{item}` with the item's,
-// `{place}` with the building's and `{time}` as a clock time, numbers grouped ("1,200"); and the shared pieces' own
-// copy. 02 §9's banned words never appear here (`work.test.ts` holds every template to `hasBannedWord`).
+// The words every timed thing shows (docs/game/02-check-ins-and-notifications.md §9; T140, D366): a rule's or a
+// question's template from the domain filled for the screen, `{uma}` with her template's name, `{item}` with the
+// item's, `{place}` with the building's and `{time}` as a clock time, numbers grouped ("1,200"); and the shared pieces'
+// own copy, which reads how long work takes or has left (`durationText`), never when it ends. 02 §9's banned words never appear here (`work.test.ts` holds every template to `hasBannedWord`).
 import { clockTime, fill, type Words } from '@racer/domain/check-in'
 import { BUILDINGS, isBuildingId } from '@racer/domain/farm'
 import { itemById } from '@racer/domain/items'
@@ -35,25 +35,34 @@ export function showWords(words: Words, context: WordsContext): string {
   return fill({ text: words.text, data: named })
 }
 
-/** The shared pieces' own sentences: slot cards, Speed Tickets, Recall and queues. */
+/** The shared pieces' own sentences: slot rows, Speed Tickets, Recall, queues, the size chips and upgrades. */
 export const WORK_WORDS = Object.freeze({
-  /** A card's VoiceOver line (07 §10). */
-  'card-running': '{uma}. {what}, {made} of {count} made, next at {next}',
+  /** A slot row's VoiceOver line (07 §10, D366): how long is left, never the clock time it ends. */
+  'card-running': '{uma}. {what}, {made} of {count} made, {left} left',
   'card-ready': '{uma}. {what}, {made} of {count} made, ready to collect',
   'card-free': 'Slot {n}, free',
-  made: '{made} / {count} made',
-  next: 'next {time}',
-  ends: 'ends {time}',
-  finished: 'finished {time}',
+  made: '{made}/{count}',
+  'made-label': '{made} of {count} made',
+  done: 'Done',
   'farm-level': 'Farm Lv {level}',
   queued: '+{n}',
   'queued-label': '{n} queued behind',
+  'next-queued-label': 'then {what}',
   free: 'Free',
   'start-job': 'Start a job',
+  'start-in-slot': '{start} in slot {n}',
   collect: 'Collect · {n}',
+  'collect-label': 'Collect {n} {what}',
+  'repeat-label': 'Collect and repeat {what} ×{n}',
+  'repeat-started': 'Started {what} ×{n} again · {time}',
+  'speed-label': 'Speed Tickets for {what}',
+  'more-label': 'More for {uma}: Queue next and Recall',
+  'queue-next': 'Queue next',
   recall: 'Recall',
-  'add-queue': '+ Queue',
+  'add-queue': 'Queue next',
   /** 07 §8, 09 §5.1. */
+  'speed-title': 'Speed up {what}',
+  'speed-left': '{time} left',
   'speed-up': '−30m',
   'speed-up-label': 'Take 30 minutes off with one Speed Ticket',
   finish: 'Finish · {n}',
@@ -64,6 +73,7 @@ export const WORK_WORDS = Object.freeze({
   'buy-finish-ask-one': 'Buy 1 Speed Ticket for {price} Prize Money and finish now?',
   waste: '{minutes} of the ticket’s 30 minutes go unused. Finish now?',
   'buy-waste': 'Buy 1 Speed Ticket for {price} Prize Money and finish now? {minutes} of its 30 minutes go unused.',
+  'tickets-held': '{n} held',
   yes: 'Yes',
   'not-now': 'Not now',
   /** RecallSheet (07 §2, §5). */
@@ -77,9 +87,8 @@ export const WORK_WORDS = Object.freeze({
   'recall-queue-one': '1 queued job dropped',
   'recall-nothing': 'Nothing is lost.',
   'recall-confirm': 'Recall',
-  'recall-and-start': 'Recall and start here',
-  /** QueueChips (02 §3). */
-  'queue-then': 'then {what} → {time}',
+  /** QueueChips (02 §3, D366): each queued job with how long it takes. */
+  'queue-then': 'then {what} · {time}',
   'queue-then-unknown': 'then {what}',
   'queue-up': 'Move {what} earlier',
   'queue-remove': 'Remove {what} from the queue',
@@ -95,18 +104,27 @@ export const WORK_WORDS = Object.freeze({
   'make-them-label': 'Make them: {place} ×{n}, by {uma}',
   dismiss: 'Dismiss',
   'dismiss-label': 'Dismiss {uma}’s stopped queue',
-  /** UpgradeControls (07 §7, 05 §7). */
+  /** The header's chips and the upgrade (07 §7, §10; 05 §7; D366). */
+  'stats-label': 'Lv {level} · {used} of {slots} slots in use',
+  'stats-speed-label': 'Lv {level} · {used} of {slots} slots in use · speed ×{speed}',
+  'stats-level': 'Lv {level}',
+  'stats-slots': '{used}/{slots}',
+  'stats-speed': '×{speed}',
   upgrade: 'Upgrade to Lv {level}',
+  'upgrade-label': 'Upgrade to Lv {level} for {pm} Prize Money',
   'upgrade-cost': '{pm} Prize Money',
   'upgrade-item': '{need} {item} · {have} held',
   'upgrade-ask': 'Upgrade the {place} to Lv {level} for {cost}?',
   'upgrade-done': 'The {place} is Lv {level} now.',
   'upgrade-slots': '{slots} slots at Lv {level}',
   'upgrade-speed': 'Speed ×{speed} at Lv {level}',
-  /** SizeChips (02 §3). */
+  /** SizeChips (02 §3, D366): how long each size takes; the fitting one marked by an icon. */
   'size-label': 'How many',
   'size-chip': '×{n}',
   'size-chip-label': '×{n}, {words}',
+  'size-chip-idle': '{time}, then free {idle} before a check-in',
+  'size-fits': 'fits the next check-in',
+  'size-overnight': 'runs overnight',
   /** The fallbacks for a request without an item name. */
   'what-farm': '{item} ×{n}',
   'what-session': '{n} unlocks',

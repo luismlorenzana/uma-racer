@@ -1,9 +1,12 @@
 // @vitest-environment jsdom
-// The Farm places on screen (docs/game/07-farm.md §2, §7, §8, §10, §11, §15; T140), through the real routes and the
-// in-memory port on synthetic accounts, its clock held and moved by hand: gather, queue, Collect, −30m and the queued
-// start; cook, reserve and Recall with its preview; an upgrade's slots at once; a fresh account's shortfall and its
-// link; a Make more link returning to `back`; twelve hours away; a reopen; and offline taps.
-import { CHECK_IN_WORDS, clockTime, say, type OperationInput } from '@racer/domain/check-in'
+// The Farm places on screen (docs/game/07-farm.md §2, §7, §8, §10, §11, §15; T140, D366), through the real routes and
+// the in-memory port on synthetic accounts, its clock held and moved by hand: gather, Queue next, Collect, −30m and the
+// queued start; cook, reserve and Recall with its preview; an upgrade's slots at once; a fresh account's shortfall and
+// its link; a Make more link returning to `back`; twelve hours away; a reopen; offline taps; and D366's compact screens:
+// rows that read how long is left, never a clock time; Free Umas only in the sheet, everything preselected; the size
+// chips' durations; a target's icon filled in; and the tap paths from the Hub: a free slot's "+" in the side panel opens
+// the sheet over the map and Start starts the job (3 taps), and a finished row's Repeat restarts it (2 taps).
+import { CHECK_IN_WORDS, durationText, say, type OperationInput } from '@racer/domain/check-in'
 import { farmItemSeconds } from '@racer/domain/farm'
 import { craftedItem, FAMILY_IDS } from '@racer/domain/items'
 import { endsAt, finishedCount } from '@racer/domain/work'
@@ -33,8 +36,10 @@ function clocked(seed: G2Seed): { game: G2Game; advance: (ms: number) => void } 
 const state = (game: G2Game) => game.getSnapshot().state!
 const AMBER = 'Amber Sprint'
 const BLUEBELL = 'Bluebell Dash'
+const GATHER_1 = farmItemSeconds('gather', 1) * 1000
 const GATHER_2 = farmItemSeconds('gather', 2) * 1000
 const COOK_1 = farmItemSeconds('cook', 1) * 1000
+const CLOCK = /\b\d\d:\d\d\b/
 
 /** Close the app and open it again on `path`: a new render reads the port afresh. */
 function reopen(path: string, game: G2Game) {
@@ -42,8 +47,8 @@ function reopen(path: string, game: G2Game) {
   return renderG2(path, game)
 }
 
-describe('gather, queue, Collect and −30m (07 §2, §8)', () => {
-  it('Gather Potato × 10, a queued Carrot × 6, three outputs collected, −30m, and the queue starting when the first ends', async () => {
+describe('gather, Queue next, Collect and −30m (07 §2, §8; D366)', () => {
+  it('Gather Potato × 10, a queued Carrot × 6, three outputs collected, −30m off the time left, and the queue starting when the first ends', async () => {
     const { state: account, at } = farmAccount(1)
     const ready = apply(withFarmLevel(account, uma(1), 7), 'dev-grant', { items: { 'speed-ticket': 5 } }, at).state
     const { game, advance } = clocked(farmSeed(ready, at))
@@ -51,42 +56,46 @@ describe('gather, queue, Collect and −30m (07 §2, §8)', () => {
     const { where } = renderG2(`/farm/vegetable-garden?job=potato&uma=${uma(1)}&count=10`, game)
     const sheet = await screen.findByRole('dialog', { name: 'Start a job · Vegetable Garden' })
     expect(within(sheet).getByRole('radio', { name: /^×10,/ }).getAttribute('aria-checked')).toBe('true')
-    fireEvent.click(within(sheet).getByRole('button', { name: 'Start' }))
+    fireEvent.click(within(sheet).getByRole('button', { name: `Start · ×10 · ${durationText(10 * GATHER_2)}` }))
     await waitFor(() => expect(where()).toBe('/farm/vegetable-garden'))
     expect(state(game).work[uma(1)]!.entries[0]!.request).toEqual({ kind: 'gather', item: 'potato', count: 10 })
-    const card = await screen.findByRole('article', { name: new RegExp(`^${AMBER}\\. Potato, 0 of 10 made, next at `) })
+    const row = await screen.findByRole('article', { name: `${AMBER}. Potato, 0 of 10 made, ${durationText(10 * GATHER_2)} left` })
+    expect(row.textContent).not.toMatch(CLOCK)
 
-    // + Queue: her running job here takes the queue; Carrot × 6 behind it.
-    fireEvent.click(within(card).getByRole('link', { name: '+ Queue' }))
+    // ⋯ → Queue next: her job here takes the queue, with her named and no Uma to pick; Carrot × 6 behind it.
+    fireEvent.click(within(row).getByRole('button', { name: `More for ${AMBER}: Queue next and Recall` }))
+    fireEvent.click(within(await screen.findByRole('dialog', { name: `${AMBER} · Potato ×10` })).getByRole('link', { name: 'Queue next' }))
     const queueSheet = await screen.findByRole('dialog', { name: 'Queue a job · Vegetable Garden' })
-    fireEvent.click(within(queueSheet).getByRole('button', { name: 'Change what to make' }))
-    fireEvent.click(within(queueSheet).getByRole('button', { name: /^Carrot · G1/ }))
+    within(queueSheet).getByText(`Next job for ${AMBER}`)
+    expect(within(queueSheet).queryByRole('radiogroup', { name: /Free Umas/ })).toBeNull()
+    fireEvent.click(within(queueSheet).getByRole('button', { name: /^Carrot, grade 1/ }))
     fireEvent.click(await within(queueSheet).findByRole('radio', { name: /^×6,/ }))
-    fireEvent.click(within(queueSheet).getByRole('button', { name: 'Add to queue' }))
+    fireEvent.click(within(queueSheet).getByRole('button', { name: `Queue · ×6 · ${durationText(6 * GATHER_1)}` }))
     await waitFor(() => expect(state(game).work[uma(1)]!.queue).toEqual([{ kind: 'gather', item: 'carrot', count: 6 }]))
 
-    // Three outputs later, Collect pays three Potatoes and their Farm EXP.
+    // Three outputs later, Collect pays three Potatoes and their Farm EXP; the queue reads its own duration.
     advance(3 * GATHER_2 + MINUTE)
     reopen('/farm/vegetable-garden', game)
-    const later = await screen.findByRole('article', { name: new RegExp(`^${AMBER}\\. Potato, 3 of 10 made`) })
+    const later = await screen.findByRole('article', { name: new RegExp(`^${AMBER}\\. Potato, 3 of 10 made, `) })
+    within(later).getByRole('listitem', { name: `then Carrot ×6 · ${durationText(6 * GATHER_1)}` })
     const before = state(game).umas[uma(1)]!.farm.exp
     const entry = state(game).work[uma(1)]!.entries[0]!
-    fireEvent.click(within(later).getByRole('button', { name: 'Collect · 3' }))
+    fireEvent.click(within(later).getByRole('button', { name: 'Collect 3 Potato' }))
     await waitFor(() => expect(state(game).items['potato']).toBe(3))
     expect(state(game).umas[uma(1)]!.farm.exp - before).toBe(3 * entry.farmExp[0]!)
 
-    // −30m moves the job's end and the queued start 30 minutes earlier.
+    // −30m, from the Speed Ticket's sheet, takes 30 minutes off the time left.
     const end = endsAt(entry)
-    const carrot = farmItemSeconds('gather', 1) * 1000 * 6
-    const chip = () => screen.getByText(/^then Carrot ×6 → /).textContent
-    expect(chip()).toBe(`then Carrot ×6 → ${clockTime(end + carrot, 0)}`)
-    fireEvent.click(screen.getByRole('button', { name: 'Take 30 minutes off with one Speed Ticket' }))
+    const now = at + 3 * GATHER_2 + MINUTE
+    fireEvent.click(within(later).getByRole('button', { name: 'Speed Tickets for Potato ×10' }))
+    const speed = await screen.findByRole('dialog', { name: 'Speed up Potato ×10' })
+    fireEvent.click(within(speed).getByRole('button', { name: 'Take 30 minutes off with one Speed Ticket' }))
     await waitFor(() => expect(state(game).work[uma(1)]!.entries[0]!.acceleratedMs).toBe(30 * MINUTE))
-    await waitFor(() => expect(chip()).toBe(`then Carrot ×6 → ${clockTime(end - 30 * MINUTE + carrot, 0)}`))
+    await screen.findByRole('article', { name: `${AMBER}. Potato, 3 of 10 made, ${durationText(end - 30 * MINUTE - now)} left` })
     expect(state(game).items['speed-ticket']).toBe(4)
 
     // The queued job starts the moment the first ends.
-    advance(end - 30 * MINUTE - (at + 3 * GATHER_2 + MINUTE) + MINUTE)
+    advance(end - 30 * MINUTE - now + MINUTE)
     reopen('/farm/vegetable-garden', game)
     await screen.findByRole('article', { name: new RegExp(`^${AMBER}\\. Carrot, 0 of 6 made`) })
     const settled = workView(state(game), game.now(), game.getSnapshot().env!).settled
@@ -103,16 +112,17 @@ describe('cook and Recall (07 §2, §5)', () => {
     const { game, advance } = clocked(farmSeed(stocked, at))
     const { where } = renderG2(`/farm/kitchen?job=dish-vegetables-1&uma=${uma(1)}&count=3`, game)
     const sheet = await screen.findByRole('dialog', { name: 'Start a job · Kitchen' })
-    within(sheet).getByText('Chopped Carrot 12 of 12')
-    within(sheet).getByText('Wheat Flour 3 of 3')
-    fireEvent.click(within(sheet).getByRole('button', { name: 'Start' }))
+    within(sheet).getByLabelText('Chopped Carrot 12 of 12')
+    within(sheet).getByLabelText('Wheat Flour 3 of 3')
+    fireEvent.click(within(sheet).getByRole('button', { name: /^Start · ×3 · / }))
     await waitFor(() => expect(where()).toBe('/farm/kitchen'))
     expect(state(game).items).toEqual({})
 
     advance(Math.round(1.5 * COOK_1))
     reopen('/farm/kitchen', game)
-    const card = await screen.findByRole('article', { name: new RegExp(`^${AMBER}\\. Carrot Salad, 1 of 3 made`) })
-    fireEvent.click(within(card).getByRole('button', { name: 'Recall' }))
+    const row = await screen.findByRole('article', { name: new RegExp(`^${AMBER}\\. Carrot Salad, 1 of 3 made`) })
+    fireEvent.click(within(row).getByRole('button', { name: `More for ${AMBER}: Queue next and Recall` }))
+    fireEvent.click(within(await screen.findByRole('dialog', { name: `${AMBER} · Carrot Salad ×3` })).getByRole('button', { name: 'Recall' }))
     const recall = await screen.findByRole('dialog', { name: `Recall ${AMBER}` })
     within(recall).getByText('1 Carrot Salad collected')
     within(recall).getByText('8 Chopped Carrot and 2 Wheat Flour come back')
@@ -124,19 +134,31 @@ describe('cook and Recall (07 §2, §5)', () => {
 })
 
 describe('upgrades and empty stock (07 §7, §11)', () => {
-  it('upgrading the Kitchen to Lv 2 shows eight slot cards at once', async () => {
+  it('upgrading the Kitchen to Lv 2 from its header button shows eight slot rows at once', async () => {
     const { state: account, at } = farmAccount(1)
     const paid = apply(account, 'dev-grant', { prizeMoney: 3_000, items: Object.fromEntries(FAMILY_IDS.map((family) => [craftedItem(family, 1).id, 2])) }, at).state
     const { game } = clocked(farmSeed(paid, at))
     renderG2('/farm/kitchen', game)
-    await screen.findByText('0 of 6 in use')
+    await screen.findByText('Lv 1 · 0 of 6 slots in use')
     expect(document.querySelectorAll('[data-slot-card]')).toHaveLength(6)
-    fireEvent.click(screen.getByRole('button', { name: 'Upgrade to Lv 2' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Yes' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Upgrade to Lv 2 for 3,000 Prize Money' }))
+    const sheet = await screen.findByRole('dialog', { name: 'Upgrade to Lv 2' })
+    within(sheet).getByText('8 slots at Lv 2')
+    fireEvent.click(within(sheet).getByRole('button', { name: 'Yes' }))
     await waitFor(() => expect(document.querySelectorAll('[data-slot-card]')).toHaveLength(8))
-    screen.getByText('Lv 2')
+    screen.getByText('Lv 2 · 0 of 8 slots in use')
     screen.getByText('The Kitchen is Lv 2 now.')
     expect(state(game).profile.prizeMoney).toBe(0)
+  })
+
+  it("says why it can't be paid in the rule's words, and its Yes is off", async () => {
+    const { state: account, at } = farmAccount(1)
+    const { game } = clocked(farmSeed(account, at))
+    renderG2('/farm/orchard', game)
+    fireEvent.click(await screen.findByRole('button', { name: 'Upgrade to Lv 2 for 1,200 Prize Money. Needs 1,200 Prize Money.' }))
+    const sheet = await screen.findByRole('dialog', { name: 'Upgrade to Lv 2' })
+    within(sheet).getByText('Needs 1,200 Prize Money.')
+    expect(within(sheet).getByRole('button', { name: 'Yes' }).hasAttribute('disabled')).toBe(true)
   })
 
   it("a fresh account's Kitchen sheet names the shortfall and links to the Pantry; a site's offers grade 1 to any Uma", async () => {
@@ -144,29 +166,96 @@ describe('upgrades and empty stock (07 §7, §11)', () => {
     const { game } = clocked(farmSeed(account, at))
     renderG2(`/farm/kitchen?job=dish-vegetables-1&uma=${uma(1)}`, game)
     const sheet = await screen.findByRole('dialog', { name: 'Start a job · Kitchen' })
-    expect(within(sheet).getByRole('button', { name: 'Start' }).hasAttribute('disabled')).toBe(true)
+    expect(within(sheet).getByRole('button', { name: /^Start · ×1 · / }).hasAttribute('disabled')).toBe(true)
     within(sheet).getByText('Short 4 Chopped Carrot.')
-    within(sheet).getByText('Chopped Carrot 0 of 4 · 4 short')
+    within(sheet).getByLabelText('Chopped Carrot 0 of 4 · 4 short')
     const make = within(sheet).getByRole('link', { name: 'Make Chopped Carrot at the Pantry' })
     expect(make.getAttribute('href')).toBe(`/farm/pantry?job=chopped-carrot&count=4&back=${encodeURIComponent(`/farm/kitchen?job=dish-vegetables-1&uma=${uma(1)}`)}`)
 
     reopen(`/farm/fields?job=wheat&uma=${uma(1)}`, game)
     const site = await screen.findByRole('dialog', { name: 'Start a job · Fields' })
-    expect(within(site).getByRole('button', { name: 'Start' }).hasAttribute('disabled')).toBe(false)
+    expect(within(site).getByRole('button', { name: /^Start · / }).hasAttribute('disabled')).toBe(false)
   })
 
-  it('a Make more link opens the sheet on its item, and Start returns to `back`', async () => {
+  it('a Make more link opens the sheet on its item with a Free Uma preselected, and Start returns to `back`', async () => {
     const { state: account, at } = farmAccount(2)
     const stocked = apply(account, 'dev-grant', { items: { carrot: 4 } }, at).state
     const { game } = clocked(farmSeed(stocked, at))
     const { where } = renderG2(`/farm/pantry?job=chopped-carrot&back=${encodeURIComponent('/town/warehouse')}`, game)
     const sheet = await screen.findByRole('dialog', { name: 'Start a job · Pantry' })
-    within(sheet).getByText('Chopped Carrot', { selector: 'span' })
-    within(sheet).getByText('Pick an Uma.')
-    fireEvent.click(within(sheet).getByRole('button', { name: new RegExp(`^${BLUEBELL}`) }))
-    fireEvent.click(within(sheet).getByRole('button', { name: 'Start' }))
+    expect(within(sheet).getByRole('button', { name: /^Chopped Carrot, grade 1/ }).getAttribute('aria-pressed')).toBe('true')
+    // Amber suits Vegetables (Front Runner A), so she is preselected; the owner picks Bluebell instead.
+    expect(within(sheet).getByRole('radio', { name: /^Amber Sprint, Farm Lv 1, suited/ }).getAttribute('aria-checked')).toBe('true')
+    fireEvent.click(within(sheet).getByRole('radio', { name: new RegExp(`^${BLUEBELL}`) }))
+    fireEvent.click(within(sheet).getByRole('button', { name: /^Start · / }))
     await waitFor(() => expect(where()).toBe('/town/warehouse'))
     expect(state(game).work[uma(2)]!.entries[0]!.request).toMatchObject({ kind: 'craft', item: 'chopped-carrot' })
+  })
+})
+
+describe('the job sheet, one screen (D366)', () => {
+  it('lists Free Umas only, every choice preselected, with each size read as how long it takes and the fitting one marked', async () => {
+    const { state: account, at } = farmAccount(4)
+    let working = withFarmLevel(account, uma(2), 9)
+    // uma 3 works at the Fields; uma 4 finished a job there, still holding its slot.
+    working = apply(working, 'start', { outfitId: uma(3), slot: { building: 'fields', slot: 0 }, request: { kind: 'gather', item: 'wheat', count: 3 } }, at).state
+    working = apply(working, 'start', { outfitId: uma(4), slot: { building: 'fields', slot: 1 }, request: { kind: 'gather', item: 'wheat', count: 1 } }, at).state
+    const { game, advance } = clocked(farmSeed(working, at))
+    advance(GATHER_1 + MINUTE)
+    const { where } = renderG2('/farm/orchard', game)
+    fireEvent.click(await screen.findByRole('link', { name: 'Start a job in slot 1' }))
+    const sheet = await screen.findByRole('dialog', { name: 'Start a job · Orchard' })
+    const umas = within(sheet).getAllByRole('radio').filter((radio) => radio.hasAttribute('data-uma')).map((radio) => radio.getAttribute('data-uma'))
+    expect(umas.sort()).toEqual([uma(1), uma(2)])
+    // One is chosen, one item is chosen, and one size is chosen: Start is one tap away.
+    expect(within(sheet).getAllByRole('radio', { checked: true }).length).toBe(2)
+    expect(sheet.querySelectorAll('[data-item][aria-pressed="true"]')).toHaveLength(1)
+    const chips = within(sheet).getAllByRole('radio').filter((radio) => radio.hasAttribute('data-size'))
+    expect(chips.length).toBeGreaterThan(1)
+    for (const chip of chips) expect(`${chip.textContent} ${chip.getAttribute('aria-label')}`).not.toMatch(CLOCK)
+    expect(chips[0]!.textContent).toBe(`×1${durationText(GATHER_1)}`)
+    const marked = sheet.querySelector('[data-marked]')!
+    expect(marked.getAttribute('aria-checked')).toBe('true')
+    expect(marked.getAttribute('aria-label')).toMatch(/, fits the next check-in$|, runs overnight$/)
+    expect(marked.querySelector('[data-fit]')).not.toBeNull()
+    const start = within(sheet).getByRole('button', { name: /^Start · ×\d+ · / })
+    expect(start.textContent).not.toMatch(CLOCK)
+    fireEvent.click(start)
+    await waitFor(() => expect(where()).toBe('/farm/orchard'))
+    expect(Object.values(state(game).work).some((row) => row.slot?.building === 'orchard' && row.slot.slot === 0)).toBe(true)
+  })
+
+  it('with no Free Uma says so, and nothing else but Collect here when a finished job here would free one', async () => {
+    const { state: account, at } = farmAccount(1)
+    const working = apply(account, 'start', { outfitId: uma(1), slot: { building: 'fields', slot: 0 }, request: { kind: 'gather', item: 'wheat', count: 1 } }, at).state
+    const { game, advance } = clocked(farmSeed(working, at))
+    renderG2('/farm/fields?job=&slot=1', game)
+    let sheet = await screen.findByRole('dialog', { name: 'Start a job · Fields' })
+    within(sheet).getByText('No free Uma')
+    expect(within(sheet).queryByRole('button', { name: 'Collect here' })).toBeNull()
+    expect(sheet.querySelectorAll('[data-item]')).toHaveLength(0)
+
+    advance(GATHER_1)
+    reopen('/farm/fields?job=&slot=1', game)
+    sheet = await screen.findByRole('dialog', { name: 'Start a job · Fields' })
+    fireEvent.click(within(sheet).getByRole('button', { name: 'Collect here' }))
+    await waitFor(() => expect(state(game).items['wheat']).toBe(1))
+    // Collected, she is Free: the sheet preselects her.
+    await waitFor(() => expect(within(sheet).getByRole('radio', { name: new RegExp(`^${AMBER}`) }).getAttribute('aria-checked')).toBe('true'))
+  })
+
+  it("a target's icon opens the sheet filled in with its item, the planner's Uma and size: one more tap starts it", async () => {
+    const { state: account, at } = farmAccount(1)
+    const { game } = clocked(farmSeed(account, at))
+    const { where } = renderG2('/farm/vegetable-garden', game)
+    const target = await screen.findByRole('link', { name: /^Vegetables G1 · short \d+/ })
+    expect(target.getAttribute('href')).toMatch(new RegExp(`^/farm/vegetable-garden\\?job=carrot&uma=${uma(1)}&count=\\d+$`))
+    fireEvent.click(target)
+    const sheet = await screen.findByRole('dialog', { name: 'Start a job · Vegetable Garden' })
+    expect(within(sheet).getByRole('button', { name: /^Carrot, grade 1/ }).getAttribute('aria-pressed')).toBe('true')
+    fireEvent.click(within(sheet).getByRole('button', { name: /^Start · / }))
+    await waitFor(() => expect(where()).toBe('/farm/vegetable-garden'))
+    expect(state(game).work[uma(1)]!.entries[0]!.request).toMatchObject({ kind: 'gather', item: 'carrot' })
   })
 })
 
@@ -183,8 +272,8 @@ describe('offline, away and reopened (07 §11, 02 §8)', () => {
       if (card?.kind !== 'held') throw new Error('free')
       const last = view.settled.work[uma(1)]!.entries.at(-1)!
       expect(card.made).toBe(finishedCount(last, now))
-      const label = card.running ? `${card.made} of ${card.count} made, next at` : `${card.made} of ${card.count} made, ready to collect`
-      await screen.findByRole('article', { name: new RegExp(`^${AMBER}\\. Wheat, ${label}`) })
+      const label = card.running ? `${card.made} of ${card.count} made, ${durationText(card.leftMs)} left` : `${card.made} of ${card.count} made, ready to collect`
+      await screen.findByRole('article', { name: `${AMBER}. Wheat, ${label}` })
       return { hours, card, entries: view.settled.work[uma(1)]!.entries }
     }
 
@@ -210,8 +299,8 @@ describe('offline, away and reopened (07 §11, 02 §8)', () => {
   })
 })
 
-describe('Collect here and Repeat here (07 §9, §10)', () => {
-  it("collect this building only, then Repeat here lists each start and each skip with its reason", async () => {
+describe('Collect here, Repeat here and a row\'s Repeat (07 §9, §10)', () => {
+  it('collect this building only, then Repeat here lists each start and each skip with its reason', async () => {
     const { state: account, at } = farmAccount(2)
     let working = apply(account, 'dev-grant', { items: { 'chopped-carrot': 4, 'wheat-flour': 1 } }, at).state
     working = apply(working, 'start', { outfitId: uma(1), slot: { building: 'kitchen', slot: 0 }, request: { kind: 'cook', item: 'dish-vegetables-1', count: 1 } }, at).state
@@ -219,13 +308,31 @@ describe('Collect here and Repeat here (07 §9, §10)', () => {
     const { game, advance } = clocked(farmSeed(working, at))
     advance(COOK_1)
     renderG2('/farm/kitchen', game)
+    screen.getByRole('button', { name: 'Nobody to repeat' })
     fireEvent.click(await screen.findByRole('button', { name: 'Collect here · 1' }))
     await screen.findByText(new RegExp(`^${AMBER}: 1 Carrot Salad · Farm EXP \\+\\d+$`))
     expect(state(game).items['dish-vegetables-1']).toBe(1)
     expect(state(game).items['wheat']).toBeUndefined()
+    expect(screen.getByRole('button', { name: 'Nothing to collect' }).hasAttribute('disabled')).toBe(true)
     fireEvent.click(screen.getByRole('button', { name: 'Repeat here · 1' }))
     await screen.findByText(`${AMBER}: Short 4 Chopped Carrot.`)
     expect(state(game).work[uma(1)]!.entries).toEqual([])
+  })
+
+  it("a finished row's Repeat collects and restarts the same job for her, and says why when it can't", async () => {
+    const { state: account, at } = farmAccount(1)
+    let working = apply(account, 'set-repeat-sizing', { sizing: 'same' }, at).state
+    working = apply(working, 'start', { outfitId: uma(1), slot: { building: 'fields', slot: 0 }, request: { kind: 'gather', item: 'wheat', count: 2 } }, at).state
+    const { game, advance } = clocked(farmSeed(working, at))
+    advance(2 * GATHER_1)
+    renderG2('/farm/fields', game)
+    const row = await screen.findByRole('article', { name: `${AMBER}. Wheat, 2 of 2 made, ready to collect` })
+    fireEvent.click(within(row).getByRole('button', { name: 'Collect and repeat Wheat ×2' }))
+    await waitFor(() => expect(state(game).items['wheat']).toBe(2))
+    await waitFor(() => expect(state(game).work[uma(1)]!.entries.at(-1)!.request).toEqual({ kind: 'gather', item: 'wheat', count: 2 }))
+    expect(state(game).work[uma(1)]!.entries.at(-1)!.startedAt).toBe(at + 2 * GATHER_1)
+    const names = await appliedNames(game)
+    expect(names.slice(-2)).toEqual(['collect', 'repeat'])
   })
 })
 
@@ -250,7 +357,7 @@ describe('a stale screen (02 §9)', () => {
     }
     const { where } = renderG2(`/farm/kitchen?job=dish-vegetables-1&uma=${uma(1)}&count=3`, game)
     const sheet = await screen.findByRole('dialog', { name: 'Start a job · Kitchen' })
-    fireEvent.click(within(sheet).getByRole('button', { name: 'Start' }))
+    fireEvent.click(within(sheet).getByRole('button', { name: /^Start · ×3 · / }))
     await within(sheet).findByText('Only 2 left now. Start ×2?')
     expect(state(game).work[uma(1)]).toBeUndefined()
     fireEvent.click(within(sheet).getByRole('button', { name: 'Yes' }))
@@ -259,18 +366,21 @@ describe('a stale screen (02 §9)', () => {
   })
 })
 
-describe('Speed Tickets on a card (09 §5.1)', () => {
-  it('"Buy 3 and finish · 90" asks once, then buys and finishes as two taps in order', async () => {
+describe('Speed Tickets on a row (09 §5.1)', () => {
+  it('"Buy 3 and finish · 90" in the ticket\'s sheet asks once, then buys and finishes as two taps in order', async () => {
     const { state: account, at } = farmAccount(1)
     let ready = apply(account, 'dev-grant', { prizeMoney: 1_000, items: { 'speed-ticket': 5 } }, at).state
     ready = apply(ready, 'start', { outfitId: uma(1), slot: { building: 'fields', slot: 0 }, request: { kind: 'gather', item: 'wheat', count: 2 } }, at).state
     const { game } = clocked(farmSeed(ready, at))
     renderG2('/farm/fields', game)
-    fireEvent.click(await screen.findByRole('button', { name: 'Buy 3 and finish · 90' }))
-    screen.getByText('Buy 3 Speed Tickets for 90 Prize Money and finish now?')
+    fireEvent.click(await screen.findByRole('button', { name: 'Speed Tickets for Wheat ×2' }))
+    const sheet = await screen.findByRole('dialog', { name: 'Speed up Wheat ×2' })
+    within(sheet).getByText(`${durationText(2 * GATHER_1)} left`)
+    fireEvent.click(within(sheet).getByRole('button', { name: 'Buy 3 and finish · 90' }))
+    within(sheet).getByText('Buy 3 Speed Tickets for 90 Prize Money and finish now?')
     expect(state(game).profile.prizeMoney).toBe(1_000)
-    fireEvent.click(screen.getByRole('button', { name: 'Yes' }))
-    await screen.findByRole('article', { name: new RegExp(`^${AMBER}\\. Wheat, 2 of 2 made, ready to collect`) })
+    fireEvent.click(within(sheet).getByRole('button', { name: 'Yes' }))
+    await screen.findByRole('article', { name: `${AMBER}. Wheat, 2 of 2 made, ready to collect` })
     expect(state(game).profile.prizeMoney).toBe(910)
     expect(state(game).items['speed-ticket']).toBeUndefined()
     const names = await appliedNames(game)
@@ -278,22 +388,63 @@ describe('Speed Tickets on a card (09 §5.1)', () => {
   })
 })
 
-describe('the Peek and the Counter (11 §3.4)', () => {
-  it("shows the slots with faces and times, the family's stock by grade and the targets' lines; the tile counts who is ready", async () => {
+describe('the side panel and the Counter (11 §2.6, §3.4; D366)', () => {
+  it("shows a row per slot with faces and time left, the targets as icons and the family's stock; the tile counts who is ready", async () => {
     const { state: account, at } = farmAccount(2)
     let working = apply(account, 'dev-grant', { items: { carrot: 3 } }, at).state
     working = apply(working, 'start', { outfitId: uma(1), slot: { building: 'vegetable-garden', slot: 0 }, request: { kind: 'gather', item: 'carrot', count: 2 } }, at).state
     const { game, advance } = clocked(farmSeed(working, at))
     renderG2('/farm?peek=vegetable-garden', game)
     const peek = await screen.findByRole('dialog', { name: 'Vegetable Garden' })
-    await within(peek).findByText(`next ${clockTime(at + farmItemSeconds('gather', 1) * 1000, 0)}`)
-    within(peek).getByText('3 free')
+    const row = await within(peek).findByRole('group', { name: `${AMBER}. Carrot, 0 of 2 made, ${durationText(2 * GATHER_1)} left` })
+    within(row).getByText('Carrot ×2 · 0/2')
+    within(row).getByText(durationText(2 * GATHER_1))
+    expect(peek.textContent).not.toMatch(CLOCK)
+    expect(within(peek).getAllByRole('link', { name: /^Start a job in slot \d$/ })).toHaveLength(3)
     within(peek).getByLabelText('Carrot: 3')
-    within(peek).getByText('For your targets')
+    within(peek).getByRole('heading', { name: 'For your targets' })
+    within(peek).getByText('Lv 1 · 1 of 4 slots in use')
+    expect(within(peek).queryByRole('button', { name: /^Collect here/ })).toBeNull()
 
-    advance(farmItemSeconds('gather', 1) * 1000)
+    advance(GATHER_1)
     reopen('/farm', game)
     await screen.findByRole('link', { name: /^Vegetable Garden\. \d of 4 slots busy, 1 ready\.$/ })
     expect(document.querySelector('[data-place="vegetable-garden"] [data-counter]')?.textContent).toBe('1')
+  })
+
+  it('Hub to a started job in a free slot is three taps: the building, its "+" (the sheet over the map), Start', async () => {
+    const { state: account, at } = farmAccount(1)
+    const { game } = clocked(farmSeed(account, at))
+    const { where } = renderG2('/farm', game)
+    fireEvent.click(await screen.findByRole('link', { name: /^Fields\./ }))
+    const peek = await screen.findByRole('dialog', { name: 'Fields' })
+    fireEvent.click(within(peek).getByRole('link', { name: 'Start a job in slot 1' }))
+    await waitFor(() => expect(where()).toBe('/farm?peek=fields&job=&slot=0'))
+    const sheet = await screen.findByRole('dialog', { name: 'Start a job · Fields' })
+    fireEvent.click(within(sheet).getByRole('button', { name: /^Start · ×\d+ · / }))
+    await waitFor(() => expect(where()).toBe('/farm?peek=fields'))
+    expect(state(game).work[uma(1)]!.entries[0]!.request).toMatchObject({ kind: 'gather', item: 'wheat' })
+    await within(screen.getByRole('dialog', { name: 'Fields' })).findByRole('group', { name: new RegExp(`^${AMBER}\\. Wheat, 0 of \\d+ made, .+ left$`) })
+  })
+
+  it('Hub to a finished job collected and restarted is two taps: the building, Repeat; Collect here is two too', async () => {
+    const { state: account, at } = farmAccount(2)
+    let working = apply(account, 'set-repeat-sizing', { sizing: 'same' }, at).state
+    working = apply(working, 'start', { outfitId: uma(1), slot: { building: 'fields', slot: 0 }, request: { kind: 'gather', item: 'wheat', count: 1 } }, at).state
+    working = apply(working, 'start', { outfitId: uma(2), slot: { building: 'fields', slot: 1 }, request: { kind: 'gather', item: 'wheat', count: 1 } }, at).state
+    const { game, advance } = clocked(farmSeed(working, at))
+    advance(GATHER_1)
+    renderG2('/farm', game)
+    fireEvent.click(await screen.findByRole('link', { name: /^Fields\./ }))
+    const peek = await screen.findByRole('dialog', { name: 'Fields' })
+    const done = within(peek).getByRole('group', { name: `${AMBER}. Wheat, 1 of 1 made, ready to collect` })
+    within(done).getByText('Done')
+    fireEvent.click(within(done).getByRole('button', { name: 'Collect and repeat Wheat ×1' }))
+    await waitFor(() => expect(state(game).work[uma(1)]!.entries.at(-1)!.startedAt).toBe(at + GATHER_1))
+    expect(state(game).items['wheat']).toBe(1)
+
+    fireEvent.click(within(peek).getByRole('button', { name: 'Collect here · 1' }))
+    await waitFor(() => expect(state(game).items['wheat']).toBe(2))
+    expect(state(game).work[uma(2)]!.entries).toEqual([])
   })
 })

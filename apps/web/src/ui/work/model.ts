@@ -1,8 +1,9 @@
 // The shared work pieces' view models (docs/game/07-farm.md §2, §8, §10; docs/game/05-training-hub.md §2;
-// docs/game/09-racing-rewards-and-exchange.md §5.1; docs/game/02-check-ins-and-notifications.md §3; T140). Pure
-// readings of the domain's state and rules for one slot's card, its Speed Ticket controls, a Recall's preview, a queue's
-// chips, the size chips and a building's upgrade. Every number comes from a domain function; nothing here restates a rule.
-import { chipWords, clockTime, fill, fitWords, say, sizeChips, type OperationEnv, type Words } from '@racer/domain/check-in'
+// docs/game/09-racing-rewards-and-exchange.md §5.1; docs/game/02-check-ins-and-notifications.md §3; T140, D366). Pure
+// readings of the domain's state and rules for one slot's row, its Speed Ticket controls, a Recall's preview, a queue's
+// chips, the size chips and a building's upgrade; times are durations, never the clock time work ends. Every number
+// comes from a domain function; nothing here restates a rule.
+import { durationText, say, sizeChips, type OperationEnv, type Words } from '@racer/domain/check-in'
 import { buy as buyOperation, buyPrice } from '@racer/domain/economy'
 import { isRefusal } from '@racer/domain/state'
 import { buildingSpeed, MAX_BUILDING_LEVEL, totalSlots, upgradeCost, type BuildingId } from '@racer/domain/farm'
@@ -45,6 +46,8 @@ export interface HeldSlotCard {
   readonly nextAt: number | null
   /** The latest entry's end. */
   readonly endsAt: number
+  /** How long the latest entry has left at `now`, 0 once it has ended: the row's "1h 20m" (D366). */
+  readonly leftMs: number
   /** The current item's progress, 0–1, as the Hub's pips draw it (game/11 §4). */
   readonly progress: number
   readonly queue: readonly WorkRequest[]
@@ -72,6 +75,7 @@ export function heldCard(row: WorkRow, now: number): HeldSlotCard {
     running,
     nextAt: running ? ends[made] ?? null : null,
     endsAt: endsAt(last),
+    leftMs: Math.max(0, endsAt(last) - now),
     progress: itemProgress(last, now),
     queue: row.queue,
   }
@@ -166,12 +170,14 @@ export function recallPreview(state: WorkState, outfitId: string, now: number, e
 
 // --- Queues ---------------------------------------------------------------------------------------------------------
 
-/** One queued request on her card (02 §3): its projected end, and a warning when it would drop. */
+/** One queued request on her row (02 §3): how long it takes, and a warning when it would drop. */
 export interface QueueChip {
   readonly index: number
   readonly request: WorkRequest
   /** When it would finish if it starts as projected; null when the projection drops it. */
   readonly endsAt: number | null
+  /** How long it takes once it starts, at the speed it would start with: "then Carrot ×4 · 2h" (D366); null when dropped. */
+  readonly ms: number | null
   /** `queueWarnings`' words where the stock won't cover it ("Short 2 Honey."), else null. */
   readonly warning: QueueWarningWords | null
 }
@@ -189,12 +195,16 @@ export function queueChips(projection: Projection, warnings: readonly QueueWarni
   const started = ahead === undefined ? [] : ahead.entries.slice(row.entries.length)
   const warning = warnings.find((entry) => entry.outfitId === outfitId) ?? null
   const dropsFrom = row.queue.length - (projection.entries.filter((entry) => entry.outfitId === outfitId && entry.dropsAt !== null).length)
-  return row.queue.map((request, index): QueueChip => ({
-    index,
-    request,
-    endsAt: index < started.length ? endsAt(started[index]!) : null,
-    warning: warning !== null && index === dropsFrom ? warning.words : null,
-  }))
+  return row.queue.map((request, index): QueueChip => {
+    const entry = index < started.length ? started[index]! : null
+    return {
+      index,
+      request,
+      endsAt: entry === null ? null : endsAt(entry),
+      ms: entry === null ? null : endsAt(entry) - entry.startedAt,
+      warning: warning !== null && index === dropsFrom ? warning.words : null,
+    }
+  })
 }
 
 // --- Size chips -----------------------------------------------------------------------------------------------------
@@ -202,9 +212,12 @@ export function queueChips(projection: Projection, warnings: readonly QueueWarni
 export interface SizeChipView {
   readonly size: number
   readonly endsAt: number
-  /** Its end as a clock time: "12:30". */
-  readonly end: string
-  /** `chipWords`: "ends 14:00 · then free until 22:30". */
+  /** How long the size takes from its start (D366): the chip's "3h 36m". */
+  readonly ms: number
+  readonly duration: string
+  /** How long she would then wait for a check-in, 0 when it ends on one. */
+  readonly idleMs: number
+  /** VoiceOver's reading: "3h 36m, then free 44m before a check-in". */
   readonly words: string
 }
 
@@ -212,23 +225,32 @@ export interface SizeChipsView {
   readonly chips: readonly SizeChipView[]
   /** The marked size, preselected: the largest ending by the check-in it fits (02 §3). */
   readonly marked: number
-  /** `fitWords`: "Fits 13:00" or "Overnight". */
+  /** True when that check-in is the day's first: the mark is a moon, not a check-in mark (D366). */
+  readonly overnight: boolean
+  /** The mark's reading, never a clock time: "fits the next check-in" or "runs overnight". */
   readonly fit: string
 }
 
 /**
- * The size picker's chips (02 §3): one per size from 1 to `max` (what the stock covers, 10 at most; at least 1, so a
- * short start still shows ×1 and its shortfall), items made one after another from `start`.
+ * The size picker's chips (02 §3, D366): one per size from 1 to `max` (what the stock covers, 10 at most; at least 1, so
+ * a short start still shows ×1 and its shortfall), items made one after another from `start`, each read as how long it
+ * takes. `sizeChips` still picks the marked size from the check-in times; the screen marks it with an icon, not a time.
  */
 export function sizeChipsView(start: number, itemSeconds: readonly number[], max: number, times: readonly number[], utcOffsetMin: number): SizeChipsView {
   const n = Math.max(1, Math.min(max, itemSeconds.length))
   const chips = sizeChips(start, itemSeconds.slice(0, n), times, utcOffsetMin)
   return {
-    chips: chips.chips.map((chip) => ({
-      size: chip.size, endsAt: chip.endsAt, end: clockTime(chip.endsAt, utcOffsetMin), words: fill(chipWords(chip, utcOffsetMin)),
-    })),
+    chips: chips.chips.map((chip) => {
+      const ms = chip.endsAt - start
+      const duration = durationText(ms)
+      return {
+        size: chip.size, endsAt: chip.endsAt, ms, duration, idleMs: chip.idleMs,
+        words: chip.idleMs > 0 ? workWords('size-chip-idle', { time: duration, idle: durationText(chip.idleMs) }) : duration,
+      }
+    }),
     marked: chips.marked,
-    fit: fill(fitWords(chips, utcOffsetMin)),
+    overnight: chips.overnight,
+    fit: workWords(chips.overnight ? 'size-overnight' : 'size-fits'),
   }
 }
 
