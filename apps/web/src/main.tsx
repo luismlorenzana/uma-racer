@@ -18,12 +18,12 @@ import { UpdateNotice } from './app/UpdateNotice'
 import { AuthProvider } from './auth/AuthProvider'
 import { ContentProvider } from './content/ContentProvider'
 import { MotionRoot } from './app/motion'
-import { createG2Router, SEEDS_PATH } from './app/router'
+import { createG2Router, isSeedsPath } from './app/router'
 import { SessionProvider } from './app/session'
 
 const root = createRoot(document.getElementById('root')!)
 
-if (import.meta.env.DEV && (location.pathname === SEEDS_PATH || location.pathname.startsWith(`${SEEDS_PATH}/`))) {
+if (import.meta.env.DEV && isSeedsPath(location.pathname)) {
   void import('./dev/main').then(({ mountSeeds }) => mountSeeds(root))
 } else {
   const queryClient = new QueryClient({

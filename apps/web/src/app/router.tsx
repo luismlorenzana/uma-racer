@@ -1,4 +1,4 @@
-// The app's routes (docs/game/11-hub-and-places.md §7): `/` is the start rule; `/:page` a page grid, with
+// The app's routes (docs/game/11-hub-and-places.md §7): `/` is the start rule; `/:page` a page's map, with
 // `?peek=:place` for a Peek and `?sheet=menu | featured | check-in` for a global sheet, so Back closes either;
 // `/:page/:place/*` a place's sub-pages, then its Page; `/collection/reveal/uma/:umaId` the full-screen reveal; and
 // the old app's routes redirected by `redirects.ts`. Anything else, deleted paths included, goes to `/`. The live router
@@ -49,5 +49,11 @@ export const G2_ROUTES: RouteObject[] = [
 
 /** Where dev builds mount the synthetic seeds (`dev/main.tsx`); in production it is an unknown path, so `/`. */
 export const SEEDS_PATH = '/dev/seeds'
+
+/**
+ * Whether a path is the seeds' mount: its root, with or without the trailing slash, and anything under it. The root
+ * runs the start rule under the mount, as `/` does on the live router (T145).
+ */
+export const isSeedsPath = (pathname: string): boolean => pathname === SEEDS_PATH || pathname.startsWith(`${SEEDS_PATH}/`)
 
 export const createG2Router = (basename?: string) => createBrowserRouter(G2_ROUTES, basename === undefined ? {} : { basename })

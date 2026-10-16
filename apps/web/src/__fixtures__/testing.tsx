@@ -75,14 +75,15 @@ function Probe({ seen }: { seen: { current: Location | null } }) {
 
 /**
  * The real routes in a declarative memory router (the data router's fetch `Request` refuses jsdom's AbortSignal under
- * Node), with the location read back after each render. `path` may carry navigation state, as a reload keeps it.
+ * Node), with the location read back after each render. `path` may carry navigation state, as a reload keeps it, and
+ * `basename` mounts the routes under one, as the seeds' mount does.
  */
-export function renderG2(path: InitialEntry, game: G2Game, rules: G2Rules | null = RULES) {
+export function renderG2(path: InitialEntry, game: G2Game, rules: G2Rules | null = RULES, basename?: string) {
   const seen: { current: Location | null } = { current: null }
   const result = render(
     <MotionRoot features={domMax}>
       <GameProvider game={game} rules={rules}>
-        <MemoryRouter initialEntries={[path]}>
+        <MemoryRouter initialEntries={[path]} basename={basename}>
           <Routes />
           <Probe seen={seen} />
         </MemoryRouter>
