@@ -10,7 +10,7 @@ Hub and primitives are uma-kit's, the app both Uma games share.
   agent, including delegated ChatGPT tasks (branch + PR, no pushes to `main`), with the shared workflows. This file adds
   Claude's production notes.
 - `docs/tasks/README.md` is the current plan: what shipped, what's open (T144's step 10, the owner's pixel-art call,
-  phases 4, 5, 7, 8 and 9) and the next free numbers (M035, T148, D369; **D362 is reserved for T144's release
+  phases 4, 5, 7, 8 and 9) and the next free numbers (M035, T148, D370; **D362 is reserved for T144's release
   record**). A task spec is deleted once its work merges (D104), so that folder only holds work still ahead.
 - **The docs are the source of truth:** [the manual](docs/game/README.md) (`docs/game/`) describes the game as it runs.
   Every screen, route and sheet is [11's menu tree](docs/game/11-hub-and-places.md#the-menu-tree-at-a-glance); the code
@@ -47,7 +47,7 @@ Hub and primitives are uma-kit's, the app both Uma games share.
 | `packages/domain` | Pure game rules, one subpath export per area (`@racer/domain/save`, `/state`, `/tiers`, `/items`, `/work`, `/farm`, `/training`, `/economy`, `/check-in`, `/planner`, `/sim`, `/builds`, `/hub`) beside the core. Vitest |
 | `packages/race` | Deterministic race engine (seeded, 15 Hz ticks, timeline + playback sampling). Vitest |
 | `apps/api` | NestJS 11: `AuthGuard` (Firebase token + `ALLOWED_EMAIL`), `/api/save`, `/api/sync` (generation 2, protocol 2), `/api/legacy/purge` (until T144's step 10), `/api/content/*`, `/api/health` |
-| `apps/web` | React 19 + Vite 7 + Tailwind 4 + Motion (`m.*` under `LazyMotion strict`) + PWA on uma-kit 0.1.2 (theme in light and dark, shell, Hub map on Phaser 4, primitives and icons): `src/app` (routes, session, the `G2Game` port, the kit's setup `kit.ts` and art `art.ts`), `hub` (the racer's adapters to the kit's shell and map), `places`, `save` (Dexie `uma-racer-g2`, one sync lane), `ui` (the racer's own pieces), `content`; PixiJS 8 only for the race scene (`scenes/race`) until phase 8; dev-only seeds at `/dev/seeds/*` (`src/dev`) |
+| `apps/web` | React 19 + Vite 7 + Tailwind 4 + Motion (`m.*` under `LazyMotion strict`) + PWA on uma-kit 0.2.0 (theme in light and dark, shell, Hub map on Phaser 4, primitives and icons): `src/app` (routes, session, the `G2Game` port, the kit's setup `kit.ts` and art `art.ts`), `hub` (the racer's adapters to the kit's shell and map), `places`, `save` (Dexie `uma-racer-g2`, one sync lane), `ui` (the racer's own pieces), `content`; PixiJS 8 only for the race scene (`scenes/race`) until phase 8; dev-only seeds at `/dev/seeds/*` (`src/dev`) |
 | `scripts/sim` | Headless balance runs (`pnpm sim:balance`, `sim:turns`, `sim:builds`, `sim:careers`, `sim:loop`) |
 | `scripts/data`, `scripts/assets` | Content pipeline (GameTora → private data packs and WebP icon atlases) |
 | `docs/handoff` | Packets for ChatGPT sessions and the master prompt |
@@ -97,7 +97,7 @@ pnpm assets:import  # image sources → private WebP atlases; run after data:imp
 | API | Cloud Run `racer-api` (us-central1), `https://racer-api-tmzkhylhfq-uc.a.run.app`; `/api/health` (not `/healthz`, which Cloud Run's front end reserves) |
 | GCP project | `uma-racer` (number 1026964321499), plus a private bucket `uma-racer-content` |
 | Deploy | `.github/workflows/deploy.yml`, keyless WIF. Repo variables: GCP_PROJECT_ID, WIF_PROVIDER, CONTENT_BUCKET, ALLOWED_EMAIL, DEPLOY_ENABLED |
-| Live on 2026-10-16 | `7c8cab6` as racer-api-00193 (A03, the level rule, on T147's uma-kit 0.1.2 and dark mode), content `9ba4cdd37cca`, uma-art 2.7.0 |
+| Live on 2026-10-16 | `3d7f0d2` as racer-api-00194 (uma-kit 0.2.0: the docked bar and a full-screen app on iOS 26, D369), content `9ba4cdd37cca`, uma-art 2.7.0 |
 
 - **Local gcloud has two accounts, and the active one is the owner's work account. Never change it.** Scope every uma-racer
   command with environment variables only:
