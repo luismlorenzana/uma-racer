@@ -9,7 +9,7 @@ Home Screen web app. Generation 2 is live since 2026-10-15, on uma-rpg's pixel-a
   agent, including delegated ChatGPT tasks (branch + PR, no pushes to `main`), with the shared workflows. This file adds
   Claude's production notes.
 - `docs/tasks/README.md` is the current plan: what shipped, what's open (T144's step 10, the owner's pixel-art call,
-  phases 4, 5, 7, 8 and 9) and the next free numbers (M035, T146, D366; **D362 is reserved for T144's release
+  phases 4, 5, 7, 8 and 9) and the next free numbers (M035, T147, D367; **D362 is reserved for T144's release
   record**). A task spec is deleted once its work merges (D104), so that folder only holds work still ahead.
 - **The docs are the source of truth:** [the manual](docs/game/README.md) (`docs/game/`) describes the game as it runs.
   Every screen, route and sheet is [11's menu tree](docs/game/11-hub-and-places.md#the-menu-tree-at-a-glance); the code
