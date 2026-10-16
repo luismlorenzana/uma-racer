@@ -277,7 +277,7 @@ export default function SessionSheet({ place, facility, query, onClose }: {
           value: (entry) => rows.get(entry.id)?.order ?? 0,
           describe: (entry) => rows.get(entry.id)?.line ?? null,
         }]}
-        defaultSort="here"
+        defaultSort="level"
         describe={(entry) => rows.get(entry.id)?.line ?? null}
         disabledReason={(entry) => rows.get(entry.id)?.reason ?? null}
         action={(entry) => {

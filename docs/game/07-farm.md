@@ -140,8 +140,8 @@ running styles, so every Uma is good at something:
 uma-rpg speeds the job itself instead (S/A work at half time). The racer doesn't, for one reason: the four-week pace
 ([12](12-economy-and-pacing.md)) then holds whoever is assigned where, and the timer on screen is the same for every
 Uma. The aptitude still gives the owner a reason to put the right Uma on the right site: she levels nearly twice as
-fast. The job sheet stars a suited Uma (an S or A letter for what she'd make), lists suited Umas first and preselects
-one, and names the chosen one's line ("Sprint A · Farm EXP ×1.6").
+fast. The job sheet stars a suited Uma (an S or A letter for what she'd make), uses suited as the tie-break after Farm
+Level (D368), and names the chosen one's line ("Sprint A · Farm EXP ×1.6").
 
 ## 4. Farm Level
 
@@ -390,7 +390,10 @@ One screen, everything preselected:
    she'd make (§3); one line under it names the chosen one with her aptitude. **Only Free Umas** are listed: never one
    working anywhere, in a session, or Ready with a finished job still holding its slot. With none, the sheet says "No
    free Uma", with **Collect here** when a finished job here would free one, and nothing else. **Queue next** (a row's
-   ⋯) names her and skips this step.
+   ⋯) names her and skips this step. The strip opens on **Farm Level, highest first**, then suited (S or A), then
+   release newest first, name and id (D368), not the EXP multiplier. Unless a link names her, the preselected Uma is
+   the first row. The planner's item and size are kept when they belong to her; otherwise the item the plan most needs
+   that she can make (else her highest grade) is preselected, sized to the check-in.
 2. **What:** an icon grid, five to a row, so a site's ten grades fit in two rows. Each cell holds the 32 pt icon, its
    grade in the corner, the stock, the plan's "×N" needed, and a lock with "Lv16" above her Farm Level; the chosen one
    is ringed, and one line under the grid names it with its stock (a dish also its destination and the Umas whose
@@ -406,11 +409,11 @@ One screen, everything preselected:
 5. **Start · ×4 · 7h 12m** (or **Queue · ×4 · 7h 12m**), one footer button; when it can't run it says why in the
    rule's own words.
 
-**What's preselected:** the planner's suggestion at this building (`suggestFrom`: its Free Uma, item and size); else
-the best Free Uma, suited first, then Farm Level, with the item the plan wants most that she can make (her Farm Level
+**What's preselected (D368):** the first Free Uma by Farm Level, then suited, release and name. If the planner suggests
+an item and size for her here, keep those; otherwise the item the plan wants most that she can make (her Farm Level
 opens it and the stock covers one), else the highest grade she can work; and the size the check-in fits. A link that
 names an item (a target's icon, the Warehouse's Make more, a shortfall's) keeps it and its count, with the first Free
-Uma in that order whose Farm Level opens it.
+Uma in that order whose Farm Level opens it. A link naming an Uma keeps her, even if she is not the first row.
 
 Gone from the sheet (D366): busy Umas, **Add to queue** on another Uma's job, and **Recall and start here**. Recall and
 Queue next live on the slot's row.
@@ -523,7 +526,7 @@ The old Farm, the Stable Kitchen (M031, D304–D320; deleted with the cutover, r
 | The job sheet opens over the building page from its query (`?job=:itemId&uma=:umaId&count=:n&queue=1&slot=:n&back=<path>`), `back` an in-app path only; an empty `job=` opens it preselected, and `slot` is the "+" row's. The quick look opens the same query over the map (`/farm?peek=:place&job=…`), and closing it returns to the quick look (T140, D366) | Every place is a link ([11](11-hub-and-places.md) §1); the Warehouse, the planner and the session sheet reach it without importing it, and "+" and Queue next name their slot |
 | A target's icon opens the sheet filled in with the suggested Uma and a fitted size, and one more tap starts it. Without a suggestion for that item, the first Free Uma whose Farm Level opens it, sized as `jobFor` fits it (capped by stock), else by `fitSize` (T140, D366) | §10 says "opens the job sheet with it filled in"; [02](02-check-ins-and-notifications.md) §6's one-tap start stays the summary's Start suggestions |
 | "For your targets" is one row of item icons with "×N" short; each reads [02](02-check-ins-and-notifications.md) §6's line words to VoiceOver: family and grade ("Vegetables G3", a Duo or Feast by its kind), short (left out at 0), Warehouse, and coming with each worker and how long until it lands (T140, D366) | 02 owns the planner's views (§10 calls it "Needed now"); the planner's own Needs views keep the clock time |
-| The sheet lists **Free Umas only**, suited (an S or A letter for the chosen item's families, else the site's) first, then Farm Level, highest first (D366, superseding T140's Free, Ready and busy list) | The owner: "I don't like that you show Umas in the list that are already allocated to other jobs" |
+| The sheet lists **Free Umas only**, Farm Level highest first, then suited (an S or A letter for the chosen item's families, else the site's), newest release, name and id (D368; D366 removed T140's Ready and busy list) | The owner wants one predictable level-first order, without Umas already allocated to jobs |
 | The Pantry's items sit in family tabs in the ring's order; a site lists its family's ten grades (T140) | §10 tabs only the Kitchen; the ring is the Farm page's order ([11](11-hub-and-places.md) §3.4) |
 | Can cook now lists dishes the free stock covers once and the chosen Uma's Farm Level opens (any Uma's highest when none is chosen); locks read the same way (T140) | §10 names the tab, not its rule; this is what Start would accept |
 | **Needed × N** on an item is the plan's still-to-start count for it (`short`), every target together (T140) | It is what a job should make; what the Warehouse or the outputs coming already cover needs no badge |
@@ -537,7 +540,7 @@ The old Farm, the Stable Kitchen (M031, D304–D320; deleted with the cutover, r
 | Collect here and Repeat here sit in the page's thumb zone; off, each says why on itself ("Nothing to collect", "Nobody to repeat"); their receipt lists each line and each skip in the rule's words, a restart with how long it takes (T140, D366) | §10 puts them beside the global ones; [02](02-check-ins-and-notifications.md) §5's "Kitchen full", "4 Honey short" |
 | `ui/work/` (SlotRow and PeekRow, PlaceStats, UpgradeButton, SpeedUpControls, RecallSheet, QueueChips, SizeChips) and `ui/ItemIcon` are shared with T139's facilities and T142's check-in; the job sheet's Uma strip is its own (T140, D366) | One look for every timed thing and every item; the Farm makes the items |
 | **Every Farm screen shows how long work takes or has left, never the clock time it ends:** rows ("1h 20m", **Done**), size chips ("×4 · 7h 12m"), Start ("Start · ×4 · 7h 12m"), queue chips ("then Carrot ×4 · 7h 12m"), no-slot words and Repeat's receipt, all through the domain's `durationText` (D366) | The owner: "I don't like that you show the hour the job finishes instead of the time the job is going to take" |
-| **The sheet preselects everything:** the planner's suggestion here, else the best Free Uma and `bestItem` (what the plan wants most that she can make, else her highest grade), and the fitted size; a link's item and count are kept (D366) | "Less clicks": a free slot's job is one tap from the open sheet |
+| **The sheet preselects everything:** the first Free Uma in level order unless a link names her; the planner's item and size when they belong to her, else `bestItem` and the fitted size; a link's item and count are kept (D368) | "Less clicks": a free slot's job is one tap from the open sheet, with its Uma matching the new order |
 | **Repeat on a finished row** is `collect`, then `repeat { outfitIds: [her] }`, two operations; the profile's Repeat sizing (same or fit, [02](02-check-ins-and-notifications.md) §5) applies as it does to Repeat here (D366) | The domain's Repeat, for one Uma; nothing restarts outside it (§9) |
 | A suited Uma has an S or A letter for what she'd make (`suits`, `SUITED_LETTERS`) (D366) | §3's "4–5 levels a day when suited" |
 

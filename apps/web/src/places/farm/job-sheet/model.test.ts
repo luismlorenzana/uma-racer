@@ -1,12 +1,12 @@
 // The job sheet's model (docs/game/07-farm.md §2, §3, §5, §10, §11; docs/game/02-check-ins-and-notifications.md §3;
 // T140, D366): the query (`back` in-app only); a site's ten raw grades, locked above her Farm Level; the Pantry's family
 // tabs in the ring's order; the Kitchen's eleven icon tabs with Can cook now; Cook Carrot Salad × 3's inputs; the
-// preview's duration, end and whole Farm EXP; the aptitude line; Free Umas only, suited first, then Farm Level; the
-// preselection (the planner's suggestion, a link's item, the best Free Uma and what the plan wants most); and each
+// preview's duration, end and whole Farm EXP; the aptitude line; Free Umas only, Farm Level first, then suited (A03); the
+// preselection (the first row, a named Uma, a link's item and what the plan wants most); and each
 // button's rule in its own words.
 import { durationText } from '@racer/domain/check-in'
-import { farmExpMultiplier, farmItemSeconds, QUARTERS_PER_EXP } from '@racer/domain/farm'
-import { craftedItem, FAMILIES, FAMILY_RING } from '@racer/domain/items'
+import { FARM_BUILDING_IDS, farmExpMultiplier, farmItemSeconds, QUARTERS_PER_EXP } from '@racer/domain/farm'
+import { craftedItem, FAMILIES, FAMILY_RING, rawItem } from '@racer/domain/items'
 import { suggestFrom } from '@racer/domain/planner'
 import { describe, expect, it } from 'vitest'
 import { seed } from '../../../__fixtures__/testing'
@@ -119,7 +119,7 @@ describe('Uma (07 §3, §5, §10; D366)', () => {
     expect(aptitudeLine(env, uma(1), [])).toBeNull()
   })
 
-  it('lists Free Umas only, suited first, then Farm Level: never one working, Ready or in a session', () => {
+  it('lists Free Umas only, Farm Level first, then suited: never one working, Ready or in a session', () => {
     const { state, env, at } = farmAccount(5)
     let next = withFarmLevel(state, uma(2), 9)
     next = withFarmLevel(next, uma(5), 12)
@@ -131,21 +131,49 @@ describe('Uma (07 §3, §5, §10; D366)', () => {
     expect(view.settled.work[uma(5)]!.entries).toHaveLength(1)
     const rows = freeRows(view, 'vegetable-garden', 'carrot')
     // uma 1 is Front Runner A (suited for Vegetables) at Lv 1; uma 2 is Lv 9 but C; uma 4 is B at Lv 1.
-    expect(rows.map((row) => row.outfitId)).toEqual([uma(1), uma(2), uma(4)])
-    expect(rows.map((row) => row.suited)).toEqual([true, false, false])
+    expect(rows.map((row) => row.outfitId)).toEqual([uma(2), uma(1), uma(4)])
+    expect(rows.map((row) => row.suited)).toEqual([false, true, false])
     expect(rows.find((row) => row.outfitId === uma(2))).toMatchObject({ farmLevel: 9, highestGrade: 2 })
     expect(rows.some((row) => row.outfitId === uma(3) || row.outfitId === uma(5))).toBe(false)
-    // At the Orchard (Fruits, Long), uma 4's Long A suits; Farm Level orders the rest.
-    expect(freeRows(view, 'orchard', null).map((row) => [row.outfitId, row.suited])).toEqual([[uma(4), true], [uma(2), false], [uma(1), false]])
+    // At the Orchard, Farm Lv9 still leads; Long A only breaks the Lv1 tie.
+    expect(freeRows(view, 'orchard', null).map((row) => [row.outfitId, row.suited])).toEqual([[uma(2), false], [uma(4), true], [uma(1), false]])
 
     // A session holds her too: in the quiet seed every Uma works, so nobody is listed.
     const quiet = seed('quiet')
     expect(freeRows(workView(quiet.state, quiet.at, quiet.env), 'kitchen', null)).toEqual([])
   })
+
+  it('breaks equal Farm Levels by suited, newest release, then name, not the EXP multiplier', () => {
+    const { state, env, at } = farmAccount(4)
+    const names = ['Zulu', 'Alpha', 'Beta', 'Alpha']
+    const releases = ['2001-01-01', '2030-01-01', '2020-01-01', '2020-01-01']
+    const umas = new Map([...env.content.umas].map(([id, template]) => {
+      const i = [uma(1), uma(2), uma(3), uma(4)].indexOf(id)
+      return [id, i < 0 ? template : { ...template, name: names[i]!, jpRelease: releases[i]! }]
+    }))
+    const rows = freeRows(workView(state, at, { ...env, content: { ...env.content, umas } }), 'vegetable-garden', 'carrot')
+    expect(rows.map(row => row.outfitId)).toEqual([uma(1), uma(2), uma(4), uma(3)])
+    expect(rows[1]!.tenths).toBeLessThan(rows[2]!.tenths!)
+  })
 })
 
-describe('the preselection (D366)', () => {
-  it("takes the planner's suggestion here: its Free Uma, item and size", () => {
+describe('the preselection (D366, A03)', () => {
+  it('keeps the default Uma on the first row after the selected item supplies its aptitude tie-break', () => {
+    const { state, env, at } = farmAccount(4)
+    const items = Object.fromEntries(FAMILY_RING.flatMap(family => ([1, 2, 3] as const).flatMap(grade => [
+      [rawItem(family, grade).id, 30], [craftedItem(family, grade).id, 30],
+    ])))
+    const stocked = apply(state, 'dev-grant', { items }, at).state
+    // All are Lv1: selecting a Kitchen/Pantry item supplies the family that breaks their tied levels.
+    const umas = new Map([...env.content.umas].map(([id, template]) => [id, { ...template, jpRelease: id === uma(2) ? '2040-01-01' : '2000-01-01' }]))
+    const view = workView(stocked, at, { ...env, content: { ...env.content, umas } }), planned = sheetPlan(view)
+    for (const building of FARM_BUILDING_IDS) {
+      const picked = preselect(view, building, query(), planned, sheetTiming(view, 0))
+      expect(picked.uma, building).toBe(freeRows(view, building, picked.item)[0]?.outfitId)
+    }
+  })
+
+  it('preselects the level-first row, even when the planner suggests another Uma', () => {
     const busy = seed('busy')
     const view = workView(busy.state, busy.at, busy.env)
     const planned = sheetPlan(view)
@@ -153,13 +181,17 @@ describe('the preselection (D366)', () => {
     const { suggestions } = suggestFrom(view.settled, planned, {}, timing)
     const here = suggestions.find((s) => s.kind === 'job' && s.slot.building === 'vegetable-garden')
     expect(here).toBeDefined()
-    expect(preselect(view, 'vegetable-garden', query(), planned, timing)).toEqual({ uma: here!.outfitId, item: here!.item, count: here!.size })
+    const first = freeRows(view, 'vegetable-garden', null)[0]!
+    const picked = preselect(view, 'vegetable-garden', query(), planned, timing)
+    expect(picked.uma).toBe(first.outfitId)
+    expect(here!.outfitId).not.toBe(first.outfitId)
+    expect(picked.item).toBe(bestItem(view.settled, 'vegetable-garden', first.farmLevel, neededByItem(planned)))
     expect(freeRows(view, 'vegetable-garden', null).some((row) => row.outfitId === here!.outfitId)).toBe(true)
-    // The link's own count wins over the suggestion's.
+    // The link's own count is kept.
     expect(preselect(view, 'vegetable-garden', query({ count: 1 }), planned, timing).count).toBe(1)
   })
 
-  it('without one, the best Free Uma (suited first) and what the plan wants most that she can make, else the highest grade she can work', () => {
+  it('without one, the best Free Uma (Farm Level first) and what the plan wants most that she can make, else the highest grade she can work', () => {
     const { state, env, at } = farmAccount(4)
     const leveled = withFarmLevel(withFarmLevel(state, uma(4), 11), uma(2), 13)
     const view = workView(leveled, at, env)
@@ -167,10 +199,10 @@ describe('the preselection (D366)', () => {
     const timing = sheetTiming(view, 0)
     const orchardSuggestion = suggestFrom(view.settled, planned, {}, timing).suggestions.find((s) => s.slot.building === 'orchard')
     expect(orchardSuggestion).toBeUndefined()
-    // At the Orchard uma 4 (Long A) is suited, ahead of uma 2's higher Farm Level, and makes what the plan wants of it:
+    // At the Orchard uma 2's higher Farm Level wins over uma 4's Long A, and makes what the plan wants of it:
     // Apples for the targets' Apple Tarts, though her Farm Level opens grade 3.
     expect(neededByItem(planned).get('apple')).toBeGreaterThan(0)
-    expect(preselect(view, 'orchard', query(), planned, timing)).toEqual({ uma: uma(4), item: 'apple', count: null })
+    expect(preselect(view, 'orchard', query(), planned, timing)).toEqual({ uma: uma(2), item: 'apple', count: null })
     // Wanting nothing here, she takes the highest grade she can gather: grade 3, Peach.
     expect(bestItem(view.settled, 'orchard', 11, new Map())).toBe('peach')
     expect(bestItem(view.settled, 'orchard', 1, new Map())).toBe('apple')
@@ -190,10 +222,11 @@ describe('the preselection (D366)', () => {
     const timing = sheetTiming(view, 0)
     // Potato is grade 2: uma 1 (suited, Lv 1) can't gather it, so uma 2 (Lv 6) is preselected.
     expect(preselect(view, 'vegetable-garden', query({ job: 'potato', count: 4 }), planned, timing)).toEqual({ uma: uma(2), item: 'potato', count: 4 })
-    // Carrot is grade 1: the suited one goes first.
-    expect(preselect(view, 'vegetable-garden', query({ job: 'carrot' }), planned, timing).uma).toBe(uma(1))
-    // A named Free Uma stays.
-    expect(preselect(view, 'vegetable-garden', query({ job: 'carrot', uma: uma(2) }), planned, timing).uma).toBe(uma(2))
+    // Carrot is grade 1 too: the highest Farm Level leads, not the lower-level suited Uma.
+    expect(preselect(view, 'vegetable-garden', query({ job: 'carrot' }), planned, timing).uma).toBe(uma(2))
+    // A named lower-level Free Uma stays, both with and without an explicit item.
+    expect(preselect(view, 'vegetable-garden', query({ job: 'carrot', uma: uma(1) }), planned, timing).uma).toBe(uma(1))
+    expect(preselect(view, 'vegetable-garden', query({ uma: uma(1) }), planned, timing).uma).toBe(uma(1))
     expect(preselect(view, 'vegetable-garden', query({ job: 'carrot', uma: uma(2), queue: true }), planned, timing)).toEqual({ uma: uma(2), item: 'carrot', count: null })
   })
 

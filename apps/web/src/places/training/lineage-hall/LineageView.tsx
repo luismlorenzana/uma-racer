@@ -2,7 +2,7 @@
 // A and B above with their grandparents below, each slot locked, open or filled in the viewed preset, with its unique
 // and two golds as moons and their states; a locked item names its dish and blocker, and the next ones carry **Unlock**.
 // Filling or changing a slot opens T138's Uma picker (owned Umas, never herself, a refused pick in the rule's words,
-// sorted by what each would add), and runs `set-lineage`.
+// sorted by lifetime Uma Level, with Adds one tap away), and runs `set-lineage`.
 import { LockedIcon } from '@luismlorenzana/uma-kit/ui'
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router'
@@ -127,7 +127,7 @@ function Lineage({ build }: { build: BuildContext }) {
           },
           describe: (entry) => picks.get(entry.id)?.line ?? null,
         }]}
-        defaultSort="adds"
+        defaultSort="level"
         describe={(entry) => picks.get(entry.id)?.line ?? null}
         disabledReason={(entry) => picks.get(entry.id)?.refusal ?? null}
         onPick={pick}

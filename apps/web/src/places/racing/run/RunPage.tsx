@@ -204,7 +204,7 @@ export default function RunPage() {
   }
   const next = () => {
     const now = game.now()
-    const strip = stripOrder(state, name, now)
+    const strip = stripOrder(state, name, now, (id) => content.umas.byId.get(id)?.jpRelease ?? '')
     navigate(`/racing/racecourse?uma=${encodeURIComponent(nextUma(strip, row.umaId) ?? row.umaId)}`, { replace: true })
   }
 

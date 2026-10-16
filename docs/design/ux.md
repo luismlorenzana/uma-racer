@@ -325,10 +325,11 @@ research in [Game UI Reference](../research/game-ui-reference.md).
 
 - **A missing value sorts last** in either direction, so flipping never surfaces a hole. Locked Umas have no level,
   so the Locked tab falls through to release and name. The id breaks the last tie, so one query always gives one order.
-- **Every list of Umas leads with the highest level (D181)**, unless the place has an order of its own: the Racecourse
-  strip puts open goals first and finished careers last, the Scenario Gate puts Umas ready to advance first, and a
-  picker can open on its caller's sort. Umas a picker can't take follow the ones it can, each with her reason (Bond's
-  picker leads with the Umas who can bond the card now).
+- **Uma pickers open on highest level (D181, D368)**: lifetime Level for Training sessions, Lineage slots and the
+  Racecourse; Farm Level for the Farm's Free-only strip, with suited as its first tie-break. Release newest first,
+  name and id break the remaining ties. **Left here** and **What she adds** remain optional context sorts; **Open
+  goals** is a Racecourse filter chip, not its default order. Umas a picker can't take follow the ones it can, each
+  with her reason. The Scenario Gate's ready-to-advance grouping and Bond's can-bond grouping stay unchanged.
 
 ### View modes
 

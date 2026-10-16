@@ -736,7 +736,9 @@ The Training page of the Hub holds the four facilities as places ([11](11-hub-an
 **The session sheet** (one sheet, opened from a slot, a locked item, the planner or a card's Bond button):
 1. **Pick the Uma.** The Uma picker, filtered to Umas free of a job or session, each showing what she still needs here.
    A busy Uma is listed as "Busy · 2h 10m left" and offers **Queue** where [02](02-check-ins-and-notifications.md)'s
-   queues allow it.
+   queues allow it. It opens on **lifetime Level, highest first** (50 × (tier − 1) + Racing Level), with release newest
+   first, name and id breaking ties; unavailable Umas follow, each with her reason. **Left here** remains in the sort
+   menu, but is not the default (D368).
 2. **Pick unlocks.** Her unlockable items here, in unlock order, each with its dish, stock and minutes. Items that wait
    on another unlock name it ("needs Speed grade 1 first"). Items with no dish in stock are greyed with "0 in Warehouse
    · Cook". The sheet pre-selects as many as fit before the next check-in ([02](02-check-ins-and-notifications.md)).
@@ -757,6 +759,10 @@ locked item with what it needs, for example:
 | A finished, uncollected item | "Finished · Collect" |
 
 A locked item is never a dead end: it says what it needs and links to the step that gets it.
+
+**The Lineage Hall slot picker** opens on the same lifetime Level order, with unavailable Umas last and the reason
+visible. **What she adds** (aptitude grades and skills) remains one tap away in its sort menu. These pickers keep no
+sort preference: each opening starts on Level (D368).
 
 **As built in phase 3 (T139).** The four facilities share one page and one Peek under `places/training/`, each
 screen a pure view model over one work view. The page's header row shows the level, "2/3" and the speed at Lv 3 as

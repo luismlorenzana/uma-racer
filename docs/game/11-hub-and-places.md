@@ -40,7 +40,7 @@ panel (`/:page?peek=:place`, §2.6) and **Enter** opens its Page; the Racecourse
 │  ├─ Gym                  Peek, pips; ?session=…; …/:umaId her Extra Stats map (full screen)
 │  └─ Dojo                 Peek, pips; ?session=…; …/:umaId her bonds and card sets
 ├─ Racing /racing          bottom bar tab 3, the raised Race button
-│  ├─ Racecourse           direct; race select; ?uma=:umaId picks her, &race=:raceId opens the pre-race sheet
+│  ├─ Racecourse           direct; race select; ?uma=:umaId picks her, &race=:raceId opens the pre-race sheet; ?goals=open filters to open careers
 │  │  └─ …/run?result=:id            the run and its result (full screen)
 │  ├─ Scenario Gate        Peek; every career; …/:umaId hers, with ?sheet=advance or ?sheet=promote
 │  │  └─ …/:umaId/ceremony?op=:id    the advance or promotion ceremony (full screen)
@@ -414,7 +414,7 @@ unless a sub-page slot claims it first (the Stable's `needs`, `places/registry.t
 | `/town/card-library`, `/town/card-library/card/:cardId` | The Library and a card page |
 | `/training/:facility` | `observatory`, `lineage-hall`, `gym` or `dojo`; `?session=…` opens the session sheet (§13) |
 | `/training/:facility/:umaId` | Her build view at that facility (tree, Inspiration, Extra Stats map, bonds and card set); `?preset=` shows another preset. The Observatory's and the Gym's are full screen |
-| `/racing/racecourse` | Race select; `?uma=:umaId` picks her, `&race=:raceId` opens the pre-race sheet |
+| `/racing/racecourse` | Race select; `?uma=:umaId` picks her, `&race=:raceId` opens the pre-race sheet; `?goals=open` filters to open careers |
 | `/racing/racecourse/run?result=:id` | The run and result of a committed race, full screen |
 | `/racing/scenario-gate`, `/racing/scenario-gate/:umaId` | Careers, and one Uma's career; `?sheet=advance` or `?sheet=promote` on hers |
 | `/racing/scenario-gate/:umaId/ceremony?op=:id` | The advance or promotion ceremony, full screen |
@@ -509,7 +509,7 @@ Three taps and about 30 seconds ([02](02-check-ins-and-notifications.md) §1). A
 | Step | Where | Taps |
 |---|---|---|
 | **Race** | The Racing page | 1 |
-| **Racecourse** | Race select, on the first Uma in the strip with an unwon goal (strip order: open goals first, then D181's level order, finished careers last) | 1 |
+| **Racecourse** | Race select, on the first Uma by lifetime level, highest first; release newest first, then name and id break ties (D368). An explicit `?uma=` still picks her | 1 |
 | A race card: **Today's featured** or **Next up** | The pre-race sheet | 1 |
 | **Start race** | The run, full screen | 1 |
 | **Skip** (optional) | The result: Racing EXP, Prize Money with its band, goals, flair | 1 |
@@ -519,6 +519,11 @@ Three taps and about 30 seconds ([02](02-check-ins-and-notifications.md) §1). A
 
 Forty races is about 160 taps and, with Skip, under an hour: the heavy evening [09](09-racing-rewards-and-exchange.md)
 §3 sizes the Daily Purse for.
+
+**Open goals** is an optional filter chip, off by default, not an ordering rule. It hides completed careers without
+changing the remaining order; it lives in `?goals=open`, not the save or album preferences. Turning it on keeps the
+selected Uma if she has open goals, else selects the first shown, and closes any pre-race sheet. If every career is
+complete, the page says so and leaves the chip available to turn off. **Next Uma** follows the same level order.
 
 ## 10. Art
 
