@@ -61,5 +61,3 @@ The packets are readable with `git show d25d4e9:docs/handoff/tasks/<file>`.
 
 - **The Expedition world map and its seven region crests** ([docs/rework/10](../rework/10-expeditions.md), phase 9).
   Its packet is written when phase 9 is specified.
-- **A pixel-art look for the whole interface** (panels, buttons and frames in uma-art's style, not only the Hub). The
-  owner will decide whether to go there after living with the Hub. A calibration packet comes first if they do.

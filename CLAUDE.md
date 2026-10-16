@@ -9,9 +9,9 @@ Hub and primitives are uma-kit's, the app both Uma games share.
 - `README.md`: status, how to run and verify, the documentation map. Then `AGENTS.md`, the shared guide for every
   agent, including delegated ChatGPT tasks (branch + PR, no pushes to `main`), with the shared workflows. This file adds
   Claude's production notes.
-- `docs/tasks/README.md` is the current plan: what shipped, what's open (T144's step 10, the owner's pixel-art call,
-  phases 4, 5, 7, 8 and 9) and the next free numbers (M035, T148, D370; **D362 is reserved for T144's release
-  record**). A task spec is deleted once its work merges (D104), so that folder only holds work still ahead.
+- `docs/tasks/README.md` is the current plan: what shipped, what's open (T144's step 10, the sibling packets in
+  `docs/handoff/` with phase 5 as SE1, and phase 9; phases 4, 7, 8 and the pixel-art question are archived, D370) and
+  the next free numbers (M035, T148, D371; **D362 is reserved for T144's release record**). A task spec is deleted once its work merges (D104), so that folder only holds work still ahead.
 - **The docs are the source of truth:** [the manual](docs/game/README.md) (`docs/game/`) describes the game as it runs.
   Every screen, route and sheet is [11's menu tree](docs/game/11-hub-and-places.md#the-menu-tree-at-a-glance); the code
   by folder, the checks and the deploy are [the architecture](docs/game/architecture.md). Read the relevant page before

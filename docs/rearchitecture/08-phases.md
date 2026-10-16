@@ -16,11 +16,11 @@ session first, and the racer then pins the released version.
 | **1** | A sound base: the API on the workspace domain, the startup budget enforced, GitHub Packages, the live manual | **Done, 2026-10-14 (D337)** | Phase 1 |
 | **2** | **The rework's rules in the domain**, pure and tested, and `pnpm sim:loop` passing [game/12](../game/12-economy-and-pacing.md) §12. No UI and no save change | **Done, 2026-10-14 (D340–D351)** | — (new) |
 | **3** | **Clean slate and the new game:** generation-2 save in the rework's shape, the wipe and purge, every deletion (RPG, Spark, Puzzles, Friendship, CL, stars, tokens, today's Farm), the new game on plain DOM screens. **The owner starts playing here** | **Shipped 2026-10-15** (T134–T144, D352–D361; [M034](../tasks/M034-generation-2-cutover.md)): `ec5b1bd`, racer-api-00188, content `9ba4cdd37cca`, the owner's old save purged. Left: T144's step 10, the purge endpoint's removal | Phase 2 |
-| 4 | **Optional:** push notifications, a port of uma-rpg's, only if the owner asks | Waits on the owner | — (new) |
-| 5 | Platform master data and the first shared packages | Planned | Phase 3 |
+| 4 | **Optional:** push notifications, a port of uma-rpg's, only if the owner asks | **Archived 2026-10-16** (D370); parked as sibling SE5 | — (new) |
+| 5 | Platform master data and the first shared packages | **Sibling packet SE1** (uma-platform P51) | Phase 3 |
 | **6** | The Hub: four pages, the place registry, art ([game/11](../game/11-hub-and-places.md)) | **Shipped 2026-10-15, ahead of phase 5** (T145, D363): uma-rpg's Phaser town, `b2cb668`, racer-api-00189; with its own uma-art 2.7.0 (A01–A02, D364), `1db8065`, racer-api-00190 | Phase 4 |
-| 7 | The Farm and Training Hub as pixel-art scenes on `uma-idle` | Planned | Phase 5 |
-| 8 | The race on Phaser; PixiJS leaves the repo | Planned | Phase 6 |
+| 7 | The Farm and Training Hub as pixel-art scenes on `uma-idle` | **Archived 2026-10-16** (D370) | Phase 5 |
+| 8 | The race on Phaser; PixiJS leaves the repo | **Archived 2026-10-16** (D370); PixiJS stays for the race | Phase 6 |
 | **9** | **World Expeditions:** 13 pools, about 89 course layouts, local champions, the Expedition Map, `sim:expeditions`. **Deadline:** before the first Uma finishes tier 1's last career, about 16–20 weeks after phase 3 | Next, now that phase 3 has shipped; not specified yet. Due about 2027-02-04 to 2027-03-04 | — (new) |
 | 9b | Race engine v10 inputs for tier 3's Expedition mechanics | About a year in | — (new) |
 

@@ -1,6 +1,6 @@
 # Open Questions
 
-Two items wait on the owner, each with a recommendation. The game rework is built and shipped: its rules in phase 2
+One item waits on the owner, with a recommendation. The game rework is built and shipped: its rules in phase 2
 (D340–D351), the new game on generation 2 in phase 3 (D352–D361, released by T144 on 2026-10-15), and the canvas Hub
 with its own art (T145, D363, D364). New questions land here with a recommendation, get resolved in the same session
 where possible, and then move to the [decisions log](decisions.md). The state of the plan is [tasks](tasks/README.md).
@@ -16,13 +16,7 @@ code. `pnpm sim:loop` measures the pacing ([the rework modules](game/architectur
    T144's specs, and writes the release decision (D362). The purge already ran (30 collections, 3,676 documents), so
    nothing else is lost or changed by it.
    **Recommendation:** confirm after your first full check-in and race on the iPhone; there is no reason to wait longer.
-2. **Should the whole interface move to a pixel-art look,** not only the Hub's maps? Today the maps, buildings,
-   currency marks and tier crests are uma-art's pixel art, and every Page, sheet and panel is the DOM's "Paddock" skin
-   ([visual system](design/visual-system.md)).
-   **Recommendation:** not yet. Keep Paddock for Pages and sheets, where reading and 44 pt targets matter most, and
-   decide after a few weeks of playing with the Hub. If you want more pixel art then, start with one ChatGPT
-   calibration packet (panel frames, buttons and a sheet in uma-art's style, tried on one place) before any rollout
-   ([handoff](handoff/README.md) "Later, not ready").
+Archived (D370): whether the whole interface moves to a pixel-art look. It stays in `git show 3236188:docs/open-questions.md`; if you want it, it's a "Both apps:" request ([change protocol](change-protocol.md)).
 
 ## Done
 
