@@ -30,18 +30,23 @@ Content packs plus atlases are an estimated 15–30 MB, downloaded once per cont
 
 ## CI/CD (adapted from uma-planner)
 
-`.github/workflows/deploy.yml`:
+`.github/workflows/deploy.yml` ([architecture](../game/architecture.md#ci-and-deploy) has the whole pipeline):
 
-1. **verify** (every push and pull request): pnpm install (frozen lockfile), lint/type-check, tests, build.
-2. **deploy** (only on `main`, and only once the repository variable `DEPLOY_ENABLED` is `true`):
+1. **verify** ("Test and build", every pull request and every push to `main`): pnpm install (frozen lockfile),
+   `pnpm lint`, `pnpm test:ci` (one package at a time, so the CPU-heavy domain sims don't starve the web suite's timed
+   tests on a 4-core runner), `pnpm build` (with the 180 KB startup check).
+2. **deploy** ("Deploy API and web", only on `main`, and only while the repository variable `DEPLOY_ENABLED` is `true`):
    - Authenticate with **GitHub OIDC → Workload Identity Federation**. No keys, no secrets.
    - Build the API image and push it to Artifact Registry tagged with the commit SHA, then deploy to Cloud Run.
-   - Smoke checks: `GET /api/health` answers, and `GET /api/save` returns `401` without a token, which proves the auth guard is on.
-     (Not `/healthz`: Cloud Run's front end reserves some paths ending in "z".)
-   - Build the web app and deploy it to Firebase Hosting, then smoke check the hosted URL and that the app shell is `no-cache`.
+   - Smoke checks on the new Cloud Run URL: `GET /api/health` answers, and `GET /api/save` returns `401` without a
+     token, which proves the auth guard is on. (Not `/healthz`: Cloud Run's front end reserves some paths ending in "z".)
+   - Build the web app against that URL and deploy it to Firebase Hosting, then smoke check the hosted URL and that the
+     app shell is `no-cache`.
 3. Deployments are serialized (`concurrency`) and never cancelled midway.
+4. **Docs-only pushes run nothing.** `paths-ignore` skips `docs/**` and every Markdown file, so a push that changes only
+   those neither verifies nor deploys. Any other push to `main` deploys.
 
-The `DEPLOY_ENABLED` gate keeps CI green before the GCP bootstrap exists.
+The `DEPLOY_ENABLED` gate kept CI green before the GCP bootstrap existed; it has been `true` since 2026-09-15.
 
 ## One-time bootstrap (run by the owner)
 
@@ -63,36 +68,79 @@ runs the first deploy.
 
 | | Local dev | Production |
 |---|---|---|
-| Web | `vite` on 5173, `/api` proxied to 8080 | Firebase Hosting |
-| API | `nest start --watch` on 8080 | Cloud Run |
-| Auth | `AUTH_MODE=disabled` | Firebase ID token + `ALLOWED_EMAIL` |
+| Web | `vite` on 5173 (on the LAN too: `host: true`), `/api` proxied to 8080 (`API_PROXY_TARGET` to point elsewhere) | Firebase Hosting, `https://uma-racer.web.app` |
+| API | `nest start --watch` on 8080 | Cloud Run `racer-api`, us-central1: `https://racer-api-tmzkhylhfq-uc.a.run.app` (read it with the scoped `gcloud run services describe`) |
+| Auth | `AUTH_MODE=disabled` (a fixed local user) | Firebase ID token + `ALLOWED_EMAIL` |
 | Saves | `PERSISTENCE=local` → `apps/api/.data/save-g2.json` (`LOCAL_SAVE_FILE`) | `PERSISTENCE=firestore` → `saves/{uid}` |
 | Dev operations | `DEV_OPERATIONS=true`, set by `pnpm dev` and `pnpm api` (the API's own `dev` and `start:dev` scripts), so `dev-grant` runs | Never set: no deploy, Dockerfile or Cloud Run setting sets it, so production refuses `dev-grant` |
-| Content | `CONTENT_SOURCE=local` → `content/` | `CONTENT_SOURCE=gcs` → private bucket |
-| iPhone testing | `vite --host` over LAN, Safari Web Inspector over USB, iOS Simulator | Home Screen web app |
+| Content | `CONTENT_SOURCE=local` → `content/` | `CONTENT_SOURCE=gcs` → private bucket `uma-racer-content` |
+| Synthetic accounts | `/dev/seeds/*?seed=…` in dev builds ([architecture](../game/architecture.md#dev-seeds)) | None: production answers `/dev/seeds` as an unknown path |
+| iPhone testing | The dev server over the LAN, Safari Web Inspector over USB, iOS Simulator | Home Screen web app |
+
+`apps/api/.env` comes from `apps/api/.env.example` (auth off, local saves and content). A fresh git worktree has
+neither `.env` nor `content/`: copy the first, and link `content/` from the primary checkout (CLAUDE.md).
 
 ## Release runbook
 
 Code, private content, and the installed Home Screen app update independently. Account (Town Hall, or the trainer
 button) shows the current **App build**, the active **Content** version and whether it came from the network or the
 offline cache, and the app shows **Update ready — Restart** when a restart is waiting. A release is complete only after
-all three states have been checked.
+all three states have been checked. This is the runbook as run for generation 2's release on 2026-10-15 (T144) and the
+Hub's two follow-ups the same day.
+
+Every gcloud command is scoped by environment variables, never `gcloud config set`, because the active local account
+is the owner's work account:
+
+```bash
+export CLOUDSDK_ACTIVE_CONFIG_NAME=default CLOUDSDK_CORE_PROJECT=uma-racer   # or prefix each command
+```
 
 ### 1. Deploy code
 
-Merge the green feature PR to `main`. The deploy workflow verifies the monorepo, deploys Cloud Run and Hosting, and performs
-the unauthenticated health/auth-guard smoke checks. Watch it to completion without changing local gcloud configuration:
+Run `pnpm lint && pnpm test:ci && pnpm build` first. A multi-part request lands as one commit per part and one push at
+the end. Claude pushes to `main` (a delegated agent's pull request is merged once it is green); a push that changes only
+docs deploys nothing. Then find the run and watch it **without piping the watch**, since a pipe reports its own exit code and once
+hid a failed test step:
 
 ```bash
-gh run watch <run-id> -R luismlorenzana/uma-racer --exit-status
+SHA=$(git rev-parse HEAD)
+RUN=$(gh run list -R luismlorenzana/uma-racer --workflow deploy.yml --commit "$SHA" --limit 1 --json databaseId --jq '.[0].databaseId')
+gh run watch "$RUN" -R luismlorenzana/uma-racer --exit-status > /dev/null 2>&1; echo "exit=$?"
+gh run view "$RUN" -R luismlorenzana/uma-racer --json conclusion,headSha,jobs --jq '{conclusion, headSha, jobs: [.jobs[] | {name, conclusion}]}'
 ```
 
-If the release contains only code, skip the publish step. Open the hosted app while signed in and confirm Account shows the
-new 12-character App build.
+Done means exit 0, `conclusion` success, `headSha` the pushed commit, and both jobs ("Test and build", "Deploy API and
+web") success. The race engine test's known timeout on a slow runner gets one
+`gh run rerun "$RUN" -R luismlorenzana/uma-racer --failed`; any other failure stops the release (rollback below).
 
-### 2. Build and publish private content when it changed
+### 2. Verify production
 
-Generate the private, gitignored output first. Keep `content/overrides/flair.json` in place when rebuilding the data pack.
+```bash
+gcloud run services describe racer-api --region=us-central1 \
+  --format='value(status.latestReadyRevisionName,spec.template.spec.containers[0].image,status.url)'
+API=…   # the URL just printed
+curl -s -o /dev/null -w '%{http_code}\n' "$API/api/health"   # 200
+curl -s -o /dev/null -w '%{http_code}\n' "$API/api/save"     # 401
+curl -sI https://uma-racer.web.app/ | grep -i '^cache-control: no-cache'
+```
+
+- **Smoke checks go to the Cloud Run URL.** Hosting has no `/api` rewrite, so `https://uma-racer.web.app/api/save`
+  answers 200 with the app shell, which looks like a missing guard and isn't.
+- **The smoke checks pass on the previous release too,** so they don't prove this one. What does: a new revision
+  whose image ends in `:$SHA`, and a live chunk holding a string only the new code has:
+  ```bash
+  for f in $(curl -s https://uma-racer.web.app/sw.js | grep -oE 'assets/[A-Za-z0-9._-]+\.js' | sort -u); do
+    curl -s "https://uma-racer.web.app/$f" | grep -q '<a string from the change>' && echo "new code in $f"
+  done
+  ```
+- Only then is it deployed. The 2026-10-15 releases: `ec5b1bd` (generation 2) as racer-api-00188, `b2cb668` (the Hub)
+  as racer-api-00189, `1db8065` (uma-art 2.7.0) as racer-api-00190.
+
+### 3. Build and publish private content when it changed
+
+Generate the private, gitignored output first. Keep `content/overrides/flair.json` in place when rebuilding the data
+pack. From a worktree, link the primary checkout's `content/` and `scripts/data/.cache` in first, and never commit the
+links.
 
 ```bash
 pnpm data:import
@@ -105,7 +153,8 @@ pnpm content:publish
 bucket once (D182; one lookup per file took over half an hour for ~2,000 files, a listing takes seconds), uploads only missing
 or size-mismatched content-addressed objects, and uploads `manifest.json` last. Old hashed objects
 are deliberately retained. Both modes print the local version, remote version before and after, uploaded/already-present
-counts, total bytes, and elapsed time.
+counts, total bytes, and elapsed time. Publish after the code that reads a new pack shape has deployed; content the
+old code ignores may go first. The live manifest is `9ba4cdd37cca` (2026-10-15, T144: no retired kinds).
 
 The command always invokes gcloud with `CLOUDSDK_ACTIVE_CONFIG_NAME=default` and `CLOUDSDK_CORE_PROJECT=uma-racer` in its child
 environment. It never runs `gcloud config set` and never changes the owner's active work account. `--bucket`, `--project`, and
@@ -118,13 +167,48 @@ network, then fetch `/api/content/manifest` through that same authenticated sess
 a distinct diagnostic. A complete verified offline fallback remains a success state. None of these recovery paths clear,
 replace, or reseed the local save.
 
-### 3. Restart the installed app
+### 4. Restart the installed app
 
-Reopen the Home Screen app. A waiting service worker—or a worker that took control in another tab—shows **Update ready** with a
-**Restart** action instead of reloading silently. If a tap or a device write is committing (`criticalGameplayAction` around
-the game port's `run` and `writeDevice`), the restart waits for it to settle before activation/reload. Tap Restart and
-confirm Account shows both the new App build and the intended Content version. The content runtime keeps the last complete version active until a replacement
-fully verifies, so both an old shell seeing new content and a new shell falling back to old cached content remain usable.
+Tell the owner the deploy is verified; only then do they restart. Reopen the Home Screen app. A waiting service
+worker—or a worker that took control in another tab—shows **Update ready** with a **Restart** action instead of
+reloading silently. If a tap or a device write is committing (`criticalGameplayAction` around the game port's `run`
+and `writeDevice`), the restart waits for it to settle before activation/reload. Tap Restart and confirm Account shows
+both the new App build (the commit's first 12 characters) and the intended Content version. The content runtime keeps
+the last complete version active until a replacement fully verifies, so both an old shell seeing new content and a new
+shell falling back to old cached content remain usable.
 
 If publishing fails, leave the existing manifest in place, fix credentials/network/local output, rerun `--dry-run`, and retry.
 Never delete IndexedDB, the service-worker content cache, old bucket objects, or the owner's save as release recovery.
+
+### Generation 2's one-time steps (T144, done 2026-10-15)
+
+The cutover release added three steps that no later release repeats ([T144](../tasks/T144-the-release.md) has the
+commands):
+- **The purge, verified read-only.** The owner's first generation-2 boot called `POST /api/legacy/purge`. Checked with
+  the scoped token against Firestore's REST API: `players/` holds no documents, `saves/{uid}/meta/purge` records 30
+  collections and 3,676 documents, and the request log shows one purge doing the work.
+- **The retired bucket objects deleted,** only after the purge and the new manifest verified: nothing under
+  `data/rpg-*`, `data/puzzles-*`, `data/spark-rivals.*`, `atlases/puzzles-*` or `art/priconne/` remains, and a dry run
+  uploads nothing. The retired private sources left the owner's machine too.
+- **Still to come, T144's step 10:** once the owner confirms the new account is theirs, a release removes the purge
+  endpoint and the boot's call; it then checks that `git grep -n "legacy/purge" -- apps packages` prints nothing and a
+  `POST /api/legacy/purge` on the Cloud Run URL answers 404.
+
+### Rollback
+
+Code goes back by reverting, never by resetting or force-pushing `main`. From a fresh worktree on `origin/main`:
+
+```bash
+git revert --no-edit <sha>           # a single commit
+git revert -m 1 --no-edit <merge>    # a merge commit, such as the cutover's ec5b1bd
+git push origin HEAD:main
+```
+
+Then steps 1, 2 and 4 for the revert. Content rolls back by publishing the older checkout's content again; the old
+hashed objects are still in the bucket, and the manifest goes up last.
+
+**The `pre-split` tag** marks the old game on `main` before the generation-2 switch, and never moves. It is the
+porting reference for anything of the old app, and its docs are read with `git show pre-split:docs/<path>`. Reverting
+generation 2 itself restores code only: the old app would find `players/` empty and start a fresh old-format account,
+because the old save is gone for good (D323), and the content would have to be published again from a `pre-split`
+checkout. `saves/{uid}` and the phone's `uma-racer-g2` would survive, so rolling forward again reuses them.
