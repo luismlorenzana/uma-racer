@@ -33,6 +33,9 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
+        // The Hub's Phaser chunk is a large lazy file (1.40 MB): precache it and uma-art's atlases too, so the map works
+        // offline after install. uma-rpg's limit, with headroom over the default 2 MiB that a Phaser update could pass.
+        maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
         navigateFallback: '/index.html',
         // /__/ is Firebase Hosting's reserved space (auth handler for redirect sign-in) — never answer it with the app shell.
         navigateFallbackDenylist: [/^\/api\//, /^\/__\//],
