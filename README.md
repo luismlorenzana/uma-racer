@@ -10,7 +10,8 @@ Badges, titles and flair keep the stable's history.
 > screens and deleted every retired system (the RPG, Uma Puzzles, the minigames, Constellation Level, card stars,
 > tokens, Training Tickets and the old Farm). T144 released it on 2026-10-15 and wiped every old save once. The same
 > day the Home screen became uma-rpg's pixel-art Hub on a Phaser canvas (phase 6, ahead of phase 5: T145, D363), with
-> the racer's own uma-art 2.7.0 (D364). What's open and next is [the task plan](docs/tasks/README.md);
+> the racer's own uma-art 2.7.0 (D364). On 2026-10-16 the shell, Hub and primitives moved to uma-kit, the app both Uma
+> games share, which brought dark mode (T147, D367). What's open and next is [the task plan](docs/tasks/README.md);
 > [the manual](docs/game/README.md) describes the code as it runs.
 
 **A fresh session starts here:** this page (status, how to run and verify, the map), then [AGENTS.md](AGENTS.md) (how
@@ -67,7 +68,7 @@ The checks CI enforces, and the ones run by hand (reach, "nothing old remains", 
 ## Repository layout
 
 ```text
-apps/web        React 19 + Vite 7 + Tailwind 4 + Motion — mobile-first PWA; Phaser 4 for the Hub's map, PixiJS 8 for the race
+apps/web        React 19 + Vite 7 + Tailwind 4 + Motion — mobile-first PWA on uma-kit (shell, Hub map on Phaser 4, theme); PixiJS 8 for the race
 apps/api        NestJS 11 on Cloud Run — auth guard, the generation-2 save and sync, private content
 packages/domain game rules as pure, tested functions, with subpath exports per area
 packages/race   deterministic race engine

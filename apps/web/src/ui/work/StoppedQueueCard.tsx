@@ -85,18 +85,18 @@ export function StoppedQueueCard({ queue, tap: given, onDone }: {
       {asking && view.buy !== null ? (
         <div role="group" data-g2="buy-restart-ask" className="flex flex-wrap items-center gap-2 rounded-sm bg-accent-wash p-2 text-[13px]">
           <span className="min-w-0 flex-1">{workWords('buy-restart-ask', { items: view.buy.items, price: grouped(view.buy.price) })}</span>
-          <button type="button" disabled={busy} onClick={() => void buyAndRestart()} className={`${BUTTON} bg-accent text-ink`}>{workWords('yes')}</button>
+          <button type="button" disabled={busy} onClick={() => void buyAndRestart()} className={`${BUTTON} bg-accent text-accent-ink`}>{workWords('yes')}</button>
           <button type="button" onClick={() => setAsking(false)} className="min-h-11 px-3 font-semibold text-ink-soft">{workWords('not-now')}</button>
         </div>
       ) : (
         <div className="flex flex-wrap gap-2" data-g2="stopped-actions">
           {view.restart && (
-            <button type="button" data-action="restart" disabled={busy} onClick={() => void restart()} className={`${BUTTON} bg-accent text-ink`}>
+            <button type="button" data-action="restart" disabled={busy} onClick={() => void restart()} className={`${BUTTON} bg-accent text-accent-ink`}>
               {workWords('restart')}
             </button>
           )}
           {view.buy !== null && (
-            <button type="button" data-action="buy-restart" disabled={busy} onClick={() => setAsking(true)} className={`${BUTTON} bg-accent text-ink`}>
+            <button type="button" data-action="buy-restart" disabled={busy} onClick={() => setAsking(true)} className={`${BUTTON} bg-accent text-accent-ink`}>
               {workWords('buy-restart', { n: view.buy.n, price: grouped(view.buy.price) })}
             </button>
           )}

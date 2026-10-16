@@ -3,6 +3,7 @@
 // Uma control, whose scenario the lens follows. Tiles keep D238's corners; the bottom-right pill is the bond state.
 // `mode: 'pick'` is the same album for T139's card set tab and session sheet: her lens, the caller's `eligible`
 // filter, and `onPick` instead of the card page.
+import { CheckIcon, Chip, LockedIcon, StopwatchIcon } from '@luismlorenzana/uma-kit/ui'
 import type { DistanceCategory } from '@racer/domain'
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
@@ -10,9 +11,7 @@ import { runAlbumQuery, emptyStateHint } from '../../ui/album/query'
 import { AlbumChrome } from '../../ui/album/AlbumChrome'
 import { VirtualGrid } from '../../ui/album/VirtualGrid'
 import { DistanceTypeIcon, RunningStyleIcon } from '../../ui/CardFocusIcons'
-import { Chip } from '../../ui/Chip'
 import { Crest } from '../../ui/Crest'
-import { CheckIcon, LockedIcon, StopwatchIcon } from '../../ui/icons'
 import { TypeIcon } from '../../ui/TypeIcon'
 import { useGame, useHub } from '../../app/game'
 import { useAlbumPrefs } from '../../ui/albumPrefs'

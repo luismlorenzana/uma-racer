@@ -5,6 +5,8 @@
 // Skip, the wake lock and `window.__raceScene` in dev builds. The result reads the row's receipt, so a reload shows
 // exactly what was paid; only the first showing on this device plays the fanfare, and the prize flies into the Prize
 // Money chip, shown alone. Reduced motion is the app's rule: the system setting or Account's switch.
+import { useLeave } from '@luismlorenzana/uma-kit/shell'
+import { AnimatedNumber, Button, ChevronLeftIcon, ChevronRightIcon, HonorsIcon, PauseIcon, PlayIcon, RibbonIcon, SkipIcon, UiMark, useReducedMotionSetting } from '@luismlorenzana/uma-kit/ui'
 import { badgeStateId, COURSE_ROTATION } from '@racer/domain'
 import { formatMargin } from '@racer/race'
 import { AnimatePresence, m } from 'motion/react'
@@ -14,15 +16,9 @@ import { buildFlairFanfare, buildTrainerFlairFanfare } from '../flair-view'
 import { buildResultGoalView } from '../goals-view'
 import type { RaceHudState, RaceScene, SceneRunner } from '../../../scenes/race/RaceScene'
 import { staminaStory, TURN_RACE_RATE, type RacePresentationStage } from '../../../scenes/race/presentation'
-import { Button } from '../../../ui/Button'
 import { FlairCards } from '../../../ui/FlairCards'
-import { ChevronLeftIcon, ChevronRightIcon, HonorsIcon, PauseIcon, PlayIcon, RibbonIcon, SkipIcon } from '../../../ui/icons'
 import { Meter } from '../../../ui/Meter'
 import { useGame, useRuntime } from '../../../app/game'
-import { useReducedMotionSetting } from '../../../app/motion'
-import { useLeave } from '../../../hub/nav'
-import { AnimatedNumber } from '../../../ui/AnimatedNumber'
-import { UiMark } from '../../../ui/UiMark'
 import { UmaFace } from '../../../ui/UmaArt'
 import { raceSpeed, startingSpeed } from '../../../ui/devicePrefs'
 import { useRaceContent } from '../content'
@@ -228,7 +224,7 @@ export default function RunPage() {
             <SkipIcon size={20} variant="solid" />
           </button>
         </div>
-        <div className="flex items-center justify-between rounded-md border border-hairline/80 bg-ink/35 px-3 py-1.5 text-white">
+        <div className="flex items-center justify-between rounded-md border border-hairline/80 bg-scrim/35 px-3 py-1.5 text-white">
           <div className="min-w-0">
             <m.p key={hud?.phase ?? 0} initial={reducedMotion ? false : { x: -12, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className={`font-semibold ${hud?.phase === 3 ? 'text-accent' : ''}`}>
               {racingWords(PHASES[hud?.phase ?? 0] ?? 'phase-opening')}
@@ -251,8 +247,8 @@ export default function RunPage() {
         />
         {hud && banner && (
           <div className="pointer-events-none absolute inset-x-0 top-[12%] z-20 flex justify-center px-6">
-            <div key={hud.stage} className={`race-banner-in max-w-full rounded-2xl px-4 py-1.5 text-center shadow-2 ${hud.stage === 'photo' ? 'bg-accent text-ink' : 'bg-ink/80 text-white'}`}>
-              <p className={`text-[10px] font-bold tracking-widest uppercase ${hud.stage === 'photo' ? 'text-ink/75' : 'text-accent'}`}>{banner.eyebrow}</p>
+            <div key={hud.stage} className={`race-banner-in max-w-full rounded-2xl px-4 py-1.5 text-center shadow-2 ${hud.stage === 'photo' ? 'bg-accent text-accent-ink' : 'bg-scrim/80 text-white'}`}>
+              <p className={`text-[10px] font-bold tracking-widest uppercase ${hud.stage === 'photo' ? 'text-accent-ink/75' : 'text-accent'}`}>{banner.eyebrow}</p>
               <p className="truncate text-lg leading-6 font-semibold">{banner.title}</p>
             </div>
           </div>
@@ -290,7 +286,7 @@ export default function RunPage() {
                 onClick={() => setPaused((value) => !value)}
                 disabled={!hud || hud.finished}
                 aria-label={racingWords(paused ? 'play' : 'pause')}
-                className={`flex h-11 w-11 items-center justify-center rounded-full border-2 disabled:opacity-35 ${paused ? 'border-accent bg-accent text-ink' : 'border-hairline-strong bg-panel'}`}
+                className={`flex h-11 w-11 items-center justify-center rounded-full border-2 disabled:opacity-35 ${paused ? 'border-accent bg-accent text-accent-ink' : 'border-hairline-strong bg-panel'}`}
               >{paused ? <PlayIcon size={20} variant="solid" /> : <PauseIcon size={20} variant="solid" />}</button>
               <button type="button" onClick={() => step(1)} disabled={!paused || hud?.stage !== 'running'} aria-label={racingWords('step-on')} className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-hairline-strong bg-panel disabled:opacity-35"><ChevronRightIcon size={20} /></button>
             </div>
@@ -301,7 +297,7 @@ export default function RunPage() {
                   type="button"
                   onClick={() => { setSpeed(option.value); setPaused(false) }}
                   aria-pressed={speed === option.value && !paused}
-                  className={`h-11 min-w-11 rounded-full border-2 px-2 text-sm font-semibold ${speed === option.value && !paused ? 'border-accent bg-accent text-ink' : 'border-hairline-strong bg-panel'}`}
+                  className={`h-11 min-w-11 rounded-full border-2 px-2 text-sm font-semibold ${speed === option.value && !paused ? 'border-accent bg-accent text-accent-ink' : 'border-hairline-strong bg-panel'}`}
                 >{option.label}</button>
               ))}
             </div>
@@ -311,7 +307,7 @@ export default function RunPage() {
 
       <AnimatePresence>
         {showResults && (
-          <m.div className="fixed inset-0 z-40 flex flex-col bg-ink/45" initial={animate ? { opacity: 0 } : false} animate={{ opacity: 1 }} data-g2="race-result" data-fanfare={fresh ? "yes" : "no"}>
+          <m.div className="fixed inset-0 z-40 flex flex-col bg-scrim/45" initial={animate ? { opacity: 0 } : false} animate={{ opacity: 1 }} data-g2="race-result" data-fanfare={fresh ? "yes" : "no"}>
             <div className="pt-safe flex justify-end px-3 py-2">
               <span className="relative flex min-h-11 items-center" aria-label={racingWords('prize-money')} role="status">
                 <span className="flex h-8 items-center gap-1 rounded-full border border-hairline bg-panel/95 px-2 text-[13px] text-ink shadow-1">
@@ -321,7 +317,7 @@ export default function RunPage() {
                 {animate && prize.total > 0 && (
                   <m.span
                     aria-hidden
-                    className="font-display absolute top-full right-2 rounded-full bg-accent px-2 text-[13px] font-bold text-ink shadow-1"
+                    className="font-display absolute top-full right-2 rounded-full bg-accent px-2 text-[13px] font-bold text-accent-ink shadow-1"
                     initial={{ y: 160, opacity: 0 }}
                     animate={{ y: [160, 120, 0], opacity: [0, 1, 0] }}
                     transition={{ duration: 1.1, delay: 0.7, times: [0, 0.2, 1] }}
@@ -379,7 +375,7 @@ export default function RunPage() {
                 <p className="text-xs font-semibold tracking-wide text-ink-soft uppercase">{racingWords('racing-exp')}</p>
                 <p className="font-display text-lg font-semibold text-accent-strong" data-result-exp>{finish.exp}</p>
                 {finish.levels.map((line) => (
-                  <m.p key={line} className="font-display inline-block rounded-full bg-accent px-3 py-0.5 text-sm font-bold text-ink" initial={animate ? { scale: 0.6, opacity: 0 } : false} animate={{ scale: 1, opacity: 1 }} transition={{ delay: animate ? 0.5 : 0, type: animate ? 'spring' : undefined }}>
+                  <m.p key={line} className="font-display inline-block rounded-full bg-accent px-3 py-0.5 text-sm font-bold text-accent-ink" initial={animate ? { scale: 0.6, opacity: 0 } : false} animate={{ scale: 1, opacity: 1 }} transition={{ delay: animate ? 0.5 : 0, type: animate ? 'spring' : undefined }}>
                     {line}
                   </m.p>
                 ))}

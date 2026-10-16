@@ -7,13 +7,12 @@
 // - Account's Sign in and Sign out are the provider's, and the art reads the loaded content (`G2ContentContext`).
 // - Before the save has opened, a signed-out phone or content that can't load gets one full-screen panel with its way
 //   on, in the content diagnostics' plain words; while the content loads, the shell's quiet frame.
+import { Button, Panel } from '@luismlorenzana/uma-kit/ui'
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import type { SaveGame } from '../save'
 import { useAuth } from '../auth/AuthProvider'
 import { firebaseEnabled, idToken, signIn, signOut } from '../auth/firebase'
 import { useContent, type ContentState } from '../content/ContentProvider'
-import { Button } from '../ui/Button'
-import { Panel } from '../ui/Panel'
 import { bootSaveGame } from './boot'
 import { G2ContentContext } from './content'
 import { GameProvider } from './GameProvider'
@@ -37,7 +36,7 @@ function SessionGate({ content }: { content: Unready }) {
     }
   }
   return (
-    <div className="pt-safe pb-safe flex h-dvh items-center px-4" data-g2="session-gate" data-gate={diagnostic.code}>
+    <div className="pt-safe pb-safe fixed inset-0 flex items-center px-4" data-g2="session-gate" data-gate={diagnostic.code}>
       <Panel className="w-full text-center" role="alert">
         <p className="font-display text-lg font-bold">{diagnostic.title}</p>
         <p className="mt-1 text-sm text-ink-soft">{diagnostic.message}</p>

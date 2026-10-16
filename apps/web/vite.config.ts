@@ -1,6 +1,6 @@
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
-import { defineConfig } from 'vite'
+import { defineConfig } from 'vitest/config'
 import { VitePWA } from 'vite-plugin-pwa'
 
 const buildId = (process.env.VITE_APP_BUILD_ID ?? process.env.GITHUB_SHA ?? 'local').slice(0, 12)
@@ -53,7 +53,8 @@ export default defineConfig({
     }),
   ],
   resolve: {
-    dedupe: ['react', 'react-dom'],
+    // uma-kit's peers resolve to this app's copies (also when the kit is linked from uma-platform to try a change).
+    dedupe: ['react', 'react-dom', 'react-router', 'motion', 'phaser'],
   },
   server: {
     // `host: true` exposes the dev server on the LAN so the iPhone can load it directly.
@@ -67,5 +68,11 @@ export default defineConfig({
     target: 'es2022',
     // scripts/check-size.mjs reads the manifest to find the entry's static imports (D337).
     manifest: true,
+  },
+  test: {
+    // The kit's device keys under uma-racer's prefix in every test, as `main.tsx` sets them (app/kit.ts).
+    setupFiles: ['./src/__fixtures__/kit-setup.ts'],
+    // uma-kit runs through Vite in tests, so a test can stand in for the Hub's lazy Phaser game inside it (hub.test.tsx).
+    server: { deps: { inline: ['@luismlorenzana/uma-kit'] } },
   },
 })

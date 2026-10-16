@@ -5,10 +5,10 @@
 // opens the job sheet at once, over the map; the targets here as icons, each opening the sheet filled in; a site's
 // stock by open grade; and **Collect here** when anything is ready. The panel's **Enter** opens the page. So the Hub
 // is two taps from collecting a building or restarting a finished job, and three from a new job in a free slot.
+import { navState } from '@luismlorenzana/uma-kit/shell'
 import type { FarmBuildingId } from '@racer/domain/farm'
 import { lazy, Suspense, useMemo } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router'
-import { navState } from '../../../hub/nav'
 import type { PeekProps } from '../../registry'
 import { ItemIcon } from '../../../ui/ItemIcon'
 import { PlaceStats } from '../../../ui/work/PlaceStats'
@@ -80,7 +80,7 @@ export default function BuildingPeek({ place }: PeekProps) {
             data-action="collect-here"
             disabled={tap.pending !== null}
             onClick={collect}
-            className="font-display flex min-h-12 w-full items-center justify-center rounded-sm bg-accent text-base font-bold text-ink shadow-1 disabled:opacity-45"
+            className="font-display flex min-h-12 w-full items-center justify-center rounded-sm bg-accent text-base font-bold text-accent-ink shadow-1 disabled:opacity-45"
           >
             {farmWords('collect-here-n', { n: model.ready })}
           </button>

@@ -2,12 +2,12 @@
 // sub-page: the targets in allocation order with up, down and remove (`set-targets`), or "Automatic: the five furthest
 // behind" when none is marked; then `rosterTotals`: unlocks left per Uma, each opening her Needs tab, and the dishes
 // short across the roster by family and grade. Big-picture only: place lists stay with the targets.
+import { ArrowDownIcon, ArrowUpIcon, CloseIcon } from '@luismlorenzana/uma-kit/ui'
 import { hubWords } from '@racer/domain/hub'
 import { useMemo, type ReactNode } from 'react'
 import { Link } from 'react-router'
-import { ArrowDownIcon, ArrowUpIcon, CloseIcon } from '../../ui/icons'
 import { useGame, useNow } from '../../app/game'
-import { PlaceHeader } from '../../ui/PlaceHeader'
+import { PlacePageHeader } from '../PlacePageHeader'
 import { UmaFace } from '../../ui/UmaArt'
 import { TapNoteLine } from '../../ui/work/TapNote'
 import { useTap, useWordsContext } from '../../ui/work/useTap'
@@ -48,7 +48,7 @@ export default function RosterNeeds({ place, rest }: SubPageProps) {
   const set = (outfitIds: readonly string[]) => void tap.run('set-targets', { outfitIds }, 'targets')
   return (
     <div data-g2="roster-needs" className="flex min-h-full flex-col">
-      <PlaceHeader place={place} rest={rest} title={hubWords('menu-needs')} />
+      <PlacePageHeader place={place} rest={rest} title={hubWords('menu-needs')} />
       {view !== null && (
         <div className="space-y-4 px-4 py-3">
           <section aria-labelledby="roster-targets" className="space-y-1.5">

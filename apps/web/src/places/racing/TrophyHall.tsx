@@ -3,6 +3,7 @@
 // default), `/uma/:umaId` one Uma's badges, `/trainer` the trainer profile. Search, filters, sorts, showcases, titles,
 // the G1 trophy wall, the timeline, records and Prestige read today's pure views. Opening it reconciles the flair once
 // (the ever-bonded set among it) and marks this device's visit, which clears the counter.
+import { Button } from '@luismlorenzana/uma-kit/ui'
 import {
   FLAIR_CATEGORIES, awardRefsForState, replaceUmaPreferences, type BadgeSort, type BadgeFilter, type UmaBadgeStateV1,
 } from '@racer/domain'
@@ -13,10 +14,9 @@ import {
   type BadgeCollectionItem, type StableBadgeItem,
 } from './badge-collection-view'
 import { buildTrainerBadgeCollection, buildTrainerShowcase } from './trainer-view'
-import { Button } from '../../ui/Button'
 import { Meter } from '../../ui/Meter'
 import { NO_RECORDS, useGame, useHub, useNow, useRuntime, type G2Records } from '../../app/game'
-import { PlaceHeader } from '../../ui/PlaceHeader'
+import { PlacePageHeader } from '../PlacePageHeader'
 import { UmaFace } from '../../ui/UmaArt'
 import type { PageProps } from '../registry'
 import { useRaceContent } from './content'
@@ -47,7 +47,7 @@ function ScopeTabs({ scope, umaId }: { scope: Scope; umaId: string | null }) {
       to={to}
       replace
       aria-current={scope === value ? 'page' : undefined}
-      className={`font-display flex min-h-11 flex-1 items-center justify-center rounded-sm text-sm font-semibold ${scope === value ? 'bg-accent text-ink' : 'bg-panel text-ink'}`}
+      className={`font-display flex min-h-11 flex-1 items-center justify-center rounded-sm text-sm font-semibold ${scope === value ? 'bg-accent text-accent-ink' : 'bg-panel text-ink'}`}
     >{label}</Link>
   )
   return (
@@ -74,7 +74,7 @@ function Tile({ item, pinMode, pinnable, onPin }: { item: BadgeCollectionItem | 
         </div>
       )}
       {pinMode && pinnable && (
-        <button type="button" aria-pressed={item.pinned} onClick={onPin} className={`mt-2 min-h-11 w-full rounded-sm px-2 text-xs font-semibold ${item.pinned ? 'bg-accent text-ink' : 'bg-panel/80'}`}>
+        <button type="button" aria-pressed={item.pinned} onClick={onPin} className={`mt-2 min-h-11 w-full rounded-sm px-2 text-xs font-semibold ${item.pinned ? 'bg-accent text-accent-ink' : 'bg-panel/80'}`}>
           {racingWords(item.pinned ? 'pinned' : 'pin-this')}
         </button>
       )}
@@ -377,7 +377,7 @@ export default function TrophyHall({ place, rest }: PageProps) {
   })()
   return (
     <div data-place-page="trophy-hall" className="pb-6">
-      <PlaceHeader place={place} rest={rest} title={title} />
+      <PlacePageHeader place={place} rest={rest} title={title} />
       <div className="flex flex-col gap-3 p-3">
         <ScopeTabs scope={scope} umaId={umaId} />
         {scope !== 'trainer' || parts[0] === 'trainer' ? null : (

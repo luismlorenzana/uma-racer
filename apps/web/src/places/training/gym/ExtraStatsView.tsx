@@ -4,11 +4,10 @@
 // preset (`set-active-nodes`; "Only 9 Extra Stats can be on at once." in the rule's words), under "9 of 9 on"; a locked
 // one opens its sheet with what it needs and, when it's next, **Unlock** (a Duo's or Sun's into the first room
 // `roomsFor` lists).
+import { LockedIcon, Sheet } from '@luismlorenzana/uma-kit/ui'
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router'
-import { LockedIcon } from '../../../ui/icons'
 import { TypeIcon } from '../../../ui/TypeIcon'
-import { Sheet } from '../../../ui/Sheet'
 import { TapNoteLine } from '../../../ui/work/TapNote'
 import { useTap } from '../../../ui/work/useTap'
 import { BuildFrame, type BuildContext } from '../BuildFrame'
@@ -35,7 +34,7 @@ function Cell({ cell, onSwitch, onOpen, busy }: { cell: ExtraCell; onSwitch: () 
         data-extra={cell.id}
         data-state={cell.on ? 'on' : 'off'}
         style={style}
-        className={`flex min-h-12 flex-col items-center justify-center rounded-sm border text-[12px] font-bold tabular-nums ${cell.on ? 'border-accent bg-accent text-ink shadow-1' : 'border-hairline-strong bg-panel text-ink-soft'}`}
+        className={`flex min-h-12 flex-col items-center justify-center rounded-sm border text-[12px] font-bold tabular-nums ${cell.on ? 'border-accent bg-accent text-accent-ink shadow-1' : 'border-hairline-strong bg-panel text-ink-soft'}`}
       >
         <span>{cell.value}</span>
         <span className="text-[10px] font-semibold">G{cell.grade}</span>
@@ -98,7 +97,7 @@ function ExtraMap({ build }: { build: BuildContext }) {
             <p className="text-[14px]">{cell.words}</p>
             {cell.state === 'available' && (
               <Link to={unlockPath(build.uma.outfitId, cell.unlock, build.here)} state={{ back: true }} data-action="unlock"
-                className="font-display flex min-h-12 items-center justify-center rounded-sm bg-accent font-semibold text-ink shadow-1">
+                className="font-display flex min-h-12 items-center justify-center rounded-sm bg-accent font-semibold text-accent-ink shadow-1">
                 {trainingWords('unlock')}
               </Link>
             )}

@@ -4,12 +4,10 @@
 // `buildingSpeed`) and, from `upgrade` run on the current state, why it can't be paid in the rule's own words
 // (`prize-money`, `short`); its Yes runs `upgrade`. The button stays tappable when it can't be paid, so the sheet can
 // say why. Nothing shows at Lv 3: there is nothing to buy.
+import { BottomSheet, LevelUpIcon, UiMark } from '@luismlorenzana/uma-kit/ui'
 import type { BuildingId } from '@racer/domain/farm'
 import { useState } from 'react'
-import { BottomSheet } from '../BottomSheet'
-import { LevelUpIcon } from '../icons'
 import { ItemIcon } from '../ItemIcon'
-import { UiMark } from '../UiMark'
 import { TapNoteLine } from './TapNote'
 import { useTap, useWordsContext } from './useTap'
 import { upgradeAdds, type UpgradeView } from './model'
@@ -82,7 +80,7 @@ export function UpgradeButton({ upgrade: next, building, name }: {
             : <p className="text-[13px]">{workWords('upgrade-ask', { place: name, level: next.to, cost })}</p>}
           <TapNoteLine tap={tap} />
           <div className="flex gap-2">
-            <button type="button" disabled={refusal !== null || tap.pending !== null} onClick={() => void run()} className={`${BUTTON} flex-1 bg-accent text-ink`}>
+            <button type="button" disabled={refusal !== null || tap.pending !== null} onClick={() => void run()} className={`${BUTTON} flex-1 bg-accent text-accent-ink`}>
               {workWords('yes')}
             </button>
             <button type="button" onClick={() => setOpen(false)} className="min-h-12 flex-1 rounded-sm font-semibold text-ink-soft">{workWords('not-now')}</button>

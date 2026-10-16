@@ -2,10 +2,10 @@
 // with how long it takes, never when it ends: on a slot row, `QueueLine`'s small chips ("then [Carrot]×4 · 2h", with
 // `queueWarnings`' mark where the stock won't cover it); in the row's ⋯ sheet, `QueueChips`' list, where each can move
 // earlier or be removed (`queue` with `move` or `remove`). A queue that already stopped is the check-in's (T142).
+import { ArrowUpIcon, CloseIcon, WarningIcon } from '@luismlorenzana/uma-kit/ui'
 import { durationText } from '@racer/domain/check-in'
 import { SESSION_KIND, type WorkRequest } from '@racer/domain/work'
 import type { ReactNode } from 'react'
-import { ArrowUpIcon, CloseIcon, WarningIcon } from '../icons'
 import { ItemIcon } from '../ItemIcon'
 import { queueChips, type QueueChip } from './model'
 import { TapNoteLine } from './TapNote'
@@ -31,7 +31,7 @@ export function requestMark(request: WorkRequest, label: (request: WorkRequest) 
 export function QueueCount({ n }: { n: number }) {
   if (n <= 0) return null
   return (
-    <span aria-label={workWords('queued-label', { n })} className="font-display rounded-full bg-ink px-1.5 text-[11px] leading-5 font-bold text-ink-on-dark">
+    <span aria-label={workWords('queued-label', { n })} className="font-display rounded-full bg-scrim px-1.5 text-[11px] leading-5 font-bold text-ink-on-dark">
       {workWords('queued', { n })}
     </span>
   )

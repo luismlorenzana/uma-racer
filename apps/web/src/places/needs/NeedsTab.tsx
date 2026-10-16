@@ -4,9 +4,9 @@
 // and, where the Exchange sells it, **Buy at the Exchange · price**; "about 120 Uma-hours of work"; her three startable
 // lines with **Start**; and "3 bonds: pick cards", linking to her Dojo sheet. It plans for her alone and never changes
 // the targets.
+import { Panel } from '@luismlorenzana/uma-kit/ui'
 import { useMemo } from 'react'
 import { Link, useLocation } from 'react-router'
-import { Panel } from '../../ui/Panel'
 import { useGame, useNow } from '../../app/game'
 import { ItemIcon } from '../../ui/ItemIcon'
 import { TapNoteLine } from '../../ui/work/TapNote'
@@ -99,7 +99,7 @@ export default function NeedsTab({ umaId }: ProfileSlotProps) {
                       disabled={taps.pending !== null}
                       onClick={() => void taps.run(key, 'start', { outfitId: start.outfitId, slot: start.slot, request: start.request }, 'needs:start')}
                       aria-label={needsWords('start-label', { what: line.label, uma: context.umaName(start.outfitId) || start.outfitId })}
-                      className="font-display inline-flex min-h-11 items-center justify-center rounded-sm bg-accent px-4 text-[14px] font-semibold text-ink shadow-1 disabled:opacity-45"
+                      className="font-display inline-flex min-h-11 items-center justify-center rounded-sm bg-accent px-4 text-[14px] font-semibold text-accent-ink shadow-1 disabled:opacity-45"
                     >
                       {needsWords('start')}
                     </button>

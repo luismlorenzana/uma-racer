@@ -1,19 +1,16 @@
 // Account (docs/game/11-hub-and-places.md §3.1; docs/game/02-check-ins-and-notifications.md §3, §9, §10; D157; M034;
 // T138): the trainer's name (read-only: no screen edits it yet, 02 §11), check-in times (`set-check-in-times`), sync
-// and Sync now, this device's reduced motion and default race speed, App build and Content, Sign in or Sign out (the
-// auth provider's, T143), and in dev builds only a dev section that loads the synthetic fixtures and runs `dev-grant`.
-// `?row=sync` opens at the sync row. Notifications are phase 4.
+// and Sync now, this device's Appearance (System, Light or Dark: uma-kit's, T147), reduced motion and default race
+// speed, App build and Content, Sign in or Sign out (the auth provider's, T143), and in dev builds only a dev section
+// that loads the synthetic fixtures and runs `dev-grant`. `?row=sync` opens at the sync row. Notifications are phase 4.
+import { APPEARANCES, Button, Chip, CloseIcon, Panel, setAppearance, useAppearance, type Appearance } from '@luismlorenzana/uma-kit/ui'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useSearchParams } from 'react-router'
 import { APP_BUILD_ID } from '../../app/build'
-import { Button } from '../../ui/Button'
-import { Chip } from '../../ui/Chip'
-import { CloseIcon } from '../../ui/icons'
-import { Panel } from '../../ui/Panel'
 import { useG2Content } from '../../app/content'
 import { useGame, useHub, useRuntime } from '../../app/game'
 import { RACE_SPEEDS, setRaceSpeed, setReducedMotion, useDevicePrefs } from '../../ui/devicePrefs'
-import { PlaceHeader } from '../../ui/PlaceHeader'
+import { PlacePageHeader } from '../PlacePageHeader'
 import { TapNoteLine, useTap } from '../../ui/work'
 import { UmaPicker } from '../../ui/UmaPicker'
 import { umaName } from '../../ui/words'
@@ -28,6 +25,9 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
     </div>
   )
 }
+
+/** Appearance's choices (T147): the phone's setting, or always light or dark, on this phone only. */
+const APPEARANCE_WORDS: Readonly<Record<Appearance, string>> = { system: 'System', light: 'Light', dark: 'Dark' }
 
 function CheckInTimes() {
   const saved = useGame((snapshot) => snapshot.state?.profile.checkIns ?? [])
@@ -145,6 +145,7 @@ export default function AccountPage({ place, rest }: PageProps) {
   const sync = useGame((snapshot) => snapshot.sync)
   const content = useG2Content()
   const prefs = useDevicePrefs()
+  const appearance = useAppearance()
   const syncRow = useRef<HTMLElement>(null)
   const [signingOut, setSigningOut] = useState(false)
   useEffect(() => {
@@ -153,7 +154,7 @@ export default function AccountPage({ place, rest }: PageProps) {
 
   return (
     <div data-place-page="account">
-      <PlaceHeader place={place} rest={rest} lines={['Settings for this account and this phone. Notifications come later.']} />
+      <PlacePageHeader place={place} rest={rest} lines={['Settings for this account and this phone. Notifications come later.']} />
       <div className="space-y-3 px-4 pt-3 pb-24">
         <Panel className="p-3" aria-label="Trainer">
           <Row label="Trainer">{name || 'Trainer'}</Row>
@@ -170,6 +171,16 @@ export default function AccountPage({ place, rest }: PageProps) {
         </section>
         <Panel className="space-y-2 p-3" aria-label="This phone">
           <h2 className="text-[15px] font-semibold">This phone</h2>
+          <div className="flex min-h-11 items-center justify-between gap-3 text-[14px]">
+            <span>Appearance</span>
+            <span className="flex gap-1.5" role="group" aria-label="Appearance">
+              {APPEARANCES.map((choice) => (
+                <Chip key={choice} selected={appearance === choice} className="min-h-11 justify-center" onClick={() => setAppearance(choice)}>
+                  {APPEARANCE_WORDS[choice]}
+                </Chip>
+              ))}
+            </span>
+          </div>
           <label className="flex min-h-11 items-center justify-between gap-3 text-[14px]">
             <span>Reduce motion</span>
             <input type="checkbox" role="switch" checked={prefs.reducedMotion} onChange={(event) => setReducedMotion(event.target.checked)} className="size-6 accent-[var(--color-accent)]" />

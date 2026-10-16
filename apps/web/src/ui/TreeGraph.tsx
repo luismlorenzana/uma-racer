@@ -149,7 +149,7 @@ export function TreeGraph({ root, nodes, edges, selectedId, onSelect, rootMark }
                 if (!dragged.current) onSelect(node.id)
               }}
               className={`absolute flex items-center justify-center rounded-full border-2 text-[11px] font-bold shadow-1 ${selected ? 'border-ink' : node.look === 'next' ? 'border-accent border-dashed' : 'border-hairline-strong'}`}
-              style={{ width: NODE, height: NODE, left: point.x - NODE / 2, top: point.y - NODE / 2, background: fill(node), color: node.look === 'open' ? 'white' : 'var(--color-ink)' }}
+              style={{ width: NODE, height: NODE, left: point.x - NODE / 2, top: point.y - NODE / 2, background: fill(node), color: node.look === 'open' ? 'white' : node.look === 'finished' ? 'var(--color-accent-ink)' : 'var(--color-ink)' }}
             >
               {node.mark}
             </button>

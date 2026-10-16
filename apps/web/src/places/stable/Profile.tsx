@@ -4,6 +4,7 @@
 // that preset's stats, her build per facility, Collect, her career, Advance or Promote, Feature her), Needs (T142's;
 // layer progress until it lands), Skills (library and loadout) and Racing (race defaults, career record, latest
 // results, the Trophy Hall). An unknown or locked id says `unknown-uma`'s words with a way back.
+import { Button, ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon, ChevronUpIcon, Chip, Panel, Tabs, TierCrest, UiMark } from '@luismlorenzana/uma-kit/ui'
 import { hubWords } from '@racer/domain/hub'
 import { layerProgress } from '@racer/domain/planner'
 import { racePreferencesOf, TIER_REFUSALS } from '@racer/domain/tiers'
@@ -12,21 +13,15 @@ import type { DistanceCategory, Grade } from '@racer/domain'
 import type { RaceResultRow } from '@racer/domain/save'
 import { Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router'
-import { Button } from '../../ui/Button'
-import { Chip } from '../../ui/Chip'
 import { Crest } from '../../ui/Crest'
-import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon, ChevronUpIcon } from '../../ui/icons'
 import { Meter } from '../../ui/Meter'
-import { Panel } from '../../ui/Panel'
 import { useGame, useHub, useNow, useRuntime } from '../../app/game'
 import { useAlbumPrefs } from '../../ui/albumPrefs'
-import { TierCrest, UiMark } from '../../ui/UiMark'
 import { UmaSquare } from '../../ui/ArtSquare'
 import {
   amount, DISTANCE_LABEL, DISTANCES, STAT_KEYS, STAT_LABEL, STYLE_LABEL, STYLES, SURFACE_KEYS, SURFACE_LABEL,
 } from '../../ui/labels'
-import { PlaceHeader } from '../../ui/PlaceHeader'
-import { Tabs } from '../../ui/Tabs'
+import { PlacePageHeader } from '../PlacePageHeader'
 import { TapNoteLine, useTap, type Tap } from '../../ui/work'
 import { PROFILE_UI, type PageProps } from '../registry'
 import {
@@ -94,14 +89,14 @@ export default function Profile({ place, rest, umaId, tab: routeTab }: PageProps
   }, [state, content, prefs.query, prefs.seen])
   const doing = useMemo(() => (state === null || env === null || uma === null ? null : doingNow(state, umaId, now, env)), [state, env, uma, umaId, now])
 
-  if (state === null || content === null) return <PlaceHeader place={place} rest={rest} />
+  if (state === null || content === null) return <PlacePageHeader place={place} rest={rest} />
   if (uma === null) {
     return (
       <div>
-        <PlaceHeader place={place} rest={rest} title="Uma" />
+        <PlacePageHeader place={place} rest={rest} title="Uma" />
         <Panel className="m-4 text-center">
           <p className="text-[15px]" data-g2="unknown-uma">{TIER_REFUSALS['unknown-uma']}</p>
-          <Link to="/town/stable" replace className="font-display mt-3 inline-flex min-h-12 items-center rounded-sm bg-accent px-5 font-semibold text-ink shadow-1">Open the Stable</Link>
+          <Link to="/town/stable" replace className="font-display mt-3 inline-flex min-h-12 items-center rounded-sm bg-accent px-5 font-semibold text-accent-ink shadow-1">Open the Stable</Link>
         </Panel>
       </div>
     )
@@ -137,10 +132,10 @@ export default function Profile({ place, rest, umaId, tab: routeTab }: PageProps
         if (Math.abs(dx) > 70 && Math.abs(dx) > 2 * Math.abs(event.clientY - from.y)) step(dx < 0 ? 1 : -1)
       }}
     >
-      <PlaceHeader place={place} rest={rest} title={name}>
+      <PlacePageHeader place={place} rest={rest} title={name}>
         <button type="button" className={arrow} disabled={at <= 0} onClick={() => step(-1)} aria-label="Previous Uma"><ChevronLeftIcon /></button>
         <button type="button" className={arrow} disabled={at < 0 || at >= order.length - 1} onClick={() => step(1)} aria-label="Next Uma"><ChevronRightIcon /></button>
-      </PlaceHeader>
+      </PlacePageHeader>
       <div className="space-y-3 px-4 pt-3 pb-24">
         <header className="flex gap-3" data-g2="profile-header">
           <span className="w-24 shrink-0">
@@ -255,7 +250,7 @@ function Overview({ umaId, featured, ready }: { umaId: string; featured: boolean
         </ul>
         {next !== null && (
           <Link to={`/racing/scenario-gate/${id}`} state={{ back: true }}
-            className="font-display mt-3 flex min-h-12 items-center justify-center rounded-sm bg-accent font-semibold text-ink shadow-1">
+            className="font-display mt-3 flex min-h-12 items-center justify-center rounded-sm bg-accent font-semibold text-accent-ink shadow-1">
             {next === 'advance' ? 'Advance' : 'Promote'}
           </Link>
         )}

@@ -3,9 +3,9 @@
 // and two golds as moons and their states; a locked item names its dish and blocker, and the next ones carry **Unlock**.
 // Filling or changing a slot opens T138's Uma picker (owned Umas, never herself, a refused pick in the rule's words,
 // sorted by what each would add), and runs `set-lineage`.
+import { LockedIcon } from '@luismlorenzana/uma-kit/ui'
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router'
-import { LockedIcon } from '../../../ui/icons'
 import { UmaSquare } from '../../../ui/ArtSquare'
 import { UmaPicker } from '../../../ui/UmaPicker'
 import { TapNoteLine } from '../../../ui/work/TapNote'
@@ -24,7 +24,7 @@ function ItemLine({ item, label, build }: { item: LineageItem; label: string; bu
       <p className="flex items-start gap-1"><LockedIcon size={16} className="shrink-0" /><span><span className="font-semibold text-ink">{label}</span> · {item.words}</span></p>
       {item.state === 'available' && (
         <Link to={unlockPath(build.uma.outfitId, item.unlock, build.here)} state={{ back: true }} data-action="unlock"
-          className="font-display inline-flex min-h-11 items-center rounded-sm bg-accent px-3 text-[13px] font-semibold text-ink shadow-1">
+          className="font-display inline-flex min-h-11 items-center rounded-sm bg-accent px-3 text-[13px] font-semibold text-accent-ink shadow-1">
           {trainingWords('unlock')}
         </Link>
       )}
@@ -51,7 +51,7 @@ function SlotCard({ slot, build, onFill }: { slot: LineageSlotView; build: Build
           )}
           <div className="flex flex-wrap gap-1.5">
             <button type="button" onClick={onFill} data-action="fill"
-              className="font-display min-h-11 flex-1 rounded-sm bg-accent px-2 text-[13px] font-semibold text-ink shadow-1">
+              className="font-display min-h-11 flex-1 rounded-sm bg-accent px-2 text-[13px] font-semibold text-accent-ink shadow-1">
               {slot.filler === null ? trainingWords('fill', { letter: slot.letter }) : trainingWords('refill', { letter: slot.letter })}
             </button>
             {slot.filler !== null && (

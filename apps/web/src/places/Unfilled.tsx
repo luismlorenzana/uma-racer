@@ -4,7 +4,7 @@
 import { hubWords } from '@racer/domain/hub'
 import { Link } from 'react-router'
 import { BuildingSprite } from '../ui/BuildingSprite'
-import { PlaceHeader } from '../ui/PlaceHeader'
+import { PlacePageHeader } from './PlacePageHeader'
 import { UmaArt } from '../ui/UmaArt'
 import { useUmaName } from '../ui/uma'
 import type { FlowProps, PageProps } from './registry'
@@ -12,7 +12,7 @@ import type { FlowProps, PageProps } from './registry'
 export function UnfilledPage({ place, rest }: PageProps) {
   return (
     <div data-g2="unfilled-page" data-place-page={place.id}>
-      <PlaceHeader place={place} rest={rest} />
+      <PlacePageHeader place={place} rest={rest} />
       <div className="flex justify-center py-10">
         <BuildingSprite frame={place.frame} page={place.page} />
       </div>
@@ -24,13 +24,13 @@ export function UnfilledReveal({ params }: FlowProps) {
   const umaId = params['umaId'] ?? ''
   const name = useUmaName(umaId)
   return (
-    <div data-g2="unfilled-reveal" className="pt-safe pb-safe flex h-dvh flex-col items-center justify-center gap-4 bg-stage px-6 text-ink-on-dark">
+    <div data-g2="unfilled-reveal" className="pt-safe pb-safe flex h-full flex-col items-center justify-center gap-4 bg-stage px-6 text-ink-on-dark">
       <UmaArt outfitId={umaId} size={160} />
       <h1 className="font-display text-2xl font-bold">{name}</h1>
       <Link
         to={`/town/stable/outfit/${encodeURIComponent(umaId)}`}
         replace
-        className="font-display flex min-h-12 items-center rounded-sm bg-accent px-6 font-bold text-ink shadow-1"
+        className="font-display flex min-h-12 items-center rounded-sm bg-accent px-6 font-bold text-accent-ink shadow-1"
       >
         {hubWords('profile')}
       </Link>

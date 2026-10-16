@@ -4,9 +4,9 @@
 // when that check-in is the morning's) and is preselected; VoiceOver reads it as "fits the next check-in" or "runs
 // overnight", and each chip's wait after it. Nothing is confirmed for the owner: a chip only sets the size. `start` is
 // now for a start, and her chain's end (`freeAt`) for an entry added to a queue. Each chip is a 44 pt target.
+import { CheckIcon, MoonIcon } from '@luismlorenzana/uma-kit/ui'
 import { useEffect, useId, useMemo } from 'react'
 import { useGame, useRuntime } from '../../app/game'
-import { CheckIcon, MoonIcon } from '../icons'
 import { sizeChipsView } from './model'
 import { workWords } from './words'
 
@@ -67,7 +67,7 @@ export function SizeChips({ start, itemSeconds, max, value, onChange, heading = 
               <span className="font-display text-[14px] leading-4 font-bold">{workWords('size-chip', { n: chip.size })}</span>
               <span className="text-[11px] leading-4 whitespace-nowrap tabular-nums">{chip.duration}</span>
               {isMarked && (
-                <span aria-hidden data-fit={view.overnight ? 'overnight' : 'next'} className="absolute -top-1.5 -right-1.5 flex size-5 items-center justify-center rounded-full bg-accent text-ink shadow-1">
+                <span aria-hidden data-fit={view.overnight ? 'overnight' : 'next'} className="absolute -top-1.5 -right-1.5 flex size-5 items-center justify-center rounded-full bg-accent text-accent-ink shadow-1">
                   <Mark size={16} variant="solid" />
                 </span>
               )}

@@ -3,19 +3,18 @@
 // ("Kitchen · 2 of 4 · 2h 10m"); Train (her Needs), Race (the Racecourse with her picked), Profile, and Feature another
 // Uma through the one Uma picker, which runs `feature-uma`. The plaza's chibi and its animation wait for phase 5's
 // `outfit-chibis` release (§5).
+import { navState, withParam } from '@luismlorenzana/uma-kit/shell'
+import { Button, TierCrest } from '@luismlorenzana/uma-kit/ui'
 import { hubWords } from '@racer/domain/hub'
 import { scenarioNumber, scenarioRow } from '@racer/domain/tiers'
 import { useMemo, useState } from 'react'
 import { Link, useLocation } from 'react-router'
-import { Button } from '../../ui/Button'
 import { useGame, useHub, useNow } from '../../app/game'
-import { navState, withParam } from '../../hub/nav'
 import { TapNoteLine, useTap } from '../../ui/work'
 import { UmaArt } from '../../ui/UmaArt'
 import { UmaPicker } from '../../ui/UmaPicker'
 import type { FeaturedSheetProps, PlazaProps } from '../registry'
 import { doingNow, doingWords } from './model'
-import { TierCrest } from '../../ui/UiMark'
 
 /** Her card: still art and her name; a tap opens her quick sheet (`?sheet=featured`). Empty with no Umas. */
 export function FeaturedUmaCard({ umaId }: PlazaProps) {

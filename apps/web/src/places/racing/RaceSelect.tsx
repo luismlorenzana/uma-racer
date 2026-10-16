@@ -2,6 +2,7 @@
 // bar and the featured bonuses still open, the Uma strip, Today's featured, Next up and every race, then the pre-race
 // sheet. `?uma=&race=` preselects. Racing is never blocked (D328): no lock, no cost, and she races as her current
 // scenario (03 §6). Start race commits the race before it plays (09 §8) and opens the run on the committed result.
+import { BottomSheet, Button } from '@luismlorenzana/uma-kit/ui'
 import {
   DISTANCE_CATEGORIES, STRATEGIES, goalRaceIds, progressionFieldSize, raceExp, recommendedRacePreferences, regularRaceCatalog,
   type DistanceCategory, type RaceTemplate, type Strategy,
@@ -14,8 +15,6 @@ import { useNavigate, useSearchParams } from 'react-router'
 import { goalsAtStake } from './goals-view'
 import { raceStatFit, type StatFitVerdict } from './race-fit'
 import { buildRacePlan, type PlannedRace, type RaceMark } from './race-plan'
-import { BottomSheet } from '../../ui/BottomSheet'
-import { Button } from '../../ui/Button'
 import { RunningStyleIcon } from '../../ui/CardFocusIcons'
 import { IconChoiceRow } from '../../ui/IconChoiceRow'
 import { PresetBadge } from '../../ui/PresetBadge'
@@ -24,7 +23,7 @@ import { Collapsible, SectionHeading } from '../../ui/Section'
 import { TypeIcon } from '../../ui/TypeIcon'
 import type { LoadedContent } from '../../content/runtime'
 import { useGame, useNow, useRuntime, type G2Records } from '../../app/game'
-import { PlaceHeader } from '../../ui/PlaceHeader'
+import { PlacePageHeader } from '../PlacePageHeader'
 import { UmaFace } from '../../ui/UmaArt'
 import { useRaceContent } from './content'
 import { prepareRace } from './prepare'
@@ -332,10 +331,10 @@ export function RaceSelect({ place }: { place: Place }) {
     ? Object.fromEntries(DISTANCE_CATEGORIES.map((distance) => [distance, deriveUmaPreset(uma, distance, env.content)])) as Record<DistanceCategory, DerivedBuild>
     : null), [uma, env])
 
-  if (!state || !env || !content || !records) return <PlaceHeader place={place} />
+  if (!state || !env || !content || !records) return <PlacePageHeader place={place} />
   const bar = purseBar(state.profile.purse, localDay)
   const featured = featuredView(state.profile, localDay, content.races.items)
-  const header = <PlaceHeader place={place} lines={bar.about} />
+  const header = <PlacePageHeader place={place} lines={bar.about} />
 
   if (!uma || !presets) {
     return (

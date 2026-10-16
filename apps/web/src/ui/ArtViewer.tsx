@@ -1,8 +1,7 @@
+import { CloseIcon, useReducedMotionSetting } from '@luismlorenzana/uma-kit/ui'
 import { AnimatePresence, m } from 'motion/react'
 import { useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { useReducedMotionSetting } from '../app/motion'
-import { CloseIcon } from './icons'
 
 /**
  * One piece of art at full size over a dark stage (docs/design/ux.md#art-tiers). Detail surfaces open it from
@@ -53,7 +52,7 @@ export function ArtViewer({
               type="button"
               aria-label="Close"
               onClick={onClose}
-              className="flex h-11 w-11 items-center justify-center rounded-full bg-panel/12 text-white"
+              className="flex h-11 w-11 items-center justify-center rounded-full bg-white/12 text-white"
             >
               <CloseIcon size={24} />
             </button>

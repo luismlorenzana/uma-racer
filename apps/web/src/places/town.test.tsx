@@ -273,6 +273,22 @@ describe('Account (02 §3, M034)', () => {
   })
 })
 
+describe('Appearance (T147)', () => {
+  it('offers System, Light and Dark on this phone, System first, and puts the choice on the page at once', async () => {
+    renderG2('/town/account', seedGame('busy'))
+    const group = await screen.findByRole('group', { name: 'Appearance' })
+    const chips = within(group).getAllByRole('button')
+    expect(chips.map((chip) => [chip.textContent, chip.getAttribute('aria-pressed')])).toEqual([['System', 'true'], ['Light', 'false'], ['Dark', 'false']])
+    click(within(group).getByRole('button', { name: 'Dark' }))
+    await waitFor(() => expect(document.documentElement.getAttribute('data-theme')).toBe('dark'))
+    expect(localStorage.getItem('uma-racer:g2:appearance')).toBe('dark')
+    expect(within(group).getByRole('button', { name: 'Dark' }).getAttribute('aria-pressed')).toBe('true')
+    click(within(group).getByRole('button', { name: 'System' }))
+    await waitFor(() => expect(document.documentElement.hasAttribute('data-theme')).toBe(false))
+    expect(localStorage.getItem('uma-racer:g2:appearance')).toBeNull()
+  })
+})
+
 describe('offline and after a reload (02 §9)', () => {
   it('applies every tap offline, as it does online', async () => {
     const game = seedGame('fresh', { sync: 'offline' })

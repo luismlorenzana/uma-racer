@@ -5,7 +5,7 @@
 // has no basename; the seeds' mount (dev builds only) serves the same routes under `SEEDS_PATH`.
 import { lazy, Suspense, type ComponentType } from 'react'
 import { createBrowserRouter, Navigate, useLocation, useParams, type RouteObject } from 'react-router'
-import { Shell } from '../hub/Shell'
+import { RacerShell } from '../hub/RacerShell'
 import { REDIRECTS, redirectPath } from './redirects'
 import { Root } from './Root'
 import { PageRoute, PlaceRoute, RevealRoute, StartRoute } from './routes'
@@ -34,7 +34,7 @@ export const G2_ROUTES: RouteObject[] = [
       ...REDIRECTS.map((row): RouteObject => ({ path: row.from.slice(1), element: <Redirect to={row.to} /> })),
       { path: 'collection/reveal/uma/:umaId', element: <RevealRoute /> },
       {
-        element: <Shell />,
+        element: <RacerShell />,
         children: [
           { index: true, element: <StartRoute /> },
           ...DEV_ROUTES,

@@ -1,3 +1,4 @@
+import { BottomSheet, Button, ChevronDownIcon, ChevronRightIcon, Chip } from '@luismlorenzana/uma-kit/ui'
 import { useEffect, useState, type ReactNode } from 'react'
 import {
   isActiveSelection,
@@ -6,10 +7,6 @@ import {
   type FacetSelection,
   type RangeSelection,
 } from './query'
-import { BottomSheet } from '../BottomSheet'
-import { Button } from '../Button'
-import { Chip } from '../Chip'
-import { ChevronDownIcon, ChevronRightIcon } from '../icons'
 
 const asArray = (selection: FacetSelection | undefined): readonly string[] =>
   Array.isArray(selection) ? selection : []

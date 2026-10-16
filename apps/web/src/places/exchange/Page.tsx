@@ -3,20 +3,14 @@
 // family tabs, one row per stocked grade with its price, Warehouse count and the planner's badge, a quantity sheet of
 // 1–99, and the next grade's lock. The purse bar is T141's view (09 §3.5). Buy is off with "Need 120 more" when short and asks once at 1,000 or more. Deep
 // links: `?row=speed-tickets`, `?family=:id&grade=:g`.
+import { BottomSheet, Button, Chip, LockedIcon, Panel, Sheet, UiMark } from '@luismlorenzana/uma-kit/ui'
 import { FAMILIES, FAMILY_IDS, SPEED_TICKET_ID, type FamilyId } from '@racer/domain/items'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
-import { BottomSheet } from '../../ui/BottomSheet'
-import { Button } from '../../ui/Button'
-import { Chip } from '../../ui/Chip'
-import { LockedIcon } from '../../ui/icons'
-import { UiMark } from '../../ui/UiMark'
-import { Panel } from '../../ui/Panel'
 import { useGame, useNow, useRuntime } from '../../app/game'
 import { amount } from '../../ui/labels'
-import { PlaceHeader } from '../../ui/PlaceHeader'
+import { PlacePageHeader } from '../PlacePageHeader'
 import { TapNoteLine, useTap } from '../../ui/work'
-import { Sheet } from '../../ui/Sheet'
 import { ItemIcon } from '../../ui/ItemIcon'
 import { localDayAt, purseBar } from '../racing/view'
 import type { PageProps } from '../registry'
@@ -120,7 +114,7 @@ export default function ExchangePage({ place, rest }: PageProps) {
     if (params.get('row') === 'speed-tickets') tickets.current?.scrollIntoView?.({ block: 'start' })
   }, [params, view !== null])
 
-  if (view === null || raw === null) return <PlaceHeader place={place} rest={rest} />
+  if (view === null || raw === null) return <PlacePageHeader place={place} rest={rest} />
   const { current } = view
   const prizeMoney = current.profile.prizeMoney
   const held = current.items[SPEED_TICKET_ID] ?? 0
@@ -138,7 +132,7 @@ export default function ExchangePage({ place, rest }: PageProps) {
 
   return (
     <div data-place-page="exchange">
-      <PlaceHeader place={place} rest={rest} lines={['Speed Tickets take 30 minutes off one running job or session. Raw ingredients are stocked up to the highest grade any Uma has opened.']} />
+      <PlacePageHeader place={place} rest={rest} lines={['Speed Tickets take 30 minutes off one running job or session. Raw ingredients are stocked up to the highest grade any Uma has opened.']} />
       <div className="space-y-3 px-4 pt-3 pb-24">
         <Panel className="flex items-center justify-around p-3" data-g2="exchange-header">
           <span className="flex items-center gap-1.5 text-[15px]"><UiMark mark="currency/prize-money" /><strong className="tabular-nums">{amount(prizeMoney)}</strong><span className="sr-only">Prize Money</span></span>

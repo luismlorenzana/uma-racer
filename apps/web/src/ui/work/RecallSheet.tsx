@@ -2,8 +2,8 @@
 // `recall` run on the current state, so it says exactly what the real one does: the outputs it pays, the inputs that
 // come back ("8 Chopped Carrot and 2 Wheat Flour come back"), the minutes of progress lost and the queue dropped. Then
 // `recall`. A slot row opens it from its ⋯ sheet (D366); `RecallPreviewLines` is the preview alone.
+import { BottomSheet } from '@luismlorenzana/uma-kit/ui'
 import { useGame } from '../../app/game'
-import { BottomSheet } from '../BottomSheet'
 import { recallPreview, type RecallPreview } from './model'
 import { TapNoteLine } from './TapNote'
 import { useTap } from './useTap'

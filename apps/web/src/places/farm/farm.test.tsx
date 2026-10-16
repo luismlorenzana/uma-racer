@@ -15,7 +15,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { G2Answer, G2Game } from '../../app/game'
 import { createMemoryGame } from '../../dev/memory'
 import type { G2Seed } from '../../dev/seed'
-import { appliedNames, renderG2, stubStorage } from '../../__fixtures__/testing'
+import { appliedNames, renderG2, stubPointerEvents, stubStorage } from '../../__fixtures__/testing'
 import { slotCards } from '../../ui/work/model'
 import { workView } from '../../ui/work/view'
 import { apply, farmAccount, farmSeed, HOUR, MINUTE, uma, withFarmLevel } from './__fixtures__/farm'
@@ -425,6 +425,27 @@ describe('the side panel and the Counter (11 §2.6, §3.4; D366)', () => {
     await waitFor(() => expect(where()).toBe('/farm?peek=fields'))
     expect(state(game).work[uma(1)]!.entries[0]!.request).toMatchObject({ kind: 'gather', item: 'wheat' })
     await within(screen.getByRole('dialog', { name: 'Fields' })).findByRole('group', { name: new RegExp(`^${AMBER}\\. Wheat, 0 of \\d+ made, .+ left$`) })
+  })
+
+  it('closes the job sheet over the map before the side panel: Escape takes the sheet first, and a sideways drag on it is never the panel\'s swipe', async () => {
+    stubPointerEvents()
+    const { state: account, at } = farmAccount(1)
+    const { game } = clocked(farmSeed(account, at))
+    const { where } = renderG2('/farm', game)
+    fireEvent.click(await screen.findByRole('link', { name: /^Fields\./ }))
+    const peek = await screen.findByRole('dialog', { name: 'Fields' })
+    fireEvent.click(await within(peek).findByRole('link', { name: 'Start a job in slot 1' }))
+    await waitFor(() => expect(where()).toBe('/farm?peek=fields&job=&slot=0'))
+    const sheet = await screen.findByRole('dialog', { name: 'Start a job · Fields' })
+    fireEvent.pointerDown(sheet, { clientX: 100, clientY: 500 })
+    fireEvent.pointerUp(sheet, { clientX: 260, clientY: 505 })
+    expect(where()).toBe('/farm?peek=fields&job=&slot=0')
+    fireEvent.keyDown(window, { key: 'Escape' })
+    await waitFor(() => expect(where()).toBe('/farm?peek=fields'))
+    expect(screen.getByRole('dialog', { name: 'Fields' })).toBeTruthy()
+    fireEvent.keyDown(window, { key: 'Escape' })
+    await waitFor(() => expect(where()).toBe('/farm'))
+    expect(screen.queryByRole('dialog', { name: 'Fields' })).toBeNull()
   })
 
   it('Hub to a finished job collected and restarted is two taps: the building, Repeat; Collect here is two too', async () => {

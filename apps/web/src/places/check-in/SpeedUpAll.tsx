@@ -46,7 +46,7 @@ export function SpeedUpAll({ taps, onBack }: { taps: Taps; onBack: () => void })
       {chosen !== null ? (
         <div role="group" data-g2="speed-up-ask" className="flex flex-wrap items-center gap-2 rounded-sm bg-accent-wash p-2 text-[14px]">
           <span className="min-w-0 flex-1">{summaryWords('speed-ask', { n: grouped(chosen.tickets), span: chosen.label })}</span>
-          <button type="button" disabled={busy} onClick={() => void run(chosen.span)} className={`${BUTTON} bg-accent text-ink`}>{workWords('yes')}</button>
+          <button type="button" disabled={busy} onClick={() => void run(chosen.span)} className={`${BUTTON} bg-accent text-accent-ink`}>{workWords('yes')}</button>
           <button type="button" onClick={() => setAsking(null)} className="min-h-11 px-3 font-semibold text-ink-soft">{workWords('not-now')}</button>
         </div>
       ) : (

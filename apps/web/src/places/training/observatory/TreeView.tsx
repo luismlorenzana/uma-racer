@@ -3,13 +3,11 @@
 // state. Tapping one opens its sheet: an open node's card and the skills it pays there, with the set's other cards
 // under the per-card cap (`set-assignments`, refusals in words); a locked node what it needs and, for the next one,
 // **Unlock** into the session sheet with her and that node.
+import { CheckIcon, LockedIcon, Sheet, Tabs } from '@luismlorenzana/uma-kit/ui'
 import { TYPE_COLOR } from '../../card-library/model'
-import { CheckIcon, LockedIcon } from '../../../ui/icons'
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router'
 import { DISTANCE_LABEL } from '../../../ui/labels'
-import { Sheet } from '../../../ui/Sheet'
-import { Tabs } from '../../../ui/Tabs'
 import { TreeGraph, type TreeGraphNode, type TreeNodeLook } from '../../../ui/TreeGraph'
 import { TapNoteLine } from '../../../ui/work/TapNote'
 import { useTap } from '../../../ui/work/useTap'
@@ -52,7 +50,7 @@ function NodeSheet({ node, build, cap, onClose }: { node: NodeView; build: Build
           <p className="text-[14px]">{node.words}</p>
           {node.unlock !== null && (
             <Link to={unlockPath(uma.outfitId, node.unlock, here)} state={{ back: true }} data-action="unlock"
-              className="font-display flex min-h-12 items-center justify-center rounded-sm bg-accent font-semibold text-ink shadow-1">
+              className="font-display flex min-h-12 items-center justify-center rounded-sm bg-accent font-semibold text-accent-ink shadow-1">
               {trainingWords('unlock')}
             </Link>
           )}

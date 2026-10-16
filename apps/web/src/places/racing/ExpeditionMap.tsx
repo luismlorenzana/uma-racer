@@ -6,7 +6,7 @@
 import { Link, Navigate } from 'react-router'
 import { useGame } from '../../app/game'
 import { BuildingSprite } from '../../ui/BuildingSprite'
-import { PlaceHeader } from '../../ui/PlaceHeader'
+import { PlacePageHeader } from '../PlacePageHeader'
 import { UmaFace } from '../../ui/UmaArt'
 import type { PageProps } from '../registry'
 import { useRaceContent } from './content'
@@ -22,7 +22,7 @@ export default function ExpeditionMap({ place, rest }: PageProps) {
   const anyone = rows.some((row) => row.ready || row.complete)
   return (
     <div data-place-page="expedition-map" className="pb-6">
-      <PlaceHeader place={place} />
+      <PlacePageHeader place={place} />
       <div className="flex justify-center pt-4"><BuildingSprite frame={place.frame} page={place.page} /></div>
       <div className="flex flex-col gap-2 p-3">
         {!anyone && <h2 className="font-display text-center text-[17px] font-semibold" data-g2="map-empty">{racingWords('map-empty')}</h2>}
@@ -39,7 +39,7 @@ export default function ExpeditionMap({ place, rest }: PageProps) {
               {row.complete ? (
                 <div className="mt-2 flex items-center gap-2">
                   <p className="min-w-0 flex-1 text-[13px] font-semibold text-accent-strong">{racingWords('map-promote')}</p>
-                  <Link to={`/racing/scenario-gate/${encodeURIComponent(row.umaId)}?sheet=promote`} state={{ back: true }} className="font-display flex min-h-11 items-center rounded-sm bg-accent px-4 font-bold text-ink shadow-1">
+                  <Link to={`/racing/scenario-gate/${encodeURIComponent(row.umaId)}?sheet=promote`} state={{ back: true }} className="font-display flex min-h-11 items-center rounded-sm bg-accent px-4 font-bold text-accent-ink shadow-1">
                     {racingWords('promote')}
                   </Link>
                 </div>

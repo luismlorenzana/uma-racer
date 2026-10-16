@@ -1,5 +1,6 @@
 // The route bodies (docs/game/11-hub-and-places.md §2.4, §7.1): the start rule, a page, a place, and a full-screen
 // flow. Each is a thin check over a lazy body, so the entry chunk holds the route rules and none of the screens.
+import { AppFrame } from '@luismlorenzana/uma-kit/shell'
 import { isHubPage, placeOnPage } from '@racer/domain/hub'
 import { lazy, Suspense, useRef } from 'react'
 import { Navigate, useParams } from 'react-router'
@@ -51,13 +52,15 @@ export function PlaceRoute() {
   )
 }
 
-/** `/collection/reveal/uma/:umaId`: the reveal, full screen outside the shell (§6). */
+/** `/collection/reveal/uma/:umaId`: the reveal, full screen outside the shell (§6), in uma-kit's frame without its bars. */
 export function RevealRoute() {
   const params = useParams()
   const Reveal = FLOW_UI.reveal ?? UnfilledReveal
   return (
-    <Suspense fallback={null}>
-      <Reveal params={params} />
-    </Suspense>
+    <AppFrame fullScreen>
+      <Suspense fallback={null}>
+        <Reveal params={params} />
+      </Suspense>
+    </AppFrame>
   )
 }

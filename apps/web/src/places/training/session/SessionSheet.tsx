@@ -4,6 +4,8 @@
 // minutes, or at the Dojo the cards picked from T138's Card Library), and **Confirm** (the dishes to reserve, the time
 // and each finish), then **Start** or **Add to queue**. A disabled button says why in the rule's words; an `ask`
 // re-offers what the stock covers; Start closes to `back` or the facility page.
+import { navState } from '@luismlorenzana/uma-kit/shell'
+import { BottomSheet, CheckIcon, LockedIcon, Sheet } from '@luismlorenzana/uma-kit/ui'
 import { durationText } from '@racer/domain/check-in'
 import type { FacilityId, RoomId } from '@racer/domain/farm'
 import type { Place } from '@racer/domain/hub'
@@ -11,15 +13,11 @@ import { dojoRoomOf, ROOM_NAMES, type UnlockRef } from '@racer/domain/training'
 import { statusOf } from '@racer/domain/work'
 import { useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router'
-import { BottomSheet } from '../../../ui/BottomSheet'
-import { CheckIcon, LockedIcon } from '../../../ui/icons'
 import { TypeIcon } from '../../../ui/TypeIcon'
 import { useGame, useRuntime } from '../../../app/game'
-import { navState } from '../../../hub/nav'
 import { UmaSquare } from '../../../ui/ArtSquare'
 import { ItemIcon } from '../../../ui/ItemIcon'
 import { duration } from '../../../ui/labels'
-import { Sheet } from '../../../ui/Sheet'
 import { UmaPicker } from '../../../ui/UmaPicker'
 import { RecallSheet } from '../../../ui/work/RecallSheet'
 import { TapNoteLine } from '../../../ui/work/TapNote'
@@ -65,7 +63,7 @@ function ItemRow({ item, here, onToggle }: { item: SessionItem; here: string; on
         onClick={onToggle}
         className={`flex min-h-12 min-w-0 flex-1 items-center gap-2 rounded-sm px-2 py-1.5 text-left disabled:opacity-60 ${item.picked ? 'bg-accent-wash ring-1 ring-accent' : 'bg-sunken/50'}`}
       >
-        <span aria-hidden className={`flex size-6 shrink-0 items-center justify-center rounded-xs border ${item.picked ? 'border-accent bg-accent text-ink' : 'border-hairline-strong bg-panel'}`}>
+        <span aria-hidden className={`flex size-6 shrink-0 items-center justify-center rounded-xs border ${item.picked ? 'border-accent bg-accent text-accent-ink' : 'border-hairline-strong bg-panel'}`}>
           {item.picked && <CheckIcon size={16} />}
         </span>
         {item.dishId !== null && <ItemIcon item={item.dishId} decorative className={empty ? 'opacity-45' : ''} />}
@@ -258,7 +256,7 @@ export default function SessionSheet({ place, facility, query, onClose }: {
           )}
 
           <div className="space-y-1.5">
-            <button type="button" data-action="session-go" disabled={blocked !== null || tap.pending !== null} onClick={() => void go()} className={`${BUTTON} w-full bg-accent text-ink`}>
+            <button type="button" data-action="session-go" disabled={blocked !== null || tap.pending !== null} onClick={() => void go()} className={`${BUTTON} w-full bg-accent text-accent-ink`}>
               {label}
             </button>
             {blocked !== null && <p data-g2="session-why" className="text-[13px] text-ink-soft">{blocked}</p>}
@@ -287,7 +285,7 @@ export default function SessionSheet({ place, facility, query, onClose }: {
           if (row?.canQueue) {
             return (
               <button type="button" onClick={() => { pickUma(entry.id); setPicking(false) }} data-action="picker-queue"
-                className="font-display mt-1 min-h-11 w-full rounded-sm bg-accent px-3 text-[13px] font-semibold text-ink shadow-1">
+                className="font-display mt-1 min-h-11 w-full rounded-sm bg-accent px-3 text-[13px] font-semibold text-accent-ink shadow-1">
                 {trainingWords('queue')}
               </button>
             )

@@ -1,6 +1,6 @@
+import { BadgesIcon, type IconComponent, SparkIcon, StarIcon } from '@luismlorenzana/uma-kit/ui'
 import { m } from 'motion/react'
 import type { FlairEventView } from '../places/racing/flair-view'
-import { BadgesIcon, SparkIcon, StarIcon, type IconComponent } from './icons'
 
 const tierTone: Record<FlairEventView['stage'], string> = {
   // Paddock tier tokens on a panel: the ring carries the tier, the text stays ink (docs/design/visual-system.md).

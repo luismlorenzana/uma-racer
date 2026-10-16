@@ -3,6 +3,7 @@
 // her bust and name, "T1 · URA Finale", the preset switch (`?preset=`, view-only, opening on her selected preset), that
 // preset's five stats and SP (`deriveUmaPreset`), and the Collect chip ("2 unlocks finished", `collect`). An id the
 // Stable doesn't hold says `unknown-uma`'s words with a way to the Stable.
+import { Tabs } from '@luismlorenzana/uma-kit/ui'
 import type { DistanceCategory } from '@racer/domain'
 import type { Place } from '@racer/domain/hub'
 import { TIER_REFUSALS } from '@racer/domain/tiers'
@@ -14,8 +15,7 @@ import { Link, useLocation, useSearchParams } from 'react-router'
 import { useGame } from '../../app/game'
 import { UmaSquare } from '../../ui/ArtSquare'
 import { amount, DISTANCE_LABEL, DISTANCES, STAT_KEYS, STAT_LABEL } from '../../ui/labels'
-import { PlaceHeader } from '../../ui/PlaceHeader'
-import { Tabs } from '../../ui/Tabs'
+import { PlacePageHeader } from '../PlacePageHeader'
 import { TapNoteLine } from '../../ui/work/TapNote'
 import { useTap, useWordsContext } from '../../ui/work/useTap'
 import { useWorkView } from '../../ui/work/view'
@@ -61,14 +61,14 @@ export function BuildFrame({ place, umaId, title, lines = [], fullScreen = false
   const name = context.umaName(umaId) || umaId
   const frame = fullScreen ? 'pt-safe pb-safe flex h-full flex-col bg-page' : 'flex min-h-full flex-col'
 
-  if (view === null || content === null) return <PlaceHeader place={place} rest={umaId} title={title(name)} />
+  if (view === null || content === null) return <PlacePageHeader place={place} rest={umaId} title={title(name)} />
   if (uma === null || header === null || preset === null) {
     return (
       <div className={frame} data-g2="build-unknown">
-        <PlaceHeader place={place} rest={umaId} title={place.name} />
+        <PlacePageHeader place={place} rest={umaId} title={place.name} />
         <div className="m-4 rounded-md border border-hairline bg-panel p-4 text-center">
           <p>{TIER_REFUSALS['unknown-uma']}</p>
-          <Link to="/town/stable" replace className="font-display mt-3 inline-flex min-h-12 items-center rounded-sm bg-accent px-5 font-semibold text-ink shadow-1">
+          <Link to="/town/stable" replace className="font-display mt-3 inline-flex min-h-12 items-center rounded-sm bg-accent px-5 font-semibold text-accent-ink shadow-1">
             {trainingWords('unknown-back')}
           </Link>
         </div>
@@ -83,7 +83,7 @@ export function BuildFrame({ place, umaId, title, lines = [], fullScreen = false
   const here = `${location.pathname}${location.search}`
   return (
     <div className={frame} data-g2="build-view" data-facility={place.id} data-uma={umaId}>
-      <PlaceHeader place={place} rest={umaId} title={title(name)} lines={lines} />
+      <PlacePageHeader place={place} rest={umaId} title={title(name)} lines={lines} />
       <section aria-label={name} className="space-y-2 border-b border-hairline px-4 py-3" data-g2="build-header">
         <div className="flex items-center gap-3">
           <span className="w-12 shrink-0"><UmaSquare outfitId={umaId} name={name} tight /></span>
@@ -97,7 +97,7 @@ export function BuildFrame({ place, umaId, title, lines = [], fullScreen = false
               data-action="collect-chip"
               disabled={tap.pending !== null}
               onClick={() => void tap.run('collect', { outfitId: umaId }, `collect:${umaId}`)}
-              className="font-display min-h-11 shrink-0 rounded-full bg-accent px-3 text-[13px] font-semibold text-ink shadow-1 disabled:opacity-45"
+              className="font-display min-h-11 shrink-0 rounded-full bg-accent px-3 text-[13px] font-semibold text-accent-ink shadow-1 disabled:opacity-45"
             >
               {header.collect === 1 ? trainingWords('collect-chip-one') : trainingWords('collect-chip', { n: header.collect })}
             </button>

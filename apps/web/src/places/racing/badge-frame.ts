@@ -1,7 +1,7 @@
 // Shared visual projection for Prestige frames (docs/design/badges.md).
 
+import { GemIcon, type IconComponent, type IconVariant, SparkIcon, StarIcon } from '@luismlorenzana/uma-kit/ui'
 import { prestigeFrame } from '@racer/domain'
-import { GemIcon, SparkIcon, StarIcon, type IconComponent, type IconVariant } from '../../ui/icons'
 
 export interface BadgeFrameStyle {
   index: number

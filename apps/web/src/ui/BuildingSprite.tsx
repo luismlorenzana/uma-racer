@@ -1,13 +1,13 @@
 // A place's uma-art building in the DOM (docs/game/11-hub-and-places.md §10.1, §10.3): a 96 × 96 box on the pinned atlas,
 // its background twice the atlas's size and positioned from the index, pixels kept crisp. A frame the pinned release
-// doesn't draw yet (§10.3's four new drawings) is the map's code placeholder (`hub/scene/markers.ts`) as SVG in its
-// page's palette, never an empty box. Imported only by lazy chunks, so the atlas never weighs on the entry.
+// doesn't draw yet is the map's code placeholder (uma-kit's `drawMarker`) as SVG in its page's palette, never an empty
+// box. Imported only by lazy chunks.
 import atlasUrl from '@luismlorenzana/uma-art/buildings/atlas.png?url'
 import atlas from '@luismlorenzana/uma-art/buildings/atlas.json'
 import type { HubPage } from '@racer/domain/hub'
 import { useMemo } from 'react'
-import { drawMarker, MARKER_BASE, svgPen } from '../hub/scene/markers'
-import { PALETTES } from '../hub/scene/palettes'
+import { drawMarker, MARKER_BASE, PALETTES, svgPen } from '@luismlorenzana/uma-kit/hub'
+import { TILE_PAGES } from '../hub/racerHub'
 
 /** Whole-number scale: 48 px frames drawn at 96 pt. */
 export const SPRITE_SCALE = 2
@@ -21,7 +21,7 @@ const GROUND = 66
 function Placeholder({ frame, page, className }: { frame: string; page: HubPage; className: string }) {
   const shapes = useMemo(() => {
     const pen = svgPen()
-    drawMarker(pen, frame, BOX / 2, GROUND - MARKER_BASE, PALETTES[page])
+    drawMarker(pen, frame, BOX / 2, GROUND - MARKER_BASE, PALETTES[TILE_PAGES[page]]!)
     return pen.shapes
   }, [frame, page])
   return (

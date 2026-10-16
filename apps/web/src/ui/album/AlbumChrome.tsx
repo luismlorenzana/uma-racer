@@ -1,3 +1,4 @@
+import { ArrowDownIcon, ArrowUpIcon, BottomSheet, Button, Chip, CloseIcon, FilterIcon, ViewCardsIcon, ViewGridIcon, ViewListIcon } from '@luismlorenzana/uma-kit/ui'
 import { useCallback, useState, type ReactNode } from 'react'
 import {
   ALBUM_VIEWS,
@@ -9,10 +10,6 @@ import {
   type SortDef,
 } from './query'
 import type { SavedView } from '../albumPrefs'
-import { BottomSheet } from '../BottomSheet'
-import { Button } from '../Button'
-import { Chip } from '../Chip'
-import { ArrowDownIcon, ArrowUpIcon, CloseIcon, FilterIcon, ViewCardsIcon, ViewGridIcon, ViewListIcon } from '../icons'
 import { Numeral } from '../Numeral'
 import { FilterTray } from './FilterTray'
 import { SortSheet } from './SortSheet'

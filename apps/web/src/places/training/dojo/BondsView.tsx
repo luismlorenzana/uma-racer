@@ -3,10 +3,10 @@
 // "Newer cards available" once its era falls behind), each slot opening T138's Card Library in pick mode on her bonded
 // cards (`set-card-set`, its refusals in words, its hand-over in one line), and **Bond more**: the Library on the cards
 // she can bond now, a pick going to the Dojo's session sheet with her, the card and its room.
+import { Sheet } from '@luismlorenzana/uma-kit/ui'
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { TypeIcon } from '../../../ui/TypeIcon'
-import { Sheet } from '../../../ui/Sheet'
 import { TapNoteLine } from '../../../ui/work/TapNote'
 import { useTap } from '../../../ui/work/useTap'
 import { cardName } from '../../../ui/words'
@@ -102,7 +102,7 @@ function Bonds({ build }: { build: BuildContext }) {
       <section aria-labelledby="dojo-more" className="space-y-1.5">
         <h2 id="dojo-more" className="text-micro">{trainingWords('bond-more')}</h2>
         <p className="text-[13px] text-ink-soft">{trainingWords('bond-more-hint')}</p>
-        <button type="button" onClick={() => setBonding(true)} data-action="bond-more" className={`${BUTTON} w-full bg-accent text-ink`}>
+        <button type="button" onClick={() => setBonding(true)} data-action="bond-more" className={`${BUTTON} w-full bg-accent text-accent-ink`}>
           {trainingWords('bond-more')}
         </button>
       </section>

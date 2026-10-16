@@ -10,16 +10,16 @@
 //   button in the sheet; spending asks once with the amount.
 // - `since` is this device's last showing, written when the sheet closes. Offline, the footer says so in one line; the
 //   save's refused taps show there too, until dismissed.
+import { navState } from '@luismlorenzana/uma-kit/shell'
+import { ChevronDownIcon, Tabs } from '@luismlorenzana/uma-kit/ui'
 import { hubWords } from '@racer/domain/hub'
 import { CHECK_IN_WORDS, type CollectAllReceipt, type RepeatReceipt, type Words } from '@racer/domain/check-in'
 import { isFree, type WorkState } from '@racer/domain/work'
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router'
-import { ChevronDownIcon } from '../../ui/icons'
 import { useGame, useHub, useNow, useRuntime, type G2Answer } from '../../app/game'
-import { navState, type G2NavState } from '../../hub/nav'
+import type { G2NavState } from '../../hub/nav'
 import type { CheckInSheetProps } from '../registry'
-import { Tabs } from '../../ui/Tabs'
 import { UmaFace } from '../../ui/UmaArt'
 import { StoppedQueueCard } from '../../ui/work/StoppedQueueCard'
 import { TapNoteLine } from '../../ui/work/TapNote'
@@ -36,7 +36,7 @@ import { SpeedUpAll } from './SpeedUpAll'
 import { summaryWords } from './words'
 
 const BUTTON = 'font-display inline-flex min-h-11 items-center justify-center rounded-sm px-3 text-[14px] font-semibold shadow-1 disabled:opacity-45 disabled:shadow-none'
-const PRIMARY = `${BUTTON} bg-accent text-ink`
+const PRIMARY = `${BUTTON} bg-accent text-accent-ink`
 const SECONDARY = `${BUTTON} border border-hairline-strong bg-panel text-ink`
 /** T138's Account at its sync row, where Sync now is. */
 const SYNC_ROW = '/town/account?row=sync'
@@ -226,7 +226,7 @@ export default function CheckInSheet({ collect }: CheckInSheetProps) {
   const [starting, setStarting] = useState(false)
   const latest = useRef(location)
   latest.current = location
-  const nav = navState(location)
+  const nav = navState<G2NavState>(location)
   const offset = context.utcOffsetMin
 
   /** Keeps fields in this history entry's state, so a reload or Back shows the same receipts. */

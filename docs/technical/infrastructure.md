@@ -48,6 +48,13 @@ Content packs plus atlases are an estimated 15–30 MB, downloaded once per cont
 
 The `DEPLOY_ENABLED` gate kept CI green before the GCP bootstrap existed; it has been `true` since 2026-09-15.
 
+**Private packages.** The install reads the owner's `@luismlorenzana/*` packages (`uma-art`, and `uma-kit` since T147)
+from GitHub Packages with the workflow's own `GITHUB_TOKEN` (`packages: read`, `.npmrc`'s `NODE_AUTH_TOKEN`). That token
+reads a package only if the package grants this repository access: each package's **Package settings → Manage Actions
+access** must list `luismlorenzana/uma-racer` with the **Read** role. A new package (uma-kit was the second) needs the
+owner to add it there once; until then `pnpm install` fails in CI with a 403 or 404 on that package, while local installs
+(with `gh auth token`) work.
+
 ## One-time bootstrap (run by the owner)
 
 The GitHub repo `luismlorenzana/uma-racer` (private) is live, and CI verifies every push. The Google side needs the owner's
