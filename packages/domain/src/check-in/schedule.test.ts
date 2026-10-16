@@ -6,7 +6,7 @@ import { cookBaseMinutes, craftBaseMinutes, gatherBaseMinutes } from '../items/w
 import { sessionBaseMinutes } from '../training/unlocks'
 import { isRefusal } from '../state/types'
 import {
-  checkInAtOrAfter, chipWords, clockTime, DEFAULT_CHECK_INS, fitSize, fitWords, localMinute, MAX_CHECK_INS, MIN_CHECK_INS, nextCheckIn,
+  checkInAtOrAfter, chipWords, clockTime, DEFAULT_CHECK_INS, durationText, fitSize, fitWords, localMinute, MAX_CHECK_INS, MIN_CHECK_INS, nextCheckIn,
   setCheckInTimes, sizeChips,
 } from './schedule'
 import { fill } from './words'
@@ -20,6 +20,25 @@ describe('the numbers', () => {
     expect(DEFAULT_CHECK_INS).toEqual([480, 780, 1350])
     expect(DEFAULT_CHECK_INS.map((t) => clockTime(t * 60_000, UTC))).toEqual(['08:00', '13:00', '22:30'])
     expect([MIN_CHECK_INS, MAX_CHECK_INS]).toEqual([1, 4])
+  })
+})
+
+describe('durations on screen (D366)', () => {
+  it('read "54m", "3h", "4h 29m" and "2d 18h", rounded up to the minute, never below "0m"', () => {
+    const MINUTE = 60_000
+    expect(durationText(54 * MINUTE)).toBe('54m')
+    expect(durationText(3 * HOUR)).toBe('3h')
+    expect(durationText(4 * HOUR + 29 * MINUTE)).toBe('4h 29m')
+    expect(durationText(4 * HOUR + 28 * MINUTE + 1)).toBe('4h 29m')
+    expect(durationText(30_000)).toBe('1m')
+    expect(durationText(0)).toBe('0m')
+    expect(durationText(-HOUR)).toBe('0m')
+    expect(durationText(66 * HOUR)).toBe('2d 18h')
+    expect(durationText(48 * HOUR + 20 * MINUTE)).toBe('2d')
+    // A grade-1 gather in play (90 base minutes × 1.2) and a cook ×4 at a Lv 3 building, in floating-point seconds.
+    expect(durationText(108 * 60 * 1000)).toBe('1h 48m')
+    expect(durationText(((4 * 288 * 60) / 1.25) * 1000)).toBe('15h 22m')
+    expect(() => durationText(Number.NaN)).toThrow(RangeError)
   })
 })
 

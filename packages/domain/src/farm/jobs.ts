@@ -15,7 +15,7 @@ import type { PlanContext, PlannedItem, WorkKindRules } from '../work/kinds'
 import { workRefusal } from '../work/refusals'
 import { SESSION_KIND, type FarmKind, type ItemStock, type WorkContent, type WorkOutput, type WorkRequest, type WorkState } from '../work/types'
 import { BUILDINGS, FARM_BUILDING_IDS, type BuildingId, type FarmBuildingId } from './buildings'
-import { familyAptitude, farmExpMultiplier, farmExpPerItem } from './level'
+import { familyAptitude, farmExpMultiplier, farmExpPerItem, SUITED_LETTERS } from './level'
 
 /** Each family's site (07 §1, README's family table): T127 owns this map. */
 export const FAMILY_SITE: Readonly<Record<FamilyId, FarmBuildingId>> = Object.freeze(Object.fromEntries(FAMILY_IDS.map((family) => {
@@ -56,6 +56,13 @@ export function bestExpTenths(content: WorkContent, outfitId: string, families: 
   const template = content.umas.get(outfitId)
   if (!template) throw new RangeError(`No Uma template ${outfitId}`)
   return Math.max(0, ...families.map((family) => farmExpMultiplier(familyAptitude(template.aptitudes, family))))
+}
+
+/** Whether her aptitude suits any of `families` (07 §3, D366): an S or A letter for one of them. None suits no family. */
+export function suits(content: WorkContent, outfitId: string, families: readonly FamilyId[]): boolean {
+  const template = content.umas.get(outfitId)
+  if (!template) throw new RangeError(`No Uma template ${outfitId}`)
+  return families.some((family) => SUITED_LETTERS.includes(familyAptitude(template.aptitudes, family)))
 }
 
 function planFarm(kind: FarmKind) {

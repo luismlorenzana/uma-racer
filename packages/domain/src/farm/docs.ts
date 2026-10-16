@@ -14,7 +14,7 @@ import {
   BUILDINGS, buildingSpeed, DOJO_FAMILIES, FACILITY_IDS, FARM_BUILDING_IDS, MAX_BUILDING_LEVEL, SLOTS, STAT_FAMILIES, totalSlots, UPGRADES,
   upgradeFamilies, type BuildingId, type BuildingLevel, type UpgradeStep,
 } from './buildings'
-import { FAMILY_APTITUDE, FARM_EXP_TENTHS, FARM_LEVEL_CAP, farmExpAtLevel, farmExpToNext, TENTHS, type FarmAptitude } from './level'
+import { FAMILY_APTITUDE, FARM_EXP_TENTHS, FARM_LEVEL_CAP, farmExpAtLevel, farmExpToNext, SUITED_LETTERS, TENTHS, type FarmAptitude } from './level'
 
 type Cell = string | number
 /** A Markdown table; an empty cell renders as `| |`, as the hand-written pages have it. */
@@ -71,8 +71,6 @@ function aptitudes(): string {
   ]))
 }
 
-/** The letters that suit a family: the owner's "4–5 levels a day when suited" (D336). */
-const SUITED: readonly Grade[] = ['S', 'A']
 /** "Working without a break" (07 §3): a whole day of listed minutes. */
 const MINUTES_A_DAY = 24 * 60
 
@@ -85,7 +83,7 @@ function multipliers(): string {
   }
   const perDay = (tenths: number, level: number) => ((MINUTES_A_DAY * tenths) / TENTHS / farmExpToNext(level)).toFixed(1)
   const last = FARM_LEVEL_CAP - 1
-  const mark = (letters: readonly Grade[], text: string) => (letters.some((l) => SUITED.includes(l)) ? bold(text) : text)
+  const mark = (letters: readonly Grade[], text: string) => (letters.some((l) => SUITED_LETTERS.includes(l)) ? bold(text) : text)
   return table(['Her aptitude for the family', ...bands.map((b) => b.letters.join(', '))], [
     ['Farm EXP ×', ...bands.map((b) => mark(b.letters, (b.tenths / TENTHS).toFixed(1)))],
     [`Levels a day, working without a break, at Lv 1 → Lv ${last}`, ...bands.map((b) => `${perDay(b.tenths, 1)} → ${perDay(b.tenths, last)}`)],

@@ -69,6 +69,12 @@ export const FAMILY_APTITUDE: Readonly<Record<FamilyId, FarmAptitude>> = Object.
 /** Farm EXP × her aptitude letter, in tenths (07 §3): S 1.8, A 1.6, B 1.2, C 1.0, D 0.9, E–G 0.8. */
 export const FARM_EXP_TENTHS: Readonly<Record<Grade, number>> = Object.freeze({ S: 18, A: 16, B: 12, C: 10, D: 9, E: 8, F: 8, G: 8 })
 
+/**
+ * The letters that suit a family (07 §3): the owner's "4–5 levels a day when suited" (D336). The job sheet marks an Uma
+ * with one for what she'd make as suited and preselects her first (D366).
+ */
+export const SUITED_LETTERS: readonly Grade[] = Object.freeze(['S', 'A'] as const)
+
 /** The Farm EXP multiplier for an aptitude letter, **in tenths** (18 is ×1.8), so EXP stays exact until it rounds. */
 export const farmExpMultiplier = (grade: Grade): number => FARM_EXP_TENTHS[grade]
 

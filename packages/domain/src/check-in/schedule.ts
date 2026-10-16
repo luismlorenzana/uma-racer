@@ -53,6 +53,22 @@ export function clockTime(at: number, utcOffsetMin: number): string {
   return `${String(Math.floor(minute / 60)).padStart(2, '0')}:${String(minute % 60).padStart(2, '0')}`
 }
 
+/**
+ * A span as the screens show it (D366): "54m", "3h", "4h 29m", "2d 18h", whole minutes rounded up, so a job with
+ * seconds left never reads "0m". A span of nothing or less reads "0m"; a finished job's screen says Done instead.
+ * The Farm and Training show how long a job takes or has left this way, never the clock time it ends.
+ */
+export function durationText(ms: number): string {
+  if (!Number.isFinite(ms)) throw new RangeError(`A span is a finite number of milliseconds: ${ms}`)
+  const minutes = Math.max(0, Math.ceil(ms / MS_PER_MINUTE - 1e-9))
+  const days = Math.floor(minutes / MINUTES_PER_DAY)
+  const hours = Math.floor((minutes % MINUTES_PER_DAY) / 60)
+  const rest = minutes % 60
+  if (days > 0) return hours === 0 ? `${days}d` : `${days}d ${hours}h`
+  if (hours > 0) return rest === 0 ? `${hours}h` : `${hours}h ${rest}m`
+  return `${rest}m`
+}
+
 /** The first check-in strictly after `now`. A clock moved back gives a later one, never a past one. */
 export function nextCheckIn(now: number, times: readonly number[], utcOffsetMin: number): number {
   if (!Number.isSafeInteger(now)) throw new RangeError(`now must be integer milliseconds: ${now}`)

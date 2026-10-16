@@ -7,7 +7,8 @@ import { itemById, type ItemGrade } from '../items/catalogue'
 import type { PlanContext, PlannedItem } from '../work/kinds'
 import { WORK_KINDS } from '../work/kinds'
 import type { FarmKind, SlotRef, WorkState } from '../work/types'
-import { bestExpTenths, expFamilies, FAMILY_SITE, FARM_KINDS, farmItemSeconds, makesHere } from './jobs'
+import { bestExpTenths, expFamilies, FAMILY_SITE, FARM_KINDS, farmItemSeconds, makesHere, suits } from './jobs'
+import { FARM_EXP_TENTHS, SUITED_LETTERS } from './level'
 
 const context = (building: SlotRef['building'], speed = 1): PlanContext => ({ slot: { building, slot: 0 }, speed, earlier: [], env: ENV })
 const plan = (state: WorkState, outfitId: string, kind: FarmKind, item: string, count: number, building: SlotRef['building'], speed = 1) =>
@@ -78,6 +79,17 @@ describe('planning a Farm job', () => {
     expect(bestExpTenths(ENV.content, SPRINTS.id, ['fish', 'sweets'])).toBe(18)
     expect(items(plan(sixGrades, SPRINTS.id, 'cook', 'duo-power-speed-3', 1, 'kitchen'))[0]!.farmExp).toBe(Math.round((18_720 * 18) / 150))
     expect(items(plan(sixGrades, SPRINTS.id, 'cook', 'feast-4', 1, 'kitchen'))[0]!.farmExp).toBe(Math.round((19_440 * 18) / 150))
+  })
+
+  it('marks an Uma suited by an S or A letter for any of the families (07 §3, D366)', () => {
+    expect(SUITED_LETTERS).toEqual(['S', 'A'])
+    // Sweets is her Sprint (S); Fruits her Long (G); a Duo of Fish and Sweets counts the Sweets.
+    expect(suits(ENV.content, SPRINTS.id, ['sweets'])).toBe(true)
+    expect(suits(ENV.content, SPRINTS.id, ['fruits'])).toBe(false)
+    expect(suits(ENV.content, SPRINTS.id, ['fish', 'sweets'])).toBe(true)
+    expect(suits(ENV.content, SPRINTS.id, [])).toBe(false)
+    expect(suits(ENV.content, SPRINTS.id, ['sweets'])).toBe(bestExpTenths(ENV.content, SPRINTS.id, ['sweets']) >= FARM_EXP_TENTHS.A)
+    expect(() => suits(ENV.content, 'nobody', ['sweets'])).toThrow(RangeError)
   })
 
   it('refuses what the building does not make', () => {
