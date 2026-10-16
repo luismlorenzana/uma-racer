@@ -36,7 +36,7 @@ function SessionGate({ content }: { content: Unready }) {
     }
   }
   return (
-    <div className="pt-safe pb-safe flex h-dvh items-center px-4" data-g2="session-gate" data-gate={diagnostic.code}>
+    <div className="pt-safe pb-safe fixed inset-0 flex items-center px-4" data-g2="session-gate" data-gate={diagnostic.code}>
       <Panel className="w-full text-center" role="alert">
         <p className="font-display text-lg font-bold">{diagnostic.title}</p>
         <p className="mt-1 text-sm text-ink-soft">{diagnostic.message}</p>

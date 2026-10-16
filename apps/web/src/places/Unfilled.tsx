@@ -24,7 +24,7 @@ export function UnfilledReveal({ params }: FlowProps) {
   const umaId = params['umaId'] ?? ''
   const name = useUmaName(umaId)
   return (
-    <div data-g2="unfilled-reveal" className="pt-safe pb-safe flex h-dvh flex-col items-center justify-center gap-4 bg-stage px-6 text-ink-on-dark">
+    <div data-g2="unfilled-reveal" className="pt-safe pb-safe flex h-full flex-col items-center justify-center gap-4 bg-stage px-6 text-ink-on-dark">
       <UmaArt outfitId={umaId} size={160} />
       <h1 className="font-display text-2xl font-bold">{name}</h1>
       <Link

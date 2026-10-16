@@ -18,7 +18,7 @@ function SaveError({ words }: { words: string }) {
     }
   }
   return (
-    <div className="pt-safe pb-safe flex h-dvh items-center px-4">
+    <div className="pt-safe pb-safe fixed inset-0 flex items-center px-4">
       <Panel className="w-full text-center" role="alert">
         <p className="font-display text-lg font-bold">{hubWords('save-error-title')}</p>
         <p className="mt-1 text-sm text-ink-soft">{words}</p>

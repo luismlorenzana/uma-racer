@@ -30,14 +30,14 @@ export default function Reveal({ params }: FlowProps) {
 
   if (ready && (uma === null || template === null)) {
     return (
-      <main className="pt-safe pb-safe flex h-dvh flex-col items-center justify-center gap-4 bg-stage px-6 text-center text-ink-on-dark" data-g2="reveal">
+      <main className="pt-safe pb-safe flex h-full flex-col items-center justify-center gap-4 bg-stage px-6 text-center text-ink-on-dark" data-g2="reveal">
         <p className="text-lg">That Uma isn't in your Stable.</p>
         <Link to="/town/stable" replace className={`${button} bg-accent text-accent-ink`}>Open the Stable</Link>
       </main>
     )
   }
   return (
-    <main className="pt-safe pb-safe relative flex h-dvh flex-col items-center justify-center overflow-hidden bg-stage px-6 text-center text-ink-on-dark" data-g2="reveal">
+    <main className="pt-safe pb-safe relative flex h-full flex-col items-center justify-center overflow-hidden bg-stage px-6 text-center text-ink-on-dark" data-g2="reveal">
       <m.div aria-hidden className="absolute size-72 rounded-full bg-accent/25 blur-3xl" initial={reduced ? false : { scale: 0.4, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.65 }} />
       <m.div
