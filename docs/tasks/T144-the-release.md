@@ -1,6 +1,13 @@
 # T144 — The release
 
-**M034 · last task: needs T143 · not started.**
+**M034 · last task: needs T143 · steps 1–9 done 2026-10-15; step 10 waits on the owner.**
+
+> **As run (2026-10-15).** The owner said go. `cutover/g2` merged into `main` as `ec5b1bd` and deployed as
+> racer-api-00188, and the content without the retired kinds published as `9ba4cdd37cca`. The owner's first boot
+> purged `players/{uid}` (30 collections, 3,676 documents; the marker is at `saves/{uid}/meta/purge`, and `players/` is
+> empty), and the retired bucket objects and local sources were deleted (none of step 1.6's `RETIRED` remain).
+> **Step 10 is next:** it runs once the owner confirms in chat that the new account is theirs, and its release decision
+> takes D362, reserved for it. Until then `POST /api/legacy/purge` and the boot's purge call stay.
 
 Read:
 - [AGENTS.md](../../AGENTS.md), [CLAUDE.md](../../CLAUDE.md) (production operations: gcloud scoping, deploy watching,

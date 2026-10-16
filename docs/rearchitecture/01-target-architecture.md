@@ -82,7 +82,7 @@ apps/web/src/
   ui/         racer components ("Paddock" visual system), icons
 ```
 
-Screens become **places** (uma-rpg's pattern): each has a Peek (a half sheet, game/11 §1), a Page (its full screen) and
+Screens become **places** (uma-rpg's pattern): each has a Peek (uma-rpg's side panel, game/11 §1), a Page (its full screen) and
 optionally a Counter (a number on the Hub), registered in one table and lazy-loaded. A route is
 `/:page/:place/*`, so every place is a link and Back works ([04](04-hub.md)).
 

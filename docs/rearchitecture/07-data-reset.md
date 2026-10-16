@@ -4,6 +4,11 @@ Every account starts over (D323). All player data, server and device, is deleted
 (**generation 2**) has a new local database, a new Firestore root and a new sync protocol, and a new account starts
 with **20 Uma Tickets**. The owner accepts the loss of everything earned so far.
 
+> **Done 2026-10-15 (T144).** The owner's first generation-2 boot wiped the phone and purged `players/{uid}` (30
+> collections, 3,676 documents); `players/` is empty and the marker is `saves/{uid}/meta/purge`. "Today" below means
+> the old app, before the wipe. The purge endpoint and the boot's call leave with T144's step 10; the device wipe stays
+> until the redirects leave (phase 4 or 5, D365).
+
 ## 1. Why a new generation instead of a migration
 
 Today a reset would have to fight the save's own protections:
@@ -73,8 +78,8 @@ document stays as a record.
 >
 > Then **one lane** carries the outbox in order, 100 rows a batch, with the create always first. A 426 stops it until
 > the app restarts, and a 409 drops the device's save and outbox so it boots as a new device. Only the new game's own
-> boot wipes and purges. The dev mount (`/dev/g2/`) opens the seeds by default, the device save with `?save=device`, and
-> wipes and purges only with `&wipe` too, so a developer's own data is never touched by opening it.
+> boot wipes and purges. The dev mount (`/dev/seeds/` since T143) opens the seeds by default, the device save with
+> `?save=device`, and wipes and purges only with `&wipe` too, so a developer's own data is never touched by opening it.
 
 For checking: Claude can list `players/` before and after with the scoped gcloud configuration
 (`CLOUDSDK_ACTIVE_CONFIG_NAME=default CLOUDSDK_CORE_PROJECT=uma-racer`). Nothing in this plan changes the active

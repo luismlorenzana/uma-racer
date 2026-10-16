@@ -2,8 +2,9 @@
 
 > **Superseded by the manual's [11 · Hub and places](../game/11-hub-and-places.md) (D333; 13 §7).** The rework's four
 > pages (Town Hall, Training, Racing, Farm) replaced this page's place list, and phase 3 built them as plain DOM pages
-> (T137–T143). The pattern here (registry, Peek and Page, routes, the DOM hit layer) still stands, and 11 keeps it; the
-> canvas Hub is phase 6. Kept as the plan's history.
+> (T137–T143). The pattern here (registry, Peek and Page, routes, the DOM hit layer) still stands, and 11 keeps it. The
+> canvas Hub shipped as phase 6, ahead of phase 5 (T145, D363): uma-rpg's Hub copied into the racer, with the Peek as
+> uma-rpg's side panel. Kept as the plan's history.
 
 The Home screen's scrolling list of cards becomes a **Hub**: pixel-art pages of places, each place opening its
 screen. It's the pattern uma-rpg runs today (its `docs/game/sections.md`), built on the shared `uma-scene` hub

@@ -21,19 +21,32 @@ and bonded per Uma, uma-rpg's farming catalogue, Prize Money and the Exchange, a
 |---|---|---|
 | 1 | M032 — a sound base: the API on the workspace domain, the startup budget, GitHub Packages, the live manual | **Done, 2026-10-14** (D337) |
 | 2 | M033 — the rework's rules and `sim:loop` (T125–T133) | **Done, 2026-10-14** (D340–D351) |
-| 3 | [M034 — the generation-2 cutover and the new game](M034-generation-2-cutover.md) | **Shipped 2026-10-15** (T134–T144, D352–D361): `ec5b1bd`, racer-api-00188, content `9ba4cdd37cca`; the owner's old save is purged and the retired content deleted. Left: T144's follow-up, which removes the purge endpoint once the owner confirms the new account is theirs |
+| 3 | [M034 — the generation-2 cutover and the new game](M034-generation-2-cutover.md) | **Shipped 2026-10-15** (T134–T144, D352–D361): `ec5b1bd`, racer-api-00188, content `9ba4cdd37cca`. The owner's old save is purged (30 collections, 3,676 documents; `players/` is empty) and the retired bucket objects are deleted. **Left: [T144](T144-the-release.md)'s step 10** (below) |
+| 6 | The Hub: uma-rpg's Phaser town on the four pages | **Shipped 2026-10-15, ahead of phase 5** (T145, D363): `b2cb668`, racer-api-00189. Its own art (four buildings, the Racing ground, currency marks, tier crests) landed as uma-art 2.7.0 from ChatGPT's packets A01 and A02 (D364): `1db8065`, racer-api-00190 |
 | 4 | Push notifications, a port of uma-rpg's | Only if the owner asks after playing (D336) |
-| 6 | The Hub: uma-rpg's Phaser town on the four pages | **Shipped 2026-10-15, ahead of phase 5** (T145, D363): `b2cb668`, racer-api-00189. Its own art (four buildings, the Racing ground, currency marks, tier crests) landed as uma-art 2.7.0 from ChatGPT's packets A01 and A02 (D364) |
-| 5, 7–8 | Platform master data · the Farm and Training scenes · the race on Phaser | Specified in turn. Whether the whole interface moves to pixel art is the owner's call after living with the Hub |
-| 9 | World Expeditions | Starts when phase 3 ships; must land within about 16–20 weeks of it |
+| 5 | Platform master data and the first shared packages | Planned, specified in turn ([08](../rearchitecture/08-phases.md)) |
+| 7 | The Farm and Training places as pixel-art scenes | Planned, specified in turn |
+| 8 | The race on Phaser; PixiJS leaves the repo | Planned, specified in turn |
+| 9 | World Expeditions | Next in line now that phase 3 has shipped; not specified yet. It must land within about 16–20 weeks of 2026-10-15 (by about 2027-02-04 to 2027-03-04), before the first Uma finishes tier 1's last career |
+
+**Still open, as of 2026-10-16:**
+1. **T144's step 10, the follow-up release.** Once the owner confirms in chat that the new account is theirs, it
+   removes `POST /api/legacy/purge` and the boot's purge call with their tests, deletes this folder's M034 and T144
+   specs (D104), moves phase 3 to "Completed and removed", and writes the release decision. **D362 is reserved for that
+   record.**
+2. **The owner's open direction: whether the whole interface moves to a pixel-art look**, not only the Hub
+   ([open questions](../open-questions.md)). Nothing is planned on it until the owner says.
+3. **Phases 4, 5, 7, 8 and 9** above, each specified when it starts. The redirects and the first-boot wipe leave with
+   phase 4 or 5, whichever ships first (D365).
 
 The `pre-split` tag marks the old game.
 
 **Retired unbuilt (D339):** M024 (T081), M010 (T035) and M011 (T036–T039). The rework removes what they built on.
 Game feel and device acceptance for the new game are planned after phase 3.
 
-**Next free numbers: M035 and T146.** Numbers are never reused, so a decision that mentions T014 always means the same
-work. T057 was consumed by the per-scenario limit-break branch and is not reused.
+**Next free numbers: M035, T146 and D366** (D362 is reserved for T144's release record). Numbers are never reused, so
+a decision that mentions T014 always means the same work. T057 was consumed by the per-scenario limit-break branch and
+is not reused.
 
 ## Completed and removed
 
@@ -42,6 +55,7 @@ are named by their old path (`design/uma-rpg.md` …); read them with `git show 
 
 | Work | Landed | Carried by | Last commit with the specs |
 |---|---|---|---|
+| A01–A02 (ChatGPT handoff packets) — the racer's four buildings, the Racing page's tiles, the currency marks, tier crests and Speed Ticket icon, published as uma-art 2.6.0 and 2.7.0 | 2026-10-15 | [game/11](../game/11-hub-and-places.md) §10.3, D364 | `d25d4e9` (`docs/handoff/tasks/`) |
 | T145 — uma-rpg's Hub on the Home screen: the Phaser town, the side-panel quick look, stand-ins for the four buildings awaiting art | 2026-10-15 | [game/11](../game/11-hub-and-places.md), D363 | none (built from the owner's scope call in chat) |
 | T143 — The switch (M034): generation 2 becomes the app, the retired systems are deleted, the docs are rewritten as built | 2026-10-15 | [The manual](../game/README.md), [its architecture's "Decided at the switch"](../game/architecture.md#decided-at-the-switch-t143), [rework/13](../rework/13-removals-and-plan-changes.md) §8, D361 | `1a39f95` |
 | M033 / T125–T133 — The rework's rules, `sim:loop` and the builds against the field | 2026-10-14 | [The manual](../game/README.md) (live blocks), `packages/domain/src/<area>/` (moved there by T143), D340–D350 | M033: `adb10ed`; each T spec: the commit before its merge |

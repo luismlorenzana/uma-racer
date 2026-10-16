@@ -15,13 +15,13 @@ session first, and the racer then pins the released version.
 |---|---|---|---|
 | **1** | A sound base: the API on the workspace domain, the startup budget enforced, GitHub Packages, the live manual | **Done, 2026-10-14 (D337)** | Phase 1 |
 | **2** | **The rework's rules in the domain**, pure and tested, and `pnpm sim:loop` passing [game/12](../game/12-economy-and-pacing.md) §12. No UI and no save change | **Done, 2026-10-14 (D340–D351)** | — (new) |
-| **3** | **Clean slate and the new game:** generation-2 save in the rework's shape, the wipe and purge, every deletion (RPG, Spark, Puzzles, Friendship, CL, stars, tokens, today's Farm), the new game on plain DOM screens. **The owner starts playing here** | **Done, 2026-10-15** (T134–T144, D352–D361; [M034](../tasks/M034-generation-2-cutover.md)) | Phase 2 |
+| **3** | **Clean slate and the new game:** generation-2 save in the rework's shape, the wipe and purge, every deletion (RPG, Spark, Puzzles, Friendship, CL, stars, tokens, today's Farm), the new game on plain DOM screens. **The owner starts playing here** | **Shipped 2026-10-15** (T134–T144, D352–D361; [M034](../tasks/M034-generation-2-cutover.md)): `ec5b1bd`, racer-api-00188, content `9ba4cdd37cca`, the owner's old save purged. Left: T144's step 10, the purge endpoint's removal | Phase 2 |
 | 4 | **Optional:** push notifications, a port of uma-rpg's, only if the owner asks | Waits on the owner | — (new) |
 | 5 | Platform master data and the first shared packages | Planned | Phase 3 |
-| **6** | The Hub: four pages, the place registry, art ([game/11](../game/11-hub-and-places.md)) | **Done, 2026-10-15, ahead of phase 5** (T145, D363): uma-rpg's Phaser town, with its own uma-art 2.7.0 (A01–A02, D364) | Phase 4 |
+| **6** | The Hub: four pages, the place registry, art ([game/11](../game/11-hub-and-places.md)) | **Shipped 2026-10-15, ahead of phase 5** (T145, D363): uma-rpg's Phaser town, `b2cb668`, racer-api-00189; with its own uma-art 2.7.0 (A01–A02, D364), `1db8065`, racer-api-00190 | Phase 4 |
 | 7 | The Farm and Training Hub as pixel-art scenes on `uma-idle` | Planned | Phase 5 |
 | 8 | The race on Phaser; PixiJS leaves the repo | Planned | Phase 6 |
-| **9** | **World Expeditions:** 13 pools, about 89 course layouts, local champions, the Expedition Map, `sim:expeditions`. **Deadline:** before the first Uma finishes tier 1's last career, about 16–20 weeks after phase 3 | Starts as soon as phase 3 ships | — (new) |
+| **9** | **World Expeditions:** 13 pools, about 89 course layouts, local champions, the Expedition Map, `sim:expeditions`. **Deadline:** before the first Uma finishes tier 1's last career, about 16–20 weeks after phase 3 | Next, now that phase 3 has shipped; not specified yet. Due about 2027-02-04 to 2027-03-04 | — (new) |
 | 9b | Race engine v10 inputs for tier 3's Expedition mechanics | About a year in | — (new) |
 
 The first draft's phase 7 ("the owner's docs") is the rework itself, and its phase 8 ("the Puzzles' future") is
@@ -100,6 +100,13 @@ merge.
 | 4.5 | uma-racer | Delete `HomeScreen`, `TabBar`, `TopBar` and the old routes; refresh `docs/design/ux.md` |
 
 **Exit:** [04](04-hub.md) §7.
+
+> **As built (T137, T143, T145; D353, D363, D364).** 4.3 shipped early, with phase 3 (T137), and 4.5's deletions with
+> the switch (T143). 4.4 shipped as T145: uma-rpg's Hub copied into `apps/web/src/hub/` rather than extracted, so 4.1's
+> `uma-scene` package waits until both games run the same Hub. 4.2's `racer` family is four frames in uma-art's shared
+> `buildings` atlas (Racecourse, Trophy Hall, Card Library, Gym) plus the `racing` tiles, the currency marks and the
+> tier crests (2.6.0 and 2.7.0). The pages are the rework's four, not this draft's three
+> ([game/11](../game/11-hub-and-places.md)).
 
 ## Phase 5: the Farm (now phase 7)
 

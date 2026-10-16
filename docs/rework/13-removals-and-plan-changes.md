@@ -3,8 +3,9 @@
 > **Status: the plan, carried out through phase 3 (generation 2, D361); first written 2026-10-13 (D326–D335).** What
 > left Uma Racer with the rework, what stays, and how the re-architecture plan
 > ([docs/rearchitecture/](../rearchitecture/README.md), D321–D325) changed so the rework and the rebuild ship as one
-> game, wiped once. §1's removals and §7's docs are done (T143); §6 is the generation-2 save as it runs, and §4's later
-> phases are still ahead. The game itself is described in [the manual](../game/README.md).
+> game, wiped once. §1's removals and §7's docs are done (T143); §6 is the generation-2 save as it runs, which T144
+> released on 2026-10-15; of §4's later phases, phase 6's Hub shipped ahead of phase 5 (T145, D363) and the rest are
+> still ahead ([tasks](../tasks/README.md)). The game itself is described in [the manual](../game/README.md).
 
 ## 1. What leaves the game
 

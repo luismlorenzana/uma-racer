@@ -1,7 +1,10 @@
 # M034 — The generation-2 cutover and the new game
 
 **Re-architecture phase 3** ([08](../rearchitecture/08-phases.md), [rework/13](../rework/13-removals-and-plan-changes.md) §4).
-**State: specified 2026-10-15; T134–T143 landed on `cutover/g2` 2026-10-15; T144 next.**
+**State: shipped 2026-10-15** (`ec5b1bd`, racer-api-00188, content `9ba4cdd37cca`). T134–T143 landed on `cutover/g2`
+and T144's steps 1–9 ran the release; **only T144's step 10 is left**, the follow-up that removes the purge endpoint
+once the owner confirms the new account is theirs, and then deletes this spec (D104). This page is the plan as it was
+run: [the manual](../game/README.md) describes the game, and [the task plan](README.md) the state.
 
 ## Outcome
 

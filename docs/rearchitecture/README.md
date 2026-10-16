@@ -7,8 +7,9 @@
 > simulated before the wipe. The changes to every page and decision here are listed in
 > [rework/13](../rework/13-removals-and-plan-changes.md). Where the two disagree, the rework wins.
 
-> **Status: phases 1 and 2 built 2026-10-14 (D337, D340–D350); phase 3, the cutover, built 2026-10-15 (D352–D361) and
-> shipping with T144 ([tasks](../tasks/README.md)).** The game as it runs is [the manual](../game/README.md). The order of work is
+> **Status: phases 1 and 2 built 2026-10-14 (D337, D340–D350); phase 3, the cutover, shipped 2026-10-15 (D352–D361,
+> T144), and phase 6's Hub ahead of phase 5 the same day (T145, D363, D364).** The game as it runs is
+> [the manual](../game/README.md), and what's left is [the task plan](../tasks/README.md). The order of work is
 > [08](08-phases.md)'s revised table.
 >
 > **First written 2026-10-12 (D321–D325).** This folder describes how uma-racer is rebuilt
