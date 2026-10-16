@@ -112,7 +112,7 @@ operations and queries; no screen or API handler restates a rule or a number.
 | `check-in`, `planner` | Every operation and its plain words, Collect all, Repeat, batch sizing, the check-in summary, the planner's needs and suggestions |
 | `builds` | The committed balance reports of `sim:builds` and `sim:careers` |
 | `sim` | `pnpm sim:loop`, the whole economy from a fresh account, its CI checks, and the invented content the dev seeds use |
-| `hub` | The 23 places of the four pages with their routes, counters, uma-art frames and grid cells, and `hubView`, which gathers what the shell draws: the pill's counts, tab badges, slot pips, counters, the featured Uma and the account bar's chips |
+| `hub` | The 23 places of the four pages with their routes, counters, uma-art frames and map positions, and `hubView`, which gathers what the shell draws: the pill's counts, tab badges, slot pips, counters, the featured Uma and the account bar's chips |
 
 The rules every area follows:
 - **Pure**, as above.
@@ -163,7 +163,7 @@ loop itself runs on the domain's source, and its test runs the checks in CI.
 |---|---|
 | `main.tsx` | The entry: TanStack Query, the auth provider (Firebase lazy), the content provider, the motion root, the session, the live router and the update prompt. In dev builds a path under `/dev/seeds/` mounts the seeds instead |
 | `app/` | The router (`router.tsx`, `routes.tsx`), the old app's redirects (`redirects.ts`), the start rule (`start.ts`), the session (`session.tsx`), the game port (`game.ts`, `G2Game`) and its lazy boot (`boot.ts`), the 30-second clock, the motion root, the update prompt (`UpdateNotice.tsx`, `register-updates.ts`, `update-lifecycle.ts`) and the build id (`build.ts`) |
-| `hub/` | The shell ([11](11-hub-and-places.md) §2): the account bar, the bottom bar with the raised Race button, the ☰ menu and global sheets, the page grids with their tiles and pips, the sheet host |
+| `hub/` | The shell ([11](11-hub-and-places.md) §2): the account bar, the bottom bar with the raised Race button, the ☰ menu and global sheets, the sheet host; and uma-rpg's Hub, ported (T145): each page's map (`HubPage.tsx`) on a lazy Phaser canvas (`HubCanvas.tsx` over `scene/`: `createHubGame`, `HubScene`, the seeded `terrain`, the placeholder `markers` and the page `palettes`), the shared grid (`grid.ts`), the place links with their pips (`PlaceTargets.tsx`, `Pips.tsx`), swipes (`swipe.ts`) and the side panel for Peeks (`OverlayHost.tsx`) |
 | `places/` | Every place's Peek, Page, sub-pages and sheets, filled through `places/registry.tsx` (each a lazy chunk): `stable`, `reveal`, `warehouse`, `exchange`, `card-library`, `account`, `training`, `farm`, `racing`, `check-in`, `needs`. Each screen draws a pure view model (`model.ts`) over the rules' state |
 | `save/` | The device's generation-2 save and its one sync lane ([below](#the-save-and-sync)) |
 | `ui/` | Shared pieces: primitives, the icon set, the work pieces (`ui/work/`: slot cards, Speed Tickets, Recall, queue and size chips, `useTap`), `ItemIcon`, `TreeGraph`, the one Uma picker (`UmaPicker`, D181), the album chrome and query engine (`ui/album/`), art and labels |
@@ -198,8 +198,8 @@ loop itself runs on the domain's source, and its test runs the checks in CI.
 The live router ([11](11-hub-and-places.md) §7) has no basename:
 - `/` is the start rule: a new account opens the Stable's Locked tab, anything that needs a tap opens the Farm page,
   otherwise the last page viewed (`uma-racer:g2:lastPage`) or Town Hall.
-- `/:page` is a page grid (`town`, `training`, `racing`, `farm`), with `?peek=:place` for a Peek and
-  `?sheet=menu | featured | check-in` for a global sheet, so Back closes either.
+- `/:page` is a page's map (`town`, `training`, `racing`, `farm`), with `?peek=:place` for a Peek in the side panel
+  and `?sheet=menu | featured | check-in` for a global sheet, so Back closes either.
 - `/:page/:place/*` is a place: its sub-page slots, then its Page. `/collection/reveal/uma/:umaId` is the full-screen
   reveal.
 - **Redirects:** the old app's routes go to their new paths (`app/redirects.ts`, 11 §7.2's table, walked by
@@ -208,7 +208,8 @@ The live router ([11](11-hub-and-places.md) §7) has no basename:
 
 ### Dev seeds
 
-In dev builds, `main.tsx` loads `dev/main.tsx` for any path under `/dev/seeds/`, which serves the same routes under
+In dev builds, `main.tsx` loads `dev/main.tsx` for `/dev/seeds`, `/dev/seeds/` and any path under it (`isSeedsPath`),
+whose root runs the start rule as `/` does, and which serves the same routes under
 that basename over an in-memory port on `@racer/domain/sim`'s invented accounts: `?seed=busy | fresh | quiet | gate |
 promote | tired | spent | stopped`, and `?at=HH:MM` to move the clock. `?save=device` boots the device save on the
 seeds' content instead (`&wipe` adds the wipe and the purge). It mounts no auth, content or service worker, so art falls
@@ -312,10 +313,14 @@ API as built", "The web save as built"); this is the outline.
 
 - **Startup JS ≤ 180 KB gzip, enforced.** `scripts/check-size.mjs` runs at the end of the web build. It fails when the
   HTML entry, or the entry plus every chunk it statically imports, passes the budget; dynamic imports don't count. It
-  also fails when the build holds any dev-only module (`src/dev/`). Measured at 143.22 KB on 2026-10-15.
+  also fails when the build holds any dev-only module (`src/dev/`). Measured at 143.38 KB on 2026-10-15 (T145), with
+  the Hub's Phaser chunk (1.40 MB, 374 KB gzip) loaded lazily beside it. The service worker precaches files up to 3 MB,
+  so that chunk and uma-art's atlases are on the phone after install.
 - **Reach.** Every web source file is reachable from `src/main.tsx`, and every domain source file from an export entry
   or `src/docs/render.ts`, checked with `tsc --listFilesOnly` (T143's check 5).
 - **PixiJS for the race only** until phase 8 ports it to Phaser: `pixi.js` is imported only under `scenes/race/`.
+- **Phaser for the Hub only:** `phaser` (4.2.1, exact) is imported only under `hub/scene/`, by the lazy chunk
+  `HubCanvas` loads. The Hub's game is destroyed whenever its map unmounts, so it never runs beside the race scene.
 - 390×844 portrait first, 44 pt targets, safe-area padding, transform and opacity animation only
   ([game-web-tech.md](../research/game-web-tech.md)).
 
