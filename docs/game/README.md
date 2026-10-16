@@ -77,8 +77,8 @@ Looking for one thing? Search this folder first (`rg -n "handicap" docs/game`). 
 The manual describes what runs, so a later phase's part is marked where it sits:
 - **A section about a later phase** stays in its page under a heading **"Not built yet (phase N)"**, so links into the
   page keep working. Today: [02](02-check-ins-and-notifications.md) §7, push notifications (phase 4);
-  [04](04-tiers-and-promotion.md) §10's Hall of Fame place (phase 6); [11](11-hub-and-places.md) §10.3's new drawings
-  (phase 6) and §11's canvas maps (phase 6) and place scenes (phase 7).
+  [04](04-tiers-and-promotion.md) §10's Hall of Fame place (phase 6); [11](11-hub-and-places.md) §11's place scenes
+  (phase 7). §10.3's new drawings are uma-platform's (A01, A02), drawn as placeholders until they ship (§10.4).
 - **A sentence or row** about a later phase says so in place: "(phase 4, not built)".
 - **A whole system of a later phase** keeps its page outside the manual: World Expeditions,
   [rework/10](../rework/10-expeditions.md) (phase 9).

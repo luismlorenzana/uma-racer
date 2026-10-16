@@ -8,6 +8,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderG2, seedGame, stubStorage } from '../__fixtures__/testing'
 import { BOOTING_GAME } from './game'
 import { REDIRECTS, redirectPath } from './redirects'
+import { isSeedsPath, SEEDS_PATH } from './router'
+import { RULES } from './rules'
 import { LAST_PAGE_KEY, startPath } from './start'
 
 afterEach(() => {
@@ -90,5 +92,22 @@ describe('the start rule (§2.4)', () => {
 
   it('waits on `/` while the game opens', async () => {
     expect(await landing('/')).toBe('/')
+  })
+})
+
+describe("the seeds' mount (dev builds, T145)", () => {
+  it('serves its root, with or without the trailing slash, and everything under it, and nothing else', () => {
+    expect(['/dev/seeds', '/dev/seeds/', '/dev/seeds/town', '/dev/seeds/dev/check-in'].map(isSeedsPath)).toEqual([true, true, true, true])
+    expect(['/', '/dev', '/dev/seedsx', '/dev/seed', '/town'].map(isSeedsPath)).toEqual([false, false, false, false, false])
+  })
+
+  it.each(['/dev/seeds', '/dev/seeds/'])('lands %s where the live root lands, by the start rule', async (root) => {
+    const live = renderG2('/', seedGame('busy'))
+    await waitFor(() => expect(live.where()).not.toBe('/'))
+    const expected = live.where()
+    cleanup()
+    const seeds = renderG2(root, seedGame('busy'), RULES, SEEDS_PATH)
+    await waitFor(() => expect(seeds.where()).toBe(expected))
+    expect(expected).toBe('/farm')
   })
 })

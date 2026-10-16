@@ -1,11 +1,12 @@
 # 11 · Hub and places
 
-> **Status: as built, phase 3 (generation 2, D361); first written 2026-10-13 (D333).** The Hub's four pages, every place
-> on them, the routes, the two play modes as tap-by-tap flows, and the art: what uma-art already draws and what a
-> uma-platform session draws new. Phase 3 runs it on plain DOM pages (§11): the registry and Hub view in
-> `@racer/domain/hub` (T137, D353), the routes, redirects and boot in `apps/web/src/app/`, the shell in `hub/`, and every
-> Peek, Page and sheet in `places/` (T138–T142). The canvas maps (phase 6), the place scenes (phase 7) and the new
-> drawings (§10.3) are not built yet.
+> **Status: as built, phase 3 (generation 2, D361) with phase 6's canvas Hub (T145, D363); first written 2026-10-13
+> (D333).** The Hub's four pages, every place on them, the routes, the two play modes as tap-by-tap flows, and the art:
+> what uma-art already draws and what a uma-platform session draws new. The registry and Hub view are
+> `@racer/domain/hub` (T137, D353); the routes, redirects and boot `apps/web/src/app/`; every Peek, Page and sheet
+> `places/` (T138–T142). Since T145 each page is uma-rpg's Hub, ported: a pixel-art map on a lazy Phaser canvas with DOM
+> place links over it, swiped between, and the quick look in uma-rpg's side panel (§11). The place scenes (phase 7) and
+> §10.3's new drawings are not built yet: until uma-art draws them, the four new buildings are code placeholders (§10.4).
 
 This page replaces the place list of the re-architecture's Hub plan ([rearchitecture/04](../rearchitecture/04-hub.md)
 §3–§6). It keeps that plan's pattern whole: a place registry, pixel-art pages on a Phaser canvas with a DOM hit layer,
@@ -16,11 +17,11 @@ a Peek, Page and Counter per place, and routes `/:page/:place/*`. What changes i
 | Part | What it is | Lives in |
 |---|---|---|
 | **Place registry** | One table: id, page, name, one-line blurb, art frame, position on the page (fractions of width and height), which slots its pips show, lock rule, counter, `direct` flag, hidden flag | `@racer/domain/hub`: pure, tested, rendered into the live manual |
-| **Pages** | Phase 3: a DOM grid of place tiles per page (§11). Phase 6: four pixel-art maps, swiped between | `hub/PageGrid.tsx`; phase 6's `scenes/hub/` (Phaser via `uma-scene/hub`) |
-| **Hit layer** | Phase 3: each tile is the button, with its name pill, counter, Ready badge and slot pips. Phase 6: one DOM button per place over its building | `hub/PageGrid.tsx`, `hub/Pips.tsx` |
-| **Place UI** | Per place: a **Peek** (a bottom sheet), a **Page** (its full screen) and an optional **Counter**, all lazy | `places/registry.tsx` |
+| **Pages** | Four pixel-art maps on a lazy Phaser 4 canvas, uma-rpg's Hub ported (T145): seeded tile terrain, a road down the middle with a path to every door, props, uma-art's buildings, drifting clouds and chimney smoke; swiped between | `hub/HubPage.tsx`, `hub/HubCanvas.tsx`, `hub/scene/` (`createHubGame`, `HubScene`, `terrain`, `markers`, `palettes`), `hub/grid.ts` |
+| **Hit layer** | One DOM link per place over its building, on the scene's own grid: its name pill with the counter, its slot pips and its Ready badge | `hub/PlaceTargets.tsx`, `hub/Pips.tsx` |
+| **Place UI** | Per place: a **Peek** (its quick look, in uma-rpg's side panel), a **Page** (its full screen) and an optional **Counter**, all lazy | `places/registry.tsx` |
 | **Routes** | `/:page`, `/:page?peek=:place`, `/:page/:place`, `/:page/:place/*` | `app/router.tsx`, `app/routes.tsx` |
-| **Shell** | Account bar on top, bottom bar, the ☰ menu listing every place, an overlay host for Peeks and sheets | `hub/Shell.tsx` and its parts (`AccountBar`, `BottomBar`, `GlobalSheets`, `SheetHost`) |
+| **Shell** | Account bar on top, bottom bar, the ☰ menu listing every place, the side panel for Peeks and a host for the global sheets | `hub/Shell.tsx` and its parts (`AccountBar`, `BottomBar`, `GlobalSheets`, `SheetHost`), `hub/OverlayHost.tsx` |
 
 Rules carried over from uma-rpg, unchanged:
 - **The canvas draws and the DOM receives every tap.** No sprite is a tap target.
@@ -28,14 +29,17 @@ Rules carried over from uma-rpg, unchanged:
 - **A locked place shows a lock and no placeholder text** (uma-rpg D95).
 - **Explanations live behind an (i) button** on each Page, written from the registry blurb and the owning doc.
 - **44 pt targets.** A place button covers its building, name pill and pips: at least 96 × 96 pt at 2×.
-- **Swipe between pages** on the map (not inside sheets), in the bottom bar's order, without wrapping. The map is
-  phase 6's; phase 3 changes pages with the bottom bar.
+- **Swipe between pages** on the map (not inside sheets or the side panel), in the bottom bar's order, without
+  wrapping: a mostly sideways drag of more than 60 pt, with the scene's camera fade. The bottom bar's tabs do the same.
+- **No scroll or zoom on the map** (uma-rpg D113): each page is one screen.
 
 Two clarifications of the old plan:
 - **Counter** is a number badge on the place's name pill and its menu row. The three currencies also sit in the account
   bar (§2.1), and tapping one opens the place that sells or spends it.
-- **Tap once for the Peek, again (or Enter) for the Page.** A place flagged `direct` skips the Peek. Only the
-  Racecourse is `direct`, because racing is the payoff and is already one button away (§2.2).
+- **Tap once for the Peek, then Enter for the Page** (uma-rpg D43). The Peek is uma-rpg's side panel: it slides in
+  from the right over 88% of the screen with the map dimmed behind, so the map's links wait until it closes. A place
+  flagged `direct` skips the Peek. Only the Racecourse is `direct`, because racing is the payoff and is already one
+  button away (§2.2).
 
 ## 2. The shell
 
@@ -99,43 +103,49 @@ one-Uma notice ([02](02-check-ins-and-notifications.md) §7).
 
 Page ids, routes and the order of swiping: `town`, `training`, `racing`, `farm`.
 
-The place registry, `@racer/domain/hub`'s `PLACES` (T137), as it stands. A cell is a row and a column on the page's
-three-column grid of phase 3 (§11); a **new** frame is one of §10.3's drawings, shown as a plain tile until released.
+The place registry, `@racer/domain/hub`'s `PLACES` (T137), as it stands. **At** is where a place stands on its page
+map: the middle of its building's ground line, as fractions of the map's width and height (T145, uma-rpg's `at`). A
+**new** frame is one of §10.3's drawings (A01), drawn as a code placeholder until the pinned uma-art has it (§10.4).
+
+Every page is laid out as uma-rpg lays its own: a road down the middle and the places on both sides of it, a quarter
+in from either edge (x 0.24 and 0.76), with the odd one on the road (x 0.5). The Farm's ten take wider sides (x 0.2 and
+0.79) so its Pantry and Kitchen fit on the road between them; the Training page leaves room under the Gym and the Dojo
+for two rows of pips.
 
 <!-- live:hub-places -->
-| Page | Place | Id | Kind | Route | Counter | Frame | Pips | Cell |
+| Page | Place | Id | Kind | Route | Counter | Frame | Pips | At (x, y) |
 |---|---|---|---|---|---|---|---|---|
-| Town Hall | Stable | `stable` | town | `/town/stable` | `uma-tickets` | `stable` | — | 1, 1 |
-| Town Hall | Warehouse | `warehouse` | town | `/town/warehouse` | — | `warehouse` | — | 3, 1 |
-| Town Hall | Exchange | `exchange` | town | `/town/exchange` | — | `exchange` | — | 3, 3 |
-| Town Hall | Card Library | `card-library` | town | `/town/card-library` | — | **new** | — | 1, 3 |
+| Town Hall | Stable | `stable` | town | `/town/stable` | `uma-tickets` | `stable` | — | 0.24, 0.18 |
+| Town Hall | Warehouse | `warehouse` | town | `/town/warehouse` | — | `warehouse` | — | 0.24, 0.72 |
+| Town Hall | Exchange | `exchange` | town | `/town/exchange` | — | `exchange` | — | 0.76, 0.72 |
+| Town Hall | Card Library | `card-library` | town | `/town/card-library` | — | `card-library` (**new**) | — | 0.76, 0.18 |
 | Town Hall | Account (hidden) | `account` | town | `/town/account` | — | — | — | — |
-| Training | Observatory | `observatory` | facility | `/training/observatory` | `finished-here` | `observatory` | yes | 1, 1 |
-| Training | Lineage Hall | `lineage-hall` | facility | `/training/lineage-hall` | `finished-here` | `party-hall` | yes | 1, 3 |
-| Training | Gym | `gym` | facility | `/training/gym` | `finished-here` | **new** | yes | 3, 1 |
-| Training | Dojo | `dojo` | facility | `/training/dojo` | `finished-here` | `brawler-dojo` | yes | 3, 3 |
-| Racing | Racecourse (direct) | `racecourse` | racing | `/racing/racecourse` | `featured-open` | **new** | — | 3, 2 |
-| Racing | Scenario Gate | `scenario-gate` | racing | `/racing/scenario-gate` | `ready-to-advance` | `scenario-gate` | — | 1, 2 |
-| Racing | Expedition Map | `expedition-map` | racing | `/racing/expedition-map` | `promotable` | `tier-finale` | — | 2, 3 |
-| Racing | Trophy Hall | `trophy-hall` | racing | `/racing/trophy-hall` | `new-flair` | **new** | — | 2, 1 |
-| Farm | Sugar Grove | `sugar-grove` | site | `/farm/sugar-grove` | `finished-here` | `sugar-grove` | yes | 3, 1 |
-| Farm | Orchard | `orchard` | site | `/farm/orchard` | `finished-here` | `orchard` | yes | 2, 3 |
-| Farm | Fishery | `fishery` | site | `/farm/fishery` | `finished-here` | `fishery` | yes | 4, 2 |
-| Farm | Nut Grove | `nut-grove` | site | `/farm/nut-grove` | `finished-here` | `nut-grove` | yes | 2, 1 |
-| Farm | Herb Garden | `herb-garden` | site | `/farm/herb-garden` | `finished-here` | `herb-garden` | yes | 3, 3 |
-| Farm | Fields | `fields` | site | `/farm/fields` | `finished-here` | `fields` | yes | 1, 1 |
-| Farm | Vegetable Garden | `vegetable-garden` | site | `/farm/vegetable-garden` | `finished-here` | `vegetable-garden` | yes | 1, 2 |
-| Farm | Mushroom Cave | `mushroom-cave` | site | `/farm/mushroom-cave` | `finished-here` | `mushroom-cave` | yes | 1, 3 |
-| Farm | Pantry | `pantry` | station | `/farm/pantry` | `finished-here` | `pantry` | yes | 2, 2 |
-| Farm | Kitchen | `kitchen` | station | `/farm/kitchen` | `finished-here` | `kitchen` | yes | 3, 2 |
+| Training | Observatory | `observatory` | facility | `/training/observatory` | `finished-here` | `observatory` | yes | 0.24, 0.18 |
+| Training | Lineage Hall | `lineage-hall` | facility | `/training/lineage-hall` | `finished-here` | `party-hall` | yes | 0.76, 0.18 |
+| Training | Gym | `gym` | facility | `/training/gym` | `finished-here` | `gym` (**new**) | yes | 0.24, 0.6 |
+| Training | Dojo | `dojo` | facility | `/training/dojo` | `finished-here` | `brawler-dojo` | yes | 0.76, 0.6 |
+| Racing | Racecourse (direct) | `racecourse` | racing | `/racing/racecourse` | `featured-open` | `racecourse` (**new**) | — | 0.5, 0.74 |
+| Racing | Scenario Gate | `scenario-gate` | racing | `/racing/scenario-gate` | `ready-to-advance` | `scenario-gate` | — | 0.5, 0.2 |
+| Racing | Expedition Map | `expedition-map` | racing | `/racing/expedition-map` | `promotable` | `tier-finale` | — | 0.76, 0.46 |
+| Racing | Trophy Hall | `trophy-hall` | racing | `/racing/trophy-hall` | `new-flair` | `trophy-hall` (**new**) | — | 0.24, 0.46 |
+| Farm | Sugar Grove | `sugar-grove` | site | `/farm/sugar-grove` | `finished-here` | `sugar-grove` | yes | 0.2, 0.56 |
+| Farm | Orchard | `orchard` | site | `/farm/orchard` | `finished-here` | `orchard` | yes | 0.79, 0.56 |
+| Farm | Fishery | `fishery` | site | `/farm/fishery` | `finished-here` | `fishery` | yes | 0.2, 0.78 |
+| Farm | Nut Grove | `nut-grove` | site | `/farm/nut-grove` | `finished-here` | `nut-grove` | yes | 0.2, 0.34 |
+| Farm | Herb Garden | `herb-garden` | site | `/farm/herb-garden` | `finished-here` | `herb-garden` | yes | 0.79, 0.78 |
+| Farm | Fields | `fields` | site | `/farm/fields` | `finished-here` | `fields` | yes | 0.2, 0.12 |
+| Farm | Vegetable Garden | `vegetable-garden` | site | `/farm/vegetable-garden` | `finished-here` | `vegetable-garden` | yes | 0.79, 0.12 |
+| Farm | Mushroom Cave | `mushroom-cave` | site | `/farm/mushroom-cave` | `finished-here` | `mushroom-cave` | yes | 0.79, 0.34 |
+| Farm | Pantry | `pantry` | station | `/farm/pantry` | `finished-here` | `pantry` | yes | 0.5, 0.34 |
+| Farm | Kitchen | `kitchen` | station | `/farm/kitchen` | `finished-here` | `kitchen` | yes | 0.5, 0.56 |
 <!-- /live -->
 
 ### 3.1 Town Hall (`/town`)
 
 ```text
-   [ Stable ]                         [ Card Library ]
-                 ( plaza: featured Uma )
-   [ Warehouse ]                      [ Exchange ]
+   [ Stable ]          ┃          [ Card Library ]
+                ( plaza: featured Uma )
+   [ Warehouse ]       ┃          [ Exchange ]
 ```
 
 | Place (id) | Opens | Peek | Counter | Lock | Replaces |
@@ -149,9 +159,9 @@ three-column grid of phase 3 (§11); a **new** frame is one of §10.3's drawings
 ### 3.2 Training (`/training`)
 
 ```text
-   [ Observatory ]                    [ Lineage Hall ]
-                 ( lawn, benches, hedges )
-   [ Gym ]                            [ Dojo ]
+   [ Observatory ]     ┃          [ Lineage Hall ]
+          ( lawn, hedges, benches ┃ lamps, banners )
+   [ Gym ]             ┃          [ Dojo ]
 ```
 
 Each facility's Page is [05](05-training-hub.md) §8's: header with level, slots and Upgrade; slots grouped by room;
@@ -169,11 +179,11 @@ Each facility's Page is [05](05-training-hub.md) §8's: header with level, slots
 
 ```text
                  [ Scenario Gate ]
-   [ Trophy Hall ]                  [ Expedition Map ]
+   [ Trophy Hall ]     ┃          [ Expedition Map ]
                   [ Racecourse ]          (thumb zone)
 ```
 
-The Racecourse sits lowest and central, nearest the raised RACE button and the thumb.
+The Racecourse sits lowest and central, on the road, nearest the raised RACE button and the thumb.
 
 | Place (id) | Opens | Peek | Counter | Lock | Replaces |
 |---|---|---|---|---|---|
@@ -191,14 +201,14 @@ every sub-route goes back to the Map):
 ### 3.4 Farm (`/farm`)
 
 The eight sites stand on a ring in uma-art's Duo order, so **map neighbours are Duo partners** (README ring:
-Grains – Vegetables – Mushrooms – Fruits – Herbs & Spices – Fish – Sweets – Nuts & Seeds), with the Pantry and Kitchen
-in the middle.
+Grains – Vegetables – Mushrooms – Fruits – Herbs & Spices – Fish – Sweets – Nuts & Seeds): clockwise, four down each
+side of the road, joined across it at the top and the bottom, with the Pantry and Kitchen on the road in the middle.
 
 ```text
-   [ Fields ]        [ Vegetable Garden ]   [ Mushroom Cave ]
-   [ Nut Grove ]     [ Pantry ]             [ Orchard ]
-   [ Sugar Grove ]   [ Kitchen ]            [ Herb Garden ]
-                     [ Fishery ]
+   [ Fields ]          ┃          [ Vegetable Garden ]
+   [ Nut Grove ]   [ Pantry ]     [ Mushroom Cave ]
+   [ Sugar Grove ] [ Kitchen ]    [ Orchard ]
+   [ Fishery ]         ┃          [ Herb Garden ]
 ```
 
 | Place (id) | Opens | Peek | Counter | Lock | Replaces |
@@ -226,7 +236,8 @@ at a glance.
 - **Up to 8 pips**, in two rows of four: busy first, then ready, then free. That fits the Kitchen at Lv 2 and 3 (8 slots,
   [07](07-farm.md) §6). Beyond 8 (the Gym at Lv 2 has 10, the Dojo 12, [05](05-training-hub.md) §7), the eighth pip
   becomes "+N".
-- **Pips are display only.** The place button is the target; a pip at 20 pt would be under 44.
+- **Pips are display only.** The place link is the target; a pip at 20 pt would be under 44. On the map they sit on a
+  light backing under the name pill, no wider than the pips it holds, so a hollow ring reads on any ground.
 - **Progress is computed from start times** with the shared idle math, redrawn every 30 seconds and on foreground,
   never animated per frame.
 - **VoiceOver** reads the button as one line: "Kitchen. 6 of 8 slots busy, 2 ready, 1 queued."
@@ -246,8 +257,9 @@ After that the owner picks her: **`feature-uma { outfitId }`** sets `profile.fea
 in the Stable is refused with `unknown-uma`'s words; the one already featured changes nothing), from the quick sheet's
 picker or her profile's **Feature her** (T138, `tiers/roster.ts`).
 
-**As built in phase 3 (T138):** until the plaza's chibi (phase 6) she is still art in the plaza's cell, `FeaturedUmaCard`,
-also the Stable Peek's first card. "What she's doing" is her work row settled to the clock: the place, the current
+**As built (T138, T145):** she stands on the road between the four Town Hall places (`PLAZA_AT`, kept clear of props),
+still art in `FeaturedUmaCard`, also the Stable Peek's first card, until phase 5's `outfit-chibis` release gives her the
+code-animated chibi. "What she's doing" is her work row settled to the clock: the place, the current
 entry's finished items of its count and its end ("Kitchen · 2 of 4 · 16:40", "+N queued" behind), "Kitchen · Ready", or
 "Free".
 
@@ -401,18 +413,17 @@ class halls, which read as magic, combat or worship; and the ten `wilds` frames 
 |---|---|---|
 | Town Hall | `town/*` | Ground, plaza paths, barrels, crates, flower pots, benches, lamps, trees |
 | Training | `learning/*` | Hedges, benches, flower beds, lamps, banners: a campus |
-| Racing | `racing/*`, **new** | Turf ground ×4; a dirt-track path set (`path-0…15`, the same edge masks, never closing a 2×2); props: white rail, furlong post (16×32), pennant (16×32), flower box |
+| Racing | `racing/*`, **new** | Turf ground ×4; a dirt-track path set (`path-0…15`, the same edge masks, never closing a 2×2); props: white rail, furlong post (16×32), pennant (16×32), flower box. Until the pinned atlas has `racing/ground-0`, the page draws on `town/*` (§10.4) |
 | Farm | `farmlands/*` | As uma-rpg's Farmlands |
 
-### 10.3 Not built yet (phase 6): the uma-platform session's list
+### 10.3 Not drawn yet: the uma-platform session's list
 
 The buildings, the Racing tiles and the Home screen's marks are packets for ChatGPT:
 [A01](../handoff/tasks/A01-racer-buildings-and-racing-page.md) and [A02](../handoff/tasks/A02-home-screen-marks.md)
 ([the queue](../handoff/README.md)).
 
-One minor release of `uma-art`, drawn by `scripts/pixel-art` (original, deterministic, in git), with the canvas Hub
-(rearchitecture/08's phase 4, now phase 6). The world map and crests serve phase 9's Expedition Map. Until the release,
-a place whose new frame isn't in the pinned uma-art shows its name on a plain tile (§3):
+One minor release of `uma-art` (2.6.0), drawn by `scripts/pixel-art` (original, deterministic, in git), for the canvas
+Hub. The world map and crests serve phase 9's Expedition Map. Until the release, the Hub draws §10.4's interim art:
 
 | What | Ids | Size | For |
 |---|---|---|---|
@@ -429,40 +440,72 @@ outfit icons as the fallback ([rearchitecture/03](../rearchitecture/03-rendering
 course ([10](../rework/10-expeditions.md)) is a palette parameter of the code-drawn race course, not new art.
 
 The racer pins the release and checks every registry frame against the index in a test, as uma-rpg's
-`frames.test.ts` does. A frame the pinned release lacks fails CI, never a blank building.
+`frames.test.ts` does. A frame the pinned release lacks fails CI, never a blank building, except the four listed in
+`AWAITING_ART` (§10.4).
+
+### 10.4 Interim art, as built (T145)
+
+uma-art 2.5.0 is pinned (it changed only the gear atlas, which the racer doesn't draw). Until the release that draws
+§10.3's list:
+- **The four new buildings are code placeholders.** The registry already carries A01's frame ids (`card-library`,
+  `gym`, `racecourse`, `trophy-hall`). Where the pinned atlas lacks a frame, the map draws uma-rpg's code-drawn marker
+  for it in the page's palette (`hub/scene/markers.ts`, `palettes.ts`): a library with an arched window of shelves and
+  a hanging sign, a low brick gym with an open front and a dumbbell rack, a grandstand behind white rails with a finish
+  post and a pennant, and a columned hall under a gold cup. The DOM's building art (`ui/BuildingSprite.tsx`, on a
+  Page's header or a default Peek) draws the same marker as SVG. Any other missing frame is a house in the palette;
+  nothing is ever an empty or white box.
+- **The Racing page draws on Town's tiles** (`tilePageFor`: `racing` when the atlas has `racing/ground-0`, else `town`),
+  with Town's props and its own seed, so its layout is still its own.
+- **The test lets exactly these wait.** `AWAITING_ART` in `@racer/domain/hub` lists the four; the registry test reports
+  each one waiting and fails once a pinned release draws it, until it leaves the list. Empty, the frames test is strict.
+
+When 2.6.0 is pinned, with no code change: the scene stamps the four buildings from the atlas instead of their
+markers, the DOM shows their sprites, the Racing page switches to its turf, dirt track and A01's props (rail, furlong
+post, pennant, flower box), and a building whose frame carries `smoke` smokes. Emptying `AWAITING_ART` is the one edit.
 
 ## 11. When it ships
 
-[13](../rework/13-removals-and-plan-changes.md) §4 puts the game on plain DOM screens in phase 3 and the canvas Hub in
+[13](../rework/13-removals-and-plan-changes.md) §4 put the game on plain DOM screens in phase 3 and the canvas Hub in
 phase 6. **Phase 3, as built:** the route scheme (§7), the place registry, the redirects, the account bar, the bottom
-bar, the menu, the floating pill and every Peek and Page. Each page renders as a **DOM grid of place tiles**: the
-uma-art frame as a CSS sprite at 2× (`image-rendering: pixelated`), the name pill, counter and pips. A place whose new
-drawing isn't released yet shows its name on a plain tile.
+bar, the menu, the floating pill and every Peek and Page, with each page a DOM grid of place tiles. Shipping the routes
+and registry in phase 3, not 6, meant links changed once.
 
-Shipping the routes and registry in phase 3, not 6, means links change once.
-
-### Not built yet (phase 6): the canvas maps
-
-The canvas maps: tiles, building positions, the plaza chibi, swipe on the map. The DOM hit layer reuses phase 3's tile
-contents positioned over the buildings.
+**Phase 6, as built (T145, D363), brought forward:** uma-rpg's Hub, ported. Each page is a pixel-art map on a lazy
+Phaser 4 canvas (`hub/HubCanvas.tsx` over `hub/scene/`): uma-art's tiles laid by a seeded terrain with the road down the
+middle and a path from every door, props, the buildings stamped once into one texture, drifting clouds, chimney smoke
+from frames that carry it, glows, and a camera fade between pages. The DOM draws every word and takes every tap
+(`hub/PlaceTargets.tsx`, uma-rpg D33): one link per place on the scene's own grid, with its name pill, counter, pips
+and Ready badge. A swipe of more than 60 pt changes page; the quick look is uma-rpg's side panel (`hub/OverlayHost.tsx`);
+the account bar, bottom bar, pill and menu stay this game's. The routes, `?peek=` and `?sheet=` are unchanged. The four
+new buildings and the Racing page's ground are interim art (§10.4). The plaza's chibi waits for phase 5's
+`outfit-chibis` release (§5).
 
 ### Not built yet (phase 7): the place scenes
 
-The Farm and Training places' own pixel-art scenes ([rearchitecture/03](../rearchitecture/03-rendering-and-textures.md) §5).
+The Farm and Training places' own pixel-art scenes, a canvas inside a place
+([rearchitecture/03](../rearchitecture/03-rendering-and-textures.md) §5). Until then a place's Page is DOM, as uma-rpg's
+interiors are.
 
 ## 12. Budgets and accessibility
 
-- **Fit:** each page fits 390×844 at the largest whole-number scale, as uma-rpg's `hubGrid` does. The Farm's ten
-  buildings at 2× take four rows, as uma-rpg's Farmlands holds the same ten; if a row of pips ever overflows, the page
-  scrolls vertically on the same grid (uma-rpg H19).
-- **Load:** every page, Peek and sheet is a lazy chunk, and the entry stays ≤ 180 KB gzip (`scripts/check-size.mjs`).
-  In phase 6 the Hub chunk (Phaser, `uma-scene/hub`, one page's tiles and buildings) is lazy too. The atlases are small
-  (buildings 27 KB, tiles 9 KB). Faces load only for visible pips.
-- **One engine alive (phase 6):** the Hub's game is destroyed when a full-screen flow opens and remounted on return
-  ([rearchitecture/03](../rearchitecture/03-rendering-and-textures.md) §3).
+- **Fit:** each page is one screen, never scrolled or zoomed (uma-rpg D113). The map is 16 px art tiles at 1.5 CSS px
+  per art pixel on 2× screens (3 device pixels; 2 CSS px on 1× ones, the device pixel ratio capped at 2), as uma-rpg's
+  `hubGrid`, with an odd number of columns centred on the screen so the road runs down its middle (`hub/grid.ts`). A
+  layout test holds every place link and the plaza inside the map, clear of the pill and of one another, at 390×844 and
+  393×852 with and without safe areas (`hub/layout.test.ts`).
+- **Load:** every page, Peek and sheet is a lazy chunk, and the entry stays ≤ 180 KB gzip (`scripts/check-size.mjs`;
+  143.38 KB with the Hub, T145). Phaser and the scene are one lazy chunk (`createHubGame`, 1.40 MB, 374 KB gzip), loaded
+  when a map first mounts. The atlases are small (buildings 27 KB, tiles 9 KB). The service worker precaches files up
+  to 3 MB, so the Phaser chunk and the atlases are on the phone after install and the map works offline. Faces load
+  only for visible pips.
+- **One engine alive:** the Hub's game lives while a page's map is mounted: a tab or a swipe tells the same game the
+  new page. It pauses its scene, keeping the last frame (uma-rpg D39), while the side panel or any global sheet covers
+  it or the page is hidden, and is destroyed when a place's Page or a full-screen flow opens, then created again on the
+  way back ([rearchitecture/03](../rearchitecture/03-rendering-and-textures.md) §3). The race scene's PixiJS never runs
+  beside it.
 - **VoiceOver** reads each place's name, lock, counter and pips (§4); the menu lists every place for anyone who can't
   use the map.
-- **Reduced motion:** no chibi idle, no pip bounce, instant page changes.
+- **Reduced motion:** no pip bounce, no clouds, smoke or glows moving, no camera fade and no side panel slide.
 
 ## 13. Decided here
 
@@ -485,7 +528,7 @@ The Farm and Training places' own pixel-art scenes ([rearchitecture/03](../rearc
 | New `racing` tiles | No existing page looks like a racecourse |
 | The Farm ring follows the Duo ring | Map neighbours are Duo partners, which teaches the Duos |
 | Pips: display only, up to 8, busy first, "+N" beyond | Fits the Kitchen's 8; keeps the 44 pt rule on the whole button |
-| A row carries a grid `cell` from §3's sketches; phase 6 adds map positions (T137) | §1's fractions place buildings on a canvas, which phase 3 doesn't draw (§11) |
+| A row carries an `at` map position, fractions of the map's width and height, and no grid cell (T145; T137's cells went with the DOM grid) | §1's fractions place buildings on the canvas; one position, as uma-rpg's registry has |
 | No lock field: every place is open (T137) | §3 marks every place Open; grade locks live inside places |
 | A pip is Ready when she has anything to collect, a running batch's finished items included; the Ready badge, the counter and VoiceOver's "ready" are that one number (T137) | It is `readyCount`'s rule (02 §2), so a tile, the pill and Collect here agree |
 | A busy ring shows the current item's progress (new `itemProgress`) (T137) | §4 names the current output's or unlock's progress; `progress` is the whole entry's |
@@ -493,8 +536,8 @@ The Farm and Training places' own pixel-art scenes ([rearchitecture/03](../rearc
 | One 30-second clock, stopped while hidden, for pips and labels (T137) | §4's 30 seconds; 02 §8's labels are cut to the minute anyway |
 | The Uma Tickets chip shows Shards as n/5, held at 5/5 in gold once a ticket can be made (T137) | The exchange is the owner's tap in the Stable (04 §6), so Shards can pass 5 |
 | "Sync paused" means signed out (T137) | Sync waits for a token; T136's own states are offline and error, and §2.1 names a paused chip |
-| Currency icons: a new two-tone coin, today's ticket and Uma coupon icons (T137) | §10.3's marks aren't in 2.4.0; the visual system wants two-tone currencies |
-| A Peek is a non-modal half sheet; the same tile again opens the Page (T137) | §1's "tap once, again for the Page" needs the tile in reach |
+| Currency icons: a new two-tone coin, today's ticket and Uma coupon icons (T137) | §10.3's marks aren't in the pinned uma-art (A02); the visual system wants two-tone currencies |
+| A Peek is uma-rpg's side panel: modal, 88% wide from the right, Enter for the Page (T145; supersedes T137's non-modal half sheet and its second tap) | The owner asked for uma-rpg's navigation lifted and shifted (D363) |
 | Global sheets are `?sheet=` routes; Collect all's intent rides in navigation state (T137) | Back closes them, and a reload never collects again |
 | T137 places the featured Uma (cell, still art, sheet route); her card, sheet and picker are T138's | Animation is phase 6 (§11); the profile, picker and `feature-uma` are the Stable's |
 | Faces are today's `face` art, then the outfit icon, then her initial (T137) | `character-faces` is phase 5's release; today's content stays until then (M034) |
@@ -504,18 +547,18 @@ The Farm and Training places' own pixel-art scenes ([rearchitecture/03](../rearc
 | One startup budget, the app's own entry's (T137 measured the new game's entry beside today's until T143) | An overrun found at the switch would have come too late |
 | The build-beside boundaries test left with `g2/` (T143) | With one app, the reach check and the PixiJS check hold what remains |
 | The shell reads the game through `G2Game`; T136 plugs its store into `boot.ts` (T137) | T137 lands before T136 (M034: "Needs —") |
-| uma-art goes in `dependencies`, exactly 2.4.0; the domain keeps its dev dependency (T137) | The web bundles its images; the domain only tests ids |
-| The hidden Account has no frame and no cell; the four new drawings are the only drawn places without a frame (T137) | It is reached from the trainer chip and the menu, never drawn (§3.1) |
+| uma-art goes in `dependencies`, exactly pinned (2.4.0 at T137, 2.5.0 since T145); the domain keeps its dev dependency | The web bundles its images; the domain only tests ids |
+| The hidden Account has no frame and no position (T137); the four new drawings carry A01's frame ids before their release (T145) | It is reached from the trainer chip and the menu, never drawn (§3.1); the ids are A01's, so the release switches by itself |
 | A port's answer carries its operation's id beside `recheck`'s answer (T137) | The check-in sheet keeps Collect all's id in navigation state, so a reload shows the same receipt (T142) |
 | `PENDING` also held the two global sheets, the plaza and the reveal (T137); it is empty since T143 | T143's "every slot filled" covered every slot T138–T142 own, not only the places |
-| Global sheets open over any shell route, Peeks only over their page (T137) | The bar's menu button is on every Page too; a Peek belongs to the page its tile is on |
-| A page's tiles read in grid order, row by row (T137) | VoiceOver and the keyboard meet the tiles as the eye does |
+| Global sheets open over any shell route, Peeks only over their page (T137) | The bar's menu button is on every Page too; a Peek belongs to the page its place link is on |
+| A page's place links read in map order, top to bottom and left to right, the plaza among them (T137, T145) | VoiceOver and the keyboard meet the places as the eye does |
 | The `busy` seed runs BASELINE's policies with the roster at its cap of 25 and opens 40 minutes after day 3's 08:00 check-in, done for three in five Farm Umas (T137) | BASELINE alone holds 20 Umas until Shards grow it, and at 08:00 itself every Uma is Ready: the offset shows Ready, Free, queued and busy rings together |
 | The Trophy Hall's counter is flair earned since this device's last visit (`uma-racer:g2:trophy-hall-seen`); opening the Trophy Hall reconciles flair once and marks the visit (T141) | [01](01-game-loop.md) §4.2: device conveniences live in `uma-racer:g2:` keys |
 | The Racecourse's counter loads its draw lazily, so the entry holds none; the Scenario Gate's and the Expedition Map's are the hub view's (`ready-to-advance`, `promotable`: 0 before phase 9) (T141) | One rule per counter; §3.3's Map counter is promotable Umas |
 | The Scenario Gate's ceremony is a full-screen flow at `/racing/scenario-gate/:umaId/ceremony?op=:id`; the Advance and Promote sheets are `?sheet=advance` and `?sheet=promote` on her career (T141) | §6 lists the promotion ceremony; a sheet is a route, so Back closes it |
 | The Trophy Hall's scopes are `?scope=` uma, stable or trainer at `/racing/trophy-hall` (the featured Uma's badges by default), one Uma's at `/uma/:umaId` and the trainer profile at `/trainer` (T141) | §7.1's three routes; a scope is a view of one page |
-| In phase 3 the featured Uma is the Stable Peek's first card and `FeaturedUmaCard`, with §5's quick sheet (T138) | The plaza chibi is phase 6 (§11); her sheet's actions work now |
+| The featured Uma is the Stable Peek's first card and `FeaturedUmaCard`, standing on the plaza, with §5's quick sheet (T138, T145) | The plaza chibi needs phase 5's `outfit-chibis` release (§5); her sheet's actions work now |
 | The Locked tab's multi-select unlocks up to the tickets in hand, one `unlock-uma` each with its own id, then reveals them in turn with Next (2 of 5) and Skip all; the reveal's route carries the rest as `?then=` and the count as `?of=` (T138) | A new account picks 20 ([13](../rework/13-removals-and-plan-changes.md) §5); 20 single unlocks would take about 80 taps; `?of=` keeps "2 of 5" after a reload |
 | A Stable tile reads "T2 · Lv 13" (never the lifetime number) with its tier crest, a Ready dot from `advanceReadiness` or `promotionReadiness`, the planner's crosshair, NEW and a gold frame for an inductee; a Locked tile is desaturated art behind a lock (T138) | 03 §2 keeps the lifetime number for order only; [04](04-tiers-and-promotion.md) §10 |
 | Album preferences live in `uma-racer:g2:album:<album>` keys, bounded as today's (20 views, 4,000 seen ids), not the generation-2 database; a device with none sees what it owns as already seen (T138) | Device conveniences only (rearchitecture/01 §4.2); today's live in today's Dexie, which the wipe removes |
@@ -537,6 +580,20 @@ The Farm and Training places' own pixel-art scenes ([rearchitecture/03](../rearc
 | The Dojo's card choices mount T138's `CardLibrary` in pick mode: the session sheet's **Add a card** (the room's cards she can bond now), each set slot (her bonded cards) and **Bond more** (cards she can bond now, into the sheet with the card's room) (T139) | [06](06-cards-and-bonds.md) §6: no weaker parallel picker |
 | A facility's Peek: its slots with faces and the next finish; how many Umas have unlocks left here (`layerProgress`) with the first three; its dishes in the Warehouse (Vegetables, Mushrooms, or the Gym's stat, Duo and Feast dishes), or at the Dojo the bonds left this layer (T139) | §3.2's Peek column |
 | No Umas yet: free slots, and Needs here and the sheet read "No Umas yet · unlock them in the Stable" with the Stable's link; an id the Stable doesn't hold reads `unknown-uma`'s words (T139) | A locked place shows no placeholder (§1); the empty state says what opens it |
+| The Hub is uma-rpg's, copied into `hub/` (`HubCanvas`, `scene/createHubGame`, `HubScene`, `terrain`, `markers`, `grid`, `swipe`, `PlaceTargets`, `OverlayHost`), each file crediting it; a shared uma-platform package comes later (T145, D363) | The owner's choice (c): lift and shift now, extract once both games run the same Hub |
+| Phaser 4.2.1, pinned exactly as uma-rpg's, imported only by the lazy `hub/scene/` chunk; Scale NONE at zoom 1/dpr (dpr capped at 2) with a ResizeObserver, audio off; `?canvas` forces the Canvas renderer and `window.__hub` is exposed, in dev builds only (T145) | uma-rpg's engine and settings; the entry stays under budget; preview screenshots can't capture WebGL |
+| The tile page for each racer page: `town` → `town`, `training` → `learning`, `farm` → `farmlands`, `racing` → `racing` when the pinned atlas has `racing/ground-0`, else `town`; a test pins it (T145) | §10.2's tiles, and a Racing page that switches to its own ground by itself when A01 ships |
+| Racing's props are A01's (rail, furlong post, pennant, flower box); the other pages' are uma-rpg's lists (T145) | §10.2 and the packet name them; uma-rpg's read right on its own tiles |
+| The grid has an odd number of columns, centred on the screen by whole device pixels (T145; uma-rpg's starts at the left edge) | The road and the places on it stand in the middle at any width, and the sides mirror |
+| A building on the road gets a lane round one side of it, from the road above its roof to its door, laid only where it closes no 2 × 2 of road (T145) | uma-rpg puts one building on its road; Racing and the Farm put two, and every door must still reach the map's edge |
+| The Farm's sites ring the page in two columns of four (x 0.2 and 0.79), with the Pantry and Kitchen on the road between them (T145) | uma-rpg's two columns of five don't fit two rows of pips at 390 × 844 with safe areas; the ring still makes neighbours Duo partners |
+| A place link is 112 pt wide: its building to the ground line, then its name pill with the counter, then its pips on a light backing; the Ready badge sits on the building; no lock is drawn (T145) | §4's order (pips under the name pill); every place is open (T137) |
+| A missing frame is drawn as uma-rpg's code marker in the page's palette, on the map and as SVG in the DOM; `AWAITING_ART` lists the four the test lets wait (T145) | Never an empty or white box (A01's "Why"); one list to empty when 2.6.0 lands |
+| A swipe is a drag of more than 60 pt, at least 1.5 times as wide as it is tall, on the map only; it pushes the page like a tab, and a click that ends a swipe is swallowed (T145) | uma-rpg's swipe; a swipe across a place link isn't a tap on it |
+| The scene pauses while the side panel or any `?sheet=` covers it, or the page is hidden, and is destroyed when the map unmounts (T145) | uma-rpg D39; one engine alive (§12) |
+| The side panel keeps this game's counter and (i) in its header, shows the registry's Peek or the place's blurb over its building, closes by its button, Escape, a tap on the dimmed map, a swipe right or Back, and keeps focus inside (T145) | uma-rpg's `OverlayHost` with §1's (i) rule |
+| The service worker precaches files up to 3 MB (T145) | uma-rpg's limit: the Phaser chunk and the atlases precache, so the Hub works offline |
+| `/dev/seeds` and `/dev/seeds/` are the seeds' root, which runs the start rule as `/` does; one tested check (`isSeedsPath`) decides the mount (T145) | The 404 came from a checkout without the mount; the router test now holds the root |
 
 ## 14. Done when
 

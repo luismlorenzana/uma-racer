@@ -8,7 +8,7 @@ import { useGame, useHub } from './game'
 import { usePlaceScroll } from './scroll'
 import { startPath } from './start'
 
-const PageGrid = lazy(() => import('../hub/PageGrid'))
+const HubPage = lazy(() => import('../hub/HubPage'))
 const UnfilledPage = lazy(() => import('../places/Unfilled').then((mod) => ({ default: mod.UnfilledPage })))
 const UnfilledReveal = lazy(() => import('../places/Unfilled').then((mod) => ({ default: mod.UnfilledReveal })))
 
@@ -20,13 +20,13 @@ export function StartRoute() {
   return <Navigate to={startPath(view)} replace />
 }
 
-/** `/:page`, with `?peek=:place`; a page that isn't one goes to `/`. */
+/** `/:page`, its map, with `?peek=:place`; a page that isn't one goes to `/`. */
 export function PageRoute() {
   const { page } = useParams()
   if (!isHubPage(page)) return <Navigate to="/" replace />
   return (
     <Suspense fallback={null}>
-      <PageGrid page={page} />
+      <HubPage page={page} />
     </Suspense>
   )
 }

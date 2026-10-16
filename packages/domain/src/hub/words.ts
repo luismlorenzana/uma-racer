@@ -26,6 +26,8 @@ export const HUB_WORDS = Object.freeze({
   'uma-tickets': 'Uma Tickets {n}, Uma Shards {shards} of {per}. Open the Stable.',
   /** §4: a building's Ready badge, the count of its Umas with something to collect. */
   'ready-badge': 'Ready {n}',
+  /** §1: a page's map, for VoiceOver. */
+  map: '{page} map',
   /** §2.2: the bottom bar. */
   bar: 'Hub pages',
   race: 'Race',

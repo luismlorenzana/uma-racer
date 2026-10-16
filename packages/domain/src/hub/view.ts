@@ -1,8 +1,8 @@
 // The Hub's view of the account (docs/game/11-hub-and-places.md §2.1–§2.4, §3, §4, §5; docs/game/02-check-ins-
-// and-notifications.md §2, §7): what the shell, the page grids and the tiles draw, from one settle at `now`. The pill's
-// Collect all and Check-in counts, the start rule's count, the bar's tab badges, every building's slot pips, each
-// place's default counter, the featured Uma and the account bar's chips. Pure: only the given `now` is read. Every rule
-// is the rework modules'; this file only gathers their answers.
+// and-notifications.md §2, §7): what the shell, the page maps and their place links draw, from one settle at `now`.
+// The pill's Collect all and Check-in counts, the start rule's count, the bar's tab badges, every building's slot pips,
+// each place's default counter, the featured Uma and the account bar's chips. Pure: only the given `now` is read. Every
+// rule is the rework modules'; this file only gathers their answers.
 import { hasReady, needingATap } from '../check-in/collect-all'
 import { BUILDING_IDS, FACILITY_IDS, FARM_BUILDING_IDS, type BuildingId, type RoomId } from '../farm/buildings'
 import { SPEED_TICKET_ID } from '../items/catalogue'

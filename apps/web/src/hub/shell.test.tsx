@@ -1,18 +1,21 @@
 // @vitest-environment jsdom
 // The shell (docs/game/11-hub-and-places.md §2, §4, §12) on the dev seeds through the in-memory port: the pill's
-// three states, the tab badges, the chips' links, a tile's VoiceOver line, a Peek then the Page on the second tap, the
-// direct Racecourse, the menu's places, the plaza, full-screen flows, and reduced motion.
+// three states, the tab badges, the chips' links, a place link's VoiceOver line, the side panel (its Peek, Enter, and
+// every way it closes), the direct Racecourse, the menu's places, the plaza, full-screen flows, and reduced motion.
 import { hubView, placesOn, tileLabel, placeById } from '@racer/domain/hub'
 import { act, cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { REDUCED_MOTION_KEY, setDeviceReducedMotion } from '../app/motion'
-import { renderG2, seed, seedGame, stubStorage } from '../__fixtures__/testing'
+import { renderG2, seed, seedGame, stubPointerEvents, stubStorage } from '../__fixtures__/testing'
 
 afterEach(() => {
   cleanup()
   vi.unstubAllGlobals()
 })
-beforeEach(stubStorage)
+beforeEach(() => {
+  stubStorage()
+  stubPointerEvents()
+})
 
 const busyView = () => hubView(seed('busy').state, seed('busy').at, seed('busy').env)
 
@@ -82,8 +85,8 @@ describe('the bars (§2.1, §2.2)', () => {
   })
 })
 
-describe('tiles and Peeks (§1, §4)', () => {
-  it("labels each tile with its VoiceOver line, and draws the seed's pips and Ready badges", async () => {
+describe('place links and the side panel (§1, §4)', () => {
+  it("labels each place link with its VoiceOver line, and draws the seed's pips and Ready badges", async () => {
     const view = busyView()
     renderG2('/farm', seedGame('busy'))
     for (const place of placesOn('farm')) {
@@ -98,27 +101,64 @@ describe('tiles and Peeks (§1, §4)', () => {
     expect(document.querySelectorAll('[data-queued]').length).toBeGreaterThan(0)
   })
 
-  it('opens the Peek on the first tap and the Page on the second; Close returns to the page', async () => {
-    const { where } = renderG2('/farm', seedGame('busy'))
-    const kitchen = () => screen.getByRole('link', { name: /^Kitchen\./ })
+  it('opens the side panel on a tap: a modal dialog with its Peek and Enter, which replaces it with the Page', async () => {
+    const { where, state } = renderG2('/farm', seedGame('busy'))
     fireEvent.click(await screen.findByRole('link', { name: /^Kitchen\./ }))
     await waitFor(() => expect(where()).toBe('/farm?peek=kitchen'))
-    const peek = await screen.findByRole('dialog', { name: 'Kitchen' })
-    expect(peek.getAttribute('aria-modal')).toBe('false')
-    expect(within(peek).getByRole('link', { name: 'Enter Kitchen' }).getAttribute('href')).toBe('/farm/kitchen')
-    // Another tile swaps the Peek; the Kitchen's own tile now opens its Page.
-    expect(screen.getByRole('link', { name: /^Pantry\./ }).getAttribute('href')).toBe('/farm?peek=pantry')
-    expect(kitchen().getAttribute('href')).toBe('/farm/kitchen')
-    fireEvent.click(within(peek).getByRole('button', { name: 'Close' }))
-    await waitFor(() => expect(where()).toBe('/farm'))
-    fireEvent.click(kitchen())
-    await screen.findByRole('dialog', { name: 'Kitchen' })
-    fireEvent.click(kitchen())
+    expect(state()).toEqual({ back: true })
+    const panel = await screen.findByRole('dialog', { name: 'Kitchen' })
+    expect(panel.getAttribute('aria-modal')).toBe('true')
+    expect(panel.querySelector('[data-g2="side-panel"]')).toBeTruthy()
+    // The registry's Peek, then Enter.
+    await waitFor(() => expect(within(panel).getAllByText(/free|busy|ready/).length).toBeGreaterThan(0))
+    const enter = within(panel).getByRole('link', { name: 'Enter Kitchen' })
+    expect(enter.getAttribute('href')).toBe('/farm/kitchen')
+    // Its blurb sits behind (i).
+    fireEvent.click(within(panel).getByRole('button', { name: 'About Kitchen' }))
+    expect(within(panel).getByText(placeById('kitchen')!.blurb)).toBeTruthy()
+    fireEvent.click(enter)
     await waitFor(() => expect(where()).toBe('/farm/kitchen'))
     expect(await screen.findByRole('heading', { level: 1, name: 'Kitchen' })).toBeTruthy()
-    // The unfilled Page keeps its blurb behind (i).
-    fireEvent.click(screen.getByRole('button', { name: 'About Kitchen' }))
-    expect(screen.getByText(placeById('kitchen')!.blurb)).toBeTruthy()
+    expect(screen.queryByRole('dialog', { name: 'Kitchen' })).toBeNull()
+  })
+
+  it.each([
+    ['its close button', (panel: HTMLElement) => fireEvent.click(within(panel).getByRole('button', { name: 'Close' }))],
+    ['Escape', () => fireEvent.keyDown(window, { key: 'Escape' })],
+    ['a tap on the dimmed map', (panel: HTMLElement) => fireEvent.click(within(panel).getByRole('button', { name: 'Back to Farm' }))],
+    ['a swipe right', (panel: HTMLElement) => {
+      const side = panel.querySelector<HTMLElement>('[data-g2="side-panel"]')!
+      fireEvent.pointerDown(side, { clientX: 120, clientY: 400 })
+      fireEvent.pointerUp(side, { clientX: 220, clientY: 410 })
+    }],
+  ] as const)('closes the side panel with %s, back to the page', async (_, act) => {
+    const { where } = renderG2('/farm', seedGame('busy'))
+    fireEvent.click(await screen.findByRole('link', { name: /^Kitchen\./ }))
+    act(await screen.findByRole('dialog', { name: 'Kitchen' }))
+    await waitFor(() => expect(where()).toBe('/farm'))
+    expect(screen.queryByRole('dialog')).toBeNull()
+  })
+
+  it('keeps focus inside the side panel, and a deep link closes it to its page', async () => {
+    const { where } = renderG2('/farm?peek=kitchen', seedGame('busy'))
+    const panel = await screen.findByRole('dialog', { name: 'Kitchen' })
+    expect(document.activeElement?.textContent).toBe('Kitchen')
+    const enter = within(panel).getByRole('link', { name: 'Enter Kitchen' })
+    enter.focus()
+    fireEvent.keyDown(window, { key: 'Tab' })
+    expect(document.activeElement).toBe(within(panel).getByRole('button', { name: 'About Kitchen' }))
+    fireEvent.keyDown(window, { key: 'Tab', shiftKey: true })
+    expect(document.activeElement).toBe(enter)
+    fireEvent.click(within(panel).getByRole('button', { name: 'Close' }))
+    await waitFor(() => expect(where()).toBe('/farm'))
+  })
+
+  it('sends a Peek of a place not on the page, or of the direct Racecourse, back to the page', async () => {
+    const { where } = renderG2('/farm?peek=stable', seedGame('busy'))
+    await waitFor(() => expect(where()).toBe('/farm'))
+    cleanup()
+    const racing = renderG2('/racing?peek=racecourse', seedGame('busy'))
+    await waitFor(() => expect(racing.where()).toBe('/racing'))
   })
 
   it('opens the direct Racecourse at once', async () => {

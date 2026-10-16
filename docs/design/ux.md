@@ -1,9 +1,9 @@
 # UX: the shell, screens and words
 
-> **As built: generation 2 (T137–T143).** How the game behaves in the hand: principles, the shell and its navigation,
-> the screens by place, sheets and lists, feedback and plain words, loading and errors, the albums, and accessibility.
-> What each place holds, and why, is the manual's [11 · Hub and places](../game/11-hub-and-places.md). This page is the
-> behaviour every place shares.
+> **As built: generation 2 (T137–T143), with the canvas Hub and its side panel (T145).** How the game behaves in the
+> hand: principles, the shell and its navigation, the screens by place, sheets and lists, feedback and plain words,
+> loading and errors, the albums, and accessibility. What each place holds, and why, is the manual's
+> [11 · Hub and places](../game/11-hub-and-places.md). This page is the behaviour every place shares.
 
 Uma Racer is played on the owner's iPhone, in portrait, as a Home Screen web app. Every screen is designed at
 **390×844 pt** first. Larger screens get more room, not a different app. Budgets and tech limits are in
@@ -52,7 +52,7 @@ for global sheets. The rules and their reasons are [11](../game/11-hub-and-place
 ┌───────────────────────────────────────────────┐
 │ (L)     12,340   46   3 · 2/5          Sync   │  account bar
 │                                               │
-│    place tiles on a three-column grid         │  the page (DOM tiles until phase 6's canvas)
+│    pixel map (canvas) + place links (DOM)     │  the page: uma-rpg's Hub, swiped between
 │                          [ Collect all · 9 ]  │  floating pill
 ├───────────────────────────────────────────────┤
 │  Town Hall   Training   ( RACE )   Farm   ☰   │  bottom bar
@@ -64,28 +64,33 @@ for global sheets. The rules and their reasons are [11](../game/11-hub-and-place
 | **Account bar** | The trainer's initial (opens Account). **Prize Money** and **Speed Tickets** (open the Exchange, the second at its Speed Tickets row). **Uma Tickets** with the Shards toward the next one, "3 · 2/5" (opens the Stable's Locked tab). The **Sync chip**, only when not synced: Offline, Sync paused (signed out), or **Sync** in amber (changes have waited over a day) or red (failing); it opens Account's sync row. Every chip is a 44 pt link | `hub/AccountBar.tsx` |
 | **Bottom bar** | **Town Hall · Training · ( RACE ) · Farm · ☰**. RACE is a raised accent disc and opens the Racing page. Farm and Training carry a badge with the Umas who have something to collect there, hidden at 0; Town Hall and RACE carry none. The active page shows by shape (two-tone icon, chamfered underline) as well as colour | `hub/BottomBar.tsx` |
 | **Menu (☰)** | A sheet of every drawn place by page, each with its counter, then Account and **Needs of every Uma** (the planner's roster view). It reaches everything, whatever the page shows | `hub/GlobalSheets.tsx` |
-| **Floating pill** | On every page, right thumb zone, above the bar: **Collect all · N ready**, else **Check-in · N free**, else nothing. It opens the check-in summary ([02](../game/02-check-ins-and-notifications.md) §4) | `hub/PageGrid.tsx` |
+| **Page map** | Each page is a pixel-art map on a lazy canvas (uma-rpg's Hub, T145) with one DOM link per place on its building: the name pill with its counter, the slot pips and the Ready badge. A sideways swipe of more than 60 pt moves to the next or previous page, with a short fade; the map never scrolls or zooms | `hub/HubPage.tsx`, `hub/PlaceTargets.tsx`, `hub/HubCanvas.tsx` |
+| **Floating pill** | On every page, right thumb zone, above the bar: **Collect all · N ready**, else **Check-in · N free**, else nothing. It opens the check-in summary ([02](../game/02-check-ins-and-notifications.md) §4) | `hub/HubPage.tsx` |
 | **Global sheets** | `?sheet=menu`, `?sheet=featured` (the featured Uma's quick sheet) and `?sheet=check-in`, over any shell route. A sheet is a route, so Back closes it. Collect all's intent rides in navigation state, so a reload never collects again | `hub/SheetHost.tsx`, `hub/nav.ts` |
 
 ### Peek, Page and Back
 
-- **Tap a tile once for its Peek, again (or Enter) for its Page.** A Peek is `/:page?peek=:place`: a non-modal sheet
-  over the lower half of the page (40–52% of it) that leaves the tiles live. It has (i), a close button and a handle
-  (tap it, or drag it down); Escape closes it too. A Peek opens only over its own page. The Racecourse is `direct`:
-  its tile opens the Page at once.
+- **Tap a place once for its quick look, then Enter for its Page.** The quick look (a Peek) is `/:page?peek=:place`
+  in uma-rpg's side panel (`hub/OverlayHost.tsx`): it slides in from the right over 88% of the screen, with the map
+  dimmed and paused behind it. Its header has the place's name, its counter, (i) and a close button; its body is the
+  place's Peek; **Enter {place}** sits in the thumb zone and replaces the panel with the Page, so Back returns to the
+  map. A swipe right, a tap on the dimmed map, Escape, the close button or Back closes it. Focus moves to its heading,
+  stays inside while it is open, and returns to the place's link. A Peek opens only over its own page. The Racecourse
+  is `direct`: its link opens the Page at once.
 - **Every Page has one sticky header:** Back, the name and (i). Back returns to where the Page was opened. From a deep
   link it goes up a level instead: a sub-route to its place, a place to its page.
 - **History follows the taps** (`useLeave` in `hub/nav.ts`). An entry pushed from inside the app carries `back`, and
   leaving it pops history. A deep link replaces itself with its parent.
 - **A Page opened by a link starts at the top; Back returns to where the last one was** (D176, `app/scroll.ts`). The
-  place's own scroller is reset on a new path and restored on Back or Forward; a Peek, a sheet or a tab (a change of
-  search alone) leaves the page where it is.
+  place's own scroller is reset on a new path and restored on Back or Forward; a Peek or a sheet (a change of search
+  alone) leaves the page where it is.
 - **Full-screen flows** hide both bars and return where they came from: the race run and its result
   (`/racing/racecourse/run`), the Scenario Gate's ceremony (`/racing/scenario-gate/:umaId/ceremony`), an Uma's
   constellation tree and Extra Stats map (`/training/observatory/:umaId`, `/training/gym/:umaId`), and the collection
   reveal (`/collection/reveal/uma/:umaId`, outside the shell).
-- **Pages don't swipe yet.** Swiping the map between pages is phase 6's canvas (11 §11); today the bottom bar moves
-  between them. An Uma's profile moves through the Stable's order with Previous, Next and a swipe.
+- **Pages swipe.** A mostly sideways drag of more than 60 pt on the map moves along the bottom bar's order, without
+  wrapping, as the bar's tabs do; it never moves under the side panel or a sheet, and a swipe that ends on a place's
+  link doesn't open it. An Uma's profile moves through the Stable's order with Previous, Next and a swipe.
 
 ### Where the app opens
 
@@ -178,7 +183,7 @@ headed "Earned in this race", without replaying it.
 |---|---|---|
 | **Bottom sheet** | Modal, over a scrim that closes it. A drag starts from the grab handle only, so taps inside are never swallowed; a drag past 90 px or a flick closes it. A close button sits by the handle. It never grows past 92% of the screen: the content scrolls under the fixed handle | `ui/BottomSheet.tsx` |
 | **Sheet over a sheet** | `ui/Sheet` and the Uma picker render through a portal, so a question or the picker opens over another sheet | `ui/Sheet.tsx`, `ui/UmaPicker.tsx` |
-| **Peek** | Non-modal: the page stays live behind it ([Peek, Page and Back](#peek-page-and-back)) | `hub/PageGrid.tsx` |
+| **Peek** | uma-rpg's side panel: modal, 88% wide from the right, the map dimmed and paused behind it ([Peek, Page and Back](#peek-page-and-back)) | `hub/OverlayHost.tsx` |
 | **Global sheets** | Focus moves to the sheet's heading and returns to what opened it. Escape, the close button, the handle and Back close it | `hub/GlobalSheets.tsx` |
 | **Tab rows** | Two to four tabs at 44 pt on a sunken track, the chosen one raised, moving by a CSS transition: the Stable's Owned and Locked, an Uma's profile, the Warehouse's shelves, the build views | `ui/Tabs.tsx` |
 | **Lists and grids** | Rows of at least 44 pt. Long lists stay cheap through `content-visibility`: off-screen rows skip layout and paint, and the scroll position restores because nothing unmounts | `ui/album/VirtualGrid.tsx` |
@@ -238,7 +243,8 @@ The full table of situations is [02](../game/02-check-ins-and-notifications.md) 
 | A press | The control scales down a touch (buttons 0.98, bar tabs 0.94) | No movement |
 | A number changes | It slides in by a CSS transition | It swaps at once |
 | A slot is Ready | Its pip's ring fills gold and bounces gently every 2.4 s | No bounce |
-| A Peek opens | It rises 24 px and fades in, 180 ms | It appears |
+| A Peek opens | The side panel slides in 24 px from the right and fades in, the map dims, 220 ms | It fades in, without the slide |
+| A page changes | The map fades through black, 90 ms out and 130 ms in; clouds drift and chimneys smoke | No fade; nothing drifts |
 | A sheet opens | It slides up from the bottom | It appears |
 | A race result | The placement stamps in, confetti on a win, the finishing order slides in | Shown at once |
 | Level-up, goal, flair | A level chip pops, each goal ribbon unfurls in turn, flair cards rise in sequence | Shown at once |
@@ -405,16 +411,16 @@ Each tile keeps its marks inside its padding, so nothing covers a face (`ui/ArtT
 
 ## Accessibility and comfort
 
-- **Targets:** every tap target is at least **44×44 pt**. A place tile is at least 96×96 pt and covers its building,
-  name pill and pips. Pips (20 pt) are display only.
+- **Targets:** every tap target is at least **44×44 pt**. A place's link is 112 pt wide and covers its building down to
+  the ground line, its name pill and its pips (at least 90 pt tall). Pips (20 pt) are display only.
 - **Thumb zone:** primary actions sit low ([Principles](#principles)). Nothing in the top corners is needed to play.
 - **State never rests on colour alone.** The active tab is two-tone with an underline; a tier crest says "T1"; Ready is
   a dot and a word in the label; the Sync chip says Offline, Sync paused or Sync; stats say Good, Average or Bad.
-- **VoiceOver** reads each place tile as one line ("Kitchen. 6 of 8 slots busy, 2 ready, 1 queued.") and each chip
-  with its count and where it goes ("Prize Money 12,340. Open the Exchange."). Tiles read in grid order, row by row.
-  The menu lists every place for anyone who can't use the page.
-- **Focus:** a Peek or a global sheet moves focus to its heading and gives it back to what opened it. Escape closes
-  Peeks, the global sheets and the art viewer.
+- **VoiceOver** reads each place's link as one line ("Kitchen. 6 of 8 slots busy, 2 ready, 1 queued.") and each chip
+  with its count and where it goes ("Prize Money 12,340. Open the Exchange."). Links read in map order, top to bottom
+  and left to right; the canvas is hidden from it. The menu lists every place for anyone who can't use the map.
+- **Focus:** a Peek or a global sheet moves focus to its heading and gives it back to what opened it; the side panel
+  keeps Tab inside it. Escape closes Peeks, the global sheets and the art viewer.
 - **Reduced motion** is on when the system asks for it or when Account's switch is on for this phone
   (`uma-racer:g2:reducedMotion`, never synced; `app/motion.tsx`). It reaches Motion through `MotionConfig` and CSS
   through a `data-reduced-motion` attribute: no pip bounce, no number slide, no sheet slide, no reveal flip, no
