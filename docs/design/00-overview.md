@@ -1,8 +1,9 @@
 # Overview
 
-> **As built: generation 2 (the rework, D326–D360; the switch, T143).** The vision, the pillars, the loop and how Uma
-> Racer differs from the original game. The rules live in the manual, [docs/game/](../game/README.md). Its README holds
-> the game in one paragraph, the two ways to play, the shared numbers and the glossary; this page doesn't repeat them.
+> **As built: generation 2 (the rework, D326–D360; the switch, T143), with the canvas Hub (T145, D363).** The
+> vision, the pillars, the loop and how Uma Racer differs from the original game. The rules live in the manual,
+> [docs/game/](../game/README.md). Its README holds the game in one paragraph, the two ways to play, the shared numbers
+> and the glossary; this page doesn't repeat them.
 
 ## Vision
 
@@ -54,8 +55,9 @@ Farm sites ──▶ Pantry ──▶ Kitchen ──▶ Training Hub session ─
 
 The loop step by step, the activity rule and a week of play are [01](../game/01-game-loop.md). Check-ins and the
 planner are [02](../game/02-check-ins-and-notifications.md), and pacing (a roster of 25, about four weeks a scenario) is
-[12](../game/12-economy-and-pacing.md). It all happens on the Hub's four pages: Town Hall, Training, Racing and Farm
-([11](../game/11-hub-and-places.md), [UX](ux.md)).
+[12](../game/12-economy-and-pacing.md). It all happens on the Hub's four pages: Town Hall, Training, Racing and Farm,
+each a pixel-art town map (uma-rpg's Hub, on uma-art) with the game's own DOM skin over it
+([11](../game/11-hub-and-places.md), [UX](ux.md), [Visual System](visual-system.md)).
 
 ## How this differs from the original game
 
