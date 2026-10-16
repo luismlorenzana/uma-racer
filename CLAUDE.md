@@ -32,7 +32,7 @@ A personal, never-distributed Uma Musume–inspired racing RPG, played on the ow
 | `packages/domain` | Pure game rules, one subpath export per area (`@racer/domain/save`, `/state`, `/tiers`, `/items`, `/work`, `/farm`, `/training`, `/economy`, `/check-in`, `/planner`, `/sim`, `/builds`, `/hub`) beside the core. Vitest |
 | `packages/race` | Deterministic race engine (seeded, 15 Hz ticks, timeline + playback sampling). Vitest |
 | `apps/api` | NestJS 11: `AuthGuard` (Firebase token + `ALLOWED_EMAIL`), `/api/save`, `/api/sync` (generation 2, protocol 2), `/api/legacy/purge` (one release), `/api/content/*` |
-| `apps/web` | React 19 + Vite 7 + Tailwind 4 + Motion (`m.*` under `LazyMotion strict`) + PWA: `src/app` (routes, session), `hub` (shell), `places`, `save` (Dexie `uma-racer-g2`, one sync lane), `ui`; PixiJS 8 only for the race scene (`scenes/race`) until phase 8; dev-only seeds at `/dev/seeds/*` (`src/dev`) |
+| `apps/web` | React 19 + Vite 7 + Tailwind 4 + Motion (`m.*` under `LazyMotion strict`) + PWA: `src/app` (routes, session), `hub` (shell), `places`, `save` (Dexie `uma-racer-g2`, one sync lane), `ui`; Phaser 4 for the Hub's town map (`hub/scene`, uma-rpg's port); PixiJS 8 only for the race scene (`scenes/race`) until phase 8; dev-only seeds at `/dev/seeds/*` (`src/dev`) |
 | `scripts/sim` | Headless balance runs (`pnpm sim:balance`, `sim:turns`, `sim:builds`, `sim:careers`, `sim:loop`) |
 | `scripts/data`, `scripts/assets` | Content pipeline (GameTora → private data packs and WebP icon atlases) |
 
@@ -101,4 +101,6 @@ pnpm assets:import  # T001 image sources → private WebP atlases; run after dat
 - The race engine never uses `Math.random`: everything goes through the seeded RNG in the input.
 - Verify UI changes in the browser preview at mobile size (`uma-racer-dev` in `.claude/launch.json`); `/dev/seeds/`
   serves the game on synthetic accounts (`?seed=`, `?at=`). Dev builds expose `window.__raceScene` (`seek`,
-  `skipToEnd`), since the preview pane throttles animation frames.
+  `skipToEnd`) and `window.__hub`, since the preview pane throttles animation frames; add `?canvas` to draw the Hub
+  with Phaser's Canvas renderer so screenshots capture it. The shared `uma-racer-dev` preview runs in the main
+  checkout, so from a worktree start Vite on your own port instead.
