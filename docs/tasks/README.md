@@ -21,18 +21,18 @@ and bonded per Uma, uma-rpg's farming catalogue, Prize Money and the Exchange, a
 |---|---|---|
 | 1 | M032 — a sound base: the API on the workspace domain, the startup budget, GitHub Packages, the live manual | **Done, 2026-10-14** (D337) |
 | 2 | M033 — the rework's rules and `sim:loop` (T125–T133) | **Done, 2026-10-14** (D340–D351) |
-| 3 | [M034 — the generation-2 cutover and the new game](M034-generation-2-cutover.md) | **In progress.** T134–T143 built on `cutover/g2` (D352–D361): the new game is the app and the docs describe it. **T144, the release, is still to come: the owner starts the new game there, after saying "go"** |
+| 3 | [M034 — the generation-2 cutover and the new game](M034-generation-2-cutover.md) | **Shipped 2026-10-15** (T134–T144, D352–D361): `ec5b1bd`, racer-api-00188, content `9ba4cdd37cca`; the owner's old save is purged and the retired content deleted. Left: T144's follow-up, which removes the purge endpoint once the owner confirms the new account is theirs |
 | 4 | Push notifications, a port of uma-rpg's | Only if the owner asks after playing (D336) |
-| 5–8 | Platform master data · the Hub · the Farm and Training scenes · the race on Phaser | Specified in turn |
+| 6 | The Hub: uma-rpg's Phaser town on the four pages | **Shipped 2026-10-15, ahead of phase 5** (T145, D363): `b2cb668`, racer-api-00189. Its new art comes from ChatGPT packets [A01 and A02](../handoff/README.md); until then four places draw stand-ins |
+| 5, 7–8 | Platform master data · the Farm and Training scenes · the race on Phaser | Specified in turn. Whether the whole interface moves to pixel art is the owner's call after living with the Hub |
 | 9 | World Expeditions | Starts when phase 3 ships; must land within about 16–20 weeks of it |
 
-The live game on `main` stays as it is until T144 merges phase 3's single cutover, and `main` takes only fixes that
-block play (merged into `cutover/g2` as well). The `pre-split` tag marks the old game.
+The `pre-split` tag marks the old game.
 
 **Retired unbuilt (D339):** M024 (T081), M010 (T035) and M011 (T036–T039). The rework removes what they built on.
 Game feel and device acceptance for the new game are planned after phase 3.
 
-**Next free numbers: M035 and T145.** Numbers are never reused, so a decision that mentions T014 always means the same
+**Next free numbers: M035 and T146.** Numbers are never reused, so a decision that mentions T014 always means the same
 work. T057 was consumed by the per-scenario limit-break branch and is not reused.
 
 ## Completed and removed
@@ -42,6 +42,7 @@ are named by their old path (`design/uma-rpg.md` …); read them with `git show 
 
 | Work | Landed | Carried by | Last commit with the specs |
 |---|---|---|---|
+| T145 — uma-rpg's Hub on the Home screen: the Phaser town, the side-panel quick look, stand-ins for the four buildings awaiting art | 2026-10-15 | [game/11](../game/11-hub-and-places.md), D363 | none (built from the owner's scope call in chat) |
 | T143 — The switch (M034): generation 2 becomes the app, the retired systems are deleted, the docs are rewritten as built | 2026-10-15 | [The manual](../game/README.md), [its architecture's "Decided at the switch"](../game/architecture.md#decided-at-the-switch-t143), [rework/13](../rework/13-removals-and-plan-changes.md) §8, D361 | `1a39f95` |
 | M033 / T125–T133 — The rework's rules, `sim:loop` and the builds against the field | 2026-10-14 | [The manual](../game/README.md) (live blocks), `packages/domain/src/<area>/` (moved there by T143), D340–D350 | M033: `adb10ed`; each T spec: the commit before its merge |
 | M032 — Re-architecture phase 1: a sound base | 2026-10-14 | [rearchitecture/08](../rearchitecture/08-phases.md) phase 1, D337, [the manual](../game/README.md) | No spec file: the phase table was the spec |
