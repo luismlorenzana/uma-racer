@@ -1,6 +1,6 @@
 // The uma-art check (docs/game/08-item-catalogue-and-recipes.md §10, §13; M033 "Art ids"): every id and name the
-// catalogue holds against the installed @luismlorenzana/uma-art 2.4.0 indexes. Only this test reads the art package;
-// the catalogue is frozen data and never imports it.
+// catalogue holds against the installed @luismlorenzana/uma-art 2.5.0 indexes (2.5.0 changed only the gear atlas, T145).
+// Only this test reads the art package; the catalogue is frozen data and never imports it.
 import { readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { describe, expect, it } from 'vitest'
@@ -39,13 +39,13 @@ function frames<F extends object>(path: string): Readonly<Record<string, F>> {
 const ITEM_FRAMES = frames<ItemFrame>('items/atlas.json')
 const DISH_FRAMES = frames<DishFrame>('dishes/atlas.json')
 
-describe('uma-art 2.4.0', () => {
+describe('uma-art 2.5.0', () => {
   it('is the exact-pinned dev dependency', () => {
-    expect((reads('package.json') as { version: string }).version).toBe('2.4.0')
+    expect((reads('package.json') as { version: string }).version).toBe('2.5.0')
     const domain = JSON.parse(readFileSync(new URL('../../package.json', import.meta.url), 'utf8')) as {
       dependencies?: Record<string, string>; devDependencies?: Record<string, string>
     }
-    expect(domain.devDependencies?.[ART]).toBe('2.4.0')
+    expect(domain.devDependencies?.[ART]).toBe('2.5.0')
     expect(domain.dependencies?.[ART]).toBeUndefined()
   })
 

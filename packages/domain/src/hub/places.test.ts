@@ -111,8 +111,8 @@ describe('frames (game/11 §10)', () => {
     'expedition-map': 'town', dojo: 'learning', ...Object.fromEntries(FARM_BUILDING_IDS.map((building) => [building, 'farmlands'])),
   }
 
-  it('reads the pinned 2.4.0 release', () => {
-    expect(art.version).toBe('2.4.0')
+  it('reads the pinned 2.5.0 release', () => {
+    expect(art.version).toBe('2.5.0')
   })
 
   it("finds every frame in the pinned index, 48 × 48 on §10.1's atlas page", () => {

@@ -61,8 +61,8 @@ importers:
   apps/web:
     dependencies:
       '@luismlorenzana/uma-art':
-        specifier: 2.4.0
-        version: 2.4.0
+        specifier: 2.5.0
+        version: 2.5.0
       '@racer/domain':
         specifier: workspace:*
         version: link:../../packages/domain
@@ -81,6 +81,9 @@ importers:
       motion:
         specifier: ^12.43.0
         version: 12.43.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      phaser:
+        specifier: 4.2.1
+        version: 4.2.1
       pixi.js:
         specifier: ^8.20.1
         version: 8.20.1
@@ -153,8 +156,8 @@ importers:
         version: 1.0.0
     devDependencies:
       '@luismlorenzana/uma-art':
-        specifier: 2.4.0
-        version: 2.4.0
+        specifier: 2.5.0
+        version: 2.5.0
       typescript:
         specifier: ~5.9.3
         version: 5.9.3
@@ -1562,8 +1565,8 @@ packages:
   '@js-sdsl/ordered-map@4.4.2':
     resolution: {integrity: sha512-iUKgm52T8HOE/makSxjqoWhe95ZJA1/G1sYsGev2JDKUSS14KAgg1LHb+Ba+IPow0xflbnSkOsZcO08C7w1gYw==}
 
-  '@luismlorenzana/uma-art@2.4.0':
-    resolution: {integrity: sha512-giwPDIHKLWfPHgqGnDnX/u000oomeYoHm/6JgsvPd81mwf/2RTw7kNHzMPIoru8jDwRQuYYSKU3Iysu+51D61A==, tarball: https://npm.pkg.github.com/download/@luismlorenzana/uma-art/2.4.0/4c23dbd0b61cbc6c1bdf1b7c6d53ec6c7f3c6aa8}
+  '@luismlorenzana/uma-art@2.5.0':
+    resolution: {integrity: sha512-Cfp3sIYGN9fk5iJ0DE57o0HmvZEoPMEbwqUF0Sk2FJdZyJ+KQQRGIc2TLpyz0I6pcLHRiUluLgbauJUemdnwzQ==, tarball: https://npm.pkg.github.com/download/@luismlorenzana/uma-art/2.5.0/7d506232b20d9baafdad277df4be9307a29b594f}
 
   '@luismlorenzana/uma-data@1.0.0':
     resolution: {integrity: sha512-HuyoLWqV54722nYo3CqpsH3HM0sL3LN/qctGn4Q/jGM8T1XsUfnx/VdjIfyTXRqlrTOAiYfppU70HIWmyEr1+A==, tarball: https://npm.pkg.github.com/download/@luismlorenzana/uma-data/1.0.0/07ff967fe87a003984bee150577f153322865f2e}
@@ -3768,6 +3771,9 @@ packages:
   pathval@2.0.1:
     resolution: {integrity: sha512-//nshmD55c46FuFw26xV/xFAaB5HF9Xdap7HJBBnrKdAd6/GxDBaNA1870O79+9ueg61cZLSVc+OaFlfmObYVQ==}
     engines: {node: '>= 14.16'}
+
+  phaser@4.2.1:
+    resolution: {integrity: sha512-WUNwCPJpdjvZiuT6SgCfYVW8Qw/3j0jJ4ws7P2QkhFLFu74sbGuyHJcbFueGkY/AYO4Pi47bNQXn1OCJeLX//w==}
 
   picocolors@1.1.1:
     resolution: {integrity: sha512-xceH2snhtb5M9liqDsmEw56le376mTZkEX/jEb/RxNFyegNul7eNslCXP9FDj/Lcu0X8KEyMceP2ntpaHrDEVA==}
@@ -6232,7 +6238,7 @@ snapshots:
   '@js-sdsl/ordered-map@4.4.2':
     optional: true
 
-  '@luismlorenzana/uma-art@2.4.0': {}
+  '@luismlorenzana/uma-art@2.5.0': {}
 
   '@luismlorenzana/uma-data@1.0.0': {}
 
@@ -8547,6 +8553,10 @@ snapshots:
   pathe@2.0.3: {}
 
   pathval@2.0.1: {}
+
+  phaser@4.2.1:
+    dependencies:
+      eventemitter3: 5.0.4
 
   picocolors@1.1.1: {}
 

@@ -367,13 +367,14 @@ How generation 2 became the app (D361). The plan-level choices (the tag, the del
 | Package | Dependency | Version | Kind |
 |---|---|---|---|
 | uma-racer | turbo | ^2.10.13 | dev |
-| @racer/web | @luismlorenzana/uma-art | 2.4.0 | runtime |
+| @racer/web | @luismlorenzana/uma-art | 2.5.0 | runtime |
 | @racer/web | @racer/domain | workspace:* | runtime |
 | @racer/web | @racer/race | workspace:* | runtime |
 | @racer/web | @tanstack/react-query | ^5.102.8 | runtime |
 | @racer/web | dexie | ^4.4.6 | runtime |
 | @racer/web | firebase | ^12.19.0 | runtime |
 | @racer/web | motion | ^12.43.0 | runtime |
+| @racer/web | phaser | 4.2.1 | runtime |
 | @racer/web | pixi.js | ^8.20.1 | runtime |
 | @racer/web | react | ^19.3.0 | runtime |
 | @racer/web | react-dom | ^19.3.0 | runtime |
@@ -410,7 +411,7 @@ How generation 2 became the app (D361). The plan-level choices (the tag, the del
 | @racer/api | typescript | ~5.9.3 | dev |
 | @racer/api | vitest | ^3.2.7 | dev |
 | @racer/domain | @luismlorenzana/uma-data | 1.0.0 | runtime |
-| @racer/domain | @luismlorenzana/uma-art | 2.4.0 | dev |
+| @racer/domain | @luismlorenzana/uma-art | 2.5.0 | dev |
 | @racer/domain | typescript | ~5.9.3 | dev |
 | @racer/domain | vitest | ^3.2.7 | dev |
 | @racer/race | @racer/domain | workspace:* | runtime |
