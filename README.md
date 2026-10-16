@@ -101,6 +101,7 @@ docs/           the manual, design, plans, technical, research, tasks
 | [Game rework](docs/rework/README.md) | Where each rework page lives now, World Expeditions (phase 9, not built), and [the plan](docs/rework/13-removals-and-plan-changes.md): what left, the generation-2 save, the revised phases |
 | [Re-architecture plan](docs/rearchitecture/README.md) | How the code is rebuilt (D321–D325): target architecture, uma-platform and shared packages, Phaser, the data wipe, and [the phases](docs/rearchitecture/08-phases.md) |
 | [Tasks](docs/tasks/README.md) | The current milestone plan and its delegable task specs (see [AGENTS.md](AGENTS.md)) |
+| [Handoff](docs/handoff/README.md) | Packets for ChatGPT, starting with the Hub's art, and the master prompt to start a session |
 
 ### Technical
 

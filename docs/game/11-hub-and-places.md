@@ -406,6 +406,10 @@ class halls, which read as magic, combat or worship; and the ten `wilds` frames 
 
 ### 10.3 Not built yet (phase 6): the uma-platform session's list
 
+The buildings, the Racing tiles and the Home screen's marks are packets for ChatGPT:
+[A01](../handoff/tasks/A01-racer-buildings-and-racing-page.md) and [A02](../handoff/tasks/A02-home-screen-marks.md)
+([the queue](../handoff/README.md)).
+
 One minor release of `uma-art`, drawn by `scripts/pixel-art` (original, deterministic, in git), with the canvas Hub
 (rearchitecture/08's phase 4, now phase 6). The world map and crests serve phase 9's Expedition Map. Until the release,
 a place whose new frame isn't in the pinned uma-art shows its name on a plain tile (§3):
