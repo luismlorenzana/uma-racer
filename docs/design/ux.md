@@ -129,8 +129,9 @@ sub-routes and its decisions are 11 §3 and the manual page that owns its rules.
 | **Farm** (`/farm`) | **The eight family sites, the Pantry and the Kitchen:** a building page each, with its slots, its jobs and the job sheet | 11 §3.4; [07](../game/07-farm.md) §10 |
 | **Every page** | The menu, the featured Uma's quick sheet and the check-in summary. The planner's views live under the Stable (`/town/stable/needs`, each profile's `/needs`) | 11 §2; [02](../game/02-check-ins-and-notifications.md) §4–§6 |
 
-Places with slots share one set of work pieces (`ui/work/`): slot cards, size chips, queue chips, Recall, Speed up and
-Upgrade, all answering through the same tap (below).
+Places with slots share one set of work pieces (`ui/work/`): compact slot rows (D366), size chips, queue chips,
+Recall, Speed up and Upgrade, all answering through the same tap (below). They read how long work takes or has left,
+never the clock time it ends.
 
 ### Race select and the pre-race sheet
 
@@ -347,7 +348,7 @@ sort value.
 | **Uma bust** (`bust`) | 256 px square, head and shoulders | Cut from her portrait at import, one file per Uma | The Stable album, the Uma picker, her profile's header, and the plaza when she has no chibi |
 | **Uma portrait** (`uma`) | 512 px, transparent | One file per Uma, fetched on demand | The collection reveal |
 | **Card art** (`card`) | The full illustration, 600 px on its longest edge (450×600) | One file per card, fetched on demand | The card page's hero and the art viewer |
-| **Race face** (`face`) | 128 px square, transparent | One per character, cut from her summer-uniform stand at import (T059, D160) | Pips, slot cards, the Racecourse strip, the pre-race field, the race feed, the finishing order. The race scene can put them on its tokens, but the run doesn't pass them yet |
+| **Race face** (`face`) | 128 px square, transparent | One per character, cut from her summer-uniform stand at import (T059, D160) | Pips, slot rows, the Racecourse strip, the pre-race field, the race feed, the finishing order. The race scene can put them on its tokens, but the run doesn't pass them yet |
 | **Chibi** (`chibi`) | 256 px, transparent: standing (`-a`) and celebrating (`-b`) | One pair per outfit, from the owner's local copy (T059) | Standing: the featured Uma in the plaza, still art (the canvas Hub didn't animate her; the code-animated chibi waits for phase 5's `outfit-chibis` release, 11 §5). Celebrating: not placed |
 | **Outfit stand** (`dress`) | 512 px, transparent: gym clothes, summer and winter uniforms, casual clothes | Four per character, from the owner's local copy (T059) | Not placed |
 

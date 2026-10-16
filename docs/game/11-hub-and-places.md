@@ -47,9 +47,10 @@ panel (`/:page?peek=:place`, §2.6) and **Enter** opens its Page; the Racecourse
 │  └─ Trophy Hall          Peek; ?scope=uma | stable | trainer; …/uma/:umaId her badges; …/trainer the trainer profile
 └─ Farm /farm              bottom bar tab 4; its badge counts Umas with finished Farm work
    ├─ the eight sites      Fields, Vegetable Garden, Mushroom Cave, Orchard, Herb Garden, Fishery, Sugar Grove, Nut Grove
-   │                       (the Duo ring, §3.4): Peek, pips; gather jobs of the site's family; ?job=… the job sheet
+   │                       (the Duo ring, §3.4): Peek, pips; gather jobs of the site's family; ?job=… the job sheet,
+   │                       on the Page or over the map from the Peek's "+" and targets (/farm?peek=:place&job=…)
    ├─ Pantry               Peek, pips; craft jobs, every family; ?job=…
-   └─ Kitchen              Peek, pips; cook jobs in tabs by destination; ?job=…
+   └─ Kitchen              Peek, pips; cook jobs under icon tabs by destination; ?job=…
 
 On every shell route   ?sheet=menu (☰, §2.5) · ?sheet=featured (§5) · ?sheet=check-in (the pill, §2.3)
 Outside the shell      /collection/reveal/uma/:umaId?then=…&of=…   the reveal after an unlock (full screen)
@@ -60,7 +61,8 @@ Dev builds only        /dev/seeds/* serves all of the above on synthetic account
 The facility pages and the Farm's building pages each hold their slots, **Upgrade**, **Needs here** (the Farm's **For
 your targets**) and **Collect here**; the Farm's also **Repeat here**. The session sheet's full query is
 `?session=:umaId&room=&unlocks=<kind>:<target>,…&back=<path>` (plus `&queue=1` and `&slot=n`), and the job sheet's
-`?job=:itemId&uma=&count=&queue=1&slot=&back=<path>`; `back` takes an in-app path only (§13). Every build view takes
+`?job=:itemId&uma=&count=&queue=1&slot=&back=<path>`, on a building's Page or beside a Farm Peek's `?peek=` (D366);
+`back` takes an in-app path only (§13). Every build view takes
 `?preset=` to show another distance preset (view only). Sheets with no query (the Warehouse's stock sheet, the
 Exchange's Speed Ticket buy, the Stable's Unlock, the Uma picker) live in their Page's state, so a reload closes them.
 
@@ -187,6 +189,13 @@ from the right over 88% of the screen with the map dimmed and its scene paused b
 - A swipe right, a tap on the dimmed map, Escape, the close button or Back closes it. Focus moves to its heading,
   stays inside while it is open, and returns to the place's link.
 - A Peek opens only over its own page, and never for a `direct` place: `?peek=` naming one goes back to the bare page.
+- **The Farm's quick look acts, as uma-rpg's does (D366):** chips for level, slots in use and speed; one 48 pt row per
+  slot (her face in its progress ring, the item, "Carrot ×2 · 0/2", a "+1" chip with the next queued item, and the
+  time left); a finished row's **Done** with **Collect** and **Repeat** (collect, then `repeat` for her); a free row's
+  "+", which opens the job sheet over the map (`/farm?peek=:place&job=&slot=:n`), closing back to the panel; the
+  targets as icons, each opening the sheet filled in; the stock by grade; and **Collect here** when anything is ready,
+  above **Enter**. From the map: Collect a building in 2 taps, collect and restart a finished job in 2, start a job in
+  a free slot in 3 ([07](07-farm.md) §10). The Training Peeks draw the same rows, with Collect and without Repeat.
 
 ## 3. The four pages
 
@@ -253,13 +262,13 @@ for two rows of pips.
    [ Gym ]             ┃          [ Dojo ]
 ```
 
-Each facility's Page is [05](05-training-hub.md) §8's: header with level, slots and Upgrade; slots grouped by room;
-**Needs here**; Collect here. Each also holds the **per-Uma build view** that today's Training scene shows as a tab, at
+Each facility's Page is [05](05-training-hub.md) §8's: one header row with level, slots and the Upgrade button; the
+Farm's compact slot rows, grouped by room; **Needs here**; Collect here. Each also holds the **per-Uma build view** that today's Training scene shows as a tab, at
 `/training/:facility/:umaId`.
 
 | Place (id) | Opens | Peek | Counter | Lock | Replaces |
 |---|---|---|---|---|---|
-| **Observatory** (`observatory`) | Constellation node sessions; per Uma, her tree: open nodes, card assignments (lineage picks are the Lineage Hall's), the next node and its Vegetables dish | Slots with faces and finish times; Umas with nodes left in their layer; Vegetables dishes in stock | Umas with a finished session here | Open | `/constellation/:umaId` |
+| **Observatory** (`observatory`) | Constellation node sessions; per Uma, her tree: open nodes, card assignments (lineage picks are the Lineage Hall's), the next node and its Vegetables dish | Its slots as the Farm's rows: faces in their rings, the dish, how long is left or Done with Collect; Umas with nodes left in their layer; Vegetables dishes in stock | Umas with a finished session here | Open | `/constellation/:umaId` |
 | **Lineage Hall** (`lineage-hall`) | Inspiration sessions; per Uma, her parents and grandparents (any Uma ever owned) and their golds | Same, with Mushrooms dishes | Same | Open | `/constellation/:umaId/inspiration` |
 | **Gym** (`gym`) | Five stat rooms of Extra Stats sessions; per Uma, her Extra Stats map and active nodes per preset | Rooms with faces; Umas with nodes left by stat; stat, Duo and Feast dishes in stock | Same | Open | `/constellation/:umaId/extra-stats` |
 | **Dojo** (`dojo`) | Six card-type rooms of bond sessions; per Uma, her bonds and her card set per preset ([06](06-cards-and-bonds.md) §3) | Rooms with faces; bonds left this layer | Same | Open | `/constellation/:umaId/cards`, `/stable/:umaId/deck` |
@@ -302,9 +311,9 @@ side of the road, joined across it at the top and the bottom, with the Pantry an
 
 | Place (id) | Opens | Peek | Counter | Lock | Replaces |
 |---|---|---|---|---|---|
-| **Fields, Orchard, Fishery, Herb Garden, Vegetable Garden, Mushroom Cave, Sugar Grove, Nut Grove** (their uma-art ids) | The building page: gather jobs of its family ([07](07-farm.md) §10) | Slots with faces and the next output's time; its family's stock by open grade; the planner's lines for it | Umas with finished outputs here | Open; grades inside lock by Farm Level ("Farm Lv 16") | `/farm/district/:districtId` |
-| **Pantry** (`pantry`) | Craft jobs, every family | Same; crafted stock short for the targets | Same | Open | Today's Workshop |
-| **Kitchen** (`kitchen`) | Cook jobs; recipe tabs by destination ([07](07-farm.md) §10) | Same; dishes short for the targets | Same | Open | Today's Kitchen; `/farm/recipes` |
+| **Fields, Orchard, Fishery, Herb Garden, Vegetable Garden, Mushroom Cave, Sugar Grove, Nut Grove** (their uma-art ids) | The building page: gather jobs of its family ([07](07-farm.md) §10) | A row per slot (face in its ring, item, ×N · made, time left, or Done with Collect and Repeat; a free one's "+" opens the sheet over the map); the planner's lines as icons; its family's stock by open grade; Collect here | Umas with finished outputs here | Open; grades inside lock by Farm Level ("Farm Lv 16") | `/farm/district/:districtId` |
+| **Pantry** (`pantry`) | Craft jobs, every family | Same, without the stock by grade | Same | Open | Today's Workshop |
+| **Kitchen** (`kitchen`) | Cook jobs; recipe icon tabs by destination ([07](07-farm.md) §10) | Same, without the stock by grade | Same | Open | Today's Kitchen; `/farm/recipes` |
 
 There is no Farmhouse: Farm Level lives on each Uma's profile, recipes in the Kitchen's sheet, and the Wishlist became
 the planner ([07](07-farm.md) §13).
@@ -374,7 +383,7 @@ unless a sub-page slot claims it first (the Stable's `needs`, `places/registry.t
 | Route | Screen |
 |---|---|
 | `/` | The start rule (§2.4) |
-| `/town`, `/training`, `/racing`, `/farm` | A page's map; `?peek=:place` opens its side panel (§2.6) |
+| `/town`, `/training`, `/racing`, `/farm` | A page's map; `?peek=:place` opens its side panel (§2.6); on `/farm`, `&job=…` opens the job sheet over it (D366) |
 | any shell route `?sheet=menu`, `featured` or `check-in` | A global sheet over it (§2.3, §2.5, §5); Back closes it |
 | `/town/stable` | The roster; `?tab=owned` or `?tab=locked` |
 | `/town/stable/outfit/:umaId` | Her profile (Overview; `?tab=racing` for Racing); `/needs` and `/skills` are its sub-pages |
@@ -673,12 +682,12 @@ interiors are.
 | The one Uma picker (`ui/UmaPicker`) is the Stable's album in a sheet with today's `UmaPickerSheet` props (caller sorts, `describe`, `disabledReason`, `candidateIds`, plus an `action` per row), through a portal so it opens over another sheet; T139 and T140 use it (T138) | D181; the Stable owns the album it browses |
 | Taps and their words use T140's `ui/work` (`useTap`, `TapNoteLine`) and `ui/ItemIcon`; a 44 pt tab row (`ui/Tabs`) stands in for today's 32 pt SegmentedControl (T138) | One set of pieces (M034); 44 pt targets |
 | The dev seeds carry invented skills and card names and run `dev-grant`; Account's dev section loads a seed in place through the port's `fixtures` and `loadFixture` (T138) | A profile's Skills tab needs a library to equip and the Library names to search; M034's rehearsal reaches a gate in one tap |
-| The session sheet opens over a facility page from its query (`?session=:umaId&room=:room&unlocks=<kind>:<target>,…&back=<path>`, plus `&queue=1` and a slot card's `&slot=n`); `back` is an in-app path only, `session=` empty opens T138's picker, and only the facility's own unlocks are read (T139) | Every place is a link (§1); the Library's Bond, the planner, a Needs line and the build views reach it without importing it |
+| The session sheet opens over a facility page from its query (`?session=:umaId&room=:room&unlocks=<kind>:<target>,…&back=<path>`, plus `&queue=1` and a slot row's `&slot=n`); `back` is an in-app path only, `session=` empty opens T138's picker, and only the facility's own unlocks are read (T139) | Every place is a link (§1); the Library's Bond, the planner, a Needs line and the build views reach it without importing it |
 | The four facilities share one Page (the facility page and each Uma's build view at `:umaId`) and one Peek; their Counter stays the hub view's `finished-here` (T139) | One reading for four places, as the Farm's ten share one (T140); §3.2's "Umas with a finished session here" is T137's one Ready number |
 | The Observatory's and the Gym's build views are full screen, with their own back; the Lineage Hall's and the Dojo's stay in the shell (T139) | §6 names only the tree and the Extra Stats map |
 | `ui/TreeGraph` is new, on `training/trees`' `Tree`: the 0–100 canvas on the validator's 351 × 525 pt box scaled to the screen's width, 36 pt nodes at its 40 pt spacing, pinch zoom and a drag once zoomed; a **List** of 44 pt rows carries every node's action and the next layer's nodes, which the tree can't draw (T139) | §12's 44 pt rule over [05](05-training-hub.md) §4's spacing; today's `ConstellationGraph` reads Constellation Level and today's templates |
 | The Dojo's card choices mount T138's `CardLibrary` in pick mode: the session sheet's **Add a card** (the room's cards she can bond now), each set slot (her bonded cards) and **Bond more** (cards she can bond now, into the sheet with the card's room) (T139) | [06](06-cards-and-bonds.md) §6: no weaker parallel picker |
-| A facility's Peek: its slots with faces and the next finish; how many Umas have unlocks left here (`layerProgress`) with the first three; its dishes in the Warehouse (Vegetables, Mushrooms, or the Gym's stat, Duo and Feast dishes), or at the Dojo the bonds left this layer (T139) | §3.2's Peek column |
+| A facility's Peek: its slots as the Farm's rows, with how long is left (D366); how many Umas have unlocks left here (`layerProgress`) with the first three; its dishes in the Warehouse (Vegetables, Mushrooms, or the Gym's stat, Duo and Feast dishes), or at the Dojo the bonds left this layer (T139) | §3.2's Peek column |
 | No Umas yet: free slots, and Needs here and the sheet read "No Umas yet · unlock them in the Stable" with the Stable's link; an id the Stable doesn't hold reads `unknown-uma`'s words (T139) | A locked place shows no placeholder (§1); the empty state says what opens it |
 | The Hub is uma-rpg's, copied into `hub/` (`HubCanvas`, `scene/createHubGame`, `HubScene`, `terrain`, `markers`, `grid`, `swipe`, `PlaceTargets`, `OverlayHost`), each file crediting it; a shared uma-platform package comes later (T145, D363) | The owner's choice (c): lift and shift now, extract once both games run the same Hub |
 | Phaser 4.2.1, pinned exactly as uma-rpg's, imported only by the lazy `hub/scene/` chunk; Scale NONE at zoom 1/dpr (dpr capped at 2) with a ResizeObserver, audio off; `?canvas` forces the Canvas renderer and `window.__hub` is exposed, in dev builds only (T145) | uma-rpg's engine and settings; the entry stays under budget; preview screenshots can't capture WebGL |
@@ -692,6 +701,7 @@ interiors are.
 | A swipe is a drag of more than 60 pt, at least 1.5 times as wide as it is tall, on the map only; it pushes the page like a tab, and a click that ends a swipe is swallowed (T145) | uma-rpg's swipe; a swipe across a place link isn't a tap on it |
 | The scene pauses while the side panel or any `?sheet=` covers it, or the page is hidden, and is destroyed when the map unmounts (T145) | uma-rpg D39; one engine alive (§12) |
 | The side panel keeps this game's counter and (i) in its header, shows the registry's Peek or the place's blurb over its building, closes by its button, Escape, a tap on the dimmed map, a swipe right or Back, and keeps focus inside (T145) | uma-rpg's `OverlayHost` with §1's (i) rule |
+| A Farm Peek acts: Collect and Repeat on a finished row, Collect here, and a free row's "+" and the targets open the job sheet over the map from `?peek=:place&job=…`; the sheet sits inside the panel's tree, so Escape and Back close it first, and a sideways drag on it never closes the panel (T146, D366) | The owner wanted uma-rpg's Farm structure with fewer taps: 2 from the map to collect or restart, 3 to start a job |
 | The service worker precaches files up to 3 MB (T145) | uma-rpg's limit: the Phaser chunk and the atlases precache, so the Hub works offline |
 | `/dev/seeds` and `/dev/seeds/` are the seeds' root, which runs the start rule as `/` does; one tested check (`isSeedsPath`) decides the mount (T145) | The 404 came from a checkout without the mount; the router test now holds the root |
 

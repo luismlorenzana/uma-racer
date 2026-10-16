@@ -3,7 +3,8 @@
 > **Status: as built, phase 3 (generation 2, D361); first written 2026-10-13 (D328, D334).** How the owner keeps 25
 > Umas working in visits of under a minute: Collect all, batch sizes, queues, Repeat, the check-in summary, the "what
 > she still needs" planner, offline time, retries and plain words. `pnpm sim:loop` ([12](12-economy-and-pacing.md) §12)
-> measures how much they raise utilisation. §1–§6 and §8–§9 run in the game (T142, D360), with §11's last rows. Push
+> measures how much they raise utilisation. §1–§6 and §8–§9 run in the game (T142, D360), with §11's last rows; §3's
+> picker and queue chips read durations since T146 (D366). Push
 > notifications (§7) are not built: phase 4, only if the owner asks.
 
 The pacing target assumes about **75% utilisation**: each Uma works about 18 hours a day, with three check-ins and
@@ -57,11 +58,15 @@ page has its own Collect for just that place.
 ### Sizing a job to the next check-in
 
 Every job and session takes **1–10 items or unlocks, made one after another** (README). The size picker shows a chip
-per size with **its finish time**, and how long the Uma would then wait for a check-in.
+per size with **how long it takes** ("×1 · 1h 48m", "×4 · 7h 12m" for a grade-1 gather), never the clock time it
+ends (D366: the owner wants the time a job takes, not the hour it finishes). VoiceOver also reads how long the Uma would
+then wait for a check-in ("3h 36m, then free 24m before a check-in" for ×2 at 09:00).
 
 The owner's check-in times live in Settings: up to four times, by default 08:00, 13:00 and 22:30. The picker marks the
-chip that ends closest before the next check-in (**Fits 13:00**). After the last check-in of the day it marks the one
-for the morning (**Overnight**). It never picks for the owner. It preselects the marked chip, and one tap confirms.
+chip that ends closest before the next check-in with a **check-in mark**, read "fits the next check-in". After the last
+check-in of the day it marks the one for the morning with a **moon**, read "runs overnight". The marks replace T142's
+"Fits 13:00" and "Overnight" words, which named a clock time. It never picks for the owner. It preselects the marked
+chip, and one tap confirms.
 
 Gaps at the default times, at grade 1 ([12](12-economy-and-pacing.md) §4 times):
 
@@ -74,8 +79,10 @@ Gaps at the default times, at grade 1 ([12](12-economy-and-pacing.md) §4 times)
 | Session (180 min each) | ×1, ends 11:00 | ×3, ends 22:00 | ×3, ends 07:30 |
 <!-- /live -->
 
-A chip that runs past the next check-in says so. For example, a ×2 session started at 08:00 shows "ends 14:00 · then
-free until 22:30". Overshooting the next visit usually costs more idle time than stopping short of it.
+The table above states the rule in clock times; the screens don't. A chip that runs past the next check-in carries no
+mark, and VoiceOver reads its wait: a ×2 session started at 08:00 is "6h, then free 8h 30m before a check-in" (it ends
+at 14:00, and the next visit is 22:30). Overshooting the next visit usually costs more idle time than stopping short of
+it.
 
 ### Queues
 
@@ -84,8 +91,9 @@ free until 22:30". Overshooting the next visit usually costs more idle time than
 
 - **One slot, one place.** Queued entries run in the same slot at the same building or facility, with any recipe or
   unlock that place offers. A queue never moves her to another place ([01](01-game-loop.md) §2).
-- **Each entry has its own recipe and size**, and the card shows the finish time after each one: "then Vegetables ×4
-  → 17:30; then crafted Vegetables ×10 → 19:45".
+- **Each entry has its own recipe and size**, and the slot's row shows each as a small chip with how long it takes:
+  "then [Carrot]×4 · 7h 12m", "then [Chopped Carrot]×10 · 4h 30m" (D366; T142's chips read the clock time each would
+  end).
 - **A queued entry reserves nothing until it starts.** It starts at the moment the entry before it ends, taking its
   inputs from the Warehouse's free stock then ([07](07-farm.md) §2).
 - **The card warns ahead.** A queued entry shows a warning mark ("short 2 raw Vegetables G2") as soon as the
@@ -397,7 +405,7 @@ The planner, suggestions, finish times and the badge count are **derived on read
 | If ×1 already overruns the next check-in, the picker fits the one after | §3 is silent; marking ×1 idles her until the following visit anyway |
 | Local time comes from the device's UTC offset, passed in; the sim passes 0. An operation that fits a size (Repeat's fit, Speed up all to the next check-in) carries it in its input | The rules stay pure, and a re-run sees the same local time; a DST night is off by an hour at most, once |
 | There are 1–4 check-in times, never none | "Up to four" (§3), and fitting needs at least one |
-| **Overnight** marks the day's earliest check-in | §3: "after the last check-in of the day it marks the one for the morning" |
+| **Overnight** marks the day's earliest check-in: a moon on the chip since D366 | §3: "after the last check-in of the day it marks the one for the morning" |
 | Clock times are cut to the minute, so §3's 12:52:30 reads 12:52 | The same table shows 22:22:30 and 07:52:30 as 22:22 and 07:52 |
 | Repeat with no Umas named takes every Free Uma with a last job or session, in her last slot's order, each at the lowest free slot there | §5 says "collected in this check-in", [07](07-farm.md) §9 says "each free Uma", and the screen passes the Umas it collected |
 | Repeat skips an Uma with a stopped queue | Queue stopped's fixes put back what she was meant to do next |
@@ -452,7 +460,7 @@ The planner, suggestions, finish times and the badge count are **derived on read
 | Couldn't repeat's Buy is a buy, then a Repeat of her; a skip shows while she is still Free (T142) | Her Repeat then finds the stock it lacked; a fixed skip has nothing left to show |
 | Spending (Buy and restart, a fix's Buy, Speed up all) confirms once with the amount; everything else is one tap, one tap in flight for the whole sheet (T142) | §1 counts two taps for Buy and restart; §4 confirms Speed up all; §9's double tap |
 | A gated Needs line links to the Exchange row (`?family=&grade=`); only Queue stopped's and Couldn't repeat's fixes buy inline (T142) | T140's rule: a purchase stays one deliberate tap, outside §4's fixes |
-| `SizeChips` shows a chip per size, 1 to what the stock covers (T142, built by T140) | §3: "a chip per size with its finish time" |
+| `SizeChips` shows a chip per size, 1 to what the stock covers, each with how long it takes, the fitting one marked by an icon (T142, built by T140; D366) | §3: "a chip per size with how long it takes" |
 | The shared pieces came with T140 in `ui/work/`; T142 adds `StoppedQueueCard` and `useTaps`, `useTap` for a list (T142) | One runner and one set of pieces for every timed thing (D358) |
 | Offline shows one line in the summary's footer, linking to Account's sync row; the save's refused taps show there in plain words until dismissed; a stopped card another device already put back leaves its answer there (T142) | §9's words, where the owner just tapped |
 | "Already collected." names the Uma, or the place when nobody holds the slot now (T142) | The other device's collect freed the slot |

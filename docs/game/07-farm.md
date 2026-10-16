@@ -2,7 +2,7 @@
 
 > **Status: as built, phase 3 (generation 2, D361); first written 2026-10-13 (D326, D327, D328, D330, D331, D334).**
 > The rules are phase 2's (D343), measured by the loop simulation ([12](12-economy-and-pacing.md) §12, D348), whose
-> tables here are live. §10's screens are T140's (D358), with §14's last rows.
+> tables here are live. §10's screens are T146's compact ones (D366, superseding T140's of D358), with §14's last rows.
 
 The Farm is where the roster spends most of its time. Umas gather ingredients at eight family sites, the **Pantry**
 crafts them and the **Kitchen** cooks them into dishes, all on timers that run while the app is closed. A dish is the
@@ -140,7 +140,8 @@ running styles, so every Uma is good at something:
 uma-rpg speeds the job itself instead (S/A work at half time). The racer doesn't, for one reason: the four-week pace
 ([12](12-economy-and-pacing.md)) then holds whoever is assigned where, and the timer on screen is the same for every
 Uma. The aptitude still gives the owner a reason to put the right Uma on the right site: she levels nearly twice as
-fast. The job sheet shows it beside each Uma ("Sprint A · Farm EXP ×1.6"), and the picker sorts suited Umas first.
+fast. The job sheet stars a suited Uma (an S or A letter for what she'd make), lists suited Umas first and preselects
+one, and names the chosen one's line ("Sprint A · Farm EXP ×1.6").
 
 ## 4. Farm Level
 
@@ -218,7 +219,7 @@ shared Warehouse and higher-level Umas cover anything she can't make yet.
 | **Racing** | Never blocked. An Uma at the Farm can race, and racing doesn't touch her job |
 | **One Uma per slot** | A slot holds one job, and so one Uma, at a time |
 | **A slot is held by a job, not by an Uma** | Collecting a finished job frees both the slot and the Uma. She has no standing assignment; Repeat (§9) brings her back |
-| **Moving a worker** | A free Uma can start a job at any free slot. A busy one is moved by **Recall**, then a new job: the sheet shows what is lost (the output in progress and the queue) before it confirms |
+| **Moving a worker** | A free Uma can start a job at any free slot. A busy one is moved by **Recall** (her row's ⋯, §10), then a new job: Recall shows what is lost (the output in progress and the queue) before it confirms |
 | **Into a session** | Sending an Uma whose Farm job is finished to a session collects it first, in the same tap. A running job must be recalled first |
 | **Promotion** | **Promotion needs her free** ([04](04-tiers-and-promotion.md) §5): no running job, no queue, nothing waiting for Collect. The Promote sheet offers Collect, Recall or Speed Tickets, or says when she'll be free. So no job spans two tiers' Farm Levels |
 
@@ -335,34 +336,84 @@ Today's **Energy** becomes the **Speed Ticket**: an item in the Warehouse, bough
 ## 10. Screens
 
 The Hub's **Farm page** ([11](11-hub-and-places.md)) shows the ten buildings, each with slot pips (the worker's face
-ringed by her output's progress) and a **Ready** badge. Tapping one opens its peek, then its page.
+ringed by her output's progress) and a **Ready** badge. Tapping one opens its quick look in the side panel; **Enter**
+opens its page. Every Farm screen follows four rules the owner set after playing T140's (D366):
+- **Durations, never clock end times.** A job reads how long it has left ("1h 20m") or will take ("×4 · 7h 12m"), and
+  **Done** once it has ended (`durationText`, 02 §3).
+- **Icons with a number beat words:** item icons, Uma faces and small badges. Explanations sit behind (i) and in
+  VoiceOver's labels ("Collect 2 Carrot").
+- **The obvious choice is preselected**, so most actions are one tap.
+- **Nothing scrolls** at 390 × 844 for a building of up to four slots; only the Kitchen's eight do. Compactness comes
+  from layout: every target stays 44 pt.
+
+### The quick look
+
+The side panel ([11](11-hub-and-places.md) §2.6), uma-rpg's structure made tappable:
+1. **Header:** level, slots in use and speed as chips ("Lv 2", "3/4", "×1.25"; speed only above ×1).
+2. **One row per slot, about 48 pt:**
+   - running: her face in its progress ring, the item's icon, "Carrot ×2 · 0/2", a "+1" chip with the next queued
+     item's icon, and the time left;
+   - finished: **Done**, with **Collect** (its count) and **Repeat**: `collect`, then the domain's `repeat` for her
+     alone, which restarts her last job at the same building, item and size, shrunk to the stock or skipped with its
+     reason (§9, [02](02-check-ins-and-notifications.md) §5);
+   - free: a "+" that opens the job sheet at once, over the map (`/farm?peek=:place&job=&slot=:n`).
+3. **For your targets** as icons (below), each opening the sheet over the map, and a site's stock by open grade.
+4. **Collect here** when anything is ready, then the panel's **Enter {place}**.
+
+From the Hub: collecting a building is 2 taps (the building, Collect here); collecting and restarting a finished job is
+2 (the building, Repeat); a new job in a free slot is 3 (the building, +, Start).
 
 ### The building page
 
 At 390 × 844, top to bottom:
-1. **Header:** name, level, slots in use ("5 of 6"), speed, **Upgrade** (price and items, with stock), and (i) help.
-2. **For your targets:** the planner's lines for this building ([02](02-check-ins-and-notifications.md)), lowest grade first:
-   "Chopped Carrot × 12 for 3 Umas' constellation nodes · have 4 · coming 6". Tapping a line opens the job sheet with
-   it filled in.
-3. **Slot cards**, one per slot:
-   - a running job: her face, name and Farm Level; the item's icon and grade; a ring for the current output; "3 / 10
-     made"; the next output's and the job's end times; queue chips; buttons **Collect** (when outputs are waiting),
-     **−30m**, **Finish**, **Recall** and **+ Queue**;
-   - a free slot: **Start a job**.
-4. **Collect here** and **Repeat here**, beside the global ones.
+1. **Header, one 52 pt row:** the chips, and **Upgrade** as a button showing its Prize Money mark and amount. It
+   opens one sheet: the whole cost item by item against stock, what the level brings, and **Yes**. When the account
+   can't pay, the button stays tappable and the sheet says why in the rule's words. (i) in the title bar holds the help.
+2. **For your targets:** one row of item icons, each with "×N" short (a check when what's coming covers it, a lock when
+   no Free Uma's Farm Level opens it), scrolling sideways. A tap opens the job sheet filled in with that item, the
+   planner's Free Uma and her size; one more tap starts it. VoiceOver reads the line in 02 §6's words ("Vegetables G3 ·
+   short 6 · Warehouse 4 · coming 2 (Gold Ship, in 1h 20m)").
+3. **One row per slot, 56 pt:** her face in its progress ring; the item's icon; "×10 · 3/10"; the time left, or
+   **Done**; and trailing 44 pt icon buttons: **Collect** with its count while outputs wait; **Repeat** on a finished
+   job; a **Speed Ticket** that opens −30m, Finish and "Buy N and finish" in a small sheet (§8); and **⋯** for **Queue
+   next**, her queue (move earlier, remove) and **Recall** with its preview. Queued jobs follow as small chips with
+   their durations ("then [Carrot]×4 · 7h 12m"). A free slot is a dashed "+" row that opens the sheet.
+4. **Collect here** and **Repeat here**, side by side in the thumb zone; off, each says why on itself ("Nothing to
+   collect", "Nobody to repeat").
+
+From the page, a new job is 2 taps (+, Start), and so is a target's (its icon, Start).
 
 ### The job sheet
 
-1. **Uma.** Free Umas first, then by Farm Level, highest first. Each row shows her Farm Level, the highest grade she
-   can work, her tier, and "in a session until 14:20" (greyed) when she's busy.
-2. **What.** Items by grade. A grade above her level shows its lock ("Farm Lv 16") rather than hiding. Each item
-   shows stock and a **Needed × N** badge from the planner. At the Kitchen, tabs follow the destinations: Speed ·
-   Stamina · Power · Guts · Wit · Skill bonds · Constellation · Inspiration · Duos · Feasts · **Can cook now**. A dish
-   row names its destination and the Umas whose open unlocks want it.
-3. **How many.** 1–10, with chips for 1, 4, 10 and "until the next check-in" ([02](02-check-ins-and-notifications.md)).
-   The sheet shows minutes per output, the clock time it ends ("ends 22:40"), Farm EXP, and every input against free
-   stock ("Honey 8 of 9 · 1 short").
-4. **Start** or **Add to queue**. A disabled button always says why.
+One screen, everything preselected:
+1. **Free Umas:** a strip of 44 pt faces, each with her Farm Level as a badge and a star when her aptitude suits what
+   she'd make (§3); one line under it names the chosen one with her aptitude. **Only Free Umas** are listed: never one
+   working anywhere, in a session, or Ready with a finished job still holding its slot. With none, the sheet says "No
+   free Uma", with **Collect here** when a finished job here would free one, and nothing else. **Queue next** (a row's
+   ⋯) names her and skips this step.
+2. **What:** an icon grid, five to a row, so a site's ten grades fit in two rows. Each cell holds the 32 pt icon, its
+   grade in the corner, the stock, the plan's "×N" needed, and a lock with "Lv16" above her Farm Level; the chosen one
+   is ringed, and one line under the grid names it with its stock (a dish also its destination and the Umas whose
+   unlocks want it). The Pantry's families and the Kitchen's tabs (Speed · Stamina · Power · Guts · Wit · Skill bonds ·
+   Constellation · Inspiration · Duos · Feasts · Can cook now) are icon chips: the stat and bond type icons, a star, a
+   spark, a Duo's and a Feast's dish, a check; a family's first crafted item.
+3. **How many:** a chip per size the stock covers, each with how long it takes ("×1 · 1h 48m", "×4 · 7h 12m" for a
+   grade-1 gather). The size that fits until the next check-in ([02](02-check-ins-and-notifications.md) §3) carries a
+   check-in mark (a moon when that check-in is the morning's) and is preselected.
+4. **Inputs:** one line of input icons with have/need, red when short, and the Farm EXP. A shortfall links to the
+   building that makes it, and to the Exchange's row for stocked raw; a raw grade above her Farm Level links to the
+   Exchange too.
+5. **Start · ×4 · 7h 12m** (or **Queue · ×4 · 7h 12m**), one footer button; when it can't run it says why in the
+   rule's own words.
+
+**What's preselected:** the planner's suggestion at this building (`suggestFrom`: its Free Uma, item and size); else
+the best Free Uma, suited first, then Farm Level, with the item the plan wants most that she can make (her Farm Level
+opens it and the stock covers one), else the highest grade she can work; and the size the check-in fits. A link that
+names an item (a target's icon, the Warehouse's Make more, a shortfall's) keeps it and its count, with the first Free
+Uma in that order whose Farm Level opens it.
+
+Gone from the sheet (D366): busy Umas, **Add to queue** on another Uma's job, and **Recall and start here**. Recall and
+Queue next live on the slot's row.
 
 ### The Warehouse's Farm goods
 
@@ -391,7 +442,7 @@ job sheet at the building that makes it (`/farm/:building?job=&back=`).
 | **Empty Warehouse** | Pantry and Kitchen jobs can't start: the sheet names the shortfall and links to the site. Repeat skips them; a queue reaching them drops |
 | **A stale screen** | Start, queue and recall carry what the screen showed. If the stock or the slot changed (another device, a queue that started), the API refuses and the screen reloads with the new state; nothing is half applied |
 | **A retried tap** | Every operation has an id; a retry returns the first receipt and is never applied twice |
-| **An Uma in a session** | Not in the job sheet's free list; shown greyed with the session's end |
+| **An Uma in a session** | Not in the job sheet, which lists Free Umas only (§10) |
 | **An Uma bought mid-tier** | Farm Lv 1, grade 1 only, any building; her scenario-1 dishes are grade 1 and 2 |
 | **A promoted Uma** | Farm Lv 1 again in the new tier ([04](04-tiers-and-promotion.md)); the items she made stay in the Warehouse |
 | **Upgrade mid-job** | New slots appear at once; running jobs keep their frozen speed |
@@ -469,22 +520,26 @@ The old Farm, the Stable Kitchen (M031, D304–D320; deleted with the cutover, r
 | **An upgrade's only gate is its cost** | Its grade-3 items are §7's "from Farm Lv 11" |
 | **An upgrade's Prize Money is a ledger row** `upgrade:<building>:<level>`, reason `upgrade` | [09](09-racing-rewards-and-exchange.md) §9's reasons and audit; a building reaches each level once, so the id is once-only |
 | **Promotion clears her idle work row** (her last job and any dropped queue) | [02](02-check-ins-and-notifications.md) §5 never repeats a promoted Uma, and her last job's grade may be above her new Farm Level |
-| The job sheet opens over the building page from its query (`?job=:itemId&uma=:umaId&count=:n&queue=1&slot=:n&back=<path>`), `back` an in-app path only; an empty `job=` opens it with nothing chosen, and `slot` is the slot card's (T140) | Every place is a link ([11](11-hub-and-places.md) §1); the Warehouse, the planner and the session sheet reach it without importing it, and Start a job and + Queue name their slot |
-| A planner line opens the sheet filled in with the suggested Uma and a fitted size; it doesn't start at once. Without a suggestion for that item, the first Free Uma whose Farm Level opens it, sized as `jobFor` fits it (capped by stock), else by `fitSize` (T140) | §10 says "opens the job sheet with it filled in"; [02](02-check-ins-and-notifications.md) §6's one-tap start stays the summary's Start suggestions |
-| The section is titled "For your targets", in [02](02-check-ins-and-notifications.md) §6's line words: family and grade ("Vegetables G3", a Duo or Feast by its kind), short (left out at 0), Warehouse, and coming with each worker and time (T140) | 02 owns the planner's views (§10 calls it "Needed now") |
-| The Uma list is Free first, then Ready (a start collects her first), then busy Umas the sheet can take; within each, suited for the chosen item, then Farm Level. A session, or her full queue here, greys her with the reason (T140) | Joins §10's order with §3's "sorts suited Umas first" |
+| The job sheet opens over the building page from its query (`?job=:itemId&uma=:umaId&count=:n&queue=1&slot=:n&back=<path>`), `back` an in-app path only; an empty `job=` opens it preselected, and `slot` is the "+" row's. The quick look opens the same query over the map (`/farm?peek=:place&job=…`), and closing it returns to the quick look (T140, D366) | Every place is a link ([11](11-hub-and-places.md) §1); the Warehouse, the planner and the session sheet reach it without importing it, and "+" and Queue next name their slot |
+| A target's icon opens the sheet filled in with the suggested Uma and a fitted size, and one more tap starts it. Without a suggestion for that item, the first Free Uma whose Farm Level opens it, sized as `jobFor` fits it (capped by stock), else by `fitSize` (T140, D366) | §10 says "opens the job sheet with it filled in"; [02](02-check-ins-and-notifications.md) §6's one-tap start stays the summary's Start suggestions |
+| "For your targets" is one row of item icons with "×N" short; each reads [02](02-check-ins-and-notifications.md) §6's line words to VoiceOver: family and grade ("Vegetables G3", a Duo or Feast by its kind), short (left out at 0), Warehouse, and coming with each worker and how long until it lands (T140, D366) | 02 owns the planner's views (§10 calls it "Needed now"); the planner's own Needs views keep the clock time |
+| The sheet lists **Free Umas only**, suited (an S or A letter for the chosen item's families, else the site's) first, then Farm Level, highest first (D366, superseding T140's Free, Ready and busy list) | The owner: "I don't like that you show Umas in the list that are already allocated to other jobs" |
 | The Pantry's items sit in family tabs in the ring's order; a site lists its family's ten grades (T140) | §10 tabs only the Kitchen; the ring is the Farm page's order ([11](11-hub-and-places.md) §3.4) |
 | Can cook now lists dishes the free stock covers once and the chosen Uma's Farm Level opens (any Uma's highest when none is chosen); locks read the same way (T140) | §10 names the tab, not its rule; this is what Start would accept |
 | **Needed × N** on an item is the plan's still-to-start count for it (`short`), every target together (T140) | It is what a job should make; what the Warehouse or the outputs coming already cover needs no badge |
-| Moving a busy Uma is **Recall and start here**: one confirmation naming what is lost (`recall` run on the current state), then `recall` and `start` (T140) | §5: "the sheet shows what is lost … before it confirms" |
+| Moving a busy Uma is **Recall** on her row's ⋯, one confirmation naming what is lost (`recall` run on the current state), then the free slot's "+" (D366; T140's Recall and start here is gone) | §5's confirmation stays; the sheet holds only Free Umas |
 | A shortfall links to the building that makes it and, for stocked raw, the Exchange; the sheet buys nothing inline (T140) | Only a stopped queue's Buy and restart ([02](02-check-ins-and-notifications.md) §4) and Finish ([09](09-racing-rewards-and-exchange.md) §5.1) buy inline; a purchase stays one deliberate tap |
-| Every button runs its operation on the current state first, so a disabled one reads the rule's own refusal; with no free slot, Start says when the next job here ends, or that one is ready to collect (T140) | §10's "a disabled button always says why", with no rule restated on screen |
-| "Buy N and finish" runs `buy` then `finish`, two operations after one question. Under 30 minutes left, −30m and Finish are the same ticket, so only **Finish · 1** shows and asks with the minutes wasted; with no ticket held, −30m hides and Finish reads "Buy N and finish" (T140) | [09](09-racing-rewards-and-exchange.md) §5.1; §8's "shows the minutes wasted before it confirms" |
-| An upgrade asks once with its whole cost, and its refusal (`prize-money`, `short`) reads beside it; nothing shows at Lv 3 (T140) | A spend of Prize Money and items confirms once, as the Exchange's large purchases do |
-| A card's ring is the current item's progress (`itemProgress`), as the Hub's pips are, redrawn on the 30-second clock (T140) | §10's "a ring for the current output"; one look for the pip and its card ([11](11-hub-and-places.md) §4) |
-| The Peek's stock by open grade runs up to the highest grade any current Uma has open; the Pantry and Kitchen show their lines short instead, the first three (T140) | [11](11-hub-and-places.md) §3.4 says "by open grade"; the same reading as the Exchange's stock ([09](09-racing-rewards-and-exchange.md) §5.3) |
-| Collect here and Repeat here sit in the page's thumb zone, off with their reason when nobody is ready or repeatable here; their receipt lists each line and each skip in the rule's words (T140) | §10 puts them beside the global ones; [02](02-check-ins-and-notifications.md) §5's "Kitchen full", "4 Honey short" |
-| `ui/work/` (SlotCard, SpeedUpControls, RecallSheet, QueueChips, SizeChips) and `ui/ItemIcon` are T140's, used unchanged by T139 and T142; the sheet keeps a short Uma list until T138's picker lands (T140) | One look for every timed thing and every item; the Farm makes the items |
+| Every button runs its operation on the current state first, so a disabled one reads the rule's own refusal; with no free slot, Start says how long until the next job here ends, or that one is ready to collect (T140, D366) | §10's "a disabled button always says why", with no rule restated on screen |
+| A row's Speed Ticket opens −30m and Finish in a small sheet. "Buy N and finish" runs `buy` then `finish`, two operations after one question. Under 30 minutes left, −30m and Finish are the same ticket, so only **Finish · 1** shows and asks with the minutes wasted; with no ticket held, −30m hides and Finish reads "Buy N and finish" (T140, D366) | [09](09-racing-rewards-and-exchange.md) §5.1; §8's "shows the minutes wasted before it confirms" |
+| The header's **Upgrade** button (its Prize Money) opens one sheet with the whole cost and its refusal (`prize-money`, `short`) in the rule's words; it asks once; nothing shows at Lv 3 (T140, D366) | A spend of Prize Money and items confirms once, as the Exchange's large purchases do |
+| A row's ring is the current item's progress (`itemProgress`) round her face, as the Hub's pips are, redrawn on the 30-second clock (T140, D366) | One look for the pip and its row ([11](11-hub-and-places.md) §4) |
+| The quick look's stock by open grade runs up to the highest grade any current Uma has open; every building shows its targets as icons (T140, D366) | [11](11-hub-and-places.md) §3.4 says "by open grade"; the same reading as the Exchange's stock ([09](09-racing-rewards-and-exchange.md) §5.3) |
+| Collect here and Repeat here sit in the page's thumb zone; off, each says why on itself ("Nothing to collect", "Nobody to repeat"); their receipt lists each line and each skip in the rule's words, a restart with how long it takes (T140, D366) | §10 puts them beside the global ones; [02](02-check-ins-and-notifications.md) §5's "Kitchen full", "4 Honey short" |
+| `ui/work/` (SlotRow and PeekRow, PlaceStats, UpgradeButton, SpeedUpControls, RecallSheet, QueueChips, SizeChips) and `ui/ItemIcon` are shared with T139's facilities and T142's check-in; the job sheet's Uma strip is its own (T140, D366) | One look for every timed thing and every item; the Farm makes the items |
+| **Every Farm screen shows how long work takes or has left, never the clock time it ends:** rows ("1h 20m", **Done**), size chips ("×4 · 7h 12m"), Start ("Start · ×4 · 7h 12m"), queue chips ("then Carrot ×4 · 7h 12m"), no-slot words and Repeat's receipt, all through the domain's `durationText` (D366) | The owner: "I don't like that you show the hour the job finishes instead of the time the job is going to take" |
+| **The sheet preselects everything:** the planner's suggestion here, else the best Free Uma and `bestItem` (what the plan wants most that she can make, else her highest grade), and the fitted size; a link's item and count are kept (D366) | "Less clicks": a free slot's job is one tap from the open sheet |
+| **Repeat on a finished row** is `collect`, then `repeat { outfitIds: [her] }`, two operations; the profile's Repeat sizing (same or fit, [02](02-check-ins-and-notifications.md) §5) applies as it does to Repeat here (D366) | The domain's Repeat, for one Uma; nothing restarts outside it (§9) |
+| A suited Uma has an S or A letter for what she'd make (`suits`, `SUITED_LETTERS`) (D366) | §3's "4–5 levels a day when suited" |
 
 ## 15. Done when
 
@@ -497,6 +552,7 @@ The old Farm, the Stable Kitchen (M031, D304–D320; deleted with the cutover, r
 - `pnpm sim:loop` reports every building's slot use per scenario; none averages above 90% with Lv 2 buildings and 25
   Umas, and the Kitchen at Lv 1 stays under 90% with 20.
 - The sim's average Uma reaches Farm Lv 10*s* − 9 (grade 2*s*−1) within ±5 days of scenario *s*'s start.
-- At 390 × 844 the building page shows all its slot cards (the Kitchen's eight scroll inside the page), every action is
-  at least 44 pt, and every disabled button states its reason.
+- At 390 × 844 the building page shows every slot row of a building of up to four slots without scrolling (the
+  Kitchen's eight scroll inside the page), every action is at least 44 pt, every disabled button states its reason, and
+  no Farm screen shows the clock time a job ends.
 - No Farm code reads a Training Level, a token, Energy, a district or a station id.
