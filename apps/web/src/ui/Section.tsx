@@ -1,5 +1,5 @@
+import { ChevronRightIcon } from '@luismlorenzana/uma-kit/ui'
 import type { ReactNode } from 'react'
-import { ChevronRightIcon } from './icons'
 
 /** A zone divider: a small display label over its section, with an optional hint on the right. */
 export function SectionHeading({ label, hint }: { label: string; hint?: string }) {

@@ -39,9 +39,10 @@ export interface PlaceUi {
   readonly fullScreen?: (rest: string) => boolean
   /**
    * The place's counter where the rework state can't give it (T141's Racecourse and Trophy Hall): a small hook outside
-   * the lazy chunks. Null while unknown. The hub view's `counts` are every other place's.
+   * the lazy chunks. Null while unknown, and while `active` is false (a screen that doesn't show it now reads nothing).
+   * The hub view's `counts` are every other place's.
    */
-  readonly useCounter?: () => number | null
+  readonly useCounter?: (active: boolean) => number | null
 }
 
 /** One path segment: an Uma's build view at a facility (`/training/observatory/:umaId`). */

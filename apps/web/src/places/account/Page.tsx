@@ -3,17 +3,14 @@
 // and Sync now, this device's reduced motion and default race speed, App build and Content, Sign in or Sign out (the
 // auth provider's, T143), and in dev builds only a dev section that loads the synthetic fixtures and runs `dev-grant`.
 // `?row=sync` opens at the sync row. Notifications are phase 4.
+import { Button, Chip, CloseIcon, Panel } from '@luismlorenzana/uma-kit/ui'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useSearchParams } from 'react-router'
 import { APP_BUILD_ID } from '../../app/build'
-import { Button } from '../../ui/Button'
-import { Chip } from '../../ui/Chip'
-import { CloseIcon } from '../../ui/icons'
-import { Panel } from '../../ui/Panel'
 import { useG2Content } from '../../app/content'
 import { useGame, useHub, useRuntime } from '../../app/game'
 import { RACE_SPEEDS, setRaceSpeed, setReducedMotion, useDevicePrefs } from '../../ui/devicePrefs'
-import { PlaceHeader } from '../../ui/PlaceHeader'
+import { PlacePageHeader } from '../PlacePageHeader'
 import { TapNoteLine, useTap } from '../../ui/work'
 import { UmaPicker } from '../../ui/UmaPicker'
 import { umaName } from '../../ui/words'
@@ -153,7 +150,7 @@ export default function AccountPage({ place, rest }: PageProps) {
 
   return (
     <div data-place-page="account">
-      <PlaceHeader place={place} rest={rest} lines={['Settings for this account and this phone. Notifications come later.']} />
+      <PlacePageHeader place={place} rest={rest} lines={['Settings for this account and this phone. Notifications come later.']} />
       <div className="space-y-3 px-4 pt-3 pb-24">
         <Panel className="p-3" aria-label="Trainer">
           <Row label="Trainer">{name || 'Trainer'}</Row>

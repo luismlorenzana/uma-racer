@@ -4,9 +4,9 @@
 // and, where the Exchange sells it, **Buy at the Exchange · price**; "about 120 Uma-hours of work"; her three startable
 // lines with **Start**; and "3 bonds: pick cards", linking to her Dojo sheet. It plans for her alone and never changes
 // the targets.
+import { Panel } from '@luismlorenzana/uma-kit/ui'
 import { useMemo } from 'react'
 import { Link, useLocation } from 'react-router'
-import { Panel } from '../../ui/Panel'
 import { useGame, useNow } from '../../app/game'
 import { ItemIcon } from '../../ui/ItemIcon'
 import { TapNoteLine } from '../../ui/work/TapNote'

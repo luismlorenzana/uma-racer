@@ -2,12 +2,12 @@
 // outside the shell, today's reveal on her portrait: "New Uma", her name and outfit, "T1 · URA Finale · Racing Lv 1 ·
 // Farm Lv 1", and the save's state in 02 §9's words. Open profile; with more to show, Next (2 of 5) and Skip all to the
 // Owned tab. Reduced motion: no flip.
+import { useReducedMotionSetting } from '@luismlorenzana/uma-kit/ui'
 import { m } from 'motion/react'
 import { Link, useLocation } from 'react-router'
 import { useArt } from '../../ui/album/useArt'
 import { useG2Content } from '../../app/content'
 import { useGame } from '../../app/game'
-import { useReducedMotionSetting } from '../../app/motion'
 import { UmaArt } from '../../ui/UmaArt'
 import type { FlowProps } from '../registry'
 import { profileLine } from '../stable/model'

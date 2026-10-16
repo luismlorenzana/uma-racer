@@ -1,7 +1,5 @@
+import { ArrowDownIcon, ArrowUpIcon, BottomSheet, Chip } from '@luismlorenzana/uma-kit/ui'
 import type { AlbumQuery, FacetOption, SortDef, SortDirection } from './query'
-import { BottomSheet } from '../BottomSheet'
-import { Chip } from '../Chip'
-import { ArrowDownIcon, ArrowUpIcon } from '../icons'
 
 /** Sort is a separate control from Filter, and always exposes its direction (and any parameter). */
 export function SortSheet({

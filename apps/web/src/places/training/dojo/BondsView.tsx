@@ -3,10 +3,10 @@
 // "Newer cards available" once its era falls behind), each slot opening T138's Card Library in pick mode on her bonded
 // cards (`set-card-set`, its refusals in words, its hand-over in one line), and **Bond more**: the Library on the cards
 // she can bond now, a pick going to the Dojo's session sheet with her, the card and its room.
+import { Sheet } from '@luismlorenzana/uma-kit/ui'
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { TypeIcon } from '../../../ui/TypeIcon'
-import { Sheet } from '../../../ui/Sheet'
 import { TapNoteLine } from '../../../ui/work/TapNote'
 import { useTap } from '../../../ui/work/useTap'
 import { cardName } from '../../../ui/words'

@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-// The Hub map (docs/game/11-hub-and-places.md §1, §12) on the dev seeds, with the Phaser game replaced by a recorder:
+// The Hub map (docs/game/11-hub-and-places.md §1, §12) on the dev seeds, with uma-kit's Phaser game replaced by a recorder:
 // the scene is created once with the page's places, follows page changes, pauses under the side panel and every global
 // sheet, and is destroyed on leaving the map; a swipe of more than 60 px changes page in the bar's order; and every place
 // link sits on the scene's own grid.
@@ -8,8 +8,13 @@ import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderG2, seedGame, stubPointerEvents, stubStorage } from '../__fixtures__/testing'
 import { LAST_PAGE_KEY } from '../app/start'
-import { hubGrid, placeAnchor } from './grid'
-import type { HubSceneState } from './scene/HubScene'
+import { hubGrid, placeAnchor } from '@luismlorenzana/uma-kit/hub'
+
+/** What the kit hands its scene (its `HubSceneState`): the page's ground and places. */
+interface SceneState {
+  readonly ground: { readonly id: string; readonly tiles: string }
+  readonly places: readonly unknown[]
+}
 
 const engine = vi.hoisted(() => ({
   created: [] as { page: string; places: number }[],
@@ -18,11 +23,12 @@ const engine = vi.hoisted(() => ({
   destroyed: 0,
 }))
 
-vi.mock('./scene/createHubGame', () => ({
-  createHubGame: async (_host: HTMLElement, initial: HubSceneState) => {
-    engine.created.push({ page: initial.page, places: initial.places.length })
+// The kit's lazy game module, which its map imports when it mounts (vite.config.ts runs the kit through Vite in tests).
+vi.mock('../../node_modules/@luismlorenzana/uma-kit/dist/hub/scene/createHubGame.js', () => ({
+  createHubGame: async (_host: HTMLElement, initial: SceneState) => {
+    engine.created.push({ page: initial.ground.id, places: initial.places.length })
     return {
-      update: (next: HubSceneState) => engine.updates.push(next.page),
+      update: (next: SceneState) => engine.updates.push(next.ground.id),
       setPaused: (paused: boolean) => engine.paused.push(paused),
       destroy: () => { engine.destroyed += 1 },
     }
@@ -48,7 +54,7 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-const map = () => document.querySelector<HTMLElement>('[data-g2="page"]')!
+const map = () => document.querySelector<HTMLElement>('[data-kit="page"]')!
 function swipe(dx: number, dy = 0) {
   fireEvent.pointerDown(map(), { clientX: 200, clientY: 400 })
   fireEvent.pointerUp(map(), { clientX: 200 + dx, clientY: 400 + dy })
@@ -153,18 +159,18 @@ describe('place links on the grid (§1)', () => {
       renderG2('/town', seedGame('busy'))
       await screen.findByRole('link', { name: /^Stable/ })
       const grid = hubGrid(390, 642, 2)
-      await waitFor(() => expect(document.querySelector('[data-g2="place-targets"]')?.getAttribute('data-grid')).toBe(`${grid.cols}x${grid.rows}`))
+      await waitFor(() => expect(document.querySelector('[data-kit="place-targets"]')?.getAttribute('data-grid')).toBe(`${grid.cols}x${grid.rows}`))
       for (const place of placesOn('town')) {
         const link = document.querySelector<HTMLElement>(`[data-place="${place.id}"]`)!
         const anchor = placeAnchor(place.at!, grid)
         expect([link.style.left, link.style.top, link.style.transform], place.id).toEqual([`${anchor.x}px`, `${anchor.y}px`, 'translate(-50%, -66px)'])
         expect(link.style.width).toBe('112px')
       }
-      const plaza = document.querySelector<HTMLElement>('[data-g2="plaza"]')!
+      const plaza = document.querySelector<HTMLElement>('[data-kit="plaza"]')!
       const anchor = placeAnchor(PLAZA_AT, grid)
       expect([plaza.style.left, plaza.style.top]).toEqual([`${anchor.x}px`, `${anchor.y}px`])
       // Reading order is the map's: top row left to right, the plaza, then the bottom row.
-      const order = [...document.querySelectorAll<HTMLElement>('[data-place], [data-g2="plaza"]')].map((el) => el.dataset.place ?? 'plaza')
+      const order = [...document.querySelectorAll<HTMLElement>('[data-place], [data-kit="plaza"]')].map((el) => el.dataset.place ?? 'plaza')
       expect(order).toEqual(['stable', 'card-library', 'plaza', 'warehouse', 'exchange'])
     } finally {
       width.mockRestore()

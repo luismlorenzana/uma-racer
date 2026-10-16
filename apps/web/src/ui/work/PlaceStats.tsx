@@ -2,7 +2,7 @@
 // D366): "Lv 2", "3/4" and, once an upgrade makes it faster, "×1.25". The building page's header row, its Peek's first
 // line and a Training facility's header all show them so. VoiceOver reads one line: "Lv 2 · 3 of 4 slots in use · speed
 // ×1.25".
-import { StopwatchIcon, ViewGridIcon } from '../icons'
+import { StopwatchIcon, ViewGridIcon } from '@luismlorenzana/uma-kit/ui'
 import { workWords } from './words'
 
 const CHIP = 'font-display flex h-7 shrink-0 items-center gap-1 rounded-full bg-sunken px-2 text-[13px] font-semibold tabular-nums'

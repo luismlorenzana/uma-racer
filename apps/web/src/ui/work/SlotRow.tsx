@@ -8,15 +8,13 @@
 // row whose link opens the place's sheet. VoiceOver reads a row as one line: "Special Week. Potato, 3 of 10 made, 1h 20m
 // left". `PeekRow` is the side panel's 48 pt version. Rings and times redraw on the shell's 30-second clock, never per
 // frame. Nothing here shows the clock time work ends.
+import { ArrowDownIcon, BottomSheet, MoreIcon, PlusIcon, RetryIcon, UiMark } from '@luismlorenzana/uma-kit/ui'
 import { durationText, type RepeatReceipt } from '@racer/domain/check-in'
 import { MAX_QUEUE, SESSION_KIND, WORK_REFUSALS, type WorkRequest } from '@racer/domain/work'
 import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
 import { useGame } from '../../app/game'
-import { BottomSheet } from '../BottomSheet'
-import { ArrowDownIcon, MoreIcon, PlusIcon, RetryIcon } from '../icons'
 import { ItemIcon } from '../ItemIcon'
-import { UiMark } from '../UiMark'
 import { UmaFace } from '../UmaArt'
 import { speedUpModel, type HeldSlotCard, type SlotCardModel } from './model'
 import { QueueChips, QueueLine, requestWords } from './QueueChips'

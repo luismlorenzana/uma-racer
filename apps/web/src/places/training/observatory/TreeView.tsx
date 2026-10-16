@@ -3,13 +3,11 @@
 // state. Tapping one opens its sheet: an open node's card and the skills it pays there, with the set's other cards
 // under the per-card cap (`set-assignments`, refusals in words); a locked node what it needs and, for the next one,
 // **Unlock** into the session sheet with her and that node.
+import { CheckIcon, LockedIcon, Sheet, Tabs } from '@luismlorenzana/uma-kit/ui'
 import { TYPE_COLOR } from '../../card-library/model'
-import { CheckIcon, LockedIcon } from '../../../ui/icons'
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router'
 import { DISTANCE_LABEL } from '../../../ui/labels'
-import { Sheet } from '../../../ui/Sheet'
-import { Tabs } from '../../../ui/Tabs'
 import { TreeGraph, type TreeGraphNode, type TreeNodeLook } from '../../../ui/TreeGraph'
 import { TapNoteLine } from '../../../ui/work/TapNote'
 import { useTap } from '../../../ui/work/useTap'

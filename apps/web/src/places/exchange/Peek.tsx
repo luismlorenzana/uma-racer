@@ -1,9 +1,9 @@
 // The Exchange's Peek (docs/game/11-hub-and-places.md §3.1; T138): Prize Money, Speed Tickets held, and the planner's top
 // shortage with its price, linking to its row.
+import { UiMark } from '@luismlorenzana/uma-kit/ui'
 import { itemById, SPEED_TICKET_ID } from '@racer/domain/items'
 import { useMemo } from 'react'
 import { Link } from 'react-router'
-import { UiMark } from '../../ui/UiMark'
 import { useGame, useNow } from '../../app/game'
 import { amount } from '../../ui/labels'
 import type { PeekProps } from '../registry'

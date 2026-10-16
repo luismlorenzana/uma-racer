@@ -3,7 +3,7 @@
 // anywhere, in a session or Ready with a finished job are never listed. The chosen one is ringed, and one line under the
 // strip names her with her aptitude ("Sprint A · Farm EXP ×1.6"). VoiceOver reads each as a radio: "Amber Sprint, Farm Lv
 // 10, suited, Front Runner A · Farm EXP ×1.6".
-import { StarIcon } from '../../../ui/icons'
+import { StarIcon } from '@luismlorenzana/uma-kit/ui'
 import { UmaFace } from '../../../ui/UmaArt'
 import { farmWords } from '../words'
 import type { SheetUma } from './model'

@@ -2,10 +2,10 @@
 // with how long it takes, never when it ends: on a slot row, `QueueLine`'s small chips ("then [Carrot]×4 · 2h", with
 // `queueWarnings`' mark where the stock won't cover it); in the row's ⋯ sheet, `QueueChips`' list, where each can move
 // earlier or be removed (`queue` with `move` or `remove`). A queue that already stopped is the check-in's (T142).
+import { ArrowUpIcon, CloseIcon, WarningIcon } from '@luismlorenzana/uma-kit/ui'
 import { durationText } from '@racer/domain/check-in'
 import { SESSION_KIND, type WorkRequest } from '@racer/domain/work'
 import type { ReactNode } from 'react'
-import { ArrowUpIcon, CloseIcon, WarningIcon } from '../icons'
 import { ItemIcon } from '../ItemIcon'
 import { queueChips, type QueueChip } from './model'
 import { TapNoteLine } from './TapNote'

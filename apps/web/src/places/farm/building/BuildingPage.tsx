@@ -6,15 +6,15 @@
 // dashed "+"; and **Collect here** and **Repeat here** in the thumb zone, whose receipt lists every line and every skip
 // with its reason. The job sheet opens over the page from its query (`?job=…`), so the Warehouse, the planner and the
 // session sheet reach it by a link.
+import { navState } from '@luismlorenzana/uma-kit/shell'
 import type { CollectAllReceipt, RepeatReceipt } from '@racer/domain/check-in'
 import { durationText } from '@racer/domain/check-in'
 import type { FarmBuildingId } from '@racer/domain/farm'
 import { MAX_ITEMS_PER_ENTRY, MAX_QUEUE, MIN_ITEMS_PER_ENTRY, SESSION_KIND } from '@racer/domain/work'
 import { lazy, Suspense, useMemo, useState } from 'react'
 import { Navigate, useLocation, useNavigate, useSearchParams } from 'react-router'
-import { navState } from '../../../hub/nav'
 import type { PageProps } from '../../registry'
-import { PlaceHeader } from '../../../ui/PlaceHeader'
+import { PlacePageHeader } from '../../PlacePageHeader'
 import { PlaceStats } from '../../../ui/work/PlaceStats'
 import { SlotRow } from '../../../ui/work/SlotRow'
 import { TapNoteLine } from '../../../ui/work/TapNote'
@@ -113,7 +113,7 @@ export default function BuildingPage({ place, rest }: PageProps) {
   ]
   return (
     <div data-g2="farm-building" data-place-page={place.id} className="flex min-h-full flex-col">
-      <PlaceHeader place={place} rest={rest} lines={help} />
+      <PlacePageHeader place={place} rest={rest} lines={help} />
       {model !== null && view !== null && (
         <>
           <section aria-label={model.name} data-g2="farm-header" className="flex min-h-13 items-center gap-2 border-b border-hairline px-4 py-1">

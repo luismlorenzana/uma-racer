@@ -4,12 +4,10 @@
 // `buildingSpeed`) and, from `upgrade` run on the current state, why it can't be paid in the rule's own words
 // (`prize-money`, `short`); its Yes runs `upgrade`. The button stays tappable when it can't be paid, so the sheet can
 // say why. Nothing shows at Lv 3: there is nothing to buy.
+import { BottomSheet, LevelUpIcon, UiMark } from '@luismlorenzana/uma-kit/ui'
 import type { BuildingId } from '@racer/domain/farm'
 import { useState } from 'react'
-import { BottomSheet } from '../BottomSheet'
-import { LevelUpIcon } from '../icons'
 import { ItemIcon } from '../ItemIcon'
-import { UiMark } from '../UiMark'
 import { TapNoteLine } from './TapNote'
 import { useTap, useWordsContext } from './useTap'
 import { upgradeAdds, type UpgradeView } from './model'

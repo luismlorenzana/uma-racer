@@ -2,16 +2,13 @@
 // The Paddock primitives as rendered DOM (T031): every button face and its disabled state, the chip's and segmented
 // control's selection, the art tile's fallbacks, the placeholder's accessible name, and the sheet and art viewer
 // opening at rest under Account's reduced motion.
+import { BottomSheet, Button, type ButtonVariant, Chip, setReducedMotion as setDeviceReducedMotion } from '@luismlorenzana/uma-kit/ui'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { LazyMotion, domAnimation } from 'motion/react'
 import type { ReactNode } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { setDeviceReducedMotion } from '../app/motion'
 import { ArtTile } from './ArtTile'
 import { ArtViewer } from './ArtViewer'
-import { BottomSheet } from './BottomSheet'
-import { Button, type ButtonVariant } from './Button'
-import { Chip } from './Chip'
 import { Placeholder } from './Placeholder'
 
 const withMotion = (node: ReactNode) => render(<LazyMotion features={domAnimation} strict>{node}</LazyMotion>)

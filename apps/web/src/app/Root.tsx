@@ -1,10 +1,9 @@
 // The new game's root route (T137): every route renders inside it. A save that can't open says why, with Try again and
 // Copy details, and never offers to clear anything (ux "Principles", D157).
+import { Button, Panel } from '@luismlorenzana/uma-kit/ui'
 import { hubWords } from '@racer/domain/hub'
 import { useState } from 'react'
 import { Outlet } from 'react-router'
-import { Button } from '../ui/Button'
-import { Panel } from '../ui/Panel'
 import { APP_BUILD_ID } from './build'
 import { useSnapshot } from './game'
 

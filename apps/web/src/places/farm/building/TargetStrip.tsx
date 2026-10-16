@@ -3,9 +3,9 @@
 // it, a lock when no Free Uma's Farm Level opens it), scrolling sideways if they don't fit. A tap opens the job sheet
 // filled in with that item, the planner's Free Uma and her size, so one more tap starts it. VoiceOver reads the line in
 // 02 §6's words: "Vegetables G3 · short 6 · Warehouse 4 · coming 2 (Gold Ship, in 1h 20m)".
+import { CheckIcon, LockedIcon, TargetIcon } from '@luismlorenzana/uma-kit/ui'
 import { useId } from 'react'
 import { Link } from 'react-router'
-import { CheckIcon, LockedIcon, TargetIcon } from '../../../ui/icons'
 import { ItemIcon } from '../../../ui/ItemIcon'
 import { grouped } from '../../../ui/work/words'
 import { farmWords } from '../words'

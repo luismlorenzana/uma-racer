@@ -1,7 +1,7 @@
 // The Card Library place (docs/game/06-cards-and-bonds.md §6; docs/game/11-hub-and-places.md §3.1, §7.1; T138): the
 // album at its root and each card page at `card/:cardId`, in its own chunk.
 import { lazy, Suspense } from 'react'
-import { PlaceHeader } from '../../ui/PlaceHeader'
+import { PlacePageHeader } from '../PlacePageHeader'
 import type { PageProps } from '../registry'
 import { CardLibrary } from './CardLibrary'
 
@@ -19,7 +19,7 @@ export default function CardLibraryPage({ place, rest }: PageProps) {
   }
   return (
     <div data-place-page="card-library">
-      <PlaceHeader place={place} rest={rest} lines={['Every SSR is open. A card joins an Uma\'s sets once it is bonded to her: one Dojo session, one dish of its family at the grade its era sets.']} />
+      <PlacePageHeader place={place} rest={rest} lines={['Every SSR is open. A card joins an Uma\'s sets once it is bonded to her: one Dojo session, one dish of its family at the grade its era sets.']} />
       <div className="px-4 pt-2 pb-24">
         <CardLibrary mode="browse" title="Cards" />
       </div>

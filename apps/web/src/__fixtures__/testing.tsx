@@ -1,12 +1,13 @@
 // Test helpers for the new game (T137): the real routes in a memory router, over a port the test chooses. Synthetic
 // seeds only; the port's clock is held at the seed's time so every count is fixed.
+import { KitArtProvider, MotionRoot } from '@luismlorenzana/uma-kit/ui'
 import { render } from '@testing-library/react'
-import { domMax } from 'motion/react'
+import { domMax, LazyMotion } from 'motion/react'
 import { MemoryRouter, useLocation, useRoutes, type InitialEntry, type Location } from 'react-router'
 import { vi } from 'vitest'
+import { RACER_ART } from '../app/art'
 import type { G2Game, G2Rules } from '../app/game'
 import { GameProvider } from '../app/GameProvider'
-import { MotionRoot } from '../app/motion'
 import { G2_ROUTES } from '../app/router'
 import { RULES } from '../app/rules'
 import { createMemoryGame } from '../dev/memory'
@@ -81,13 +82,18 @@ function Probe({ seen }: { seen: { current: Location | null } }) {
 export function renderG2(path: InitialEntry, game: G2Game, rules: G2Rules | null = RULES, basename?: string) {
   const seen: { current: Location | null } = { current: null }
   const result = render(
-    <MotionRoot features={domMax}>
-      <GameProvider game={game} rules={rules}>
-        <MemoryRouter initialEntries={[path]} basename={basename}>
-          <Routes />
-          <Probe seen={seen} />
-        </MemoryRouter>
-      </GameProvider>
+    <MotionRoot>
+      {/* The kit's root loads Motion's features lazily; tests draw with them from the first render. */}
+      <LazyMotion features={domMax} strict>
+        <KitArtProvider art={RACER_ART}>
+          <GameProvider game={game} rules={rules}>
+            <MemoryRouter initialEntries={[path]} basename={basename}>
+              <Routes />
+              <Probe seen={seen} />
+            </MemoryRouter>
+          </GameProvider>
+        </KitArtProvider>
+      </LazyMotion>
     </MotionRoot>,
   )
   const where = () => (seen.current === null ? '' : `${seen.current.pathname}${seen.current.search}`)

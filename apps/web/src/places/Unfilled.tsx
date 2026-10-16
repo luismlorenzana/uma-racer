@@ -4,7 +4,7 @@
 import { hubWords } from '@racer/domain/hub'
 import { Link } from 'react-router'
 import { BuildingSprite } from '../ui/BuildingSprite'
-import { PlaceHeader } from '../ui/PlaceHeader'
+import { PlacePageHeader } from './PlacePageHeader'
 import { UmaArt } from '../ui/UmaArt'
 import { useUmaName } from '../ui/uma'
 import type { FlowProps, PageProps } from './registry'
@@ -12,7 +12,7 @@ import type { FlowProps, PageProps } from './registry'
 export function UnfilledPage({ place, rest }: PageProps) {
   return (
     <div data-g2="unfilled-page" data-place-page={place.id}>
-      <PlaceHeader place={place} rest={rest} />
+      <PlacePageHeader place={place} rest={rest} />
       <div className="flex justify-center py-10">
         <BuildingSprite frame={place.frame} page={place.page} />
       </div>

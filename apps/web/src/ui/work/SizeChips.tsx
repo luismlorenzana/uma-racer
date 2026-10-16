@@ -4,9 +4,9 @@
 // when that check-in is the morning's) and is preselected; VoiceOver reads it as "fits the next check-in" or "runs
 // overnight", and each chip's wait after it. Nothing is confirmed for the owner: a chip only sets the size. `start` is
 // now for a start, and her chain's end (`freeAt`) for an entry added to a queue. Each chip is a 44 pt target.
+import { CheckIcon, MoonIcon } from '@luismlorenzana/uma-kit/ui'
 import { useEffect, useId, useMemo } from 'react'
 import { useGame, useRuntime } from '../../app/game'
-import { CheckIcon, MoonIcon } from '../icons'
 import { sizeChipsView } from './model'
 import { workWords } from './words'
 

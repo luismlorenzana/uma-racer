@@ -3,6 +3,7 @@
 // (`?sheet=promote`, only for an Uma who holds a completed run: before phase 9, the dev proof), and the full-screen
 // ceremony at `/:umaId/ceremony?op=` after either. Both operations run through the port with their flair in the same
 // transaction; a refused or stale tap redraws the sheet under "Her build changed." and keeps the button.
+import { BottomSheet, Button, Tabs, useReducedMotionSetting } from '@luismlorenzana/uma-kit/ui'
 import { badgeStateId, STATS, type DistanceCategory } from '@racer/domain'
 import type { Place } from '@racer/domain/hub'
 import { scenarioNumber } from '@racer/domain/tiers'
@@ -12,15 +13,11 @@ import { m } from 'motion/react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router'
 import { buildFlairFanfare, buildTrainerFlairFanfare } from './flair-view'
-import { BottomSheet } from '../../ui/BottomSheet'
-import { Button } from '../../ui/Button'
 import { Crest } from '../../ui/Crest'
 import { FlairCards } from '../../ui/FlairCards'
 import { RaceMarkIcon } from '../../ui/RaceMarkIcon'
-import { Tabs } from '../../ui/Tabs'
 import { NO_RECORDS, useGame, useNow, useRuntime, type G2Applied } from '../../app/game'
-import { useReducedMotionSetting } from '../../app/motion'
-import { PlaceHeader } from '../../ui/PlaceHeader'
+import { PlacePageHeader } from '../PlacePageHeader'
 import { placeName, TapNoteLine, useTap } from '../../ui/work'
 import { UmaArt, UmaFace } from '../../ui/UmaArt'
 import type { PageProps } from '../registry'
@@ -356,13 +353,13 @@ function UmaCareer({ place, umaId }: { place: Place; umaId: string }) {
     next.delete('sheet')
     setParams(next, { replace: true })
   }
-  if (!state || !env || !content) return <PlaceHeader place={place} rest={umaId} />
+  if (!state || !env || !content) return <PlacePageHeader place={place} rest={umaId} />
   if (!uma) return <Navigate to="/racing/scenario-gate" replace />
   const row = careerRow(uma, names.uma, names.race)
   const promotable = uma.expedition.runs.some((run) => run.completed) && uma.tier !== 3
   return (
     <div data-place-page="scenario-gate">
-      <PlaceHeader place={place} rest={umaId} title={row.name} />
+      <PlacePageHeader place={place} rest={umaId} title={row.name} />
       <div className="flex flex-col gap-3 p-3">
         <CareerCard row={row} link={false} />
         {row.ready && <Button onClick={() => setParams({ sheet: 'advance' }, { replace: true })}>{racingWords('open-advance')}</Button>}
@@ -388,7 +385,7 @@ function Careers({ place }: { place: Place }) {
   const rest = rows.filter((row) => !row.ready)
   return (
     <div data-place-page="scenario-gate">
-      <PlaceHeader place={place} />
+      <PlacePageHeader place={place} />
       <div className="flex flex-col gap-2 p-3">
         {ready.length > 0 && <h2 className="font-display text-[15px] font-semibold">{racingWords('ready-to-advance')}</h2>}
         {ready.map((row) => <CareerCard key={row.umaId} row={row} link />)}

@@ -4,11 +4,10 @@
 // preset (`set-active-nodes`; "Only 9 Extra Stats can be on at once." in the rule's words), under "9 of 9 on"; a locked
 // one opens its sheet with what it needs and, when it's next, **Unlock** (a Duo's or Sun's into the first room
 // `roomsFor` lists).
+import { LockedIcon, Sheet } from '@luismlorenzana/uma-kit/ui'
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router'
-import { LockedIcon } from '../../../ui/icons'
 import { TypeIcon } from '../../../ui/TypeIcon'
-import { Sheet } from '../../../ui/Sheet'
 import { TapNoteLine } from '../../../ui/work/TapNote'
 import { useTap } from '../../../ui/work/useTap'
 import { BuildFrame, type BuildContext } from '../BuildFrame'

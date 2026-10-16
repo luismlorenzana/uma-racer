@@ -1,17 +1,18 @@
-// The global sheets (docs/game/11-hub-and-places.md §2.2, §2.3, §5) in today's modal BottomSheet: the menu (every
-// drawn place by page with its counter, then Account and the planner's roster view), the featured Uma's quick sheet
-// (T138's slot) and the check-in sheet (T142's slot). Focus moves into the sheet and returns to what opened it; Escape,
-// the close button, the handle and Back close it.
-import { HUB_PAGE_NAMES, HUB_PAGES, hubWords, placeById, placesOn, type HubView, type Place } from '@racer/domain/hub'
+// The global sheets (docs/game/11-hub-and-places.md §2.2, §2.3, §5) in uma-kit's modal bottom sheet: the menu (the
+// kit's place menu: every drawn place by page with its counter, then Account and the planner's roster view), the
+// featured Uma's quick sheet (T138's slot) and the check-in sheet (T142's slot). Focus moves into the sheet and returns
+// to what opened it; Escape (the sheet's own), the close button, the handle and Back close it.
+import { navState, PlaceMenu, peekPath, useLeave, withParam, type MenuGroup, type MenuPlace } from '@luismlorenzana/uma-kit/shell'
+import { BottomSheet } from '@luismlorenzana/uma-kit/ui'
+import { HUB_PAGE_NAMES, HUB_PAGES, hubWords, placeById, placesOn, type Place } from '@racer/domain/hub'
 import { Suspense, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, useLocation } from 'react-router'
-import { BottomSheet } from '../ui/BottomSheet'
 import { useHub } from '../app/game'
 import { SHEET_UI } from '../places/registry'
 import { UmaArt } from '../ui/UmaArt'
 import { useUmaName } from '../ui/uma'
-import { shownCount, usePlaceCount } from './counts'
-import { navState, peekPath, useLeave, withParam, type GlobalSheet } from './nav'
+import { shownCount, usePlaceCounts } from './counts'
+import type { G2NavState, GlobalSheet } from './nav'
 
 const TITLES: Readonly<Record<GlobalSheet, string>> = {
   menu: hubWords('menu-title'),
@@ -23,55 +24,21 @@ function Heading({ children }: { children: ReactNode }) {
   return <h2 data-sheet-heading tabIndex={-1} className="pb-2 text-lg outline-none">{children}</h2>
 }
 
-function MenuRow({ place, view }: { place: Place; view: HubView | null }) {
-  const location = useLocation()
-  const count = shownCount(usePlaceCount(place, view))
-  const to = place.direct || place.hidden ? place.route : peekPath(place)
-  return (
-    <li>
-      <Link
-        to={to}
-        replace
-        state={{ back: navState(location).back }}
-        className="flex min-h-11 w-full items-center justify-between gap-2 rounded-sm bg-sunken/60 px-3 text-left text-[13px] font-semibold"
-      >
-        <span className="truncate">{place.name}</span>
-        {count !== null && <span className="font-display min-w-5 rounded-full bg-accent px-1.5 text-center text-[11px] leading-5 text-ink">{count}</span>}
-      </Link>
-    </li>
-  )
-}
-
 function MenuSheet() {
   const view = useHub()
-  const location = useLocation()
-  const account = placeById('account')!
+  const counts = usePlaceCounts(view)
+  const row = (place: Place): MenuPlace => ({
+    key: place.id,
+    name: place.name,
+    to: place.direct || place.hidden ? place.route : peekPath(place.page, place.id),
+    count: shownCount(counts[place.id]),
+  })
+  const groups: MenuGroup[] = HUB_PAGES.map((page) => ({ key: page, label: HUB_PAGE_NAMES[page], places: placesOn(page).map(row) }))
+  const extra: MenuPlace[] = [row(placeById('account')!), { key: 'needs', name: hubWords('menu-needs'), to: '/town/stable/needs' }]
   return (
     <div>
       <Heading>{TITLES.menu}</Heading>
-      <div className="space-y-4">
-        {HUB_PAGES.map((page) => (
-          <section key={page} aria-label={HUB_PAGE_NAMES[page]}>
-            <h3 className="text-micro mb-1.5">{HUB_PAGE_NAMES[page]}</h3>
-            <ul className="grid grid-cols-2 gap-1.5">
-              {placesOn(page).map((place) => <MenuRow key={place.id} place={place} view={view} />)}
-            </ul>
-          </section>
-        ))}
-        <ul className="grid grid-cols-2 gap-1.5 border-t border-hairline pt-3">
-          <MenuRow place={account} view={view} />
-          <li>
-            <Link
-              to="/town/stable/needs"
-              replace
-              state={{ back: navState(location).back }}
-              className="flex min-h-11 w-full items-center rounded-sm bg-sunken/60 px-3 text-left text-[13px] font-semibold"
-            >
-              {hubWords('menu-needs')}
-            </Link>
-          </li>
-        </ul>
-      </div>
+      <PlaceMenu groups={groups} extra={extra} />
     </div>
   )
 }
@@ -133,18 +100,10 @@ export default function GlobalSheets({ sheet }: { sheet: GlobalSheet | null }) {
     setShown(sheet)
     if (opener.current === null && document.activeElement instanceof HTMLElement) opener.current = document.activeElement
     const frame = requestAnimationFrame(() => body.current?.querySelector<HTMLElement>('[data-sheet-heading]')?.focus())
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') close()
-    }
-    window.addEventListener('keydown', onKey)
-    return () => {
-      cancelAnimationFrame(frame)
-      window.removeEventListener('keydown', onKey)
-    }
-    // `close` reads the location the sheet opened on; binding it once per sheet is enough.
+    return () => cancelAnimationFrame(frame)
   }, [sheet])
 
-  const collect = navState(location).collect === true
+  const collect = navState<G2NavState>(location).collect === true
   const Featured = SHEET_UI.featured
   const CheckIn = SHEET_UI['check-in']
   return (

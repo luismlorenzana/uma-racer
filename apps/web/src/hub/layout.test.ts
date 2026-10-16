@@ -6,7 +6,7 @@
 import { buildingOf, HUB_PAGES, placesOn, PLAZA_AT, type Place } from '@racer/domain/hub'
 import { MAX_BUILDING_LEVEL, totalSlots } from '@racer/domain/farm'
 import { describe, expect, it } from 'vitest'
-import { BUILDING, hubGrid, placeAnchor, TARGET_W } from './grid'
+import { BUILDING, hubGrid, placeAnchor, TARGET_W } from '@luismlorenzana/uma-kit/hub'
 
 interface Box {
   readonly id: string

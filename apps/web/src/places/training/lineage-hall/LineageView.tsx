@@ -3,9 +3,9 @@
 // and two golds as moons and their states; a locked item names its dish and blocker, and the next ones carry **Unlock**.
 // Filling or changing a slot opens T138's Uma picker (owned Umas, never herself, a refused pick in the rule's words,
 // sorted by what each would add), and runs `set-lineage`.
+import { LockedIcon } from '@luismlorenzana/uma-kit/ui'
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router'
-import { LockedIcon } from '../../../ui/icons'
 import { UmaSquare } from '../../../ui/ArtSquare'
 import { UmaPicker } from '../../../ui/UmaPicker'
 import { TapNoteLine } from '../../../ui/work/TapNote'

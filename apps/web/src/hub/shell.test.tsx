@@ -2,10 +2,11 @@
 // The shell (docs/game/11-hub-and-places.md §2, §4, §12) on the dev seeds through the in-memory port: the pill's
 // three states, the tab badges, the chips' links, a place link's VoiceOver line, the side panel (its Peek, Enter, and
 // every way it closes), the direct Racecourse, the menu's places, the plaza, full-screen flows, and reduced motion.
-import { hubView, placesOn, tileLabel, placeById } from '@racer/domain/hub'
+import { setReducedMotion as setDeviceReducedMotion } from '@luismlorenzana/uma-kit/ui'
+import { REDUCED_MOTION_KEY } from '../app/kit'
+import { hubView, hubWords, placesOn, tileLabel, placeById } from '@racer/domain/hub'
 import { act, cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { REDUCED_MOTION_KEY, setDeviceReducedMotion } from '../app/motion'
 import { renderG2, seed, seedGame, stubPointerEvents, stubStorage } from '../__fixtures__/testing'
 
 afterEach(() => {
@@ -51,6 +52,16 @@ describe('the floating pill (§2.3)', () => {
 })
 
 describe('the bars (§2.1, §2.2)', () => {
+  it("sit in uma-kit's frame, fixed to the screen's edges, with the bottom bar lifted only by the safe area (T147)", async () => {
+    renderG2('/town', seedGame('busy'))
+    const bar = await screen.findByRole('navigation', { name: 'Hub pages' })
+    const frame = document.querySelector<HTMLElement>('[data-kit="frame"]')!
+    expect(frame.className.split(' ')).toEqual(expect.arrayContaining(['fixed', 'inset-0']))
+    expect(frame.className).not.toContain('h-dvh')
+    expect(bar.firstElementChild!.className.split(' ')).toContain('mb-bar-safe')
+    expect(bar.className).not.toContain('pb-safe')
+  })
+
   it('badges only Farm and Training, with Umas who have something to collect there', async () => {
     const view = busyView()
     expect(view.tabs.farm).toBeGreaterThan(0)
@@ -95,7 +106,7 @@ describe('place links and the side panel (§1, §4)', () => {
       const pips = [...tile.querySelectorAll('[data-pip]')].map((pip) => (pip as HTMLElement).dataset.pip)
       expect(pips).toEqual([...building.pips.map((pip) => pip.state), ...(building.more > 0 ? ['more'] : [])])
       const badge = tile.querySelector<HTMLElement>('[data-ready-badge]')
-      expect(badge === null ? 0 : Number(badge.dataset.readyBadge)).toBe(building.ready)
+      expect(badge?.textContent ?? null).toBe(building.ready > 0 ? hubWords('ready-badge', { n: building.ready }) : null)
       expect(Number(tile.querySelector<HTMLElement>('[data-counter]')?.dataset.counter ?? 0)).toBe(building.ready)
     }
     expect(document.querySelectorAll('[data-queued]').length).toBeGreaterThan(0)
@@ -108,7 +119,7 @@ describe('place links and the side panel (§1, §4)', () => {
     expect(state()).toEqual({ back: true })
     const panel = await screen.findByRole('dialog', { name: 'Kitchen' })
     expect(panel.getAttribute('aria-modal')).toBe('true')
-    expect(panel.querySelector('[data-g2="side-panel"]')).toBeTruthy()
+    expect(panel.querySelector('[data-kit="side-panel"]')).toBeTruthy()
     // The registry's Peek, then Enter.
     await waitFor(() => expect(within(panel).getAllByText(/slots in use/).length).toBeGreaterThan(0))
     const enter = within(panel).getByRole('link', { name: 'Enter Kitchen' })
@@ -127,7 +138,7 @@ describe('place links and the side panel (§1, §4)', () => {
     ['Escape', () => fireEvent.keyDown(window, { key: 'Escape' })],
     ['a tap on the dimmed map', (panel: HTMLElement) => fireEvent.click(within(panel).getByRole('button', { name: 'Back to Farm' }))],
     ['a swipe right', (panel: HTMLElement) => {
-      const side = panel.querySelector<HTMLElement>('[data-g2="side-panel"]')!
+      const side = panel.querySelector<HTMLElement>('[data-kit="side-panel"]')!
       fireEvent.pointerDown(side, { clientX: 120, clientY: 400 })
       fireEvent.pointerUp(side, { clientX: 220, clientY: 410 })
     }],
@@ -195,7 +206,7 @@ describe('the menu (§2.2)', () => {
 describe('full-screen flows (§6)', () => {
   it.each(['/racing/racecourse/run', '/training/observatory/sim-uma-01', '/training/gym/sim-uma-01'])('hides both bars on %s', async (path) => {
     renderG2(path, seedGame('busy'))
-    await waitFor(() => expect(document.querySelector('[data-g2="shell"]')?.getAttribute('data-full-screen')).toBe('true'))
+    await waitFor(() => expect(document.querySelector('[data-kit="frame"]')?.getAttribute('data-full-screen')).toBe('true'))
     expect(screen.queryByRole('navigation', { name: 'Hub pages' })).toBeNull()
   })
 
@@ -211,9 +222,9 @@ describe('full-screen flows (§6)', () => {
 
 describe('reduced motion (§12)', () => {
   it("stills the Ready pips' bounce and the numbers' slide when the system or the device switch asks", async () => {
-    // The CSS that stills them is held by styles.test.ts; here the root sets the attribute it keys on.
+    // The CSS that stills them is uma-kit's theme (tokens.test.ts); here the root sets the attribute it keys on.
     renderG2('/farm', seedGame('busy'))
-    await waitFor(() => expect(document.querySelectorAll('.g2-pip-ready').length).toBeGreaterThan(0))
+    await waitFor(() => expect(document.querySelectorAll('.kit-pip-ready').length).toBeGreaterThan(0))
     expect(document.documentElement.hasAttribute('data-reduced-motion')).toBe(false)
     act(() => setDeviceReducedMotion(true))
     expect(localStorage.getItem(REDUCED_MOTION_KEY)).toBe('true')

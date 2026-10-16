@@ -3,21 +3,20 @@
 // it keeps later in the tier, the full Race Bonus); its skills by node, golds first; the bond's dish and real time per
 // tier; who is bonded and where, then who could bond it now; and Bond in the thumb zone, which opens the Uma picker and
 // goes on to T139's Dojo session with her, this card and its room. A bond in progress reads "In session · bonds in 2h 10m".
+import { Button, Panel } from '@luismlorenzana/uma-kit/ui'
 import { scenarioRow } from '@racer/domain/tiers'
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router'
 import { ArtViewer } from '../../ui/ArtViewer'
 import { useArt } from '../../ui/album/useArt'
-import { Button } from '../../ui/Button'
 import { DistanceTypeIcon, RunningStyleIcon } from '../../ui/CardFocusIcons'
-import { Panel } from '../../ui/Panel'
 import { TypeIcon } from '../../ui/TypeIcon'
 import { useG2Content } from '../../app/content'
 import { useGame, useNow } from '../../app/game'
 import { useAlbumPrefs } from '../../ui/albumPrefs'
 import { CardSquare } from '../../ui/ArtSquare'
 import { DISTANCE_LABEL, STAT_LABEL, STYLE_LABEL } from '../../ui/labels'
-import { PlaceHeader } from '../../ui/PlaceHeader'
+import { PlacePageHeader } from '../PlacePageHeader'
 import { UmaPicker } from '../../ui/UmaPicker'
 import { umaName } from '../../ui/words'
 import type { PageProps } from '../registry'
@@ -63,11 +62,11 @@ export default function CardPage({ place, rest, cardId }: PageProps & { cardId: 
     // Once per card.
   }, [cardId, card !== null])
 
-  if (state === null || env === null) return <PlaceHeader place={place} rest={rest} />
+  if (state === null || env === null) return <PlacePageHeader place={place} rest={rest} />
   if (card === null || pay === null) {
     return (
       <div>
-        <PlaceHeader place={place} rest={rest} title="Card" />
+        <PlacePageHeader place={place} rest={rest} title="Card" />
         <Panel className="m-4 text-center">
           <p>That card isn't in the Library.</p>
           <Link to="/town/card-library" replace className="font-display mt-3 inline-flex min-h-12 items-center rounded-sm bg-accent px-5 font-semibold text-ink shadow-1">Open the Library</Link>
@@ -87,7 +86,7 @@ export default function CardPage({ place, rest, cardId }: PageProps & { cardId: 
 
   return (
     <div data-place-page="card" data-card={cardId}>
-      <PlaceHeader place={place} rest={rest} title={name} />
+      <PlacePageHeader place={place} rest={rest} title={name} />
       <div className="space-y-3 px-4 pt-3 pb-4">
         <button type="button" onClick={() => art !== null && setViewing(true)} aria-label={art !== null ? `View ${name}'s art` : name}
           className="relative block aspect-[4/5] w-full overflow-hidden rounded-md border border-hairline bg-sunken shadow-1" data-g2="card-art">

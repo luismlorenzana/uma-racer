@@ -6,6 +6,8 @@
 // button, which says why it can't in the rule's words. A shortfall links to the building that makes it (and the
 // Exchange's row for stocked raw), an `ask` re-offers the covered size, and Start returns to `back` when the link gave
 // one. With no Free Uma it says so, with **Collect here** when that would free one, and nothing else.
+import { navState } from '@luismlorenzana/uma-kit/shell'
+import { BottomSheet, CheckIcon, ChevronRightIcon, LockedIcon, SparkIcon, StarIcon, UiMark } from '@luismlorenzana/uma-kit/ui'
 import { durationText, hasReady } from '@racer/domain/check-in'
 import type { FarmBuildingId } from '@racer/domain/farm'
 import type { Place } from '@racer/domain/hub'
@@ -13,12 +15,8 @@ import { itemById, type ItemId } from '@racer/domain/items'
 import { holdsSlot, slotsOf } from '@racer/domain/work'
 import { useCallback, useEffect, useId, useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router'
-import { navState } from '../../../hub/nav'
-import { BottomSheet } from '../../../ui/BottomSheet'
-import { CheckIcon, ChevronRightIcon, LockedIcon, SparkIcon, StarIcon } from '../../../ui/icons'
 import { ItemIcon } from '../../../ui/ItemIcon'
 import { TypeIcon } from '../../../ui/TypeIcon'
-import { UiMark } from '../../../ui/UiMark'
 import { SizeChips } from '../../../ui/work/SizeChips'
 import { TapNoteLine } from '../../../ui/work/TapNote'
 import { useTap, useWordsContext } from '../../../ui/work/useTap'

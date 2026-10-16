@@ -4,6 +4,7 @@
 // row per slot (`SlotRow`: face in its ring, dish, "×3 · 1/3", time left, Collect, Speed Tickets and ⋯), by room under
 // its stat or card-type icon at the Gym and Dojo; and **Collect here** in the thumb zone. The session sheet opens over the page from its query (`?session=…`), so a slot, a build view's
 // Unlock, a Needs line, the planner and the Card Library's Bond all reach it by a link.
+import { navState } from '@luismlorenzana/uma-kit/shell'
 import type { CollectAllReceipt } from '@racer/domain/check-in'
 import type { FacilityId } from '@racer/domain/farm'
 import { SESSION_MAX_UNLOCKS, sessionSeconds } from '@racer/domain/training'
@@ -12,10 +13,9 @@ import { lazy, Suspense, useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router'
 import { TypeIcon } from '../../../ui/TypeIcon'
 import { useGame } from '../../../app/game'
-import { navState } from '../../../hub/nav'
 import { ItemIcon } from '../../../ui/ItemIcon'
 import { duration } from '../../../ui/labels'
-import { PlaceHeader } from '../../../ui/PlaceHeader'
+import { PlacePageHeader } from '../../PlacePageHeader'
 import { PlaceStats } from '../../../ui/work/PlaceStats'
 import { SlotRow } from '../../../ui/work/SlotRow'
 import { TapNoteLine } from '../../../ui/work/TapNote'
@@ -171,7 +171,7 @@ export default function FacilityPage({ place }: { place: Place }) {
   ]
   return (
     <div data-g2="training-facility" data-place-page={place.id} className="flex min-h-full flex-col">
-      <PlaceHeader place={place} lines={help} />
+      <PlacePageHeader place={place} lines={help} />
       {model !== null && (
         <>
           <Header model={model} />

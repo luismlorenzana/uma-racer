@@ -2,21 +2,17 @@
 // D176, D181): the roster in the shared album chrome, Owned and Locked tabs with counts, the ticket note with the Shard
 // exchange, Unlock in a sheet, and the Locked tab's multi-select that unlocks up to the tickets in hand, then reveals
 // them in turn. Each profile (`outfit/:umaId`, `/skills`, `/needs`) is its own chunk.
+import { BottomSheet, Button, CheckIcon, LockedIcon, Tabs, TargetIcon, TierCrest } from '@luismlorenzana/uma-kit/ui'
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router'
 import { VirtualGrid } from '../../ui/album/VirtualGrid'
 import { AlbumChrome } from '../../ui/album/AlbumChrome'
-import { BottomSheet } from '../../ui/BottomSheet'
-import { Button } from '../../ui/Button'
 import { Crest } from '../../ui/Crest'
-import { CheckIcon, LockedIcon } from '../../ui/icons'
 import { runAlbumQuery } from '../../ui/album/query'
 import { useGame } from '../../app/game'
 import { useAlbumPrefs } from '../../ui/albumPrefs'
 import { UmaSquare } from '../../ui/ArtSquare'
-import { TargetIcon } from '../../ui/icons'
-import { PlaceHeader } from '../../ui/PlaceHeader'
-import { Tabs } from '../../ui/Tabs'
+import { PlacePageHeader } from '../PlacePageHeader'
 import { TapNoteLine, useTap } from '../../ui/work'
 import type { PageProps } from '../registry'
 import {
@@ -24,7 +20,6 @@ import {
   type StableEntry, type StableTab,
 } from './model'
 import { revealPath } from '../reveal/path'
-import { TierCrest } from '../../ui/UiMark'
 
 const Profile = lazy(() => import('./Profile'))
 
@@ -183,7 +178,7 @@ function Roster({ place, rest }: PageProps) {
     if (tab !== 'locked') { setPicking(false); setPicked([]) }
   }, [tab])
 
-  if (state === null || album === null) return <PlaceHeader place={place} rest={rest} />
+  if (state === null || album === null) return <PlacePageHeader place={place} rest={rest} />
   const note = ticketNote(state.profile)
   const { result, entries, emptyHint } = queryStable(album, tab, prefs.query)
   const tabRowsOf = album.rows.filter((row) => (row.facets['ownership'] as string[])[0] === tab)
@@ -215,7 +210,7 @@ function Roster({ place, rest }: PageProps) {
 
   return (
     <div data-place-page="stable">
-      <PlaceHeader place={place} rest={rest} lines={['A ticket unlocks any Uma into tier 1. Five Uma Shards make a ticket: every scenario gate an Uma reaches pays one.']} />
+      <PlacePageHeader place={place} rest={rest} lines={['A ticket unlocks any Uma into tier 1. Five Uma Shards make a ticket: every scenario gate an Uma reaches pays one.']} />
       <div className={`px-4 pt-2 ${picking ? 'pb-4' : 'pb-24'}`}>
         <AlbumChrome
           title="Roster"

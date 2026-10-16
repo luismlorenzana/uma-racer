@@ -4,14 +4,13 @@
 // `UmaPickerSheet` props on the new game's store: the caller's sorts, `describe`, `disabledReason` and `candidateIds`.
 // An Uma that can't be picked stays listed, after the ones that can, with her reason. Owned by the Stable; the Training
 // (T139) and Farm (T140) places use it too.
+import { BottomSheet, CheckIcon } from '@luismlorenzana/uma-kit/ui'
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { emptyStateHint, runAlbumQuery, type AlbumQuery, type SortDef } from './album/query'
 import { AlbumChrome } from './album/AlbumChrome'
 import { VirtualGrid } from './album/VirtualGrid'
-import { BottomSheet } from './BottomSheet'
 import { Crest } from './Crest'
-import { CheckIcon } from './icons'
 import { useGame } from '../app/game'
 import {
   buildStableAlbum, STABLE_DEFAULT_QUERY, STABLE_FACETS, STABLE_SORTS, STABLE_TIE_BREAK, type StableEntry,

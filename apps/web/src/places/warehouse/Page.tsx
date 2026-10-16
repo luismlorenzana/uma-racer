@@ -2,17 +2,13 @@
 // · Dishes · Tickets shelves, family and grade filters, a row per stack with what's held, reserved, coming and needed,
 // and the stock sheet: what it is, the recipes that use it, Make more (T140's job sheet), and Sell ×1 / ×10 / Surplus /
 // All free at the live price, asking the one question 09 §6.1 asks before it sells.
+import { BottomSheet, Button, Chip, Tabs, UiMark } from '@luismlorenzana/uma-kit/ui'
 import { FAMILIES, FAMILY_IDS, itemById, type FamilyId } from '@racer/domain/items'
 import { useMemo, useState } from 'react'
 import { Link, useLocation } from 'react-router'
-import { BottomSheet } from '../../ui/BottomSheet'
-import { Button } from '../../ui/Button'
-import { Chip } from '../../ui/Chip'
 import { useGame, useNow } from '../../app/game'
-import { UiMark } from '../../ui/UiMark'
 import { amount } from '../../ui/labels'
-import { PlaceHeader } from '../../ui/PlaceHeader'
-import { Tabs } from '../../ui/Tabs'
+import { PlacePageHeader } from '../PlacePageHeader'
 import { TapNoteLine, useTap } from '../../ui/work'
 import { umaName } from '../../ui/words'
 import type { PageProps } from '../registry'
@@ -144,12 +140,12 @@ export default function WarehousePage({ place, rest }: PageProps) {
   const [grade, setGrade] = useState<number | null>(null)
   const [open, setOpen] = useState<string | null>(null)
   const house = useMemo(() => (state === null || env === null ? null : warehouse(state, now, env)), [state, env, now])
-  if (house === null) return <PlaceHeader place={place} rest={rest} />
+  if (house === null) return <PlacePageHeader place={place} rest={rest} />
   const rows = filterRows(house.rows, { shelf, family: shelf === 'tickets' ? null : family, grade: shelf === 'tickets' ? null : grade })
   const openRow = open === null ? null : house.counts(open) ?? null
   return (
     <div data-place-page="warehouse">
-      <PlaceHeader place={place} rest={rest} lines={['Reserved items sit inside running jobs. Coming items are being made. Needed is what the planner holds back for your targets; selling it asks first.']} />
+      <PlacePageHeader place={place} rest={rest} lines={['Reserved items sit inside running jobs. Coming items are being made. Needed is what the planner holds back for your targets; selling it asks first.']} />
       <div className="space-y-3 px-4 pt-3 pb-24">
         <Tabs label="Shelves" value={shelf} onChange={setShelf} options={SHELVES.map((value) => ({ value, label: SHELF_LABEL[value] }))} />
         {shelf !== 'tickets' && (

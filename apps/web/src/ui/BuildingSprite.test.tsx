@@ -4,7 +4,7 @@
 import { placeById } from '@racer/domain/hub'
 import { cleanup, render } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
-import { PALETTES } from '../hub/scene/palettes'
+import { PALETTES } from '@luismlorenzana/uma-kit/hub'
 import { BuildingSprite } from './BuildingSprite'
 
 afterEach(cleanup)
@@ -30,7 +30,7 @@ describe('BuildingSprite', () => {
     for (const frame of ['nowhere', null]) {
       const { container } = render(<BuildingSprite frame={frame} page="farm" />)
       const fills = [...container.querySelectorAll('svg [fill]')].map((shape) => shape.getAttribute('fill'))
-      expect(fills).toContain(hex(PALETTES.farm.building.wall))
+      expect(fills).toContain(hex(PALETTES['farmlands']!.building.wall))
       cleanup()
     }
   })
