@@ -5,11 +5,19 @@ Uma climbs a tier of five scenarios, racing her career while the roster works th
 for Training Hub sessions that unlock her build one piece at a time, and races pay Prize Money that buys Speed Tickets.
 Badges, titles and flair keep the stable's history.
 
-> **Status: generation 2.** The game rework (D326–D338) is the game: its rules were built in phase 2 (D340–D351) and
-> the new game, its save and its screens in phase 3, the cutover (M034, D352–D361), which deleted every retired system
-> (the RPG, Uma Puzzles, the minigames, Constellation Level, card stars, tokens, Training Tickets and the old Farm).
-> The cutover ships to the owner's iPhone with T144, which wipes every save once ([tasks](docs/tasks/README.md)).
-> [The manual](docs/game/README.md) describes the code as it runs.
+> **Status, 2026-10-16: generation 2 is live on the owner's iPhone.** The game rework (D326–D338) is the game: its
+> rules were built in phase 2 (D340–D351), and phase 3's cutover (M034, D352–D361) built the new game, its save and its
+> screens and deleted every retired system (the RPG, Uma Puzzles, the minigames, Constellation Level, card stars,
+> tokens, Training Tickets and the old Farm). T144 released it on 2026-10-15 and wiped every old save once. The same
+> day the Home screen became uma-rpg's pixel-art Hub on a Phaser canvas (phase 6, ahead of phase 5: T145, D363), with
+> the racer's own uma-art 2.7.0 (D364). What's open and next is [the task plan](docs/tasks/README.md);
+> [the manual](docs/game/README.md) describes the code as it runs.
+
+**A fresh session starts here:** this page (status, how to run and verify, the map), then [AGENTS.md](AGENTS.md) (how
+to work, the shared workflows) and, for Claude, CLAUDE.md (production); [docs/tasks/README.md](docs/tasks/README.md)
+for the state of the plan; [the manual](docs/game/README.md) for the game, with
+[11 · Hub and places](docs/game/11-hub-and-places.md) for every screen and route and
+[the architecture](docs/game/architecture.md) for the code.
 
 ## Ground rules
 
@@ -27,16 +35,20 @@ cp apps/api/.env.example apps/api/.env
 pnpm dev            # web http://localhost:5173 (also on the LAN for the iPhone) + api :8080, auth off, dev operations on
 ```
 
-A new account opens the Stable's Locked tab with 20 Uma Tickets: unlock Umas there, then send them to the Farm's sites,
-the Pantry and the Kitchen, spend dishes on Training Hub sessions, and race from the raised **RACE** button. Every place
-is also in the ☰ menu. In dev builds, `/dev/seeds/` opens the game on synthetic accounts (`?seed=busy | fresh | quiet |
-gate | promote | tired | spent | stopped`) without touching the device save ([architecture](docs/game/architecture.md#dev-seeds)).
+The local API keeps its save in `apps/api/.data/save-g2.json` and reads the private content from the gitignored
+`content/` folder. A new account opens the Stable's Locked tab with 20 Uma Tickets: unlock Umas there, then send them
+to the Farm's sites, the Pantry and the Kitchen, spend dishes on Training Hub sessions, and race from the raised
+**Race** button. Every place is also in the ☰ menu. In dev builds, `/dev/seeds/` opens the game on synthetic accounts
+(`?seed=busy | fresh | quiet | gate | promote | tired | spent | stopped`, `&at=HH:MM`) without touching the device
+save ([architecture](docs/game/architecture.md#dev-seeds)). From a git worktree, run the preview on your own port
+([AGENTS.md](AGENTS.md#workflows)).
 
 ## Verification
 
 ```bash
 pnpm lint           # type-check all packages
-pnpm test           # domain rules, race engine, API, save and web view models (test:ci runs them one at a time)
+pnpm test           # domain rules, race engine, API, save and web view models
+pnpm test:ci        # the same suites one package at a time, as CI runs them
 pnpm build          # production builds, including the PWA service worker and the 180 KB startup check
 pnpm docs:update    # regenerate the live blocks in docs/game/ (and the plan's operations list) after a rule change
 pnpm sim:balance    # headless race balance table (-- --final for the full matrix)
@@ -49,16 +61,20 @@ pnpm assets:import  # image sources in those packs → private WebP atlases
 pnpm content:publish -- --dry-run   # check the private content before publishing it
 ```
 
+The checks CI enforces, and the ones run by hand (reach, "nothing old remains", links), are
+[the architecture's](docs/game/architecture.md#budgets-and-checks).
+
 ## Repository layout
 
 ```text
-apps/web        React 19 + Vite 7 + Tailwind 4 + Motion — mobile-first PWA; PixiJS 8 for the race scene only
+apps/web        React 19 + Vite 7 + Tailwind 4 + Motion — mobile-first PWA; Phaser 4 for the Hub's map, PixiJS 8 for the race
 apps/api        NestJS 11 on Cloud Run — auth guard, the generation-2 save and sync, private content
 packages/domain game rules as pure, tested functions, with subpath exports per area
 packages/race   deterministic race engine
-scripts/        balance sims; private data and WebP atlas pipelines
+scripts/        balance sims; private data and WebP atlas pipelines; the startup size check
 infra/          GCP bootstrap + GitHub Actions docs
-docs/           the manual, design, plans, technical, research, tasks
+docs/           the manual, design, plans, tasks, technical, research, handoff packets
+.github/        the verify-and-deploy workflow
 ```
 
 ## Documentation map
@@ -68,7 +84,7 @@ docs/           the manual, design, plans, technical, research, tasks
 | Doc | What it covers |
 |---|---|
 | [Manual](docs/game/README.md) | The game in one paragraph, the shared numbers, the glossary, the "Not built yet" rule and how the pages stay true. Lists are generated from the code (D337) |
-| [Architecture](docs/game/architecture.md) | The repo, the domain's areas and exports, the web app, the save and sync v2, routes, the API, private content, the race, budgets, deploy |
+| [Architecture](docs/game/architecture.md) | The repo, the domain's areas and exports, the web app by folder, the dev seeds and hooks, the save and sync v2, routes, the API, private content, the art, the race, the budgets and checks, CI and deploy |
 | [01 · Game loop](docs/game/01-game-loop.md) | The loop step by step, one Uma's scenario, the roster in rotation, a week of play |
 | [02 · Check-ins](docs/game/02-check-ins-and-notifications.md) | Collect all, Repeat, queues, the check-in summary, the planner, offline time, plain words |
 | [03 · Uma progression](docs/game/03-uma-progression.md) | Racing Level, careers, advancing a scenario, one build per tier |
@@ -78,7 +94,7 @@ docs/           the manual, design, plans, technical, research, tasks
 | [07 · Farm](docs/game/07-farm.md) | Sites, Pantry and Kitchen, Farm Level, jobs and queues, upgrades |
 | [08 · Items and recipes](docs/game/08-item-catalogue-and-recipes.md) | The catalogue, recipes and dish destinations |
 | [09 · Racing rewards and the Exchange](docs/game/09-racing-rewards-and-exchange.md) | Racing EXP, Prize Money, the Daily Purse, featured races, the Exchange, selling |
-| [11 · Hub and places](docs/game/11-hub-and-places.md) | The four pages, every place, routes and redirects, art |
+| [11 · Hub and places](docs/game/11-hub-and-places.md) | The menu tree at a glance, the shell, the four pages and every place, routes, queries and redirects, the art |
 | [12 · Economy and pacing](docs/game/12-economy-and-pacing.md) | Currencies, the pacing target, the time model, the loop simulation |
 | [Racing](docs/game/racing.md), [Scenarios](docs/game/scenarios.md) | What a finish pays, handicaps and rivals; the scenario ladder and which page owns each rule |
 
@@ -100,14 +116,14 @@ docs/           the manual, design, plans, technical, research, tasks
 |---|---|
 | [Game rework](docs/rework/README.md) | Where each rework page lives now, World Expeditions (phase 9, not built), and [the plan](docs/rework/13-removals-and-plan-changes.md): what left, the generation-2 save, the revised phases |
 | [Re-architecture plan](docs/rearchitecture/README.md) | How the code is rebuilt (D321–D325): target architecture, uma-platform and shared packages, Phaser, the data wipe, and [the phases](docs/rearchitecture/08-phases.md) |
-| [Tasks](docs/tasks/README.md) | The current milestone plan and its delegable task specs (see [AGENTS.md](AGENTS.md)) |
-| [Handoff](docs/handoff/README.md) | Packets for ChatGPT, starting with the Hub's art, and the master prompt to start a session |
+| [Tasks](docs/tasks/README.md) | **The current plan:** what shipped, what's open and next, the next free numbers, and the specs of work still ahead (see [AGENTS.md](AGENTS.md)) |
+| [Handoff](docs/handoff/README.md) | Packets for ChatGPT (the Hub's art so far, A01–A02, done), and the master prompt to start a session |
 
 ### Technical
 
 | Doc | What it covers |
 |---|---|
-| [Infrastructure](docs/technical/infrastructure.md) | GCP services at about $0, CI/CD, content privacy, environments, the release runbook |
+| [Infrastructure](docs/technical/infrastructure.md) | GCP services at about $0, CI/CD, content privacy, environments, the release runbook as run on 2026-10-15, rollback |
 | [GCP Setup Guide](docs/technical/gcp-setup-guide.md) | Click-by-click Firebase and Google Cloud setup for the owner |
 
 ### Research and tracking
