@@ -17,6 +17,9 @@ Hub and primitives are uma-kit's, the app both Uma games share.
   by folder, the checks and the deploy are [the architecture](docs/game/architecture.md). Read the relevant page before
   changing a system, and rewrite it in the same commit as the code. A later phase's part sits under "Not built yet
   (phase N)".
+- **One game or both:** [docs/change-protocol.md](docs/change-protocol.md). Changes to anything uma-kit draws (frame,
+  bars, menu, side panel, sheets, Hub map, theme) go through uma-platform as a "Both apps:" request and a kit release,
+  never a fork here.
 - `docs/decisions.md` is append-only: to reverse a decision, add a new entry that supersedes it.
 - `docs/open-questions.md` holds anything that needs the owner. The owner prefers **no open questions**: decide with a
   recommendation when a sensible default exists, and log it.
