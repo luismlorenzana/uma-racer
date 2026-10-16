@@ -1,7 +1,8 @@
 # Uma Racer — working notes for Claude
 
 A personal, never-distributed Uma Musume–inspired racing game (Race, Farm, Train), played on the owner's iPhone as a
-Home Screen web app. Generation 2 is live since 2026-10-15, on uma-rpg's pixel-art Hub.
+Home Screen web app. Generation 2 is live since 2026-10-15, on uma-rpg's pixel-art Hub; since T147 (D367) its shell,
+Hub and primitives are uma-kit's, the app both Uma games share.
 
 ## Start here
 
@@ -9,7 +10,7 @@ Home Screen web app. Generation 2 is live since 2026-10-15, on uma-rpg's pixel-a
   agent, including delegated ChatGPT tasks (branch + PR, no pushes to `main`), with the shared workflows. This file adds
   Claude's production notes.
 - `docs/tasks/README.md` is the current plan: what shipped, what's open (T144's step 10, the owner's pixel-art call,
-  phases 4, 5, 7, 8 and 9) and the next free numbers (M035, T147, D367; **D362 is reserved for T144's release
+  phases 4, 5, 7, 8 and 9) and the next free numbers (M035, T148, D368; **D362 is reserved for T144's release
   record**). A task spec is deleted once its work merges (D104), so that folder only holds work still ahead.
 - **The docs are the source of truth:** [the manual](docs/game/README.md) (`docs/game/`) describes the game as it runs.
   Every screen, route and sheet is [11's menu tree](docs/game/11-hub-and-places.md#the-menu-tree-at-a-glance); the code
@@ -32,6 +33,12 @@ Home Screen web app. Generation 2 is live since 2026-10-15, on uma-rpg's pixel-a
 - **A multi-part request:** one commit per part, one push and one deploy at the end, after the whole batch works.
 - The architecture and deploy pipeline are reused from the sibling repo `../uma-planner`, and the Hub from `../uma-rpg`.
   Check how they solve something before inventing a new pattern.
+- **The shell, Hub and primitives are `@luismlorenzana/uma-kit`** (uma-platform `packages/kit`, P48), pinned exactly.
+  Pass what is uma-racer's in as props through the adapters (`hub/RacerShell.tsx`, `hub/HubPage.tsx`,
+  `hub/PlacePeek.tsx`, `places/PlacePageHeader.tsx`); never fork a kit component. A kit change is made and released in
+  uma-platform (a changeset, by the uma-rpg session or a uma-platform session), then pinned here; try one with
+  `pnpm link` or a `file:` override, never committed. CI reads the package only while its Manage Actions access grants
+  uma-racer Read ([architecture](docs/game/architecture.md#uma-kit)).
 
 ## Layout
 
@@ -40,7 +47,7 @@ Home Screen web app. Generation 2 is live since 2026-10-15, on uma-rpg's pixel-a
 | `packages/domain` | Pure game rules, one subpath export per area (`@racer/domain/save`, `/state`, `/tiers`, `/items`, `/work`, `/farm`, `/training`, `/economy`, `/check-in`, `/planner`, `/sim`, `/builds`, `/hub`) beside the core. Vitest |
 | `packages/race` | Deterministic race engine (seeded, 15 Hz ticks, timeline + playback sampling). Vitest |
 | `apps/api` | NestJS 11: `AuthGuard` (Firebase token + `ALLOWED_EMAIL`), `/api/save`, `/api/sync` (generation 2, protocol 2), `/api/legacy/purge` (until T144's step 10), `/api/content/*`, `/api/health` |
-| `apps/web` | React 19 + Vite 7 + Tailwind 4 + Motion (`m.*` under `LazyMotion strict`) + PWA: `src/app` (routes, session, the `G2Game` port), `hub` (the shell, and uma-rpg's Phaser 4 town in `hub/scene`), `places`, `save` (Dexie `uma-racer-g2`, one sync lane), `ui`, `content`; PixiJS 8 only for the race scene (`scenes/race`) until phase 8; dev-only seeds at `/dev/seeds/*` (`src/dev`) |
+| `apps/web` | React 19 + Vite 7 + Tailwind 4 + Motion (`m.*` under `LazyMotion strict`) + PWA on uma-kit 0.1.1 (theme in light and dark, shell, Hub map on Phaser 4, primitives and icons): `src/app` (routes, session, the `G2Game` port, the kit's setup `kit.ts` and art `art.ts`), `hub` (the racer's adapters to the kit's shell and map), `places`, `save` (Dexie `uma-racer-g2`, one sync lane), `ui` (the racer's own pieces), `content`; PixiJS 8 only for the race scene (`scenes/race`) until phase 8; dev-only seeds at `/dev/seeds/*` (`src/dev`) |
 | `scripts/sim` | Headless balance runs (`pnpm sim:balance`, `sim:turns`, `sim:builds`, `sim:careers`, `sim:loop`) |
 | `scripts/data`, `scripts/assets` | Content pipeline (GameTora → private data packs and WebP icon atlases) |
 | `docs/handoff` | Packets for ChatGPT sessions and the master prompt |
@@ -48,7 +55,7 @@ Home Screen web app. Generation 2 is live since 2026-10-15, on uma-rpg's pixel-a
 ## Commands
 
 ```bash
-NODE_AUTH_TOKEN=$(gh auth token) pnpm install   # @luismlorenzana/* (uma-platform) come from GitHub Packages
+NODE_AUTH_TOKEN=$(gh auth token) pnpm install   # @luismlorenzana/* (uma-art, uma-kit) come from GitHub Packages
 pnpm dev            # web :5173 (proxies /api) + api :8080, auth disabled, save apps/api/.data/save-g2.json, DEV_OPERATIONS=true
 pnpm lint           # type-check every package
 pnpm test           # domain + race + api + web tests
@@ -78,8 +85,9 @@ pnpm assets:import  # image sources → private WebP atlases; run after data:imp
 - **Verify UI changes at 390×844** in the browser preview, on the synthetic seeds:
   `/dev/seeds/<route>?seed=busy | fresh | quiet | gate | promote | tired | spent | stopped`, `&at=HH:MM` for the clock,
   `&canvas` so a screenshot captures the Hub (WebGL doesn't), `?save=device` for the device save. Dev builds expose
-  `window.__hub` (the Hub's scene: `setPage`, `paused`) and `window.__raceScene` (`seek`, `skipToEnd`), since the
-  preview pane throttles animation frames. Console 500s right after start are Vite's proxy racing the API's boot.
+  `window.__hub` (the Hub's scene: `scene`, `game`, `paused`) and `window.__raceScene` (`seek`, `skipToEnd`), since the
+  preview pane throttles animation frames. Check light and dark (the pane's color scheme, or Account's Appearance).
+  Console 500s right after start are Vite's proxy racing the API's boot.
 
 ## Production operations
 
@@ -149,10 +157,15 @@ owner chooses a pixel-art interface.
 
 ## Conventions
 
-- **Mobile first** (390×844 portrait). Thumb-zone actions, 44 pt targets, safe-area padding (`pt-safe`/`pb-safe`), `h-dvh`.
-- **Performance budgets** (`docs/research/game-web-tech.md`): main JS ≤ 180 KB gzip (146.49 KB on 2026-10-15), so
-  keep Phaser, PixiJS and Firebase lazy. Phaser is for the Hub's map only (`hub/scene`), PixiJS for the race scene
-  only; nothing else imports them. Animate only transform/opacity. Use delta-time for every animation.
+- **Mobile first** (390×844 portrait). Thumb-zone actions, 44 pt targets, safe-area padding (`pt-safe`/`pb-safe`, the
+  bar's `mb-bar-safe`), and the kit's frame fixed to the screen (`AppFrame`), never `h-dvh`.
+- **Light and dark:** draw in the theme's tokens; text on `bg-accent` is `text-accent-ink`, a surface that stays dark is
+  `bg-stage` or `bg-scrim` (never `bg-ink`), and no `bg-white`, `text-black` or raw hex
+  ([visual system](docs/design/visual-system.md#dark-mode)).
+- **Performance budgets** (`docs/research/game-web-tech.md`): main JS ≤ 180 KB gzip (149.76 KB on 2026-10-16), so
+  keep Phaser, PixiJS and Firebase lazy. Phaser is uma-kit's, for the Hub's map only (its lazy scene chunk), PixiJS for
+  the race scene only; no uma-racer module imports either outside `scenes/race`. Animate only transform/opacity. Use
+  delta-time for every animation.
 - Use Motion's `m.*` components, never `motion.*`: `LazyMotion strict` throws on `motion.*`. Continuous HUD values use
   CSS transitions, not springs.
 - Game state is the one Zustand store (`useSave`, with selectors) over Dexie, read by the shell and places only through
