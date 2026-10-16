@@ -1,16 +1,68 @@
 # 11 · Hub and places
 
-> **Status: as built, phase 3 (generation 2, D361) with phase 6's canvas Hub (T145, D363); first written 2026-10-13
-> (D333).** The Hub's four pages, every place on them, the routes, the two play modes as tap-by-tap flows, and the art:
-> what uma-art already draws and what a uma-platform session draws new. The registry and Hub view are
-> `@racer/domain/hub` (T137, D353); the routes, redirects and boot `apps/web/src/app/`; every Peek, Page and sheet
-> `places/` (T138–T142). Since T145 each page is uma-rpg's Hub, ported: a pixel-art map on a lazy Phaser canvas with DOM
-> place links over it, swiped between, and the quick look in uma-rpg's side panel (§11). The place scenes (phase 7) and
-> §10.3's new drawings are not built yet: until uma-art draws them, the four new buildings are code placeholders (§10.4).
+> **Status: as built, phase 3 (generation 2, D361) with phase 6's canvas Hub (T145, D363) and the racer's own uma-art
+> 2.7.0 (D364); first written 2026-10-13 (D333).** The Hub's four pages, every place on them, the menu, the routes,
+> the two play modes as tap-by-tap flows, and the art. The registry and Hub view are `@racer/domain/hub` (T137, D353);
+> the routes, redirects and boot `apps/web/src/app/`; the shell and the canvas `hub/`; every Peek, Page and sheet
+> `places/` (T138–T142). Each page is uma-rpg's Hub, ported: a pixel-art map on a lazy Phaser canvas with DOM place links
+> over it, swiped between, and the quick look in uma-rpg's side panel (§11). Every building, the Racing page's ground,
+> the currency marks and the tier crests are uma-art's own frames (§10.3). The place scenes are phase 7's and not built
+> yet.
 
 This page replaces the place list of the re-architecture's Hub plan ([rearchitecture/04](../rearchitecture/04-hub.md)
 §3–§6). It keeps that plan's pattern whole: a place registry, pixel-art pages on a Phaser canvas with a DOM hit layer,
 a Peek, Page and Counter per place, and routes `/:page/:place/*`. What changes is what's on the pages (D333).
+
+## The menu tree at a glance
+
+Every screen, from page to place to sub-page and sheet, as the code builds it. The place lines follow §3's live table
+(route, kind, counter, pips); the routes are §7.1. On a page's map, a place's link opens its quick look in the side
+panel (`/:page?peek=:place`, §2.6) and **Enter** opens its Page; the Racecourse is `direct` and opens its Page at once.
+`…` stands for the place's own route.
+
+```text
+/                          the start rule (§2.4): the Stable's Locked tab, the Farm page, or the last page viewed
+├─ Town Hall /town         bottom bar tab 1; the plaza's featured Uma opens ?sheet=featured (§5)
+│  ├─ Stable               Peek; counter: Uma Tickets in hand
+│  │  ├─ /town/stable                the roster album: ?tab=owned | locked; Locked's Select, the Unlock sheet, the reveal
+│  │  ├─ …/outfit/:umaId             her profile, Overview; ?tab=racing for Racing; ‹ › through the Owned tab's order
+│  │  │  ├─ …/outfit/:umaId/needs    her Needs tab: the planner's lines, each with its Start
+│  │  │  └─ …/outfit/:umaId/skills   her Skills tab
+│  │  └─ …/needs                     Needs of every Uma: the planner's roster view
+│  ├─ Warehouse            Peek; shelves Raw, Crafted, Dishes, Tickets; a row's stock sheet (Make more, Sell)
+│  ├─ Exchange             Peek; ?row=speed-tickets; ?family= picks a raw family, &grade= opens its quantity sheet
+│  ├─ Card Library         Peek; the album; …/card/:cardId a card's page; Bond opens the Uma picker, then the Dojo
+│  └─ Account (hidden)     no Peek, not on the map; the trainer chip and the menu open it; ?row=sync
+├─ Training /training      bottom bar tab 2; its badge counts Umas with a finished session
+│  ├─ Observatory          Peek, pips; ?session=… the session sheet; …/:umaId her tree (full screen)
+│  ├─ Lineage Hall         Peek, pips; ?session=…; …/:umaId her parents, grandparents and golds
+│  ├─ Gym                  Peek, pips; ?session=…; …/:umaId her Extra Stats map (full screen)
+│  └─ Dojo                 Peek, pips; ?session=…; …/:umaId her bonds and card sets
+├─ Racing /racing          bottom bar tab 3, the raised Race button
+│  ├─ Racecourse           direct; race select; ?uma=:umaId picks her, &race=:raceId opens the pre-race sheet
+│  │  └─ …/run?result=:id            the run and its result (full screen)
+│  ├─ Scenario Gate        Peek; every career; …/:umaId hers, with ?sheet=advance or ?sheet=promote
+│  │  └─ …/:umaId/ceremony?op=:id    the advance or promotion ceremony (full screen)
+│  ├─ Expedition Map       Peek; each Uma's distance to entry (phase 9's map isn't built; sub-routes go back here)
+│  └─ Trophy Hall          Peek; ?scope=uma | stable | trainer; …/uma/:umaId her badges; …/trainer the trainer profile
+└─ Farm /farm              bottom bar tab 4; its badge counts Umas with finished Farm work
+   ├─ the eight sites      Fields, Vegetable Garden, Mushroom Cave, Orchard, Herb Garden, Fishery, Sugar Grove, Nut Grove
+   │                       (the Duo ring, §3.4): Peek, pips; gather jobs of the site's family; ?job=… the job sheet
+   ├─ Pantry               Peek, pips; craft jobs, every family; ?job=…
+   └─ Kitchen              Peek, pips; cook jobs in tabs by destination; ?job=…
+
+On every shell route   ?sheet=menu (☰, §2.5) · ?sheet=featured (§5) · ?sheet=check-in (the pill, §2.3)
+Outside the shell      /collection/reveal/uma/:umaId?then=…&of=…   the reveal after an unlock (full screen)
+The old app's routes   redirected to their new places (§7.2); anything else goes to /
+Dev builds only        /dev/seeds/* serves all of the above on synthetic accounts (§7.3)
+```
+
+The facility pages and the Farm's building pages each hold their slots, **Upgrade**, **Needs here** (the Farm's **For
+your targets**) and **Collect here**; the Farm's also **Repeat here**. The session sheet's full query is
+`?session=:umaId&room=&unlocks=<kind>:<target>,…&back=<path>` (plus `&queue=1` and `&slot=n`), and the job sheet's
+`?job=:itemId&uma=&count=&queue=1&slot=&back=<path>`; `back` takes an in-app path only (§13). Every build view takes
+`?preset=` to show another distance preset (view only). Sheets with no query (the Warehouse's stock sheet, the
+Exchange's Speed Ticket buy, the Stable's Unlock, the Uma picker) live in their Page's state, so a reload closes them.
 
 ## 1. The pattern (kept)
 
@@ -21,7 +73,7 @@ a Peek, Page and Counter per place, and routes `/:page/:place/*`. What changes i
 | **Hit layer** | One DOM link per place over its building, on the scene's own grid: its name pill with the counter, its slot pips and its Ready badge | `hub/PlaceTargets.tsx`, `hub/Pips.tsx` |
 | **Place UI** | Per place: a **Peek** (its quick look, in uma-rpg's side panel), a **Page** (its full screen) and an optional **Counter**, all lazy | `places/registry.tsx` |
 | **Routes** | `/:page`, `/:page?peek=:place`, `/:page/:place`, `/:page/:place/*` | `app/router.tsx`, `app/routes.tsx` |
-| **Shell** | Account bar on top, bottom bar, the ☰ menu listing every place, the side panel for Peeks and a host for the global sheets | `hub/Shell.tsx` and its parts (`AccountBar`, `BottomBar`, `GlobalSheets`, `SheetHost`), `hub/OverlayHost.tsx` |
+| **Shell** | Account bar on top, bottom bar, the ☰ menu listing every place, the side panel for Peeks and a host for the global sheets | `hub/Shell.tsx` and its parts (`AccountBar`, `BottomBar`, `GlobalSheets` with the menu, `SheetHost`), `hub/OverlayHost.tsx`, `hub/nav.ts` (Peek and sheet links, Back), `hub/counts.ts` (counters) |
 
 Rules carried over from uma-rpg, unchanged:
 - **The canvas draws and the DOM receives every tap.** No sprite is a tap target.
@@ -45,38 +97,43 @@ Two clarifications of the old plan:
 
 ```text
 ┌──────────────────────────────────────────────────────────────┐
-│ (L)   PM 12,340   Speed 46   Uma Tickets 3        Sync paused │  account bar
+│ (L)          ◎ 12,340    ▭ 46    ◇ 3 · 2/5       Sync paused │  account bar
 │                                                              │
-│              page map (Phaser) + place buttons (DOM)         │
+│              page map (Phaser) + place links (DOM)           │
 │                                         [ Collect all · 14 ] │  floating pill
 ├──────────────────────────────────────────────────────────────┤
-│  Town Hall    Training    ( RACE )    Farm    ☰              │  bottom bar
+│  Town Hall    Training    ( Race )    Farm    ☰ Menu         │  bottom bar
 └──────────────────────────────────────────────────────────────┘
 ```
 
 ### 2.1 The account bar
 
+Left to right (`hub/AccountBar.tsx`). Every item is a 44 pt link pushed with `back`, so Back returns to where it was
+tapped. The three currencies carry uma-art's pixel marks (§10.3, `ui/UiMark.tsx`).
+
 | Item | Shows | Tap opens | Hidden when |
 |---|---|---|---|
-| Trainer button | The trainer's initial | Account | Never |
-| **Prize Money** | Balance, with its coin icon | Exchange | Never |
-| **Speed Tickets** | Count, with the ticket icon | Exchange, at the Speed Tickets row | Never (shows 0) |
-| **Uma Tickets** | Count, with the Uma Shards toward the next one ("2 · 3/5"; held at 5/5 in gold once a ticket can be made, since the exchange is a tap) | Stable, Locked tab | Never ([04](04-tiers-and-promotion.md) §6: Shards keep coming from every tier) |
-| **Sync** | Offline, Sync paused, or **Sync** in amber or red (D157) | Account, at the sync row | Synced |
+| Trainer button | The trainer's initial on a gold disc | Account (`/town/account`) | Never |
+| **Prize Money** | Balance, with the `currency/prize-money` mark | Exchange (`/town/exchange`) | Never |
+| **Speed Tickets** | Count, with the `currency/speed-ticket` mark | Exchange, at the Speed Tickets row (`?row=speed-tickets`) | Never (shows 0) |
+| **Uma Tickets** | Count, with the `currency/uma-ticket` mark and the Uma Shards toward the next one ("2 · 3/5"; held at 5/5 in gold once a ticket can be made, since the exchange is a tap) | Stable, Locked tab (`/town/stable?tab=locked`) | Never ([04](04-tiers-and-promotion.md) §6: Shards keep coming from every tier) |
+| **Sync** | Offline, Sync paused (signed out), or **Sync** in amber (waiting over a day) or red (failing) (D157) | Account, at the sync row (`/town/account?row=sync`) | Synced |
 
 Numbers move with a CSS transition when they change (continuous HUD values never use springs). A race's prize flies
-into the Prize Money chip on the result screen ([09](09-racing-rewards-and-exchange.md) §7).
+into the Prize Money chip on the result screen ([09](09-racing-rewards-and-exchange.md) §7). While the game boots, the
+chips show blank pills where the numbers go.
 
 ### 2.2 The bottom bar
 
-**Town Hall · Training · ( RACE ) · Farm · ☰**
+**Town Hall · Training · ( Race ) · Farm · ☰ Menu** (`hub/BottomBar.tsx`)
 
-- **RACE** is raised in the middle and opens the **Racing page**, whose Racecourse opens in one more tap (it is
-  `direct`). So a race starts four taps from anywhere: RACE, Racecourse, a race card, Start race.
+- **Race** is raised in the middle, a gold disc, and opens the **Racing page**, whose Racecourse opens in one more tap
+  (it is `direct`). So a race starts four taps from anywhere: Race, Racecourse, a race card, Start race.
 - **Tab badges:** Farm shows Umas with finished Farm work; Training shows Umas with finished sessions. Town Hall and
-  RACE carry none, so the bar stays quiet.
-- **☰** opens the menu sheet: every place by page, with its lock and counter, then Account and the planner's roster
-  view. It is the fallback route to everything when the canvas can't load.
+  Race carry none, so the bar stays quiet.
+- The active page shows by shape (a two-tone icon and a chamfered underline) as well as colour.
+- **☰ Menu** opens the menu sheet (§2.5) over the current route. It is the fallback route to everything when the
+  canvas can't load.
 
 ### 2.3 The floating pill
 
@@ -85,7 +142,9 @@ On every Hub page, in the thumb zone just above the bottom bar on the right:
 - **Check-in · N free** otherwise, which opens the same summary without collecting ([02](02-check-ins-and-notifications.md) §4);
 - nothing, when nothing is ready and nobody is free.
 
-It is account-wide on every page: one tap collects Farm jobs and Training sessions together.
+It is account-wide on every page: one tap collects Farm jobs and Training sessions together. Either one opens
+`?sheet=check-in` over the page; Collect all's intent rides in navigation state, so a reload shows the same summary
+and never collects again (§13).
 
 ### 2.4 Where the app opens
 
@@ -98,6 +157,36 @@ It is account-wide on every page: one tap collects Farm jobs and Training sessio
 
 With push (phase 4, not built), a notification tap would open what it names: the summary, or the place itself for a
 one-Uma notice ([02](02-check-ins-and-notifications.md) §7).
+
+### 2.5 The menu
+
+`?sheet=menu` (the bar's ☰ Menu), a bottom sheet titled **Every place** (`hub/GlobalSheets.tsx`):
+
+| Group | Entries, in order | Each opens |
+|---|---|---|
+| **Town Hall** | Stable · Warehouse · Exchange · Card Library | The place's Peek over its page |
+| **Training** | Observatory · Lineage Hall · Gym · Dojo | The Peek |
+| **Racing** | Racecourse · Scenario Gate · Expedition Map · Trophy Hall | The Racecourse's Page at once (`direct`); the others' Peeks |
+| **Farm** | Sugar Grove · Orchard · Fishery · Nut Grove · Herb Garden · Fields · Vegetable Garden · Mushroom Cave · Pantry · Kitchen | The Peek |
+| Under a rule | **Account** · **Needs of every Uma** | `/town/account`; the planner's roster view, `/town/stable/needs` |
+
+- The groups are the four pages in the bar's order, each in two columns, and the entries are every drawn place of that
+  page in registry order (`placesOn`), so a new place joins the menu by joining the registry. Account is the one hidden
+  place.
+- Each entry is a 44 pt row with the place's counter on it, hidden at 0. There are no locks: every place is open.
+- A tap replaces the menu's history entry with the place, so Back from the Peek or Page returns to where the menu was
+  opened.
+
+### 2.6 The quick look (the side panel)
+
+A place link on the map opens `/:page?peek=:place`: uma-rpg's side panel (`hub/OverlayHost.tsx`), modal, sliding in
+from the right over 88% of the screen with the map dimmed and its scene paused behind it.
+- **Header:** the place's name, its counter, (i) for its blurb and a close button.
+- **Body:** the place's registered Peek; a place without one shows its building over its blurb.
+- **Enter {place}** in the thumb zone replaces the panel with the place's Page, so Back returns to the map.
+- A swipe right, a tap on the dimmed map, Escape, the close button or Back closes it. Focus moves to its heading,
+  stays inside while it is open, and returns to the place's link.
+- A Peek opens only over its own page, and never for a `direct` place: `?peek=` naming one goes back to the bare page.
 
 ## 3. The four pages
 
@@ -150,11 +239,11 @@ for two rows of pips.
 
 | Place (id) | Opens | Peek | Counter | Lock | Replaces |
 |---|---|---|---|---|---|
-| **Stable** (`stable`) | The roster: Owned and Locked tabs with counts, tier badges (T1, T2, T3) on every tile, a tier filter, the shared picker's sorts and filters (D181). An Uma's profile: tier, scenario, Racing Level, Farm Level, what she's doing, her build per facility, **Needs** ([02](02-check-ins-and-notifications.md) §6), Skills, Racing. A locked Uma: **Unlock · 1 Uma Ticket** (tier 1, [04](04-tiers-and-promotion.md)), then the collection reveal | The featured Uma; "23 Umas · T1 21 · T2 2"; Umas ready to advance or promote; Uma Tickets in hand | Uma Tickets in hand | Open | `/stable`, Uma profile, skills; Home's featured hero |
+| **Stable** (`stable`) | The roster: Owned and Locked tabs with counts, a tier crest on every owned tile (uma-art's bronze, silver and gold, §10.3), a tier filter, the shared picker's sorts and filters (D181). An Uma's profile: tier, scenario, Racing Level, Farm Level, what she's doing, her build per facility, **Needs** ([02](02-check-ins-and-notifications.md) §6), Skills, Racing. A locked Uma: **Unlock · 1 Uma Ticket** (tier 1, [04](04-tiers-and-promotion.md)), then the collection reveal | The featured Uma; "23 Umas · T1 21 · T2 2"; Umas ready to advance or promote; Uma Tickets in hand | Uma Tickets in hand | Open | `/stable`, Uma profile, skills; Home's featured hero |
 | **Warehouse** (`warehouse`) | Every item: Raw, Crafted, Dishes and Tickets shelves; family and grade filters; each row's reserved, coming and needed counts; the stock sheet with **Make more** and **Sell** ([07](07-farm.md) §10, [09](09-racing-rewards-and-exchange.md) §6) | The biggest stacks; what the planner is short of; "Surplus worth 1,240" | — | Open | `/farm/items` |
 | **Exchange** (`exchange`) | Speed Tickets and raw ingredients ([09](09-racing-rewards-and-exchange.md) §5) | Prize Money, Speed Tickets held, the planner's top shortage with its price | — (its currencies are in the account bar) | Open | Nothing (new) |
 | **Card Library** (`card-library`) | Every SSR, open (D329): lens and Uma controls, sorts, filters, the card page with its bond cost and bonded Umas, **Bond** into the Dojo's session sheet ([06](06-cards-and-bonds.md) §6) | The newest cards; bonds made this tier; cards the featured Uma could bond now | — | Open | `/cards`, `/cards/:cardId` |
-| **Account** (`account`, hidden) | Trainer name; check-in times ([02](02-check-ins-and-notifications.md); Notifications come with push, phase 4); sync status and Sync now (D157); reduced motion and default race speed; app build and content (02 §9 keeps "id" and "version" off the screen); Sign in or Sign out; dev mode in dev builds only | — | — | Open; reached from the trainer button and the menu, not drawn on the map | `/settings` |
+| **Account** (`account`, hidden) | Trainer name; check-in times ([02](02-check-ins-and-notifications.md); Notifications come with push, phase 4); sync status and Sync now (D157); reduced motion and default race speed; app build and content (02 §9 keeps "id" and "version" off the screen); Sign in or Sign out; in dev builds only, a dev section that runs `dev-grant` (grants, Finish her work, Jump to her gate) and, on the seeds' mount, loads another synthetic seed | — | — | Open; reached from the trainer button and the menu, not drawn on the map, so it has no Peek | `/settings` |
 
 ### 3.2 Training (`/training`)
 
@@ -183,7 +272,7 @@ Each facility's Page is [05](05-training-hub.md) §8's: header with level, slots
                   [ Racecourse ]          (thumb zone)
 ```
 
-The Racecourse sits lowest and central, on the road, nearest the raised RACE button and the thumb.
+The Racecourse sits lowest and central, on the road, nearest the raised Race button and the thumb.
 
 | Place (id) | Opens | Peek | Counter | Lock | Replaces |
 |---|---|---|---|---|---|
@@ -277,24 +366,34 @@ The Expedition world map stays inside the shell: it is a place Page, and its Uma
 
 ### 7.1 The new routes
 
+The live router (`app/router.tsx`) has no basename: the root route renders `/collection/reveal/uma/:umaId` outside the
+shell, and the shell's children are `/` (the start rule), `/:page` and `/:page/:place/*`. A page that isn't one, or a
+place not on the page its route names, goes to `/`. A place's `*` is its sub-route (`rest`), which its Page reads,
+unless a sub-page slot claims it first (the Stable's `needs`, `places/registry.tsx`).
+
 | Route | Screen |
 |---|---|
 | `/` | The start rule (§2.4) |
-| `/town`, `/training`, `/racing`, `/farm` | A page; `?peek=:place` opens a Peek over it |
+| `/town`, `/training`, `/racing`, `/farm` | A page's map; `?peek=:place` opens its side panel (§2.6) |
+| any shell route `?sheet=menu`, `featured` or `check-in` | A global sheet over it (§2.3, §2.5, §5); Back closes it |
 | `/town/stable` | The roster; `?tab=owned` or `?tab=locked` |
-| `/town/stable/outfit/:umaId` | Her profile; `/skills` and `/needs` are its sub-pages |
+| `/town/stable/outfit/:umaId` | Her profile (Overview; `?tab=racing` for Racing); `/needs` and `/skills` are its sub-pages |
 | `/town/stable/needs` | The planner's roster view ([02](02-check-ins-and-notifications.md) §6) |
-| `/town/warehouse`, `/town/exchange`, `/town/account` | Those places |
+| `/town/warehouse` | The Warehouse |
+| `/town/exchange` | The Exchange; `?row=speed-tickets` scrolls to Speed Tickets, `?family=` picks a raw family and `&grade=` opens its quantity sheet |
+| `/town/account` | Account; `?row=sync` scrolls to the sync row |
 | `/town/card-library`, `/town/card-library/card/:cardId` | The Library and a card page |
-| `/training/:facility` | `observatory`, `lineage-hall`, `gym` or `dojo` |
-| `/training/:facility/:umaId` | Her build view at that facility (tree, Inspiration, Extra Stats map, bonds and card set) |
-| `/racing/racecourse` | Race select; `?uma=:umaId&race=:raceId` preselects |
-| `/racing/racecourse/run` | The run and result, full screen |
-| `/racing/scenario-gate`, `/racing/scenario-gate/:umaId` | Careers, and one Uma's career |
-| `/racing/expedition-map`, `/racing/expedition-map/:expeditionId` | The Map and an Expedition's page (§3.3) |
-| `/racing/trophy-hall`, `/racing/trophy-hall/trainer`, `/racing/trophy-hall/uma/:umaId` | Badges by scope |
-| `/farm/:building` | One of the ten Farm buildings, by uma-art id |
-| `/collection/reveal/uma/:umaId` | The reveal, full screen |
+| `/training/:facility` | `observatory`, `lineage-hall`, `gym` or `dojo`; `?session=…` opens the session sheet (§13) |
+| `/training/:facility/:umaId` | Her build view at that facility (tree, Inspiration, Extra Stats map, bonds and card set); `?preset=` shows another preset. The Observatory's and the Gym's are full screen |
+| `/racing/racecourse` | Race select; `?uma=:umaId` picks her, `&race=:raceId` opens the pre-race sheet |
+| `/racing/racecourse/run?result=:id` | The run and result of a committed race, full screen |
+| `/racing/scenario-gate`, `/racing/scenario-gate/:umaId` | Careers, and one Uma's career; `?sheet=advance` or `?sheet=promote` on hers |
+| `/racing/scenario-gate/:umaId/ceremony?op=:id` | The advance or promotion ceremony, full screen |
+| `/racing/expedition-map` | The Map's placeholder; `/:expeditionId` is phase 9's and goes back to the Map until then (§3.3) |
+| `/racing/trophy-hall` | Badges; `?scope=uma` (the featured Uma's, the default), `stable` or `trainer` |
+| `/racing/trophy-hall/uma/:umaId`, `/racing/trophy-hall/trainer` | One Uma's badges; the trainer profile |
+| `/farm/:building` | One of the ten Farm buildings, by uma-art id; `?job=…` opens the job sheet (§13) |
+| `/collection/reveal/uma/:umaId` | The reveal, full screen outside the shell; `?then=<id>,…&of=n` queues the next Umas |
 
 ### 7.2 The old app's routes
 
@@ -332,14 +431,26 @@ path a redirect (`app/redirects.ts`, T143), and a router test walks this table (
 | `/dev/*` (thirteen proof routes) | Deleted with their systems. New dev proofs live under `/dev/`, in dev builds only: the seeds' mount at `/dev/seeds/*` holds them (`/dev/seeds/dev/check-in`, T143) |
 
 **The redirect rule** (the re-architecture's, made concrete): each "After" path above is a redirect that **ships with
-phase 3** and **is deleted with the next phase that ships** (phase 4 is optional), by when the installed app, bookmarks and notification links all use the new
-paths. Saved data holds no paths, so nothing else changes. An unknown path goes to `/`.
+phase 3** and **is deleted with the next phase that ships** (phase 4 is optional), by when the installed app, bookmarks
+and notification links all use the new paths. T145's Hub, phase 6 brought forward and shipped the same day as phase 3,
+didn't count: the redirects (and the first-boot wipe, which leaves with them) go with phase 4 if the owner asks for it,
+else phase 5 (D365). Saved data holds no paths, so nothing else changes. An unknown path goes to `/`.
+
+### 7.3 Dev builds: the seeds' mount
+
+In dev builds only, `/dev/seeds`, `/dev/seeds/` and anything under it (`isSeedsPath`) mount `dev/main.tsx` instead of
+the app: the same routes under the `/dev/seeds` basename, over an in-memory port on `@racer/domain/sim`'s synthetic
+accounts. `?seed=busy | fresh | quiet | gate | promote | tired | spent | stopped` picks one, `?at=HH:MM` moves its clock,
+`?save=device` boots the device save on the seeds' content instead, and `?canvas` draws the map with Phaser's Canvas
+renderer so screenshots capture it. The dev proofs sit under it (`/dev/seeds/dev/check-in`), and at `/dev/check-in`
+on the dev app itself. A production build holds none of it and answers `/dev/seeds` as an unknown path
+([architecture](architecture.md#dev-seeds)).
 
 ## 8. The old Home's panels
 
 | Before | After |
 |---|---|
-| Featured Uma hero with Train and Race | The plaza chibi and her quick sheet (§5); the raised RACE |
+| Featured Uma hero with Train and Race | The plaza's featured Uma and her quick sheet (§5); the raised Race button |
 | Career goals panel | The Scenario Gate's Peek and counter |
 | Training Tickets meter | Deleted (D331): the account bar shows Prize Money and Speed Tickets |
 | Farm card | The Farm page |
@@ -368,7 +479,7 @@ Three taps and about 30 seconds ([02](02-check-ins-and-notifications.md) §1). A
 
 | Step | Where | Taps |
 |---|---|---|
-| **RACE** | The Racing page | 1 |
+| **Race** | The Racing page | 1 |
 | **Racecourse** | Race select, on the first Uma in the strip with an unwon goal (strip order: open goals first, then D181's level order, finished careers last) | 1 |
 | A race card: **Today's featured** or **Next up** | The pre-race sheet | 1 |
 | **Start race** | The run, full screen | 1 |
@@ -384,8 +495,8 @@ Forty races is about 160 taps and, with Skip, under an hour: the heavy evening [
 
 ### 10.1 Buildings
 
-All 48×48 with a ground line, from `@luismlorenzana/uma-art` `buildings/atlas.json` (checked: 36 frames on four
-pages, `farmlands`, `wilds`, `learning` and `town`).
+All 48×48 with a ground line, from `@luismlorenzana/uma-art` `buildings/atlas.json` (checked at 2.7.0: 40 frames on
+five pages, `farmlands`, `wilds`, `learning`, `town` and, since 2.6.0, `racing`).
 
 | Place | Frame | Source | Why it fits |
 |---|---|---|---|
@@ -413,7 +524,7 @@ class halls, which read as magic, combat or worship; and the ten `wilds` frames 
 |---|---|---|
 | Town Hall | `town/*` | Ground, plaza paths, barrels, crates, flower pots, benches, lamps, trees |
 | Training | `learning/*` | Hedges, benches, flower beds, lamps, banners: a campus |
-| Racing | `racing/*`, uma-art 2.6.0 (A01) | Turf ground ×4; a dirt-track path set (`path-0…15`, the same edge masks, never closing a 2×2); props: white rail, furlong post (16×32), pennant (16×32), flower box. Until the pinned atlas has `racing/ground-0`, the page draws on `town/*` (§10.4) |
+| Racing | `racing/*`, uma-art 2.6.0 (A01) | Turf ground ×4; a dirt-track path set (`path-0…15`, the same edge masks, never closing a 2×2); props: white rail, furlong post (16×32), pennant (16×32), flower box. Pinned since 2.6.0; before it the page drew on `town/*` (§10.4) |
 | Farm | `farmlands/*` | As uma-rpg's Farmlands |
 
 ### 10.3 The racer's own art, as built (uma-art 2.6.0 and 2.7.0)
@@ -425,7 +536,7 @@ and uma-art published it as two minor releases (uma-platform P45, P46). The race
 |---|---|---|---|
 | Buildings (2.6.0) | `racecourse`, `trophy-hall` (page `racing`), `card-library` (page `town`), `gym` (page `learning`) | 48×48, `anchorY` 44 | The map and every DOM building sprite (§10.1); appended to the shared `buildings` atlas, so the re-architecture's planned `racer` family is these four frames |
 | Racing tiles (2.6.0) | `racing/ground-0…3` (mown turf), `racing/path-0…15` (raked dirt with rail edging), props `racing/rail`, `racing/furlong-post`, `racing/pennant`, `racing/flower-box` | 16, tall props 16×32 | The Racing page (§10.2) |
-| Currency marks (2.7.0) | `currency/prize-money`, `currency/speed-ticket`, `currency/uma-ticket` in `ui` | 16×16, drawn at 16 pt | The account bar, the Exchange's prices and wallet, the race result's prize, the profile's results (`ui/UiMark.tsx`) |
+| Currency marks (2.7.0) | `currency/prize-money`, `currency/speed-ticket`, `currency/uma-ticket` in `ui` | 16×16, drawn at 16 pt | The account bar, the Exchange's prices and wallet, the race result's prize, the profile's results (`ui/UiMark.tsx`); the Warehouse's sell sheet still draws T137's two-tone coin |
 | Tier crests (2.7.0) | `tier/1`, `tier/2`, `tier/3` in `ui` (bronze, silver, gold) | 12×12, drawn at 24 pt | Uma tiles, the featured Uma, her profile (`TierCrest`, read as "Tier N") |
 | Speed Ticket item (2.7.0) | `speed-ticket` in `items`, `kind: 'ticket'` | 32×32 | The Warehouse, job cards and prices (`ui/ItemIcon` takes the release's frame; the catalogue keeps no art for it) |
 
@@ -465,8 +576,8 @@ from frames that carry it, glows, and a camera fade between pages. The DOM draws
 (`hub/PlaceTargets.tsx`, uma-rpg D33): one link per place on the scene's own grid, with its name pill, counter, pips
 and Ready badge. A swipe of more than 60 pt changes page; the quick look is uma-rpg's side panel (`hub/OverlayHost.tsx`);
 the account bar, bottom bar, pill and menu stay this game's. The routes, `?peek=` and `?sheet=` are unchanged. The four
-new buildings and the Racing page's ground are interim art (§10.4). The plaza's chibi waits for phase 5's
-`outfit-chibis` release (§5).
+new buildings and the Racing page's ground shipped as T145's stand-ins (§10.4) and are uma-art's own since 2.6.0
+(D364). The plaza's chibi waits for phase 5's `outfit-chibis` release (§5).
 
 ### Not built yet (phase 7): the place scenes
 
@@ -482,10 +593,10 @@ interiors are.
   layout test holds every place link and the plaza inside the map, clear of the pill and of one another, at 390×844 and
   393×852 with and without safe areas (`hub/layout.test.ts`).
 - **Load:** every page, Peek and sheet is a lazy chunk, and the entry stays ≤ 180 KB gzip (`scripts/check-size.mjs`;
-  143.38 KB with the Hub, T145). Phaser and the scene are one lazy chunk (`createHubGame`, 1.40 MB, 374 KB gzip), loaded
-  when a map first mounts. The atlases are small (buildings 27 KB, tiles 9 KB). The service worker precaches files up
-  to 3 MB, so the Phaser chunk and the atlases are on the phone after install and the map works offline. Faces load
-  only for visible pips.
+  146.49 KB at uma-art 2.7.0, 2026-10-15: the account bar's `ui` atlas, 2 KB, is inlined in it). Phaser and the scene
+  are one lazy chunk (`createHubGame`, 1.41 MB, 374 KB gzip), loaded when a map first mounts. The atlases are small
+  (buildings 29 KB, tiles 11 KB). The service worker precaches files up to 3 MB, so the Phaser chunk and the atlases
+  are on the phone after install and the map works offline. Faces load only for visible pips.
 - **One engine alive:** the Hub's game lives while a page's map is mounted: a tab or a swipe tells the same game the
   new page. It pauses its scene, keeping the last frame (uma-rpg D39), while the side panel or any global sheet covers
   it or the page is hidden, and is destroyed when a place's Page or a full-screen flow opens, then created again on the
@@ -525,10 +636,10 @@ interiors are.
 | The Uma Tickets chip shows Shards as n/5, held at 5/5 in gold once a ticket can be made (T137) | The exchange is the owner's tap in the Stable (04 §6), so Shards can pass 5 |
 | "Sync paused" means signed out (T137) | Sync waits for a token; T136's own states are offline and error, and §2.1 names a paused chip |
 | Currency marks and tier crests are uma-art's 2.7.0 frames, drawn at whole-number scales (D364; supersedes T137's vector icons) | They sit on the pixel-art town; A02 drew them for the racer |
-| Currency icons: a new two-tone coin, today's ticket and Uma coupon icons (T137) | §10.3's marks aren't in the pinned uma-art (A02); the visual system wants two-tone currencies |
+| Currency icons: a new two-tone coin, today's ticket and Uma coupon icons (T137; superseded by the row above, D364, except the Warehouse's sell sheet, which still draws the coin) | §10.3's marks weren't in the pinned uma-art yet (A02); the visual system wants two-tone currencies |
 | A Peek is uma-rpg's side panel: modal, 88% wide from the right, Enter for the Page (T145; supersedes T137's non-modal half sheet and its second tap) | The owner asked for uma-rpg's navigation lifted and shifted (D363) |
 | Global sheets are `?sheet=` routes; Collect all's intent rides in navigation state (T137) | Back closes them, and a reload never collects again |
-| T137 places the featured Uma (cell, still art, sheet route); her card, sheet and picker are T138's | Animation is phase 6 (§11); the profile, picker and `feature-uma` are the Stable's |
+| T137 places the featured Uma (cell, still art, sheet route); her card, sheet and picker are T138's | Animation was phase 6's (§11); T145 shipped phase 6 without it, so it waits for phase 5's `outfit-chibis` (§5). The profile, picker and `feature-uma` are the Stable's |
 | Faces are today's `face` art, then the outfit icon, then her initial (T137) | `character-faces` is phase 5's release; today's content stays until then (M034) |
 | Full screen is a slot's `fullScreen(rest)`; places take sub-page slots (T137) | §6's flows live inside place routes; the Needs views (T142) live under the Stable (T138) |
 | The hub view's counts are every place's default Counter; `useCounter` overrides one; 0 is hidden (T137) | One rule per counter, and only T141's two need data outside the work engine |
@@ -536,7 +647,7 @@ interiors are.
 | One startup budget, the app's own entry's (T137 measured the new game's entry beside today's until T143) | An overrun found at the switch would have come too late |
 | The build-beside boundaries test left with `g2/` (T143) | With one app, the reach check and the PixiJS check hold what remains |
 | The shell reads the game through `G2Game`; T136 plugs its store into `boot.ts` (T137) | T137 lands before T136 (M034: "Needs —") |
-| uma-art goes in `dependencies`, exactly pinned (2.4.0 at T137, 2.5.0 since T145); the domain keeps its dev dependency | The web bundles its images; the domain only tests ids |
+| uma-art goes in `dependencies`, exactly pinned (2.4.0 at T137, 2.5.0 at T145, 2.7.0 since D364); the domain keeps its dev dependency, pinned the same | The web bundles its images; the domain only tests ids |
 | The hidden Account has no frame and no position (T137); the four new drawings carry A01's frame ids before their release (T145) | It is reached from the trainer chip and the menu, never drawn (§3.1); the ids are A01's, so the release switches by itself |
 | A port's answer carries its operation's id beside `recheck`'s answer (T137) | The check-in sheet keeps Collect all's id in navigation state, so a reload shows the same receipt (T142) |
 | `PENDING` also held the two global sheets, the plaza and the reveal (T137); it is empty since T143 | T143's "every slot filled" covered every slot T138–T142 own, not only the places |
@@ -576,8 +687,8 @@ interiors are.
 | The grid has an odd number of columns, centred on the screen by whole device pixels (T145; uma-rpg's starts at the left edge) | The road and the places on it stand in the middle at any width, and the sides mirror |
 | A building on the road gets a lane round one side of it, from the road above its roof to its door, laid only where it closes no 2 × 2 of road (T145) | uma-rpg puts one building on its road; Racing and the Farm put two, and every door must still reach the map's edge |
 | The Farm's sites ring the page in two columns of four (x 0.2 and 0.79), with the Pantry and Kitchen on the road between them (T145) | uma-rpg's two columns of five don't fit two rows of pips at 390 × 844 with safe areas; the ring still makes neighbours Duo partners |
-| A place link is 112 pt wide: its building to the ground line, then its name pill with the counter, then its pips on a light backing; the Ready badge sits on the building; no lock is drawn (T145) | §4's order (pips under the name pill); every place is open (T137) |
-| A missing frame is drawn as uma-rpg's code marker in the page's palette, on the map and as SVG in the DOM; `AWAITING_ART` lists the four the test lets wait (T145) | Never an empty or white box (A01's "Why"); one list to empty when 2.6.0 lands |
+| A place link is 112 pt wide: its building to the ground line, then its name pill with the counter, then its pips straight on the map with no backing (`b2cb668` dropped T145's light tray, as §4 says); the Ready badge sits on the building; no lock is drawn (T145) | §4's order (pips under the name pill); every place is open (T137) |
+| A missing frame is drawn as uma-rpg's code marker in the page's palette, on the map and as SVG in the DOM; `AWAITING_ART` listed the four the test let wait, and is empty since 2.6.0 (T145, D364) | Never an empty or white box (A01's "Why"); one list to empty when 2.6.0 lands |
 | A swipe is a drag of more than 60 pt, at least 1.5 times as wide as it is tall, on the map only; it pushes the page like a tab, and a click that ends a swipe is swallowed (T145) | uma-rpg's swipe; a swipe across a place link isn't a tap on it |
 | The scene pauses while the side panel or any `?sheet=` covers it, or the page is hidden, and is destroyed when the map unmounts (T145) | uma-rpg D39; one engine alive (§12) |
 | The side panel keeps this game's counter and (i) in its header, shows the registry's Peek or the place's blurb over its building, closes by its button, Escape, a tap on the dimmed map, a swipe right or Back, and keeps focus inside (T145) | uma-rpg's `OverlayHost` with §1's (i) rule |
@@ -588,7 +699,7 @@ interiors are.
 
 - The app opens per §2.4. Every screen is reachable from a place, and every place from the ☰ menu.
 - Each "Before" path in §7.2 redirects to its "After" path in phase 3 (a router test walks the table), deleted paths
-  land on `/`, and the redirects are gone with the next phase that ships.
+  land on `/`, and the redirects are gone with the next phase that ships (phase 4 or 5, §7.2).
 - The place registry is one table in `@racer/domain/hub`, and the live manual renders the same table.
 - At 390×844 every place button is at least 44 pt, swipes and tabs agree, and VoiceOver reads each place's name, lock,
   counter and pips.
@@ -596,6 +707,7 @@ interiors are.
   queue counts. The Kitchen at Lv 2 shows eight pips; the Gym at Lv 2 shows seven and "+3".
 - A check-in from a cold open is three taps (Collect all, Repeat all, Start suggestions); a race after the first is four.
 - Every registry frame exists in the pinned uma-art index (a `frames.test` equivalent), and the four new buildings,
-  `racing` tiles, world map, crests and icons are in its release.
+  `racing` tiles, currency marks and tier crests are in its release (2.7.0); the world map and region crests come with
+  phase 9.
 - The Hub chunk loads in under a second on the owner's iPhone over a warm cache, and the entry chunk stays under
   180 KB gzip.
