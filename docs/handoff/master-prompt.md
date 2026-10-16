@@ -43,8 +43,10 @@ HOW TO WORK
 - Before opening a pull request, run the packet's checks plus the repo's pnpm lint && pnpm test && pnpm build.
 - Commits use Conventional Commits, with a body that explains why. In uma-platform, a change under packages/ comes with
   a changeset (pnpm changeset) and `pnpm version-packages` in the same pull request (P42).
-- After the required checks and CI pass, merge your own pull request with gh. The push to main publishes the package
-  (release-packages.yml). Log the decision with the next free P-number (fetch main first).
+- In uma-platform: after the required checks and CI pass, merge your own pull request with gh. The push to main
+  publishes the package (release-packages.yml). Log the decision with the next free P-number (fetch main first).
+- In uma-racer: never merge. A push to its main deploys to the owner's phone, so Claude reviews, merges, deploys and
+  verifies your pull request. Log the decision with the next free D-number in the pull request.
 
 PIXEL ART
 - All art is drawn from code: TypeScript painters in uma-platform/scripts/pixel-art (see its README and the existing
