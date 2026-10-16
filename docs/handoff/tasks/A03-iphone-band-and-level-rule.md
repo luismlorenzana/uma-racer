@@ -2,7 +2,7 @@
 
 **Priority: now · ChatGPT · uma-racer · S.** Ready: the sibling apps plan is approved (uma-platform P48). Phase 0 has
 two parts:
-- **0.1, the iPhone band under the bottom bar, is not in this packet.** The shared `@luismlorenzana/uma-kit` 0.1.1
+- **0.1, the iPhone band under the bottom bar, is not in this packet.** The shared `@luismlorenzana/uma-kit` 0.1.2
   carries it (`AppFrame` is `fixed inset-0`, and `BottomBar` lifts by `mb-bar-safe`), and Claude is moving uma-racer
   onto the kit now (step A6.2).
 - **0.2, the level rule, is this packet.** uma-rpg's half is its packet H30.

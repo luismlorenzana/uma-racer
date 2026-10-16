@@ -1,7 +1,7 @@
 # 11 · Hub and places
 
 > **Status: as built, phase 3 (generation 2, D361) with phase 6's canvas Hub (T145, D363), the racer's own uma-art
-> 2.7.0 (D364) and the shared uma-kit 0.1.1 (T147, D367); first written 2026-10-13 (D333).** The Hub's four pages, every
+> 2.7.0 (D364) and the shared uma-kit 0.1.2 (T147, D367); first written 2026-10-13 (D333).** The Hub's four pages, every
 > place on them, the menu, the routes, the two play modes as tap-by-tap flows, and the art. The registry and Hub view
 > are `@racer/domain/hub` (T137, D353); the routes, redirects and boot `apps/web/src/app/`; the shell and the map are
 > uma-kit's, fed by uma-racer's adapters in `hub/`; every Peek, Page and sheet `places/` (T138–T142). Each page is
@@ -623,7 +623,7 @@ interiors are.
   layout test holds every place link and the plaza inside the map, clear of the pill and of one another, at 390×844 and
   393×852 with and without safe areas (`hub/layout.test.ts`).
 - **Load:** every page, Peek and sheet is a lazy chunk, and the entry stays ≤ 180 KB gzip (`scripts/check-size.mjs`;
-  149.76 KB with uma-kit 0.1.1 and uma-art 2.7.0, 2026-10-16: the `ui`, `tiles` and `buildings` atlas indexes the kit's
+  149.76 KB with uma-kit 0.1.2 and uma-art 2.7.0, 2026-10-16: the `ui`, `tiles` and `buildings` atlas indexes the kit's
   art provider takes, about 2.2 KB, are in it). Phaser and the kit's scene are one lazy chunk (`createHubGame`, 1.40 MB,
   374 KB gzip), loaded when a map first mounts. The atlases are small
   (buildings 29 KB, tiles 11 KB). The service worker precaches files up to 3 MB, so the Phaser chunk and the atlases
@@ -729,7 +729,7 @@ interiors are.
 | A Farm Peek acts: Collect and Repeat on a finished row, Collect here, and a free row's "+" and the targets open the job sheet over the map from `?peek=:place&job=…`; the sheet sits inside the panel's tree, so Escape and Back close it first, and a sideways drag on it never closes the panel (T146, D366) | The owner wanted uma-rpg's Farm structure with fewer taps: 2 from the map to collect or restart, 3 to start a job |
 | The service worker precaches files up to 3 MB (T145) | uma-rpg's limit: the Phaser chunk and the atlases precache, so the Hub works offline |
 | `/dev/seeds` and `/dev/seeds/` are the seeds' root, which runs the start rule as `/` does; one tested check (`isSeedsPath`) decides the mount (T145) | The 404 came from a checkout without the mount; the router test now holds the root |
-| The shell, the Hub map and the primitives are uma-kit 0.1.1's (uma-platform P48), pinned exactly; uma-racer passes its chips, Sync chip, tabs, menu groups, place models, pips' room colours, plaza, ground and words in as props, and forks no kit component (T147, D367) | One shell with uma-rpg: a fix like the iPhone band lands once, in the kit |
+| The shell, the Hub map and the primitives are uma-kit 0.1.2's (uma-platform P48), pinned exactly; uma-racer passes its chips, Sync chip, tabs, menu groups, place models, pips' room colours, plaza, ground and words in as props, and forks no kit component (T147, D367) | One shell with uma-rpg: a fix like the iPhone band lands once, in the kit |
 | The frame is fixed to the screen's edges and the bottom panel lifts by `max(inset − 12 pt, 8 pt)`; the reveal uses the same frame without bars (T147) | The band under the bar on an iPhone 15 (A03's 0.1), fixed for every full-screen route |
 | Appearance (System, Light, Dark) in Account, kept on this phone under the game's prefix; System by default (T147) | uma-rpg's dark palette came with the kit; the owner's phone decides unless they choose |
 | A Hub page reads only its own places' counter hooks (`usePlaceCounts` with `active`); the menu reads all (T147) | The kit's map and menu take counts as values; the Racecourse's draw and the Trophy Hall's flair read stay off the other pages |
