@@ -22,7 +22,7 @@ import { useGame, useRuntime } from '../../../app/game'
 import { useReducedMotionSetting } from '../../../app/motion'
 import { useLeave } from '../../../hub/nav'
 import { AnimatedNumber } from '../../../ui/AnimatedNumber'
-import { CoinIcon } from '../../../ui/icons'
+import { UiMark } from '../../../ui/UiMark'
 import { UmaFace } from '../../../ui/UmaArt'
 import { raceSpeed, startingSpeed } from '../../../ui/devicePrefs'
 import { useRaceContent } from '../content'
@@ -315,7 +315,7 @@ export default function RunPage() {
             <div className="pt-safe flex justify-end px-3 py-2">
               <span className="relative flex min-h-11 items-center" aria-label={racingWords('prize-money')} role="status">
                 <span className="flex h-8 items-center gap-1 rounded-full border border-hairline bg-panel/95 px-2 text-[13px] text-ink shadow-1">
-                  <CoinIcon size={20} variant="duotone" />
+                  <UiMark mark="currency/prize-money" />
                   <span className="font-display font-semibold"><ChipBalance balance={balance} added={prize.total} animate={animate} /></span>
                 </span>
                 {animate && prize.total > 0 && (

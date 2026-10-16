@@ -1,7 +1,7 @@
 // The Hub's ground (docs/game/11-hub-and-places.md §10.2; uma-rpg's `hub/scene/terrain.test.ts`, its D61 and P38):
 // deterministic per page, every door on the road network, masks that agree with their neighbours, props on free ground;
 // the tile page each racer page draws with, Racing's borrowed until its own ground is in the pinned atlas; and every
-// frame the map draws in the pinned atlas, but the four new buildings A01 draws (`AWAITING_ART`), which get placeholders.
+// frame the map draws in the pinned atlas, but any building still awaiting its art (`AWAITING_ART`, empty since uma-art 2.6.0), which gets a placeholder.
 import buildingsIndex from '@luismlorenzana/uma-art/buildings/atlas.json'
 import tilesIndex from '@luismlorenzana/uma-art/tiles/atlas.json'
 import { AWAITING_ART, HUB_PAGES, placesOn, PLAZA_AT, type HubPage } from '@racer/domain/hub'
@@ -29,8 +29,8 @@ describe('the tile page each racer page draws with (§10.2)', () => {
   it('draws Racing on its own tiles when the atlas has racing/ground-0, else on Town\'s', () => {
     expect(tilePageFor('racing', { 'racing/ground-0': {} })).toBe('racing')
     expect(tilePageFor('racing', { 'town/ground-0': {} })).toBe('town')
-    // The pinned release (2.5.0) has no Racing ground yet: A01 draws it.
-    expect(tilePageFor('racing', TILES)).toBe(TILES['racing/ground-0'] === undefined ? 'town' : 'racing')
+    // The pinned release (2.7.0) draws A01's Racing ground.
+    expect(tilePageFor('racing', TILES)).toBe('racing')
   })
 })
 
@@ -101,7 +101,7 @@ describe('Hub terrain (uma-rpg D61)', () => {
 })
 
 describe('Hub art in the pinned uma-art (P38)', () => {
-  it('has every ground, path and prop frame each page draws with, and every building but those awaiting A01', () => {
+  it('has every ground, path and prop frame each page draws with, and every building but those awaiting art', () => {
     for (const page of HUB_PAGES) {
       const tiles = tilePageFor(page, TILES)
       for (const n of [0, 1, 2, 3]) expect(TILES[`${tiles}/ground-${n}`], `${tiles}/ground-${n}`).toBeDefined()

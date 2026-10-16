@@ -125,11 +125,12 @@ describe('frames (game/11 §10)', () => {
   /** §10.1's source page for each reused frame. */
   const PAGES: Readonly<Record<string, string>> = {
     stable: 'town', warehouse: 'town', exchange: 'town', observatory: 'town', 'lineage-hall': 'town', 'scenario-gate': 'town',
-    'expedition-map': 'town', dojo: 'learning', ...Object.fromEntries(FARM_BUILDING_IDS.map((building) => [building, 'farmlands'])),
+    'expedition-map': 'town', dojo: 'learning', 'card-library': 'town', gym: 'learning', racecourse: 'racing',
+    'trophy-hall': 'racing', ...Object.fromEntries(FARM_BUILDING_IDS.map((building) => [building, 'farmlands'])),
   }
 
-  it('reads the pinned 2.5.0 release', () => {
-    expect(art.version).toBe('2.5.0')
+  it('reads the pinned 2.7.0 release', () => {
+    expect(art.version).toBe('2.7.0')
   })
 
   it("finds every frame in the pinned index, 48 × 48 on §10.1's atlas page, but AWAITING_ART's", () => {

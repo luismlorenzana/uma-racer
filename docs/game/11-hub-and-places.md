@@ -105,7 +105,7 @@ Page ids, routes and the order of swiping: `town`, `training`, `racing`, `farm`.
 
 The place registry, `@racer/domain/hub`'s `PLACES` (T137), as it stands. **At** is where a place stands on its page
 map: the middle of its building's ground line, as fractions of the map's width and height (T145, uma-rpg's `at`). A
-**new** frame is one of §10.3's drawings (A01), drawn as a code placeholder until the pinned uma-art has it (§10.4).
+frame the pinned uma-art lacks is drawn as a code placeholder (§10.4); since 2.6.0 there is none.
 
 Every page is laid out as uma-rpg lays its own: a road down the middle and the places on both sides of it, a quarter
 in from either edge (x 0.24 and 0.76), with the odd one on the road (x 0.5). The Farm's ten take wider sides (x 0.2 and
@@ -118,16 +118,16 @@ for two rows of pips.
 | Town Hall | Stable | `stable` | town | `/town/stable` | `uma-tickets` | `stable` | — | 0.24, 0.18 |
 | Town Hall | Warehouse | `warehouse` | town | `/town/warehouse` | — | `warehouse` | — | 0.24, 0.72 |
 | Town Hall | Exchange | `exchange` | town | `/town/exchange` | — | `exchange` | — | 0.76, 0.72 |
-| Town Hall | Card Library | `card-library` | town | `/town/card-library` | — | `card-library` (**new**) | — | 0.76, 0.18 |
+| Town Hall | Card Library | `card-library` | town | `/town/card-library` | — | `card-library` | — | 0.76, 0.18 |
 | Town Hall | Account (hidden) | `account` | town | `/town/account` | — | — | — | — |
 | Training | Observatory | `observatory` | facility | `/training/observatory` | `finished-here` | `observatory` | yes | 0.24, 0.18 |
 | Training | Lineage Hall | `lineage-hall` | facility | `/training/lineage-hall` | `finished-here` | `party-hall` | yes | 0.76, 0.18 |
-| Training | Gym | `gym` | facility | `/training/gym` | `finished-here` | `gym` (**new**) | yes | 0.24, 0.6 |
+| Training | Gym | `gym` | facility | `/training/gym` | `finished-here` | `gym` | yes | 0.24, 0.6 |
 | Training | Dojo | `dojo` | facility | `/training/dojo` | `finished-here` | `brawler-dojo` | yes | 0.76, 0.6 |
-| Racing | Racecourse (direct) | `racecourse` | racing | `/racing/racecourse` | `featured-open` | `racecourse` (**new**) | — | 0.5, 0.74 |
+| Racing | Racecourse (direct) | `racecourse` | racing | `/racing/racecourse` | `featured-open` | `racecourse` | — | 0.5, 0.74 |
 | Racing | Scenario Gate | `scenario-gate` | racing | `/racing/scenario-gate` | `ready-to-advance` | `scenario-gate` | — | 0.5, 0.2 |
 | Racing | Expedition Map | `expedition-map` | racing | `/racing/expedition-map` | `promotable` | `tier-finale` | — | 0.76, 0.46 |
-| Racing | Trophy Hall | `trophy-hall` | racing | `/racing/trophy-hall` | `new-flair` | `trophy-hall` (**new**) | — | 0.24, 0.46 |
+| Racing | Trophy Hall | `trophy-hall` | racing | `/racing/trophy-hall` | `new-flair` | `trophy-hall` | — | 0.24, 0.46 |
 | Farm | Sugar Grove | `sugar-grove` | site | `/farm/sugar-grove` | `finished-here` | `sugar-grove` | yes | 0.2, 0.56 |
 | Farm | Orchard | `orchard` | site | `/farm/orchard` | `finished-here` | `orchard` | yes | 0.79, 0.56 |
 | Farm | Fishery | `fishery` | site | `/farm/fishery` | `finished-here` | `fishery` | yes | 0.2, 0.78 |
@@ -392,15 +392,15 @@ pages, `farmlands`, `wilds`, `learning` and `town`).
 | Stable | `stable` | uma-art, `town` | A stable with a horse at the half-door |
 | Warehouse | `warehouse` | uma-art, `town` | A big barn |
 | Exchange | `exchange` | uma-art, `town` | A striped market stall |
-| Card Library | `card-library` | **New** | No frame reads as a library: `mage-tower` and `arcane-armory` read as magic |
+| Card Library | `card-library` | uma-art 2.6.0 (A01) | No frame reads as a library: `mage-tower` and `arcane-armory` read as magic |
 | Observatory | `observatory` | uma-art, `town` | A domed telescope: constellations |
 | Lineage Hall | `party-hall` | uma-art, `town` | A timbered hall hung with heraldic banners: a family's hall |
-| Gym | `gym` | **New** | Nothing reads as a gym: `rangers-lodge`'s archery target and `lancers-barracks`' spears read as combat |
+| Gym | `gym` | uma-art 2.6.0 (A01) | Nothing reads as a gym: `rangers-lodge`'s archery target and `lancers-barracks`' spears read as combat |
 | Dojo | `brawler-dojo` | uma-art, `learning` | A Japanese dojo with a tiled roof and lanterns, the right name and look |
-| Racecourse | `racecourse` | **New** | The centrepiece must read as horse racing (grandstand, white rails, turf oval, finish post); the one stadium frame is the Expedition Map's |
+| Racecourse | `racecourse` | uma-art 2.6.0 (A01) | The centrepiece must read as horse racing (grandstand, white rails, turf oval, finish post); the one stadium frame is the Expedition Map's |
 | Scenario Gate | `scenario-gate` | uma-art, `town` | A white arch with a chequered banner over a track |
 | Expedition Map | `tier-finale` | uma-art, `town` | A stadium ringed with flags of many colours, already uma-art's tier finale; the Expedition is ours ([10](../rework/10-expeditions.md)) |
-| Trophy Hall | `trophy-hall` | **New** | A columned hall with a gold cup; `knights-bastion` reads as a castle |
+| Trophy Hall | `trophy-hall` | uma-art 2.6.0 (A01) | A columned hall with a gold cup; `knights-bastion` reads as a castle |
 | Eight sites, Pantry, Kitchen | their own ids | uma-art, `farmlands` | uma-rpg's Farmlands, reused whole ([07](07-farm.md) §1) |
 
 **Not used**, because they would confuse: the eight other `learning` frames (`mage-tower`, `spell-blade-salle`,
@@ -413,55 +413,43 @@ class halls, which read as magic, combat or worship; and the ten `wilds` frames 
 |---|---|---|
 | Town Hall | `town/*` | Ground, plaza paths, barrels, crates, flower pots, benches, lamps, trees |
 | Training | `learning/*` | Hedges, benches, flower beds, lamps, banners: a campus |
-| Racing | `racing/*`, **new** | Turf ground ×4; a dirt-track path set (`path-0…15`, the same edge masks, never closing a 2×2); props: white rail, furlong post (16×32), pennant (16×32), flower box. Until the pinned atlas has `racing/ground-0`, the page draws on `town/*` (§10.4) |
+| Racing | `racing/*`, uma-art 2.6.0 (A01) | Turf ground ×4; a dirt-track path set (`path-0…15`, the same edge masks, never closing a 2×2); props: white rail, furlong post (16×32), pennant (16×32), flower box. Until the pinned atlas has `racing/ground-0`, the page draws on `town/*` (§10.4) |
 | Farm | `farmlands/*` | As uma-rpg's Farmlands |
 
-### 10.3 Not drawn yet: the uma-platform session's list
+### 10.3 The racer's own art, as built (uma-art 2.6.0 and 2.7.0)
 
-The buildings, the Racing tiles and the Home screen's marks are packets for ChatGPT:
-[A01](../handoff/tasks/A01-racer-buildings-and-racing-page.md) and [A02](../handoff/tasks/A02-home-screen-marks.md)
-([the queue](../handoff/README.md)).
+ChatGPT drew it in uma-platform's `scripts/pixel-art` (original, deterministic, in git) from the packets A01 and A02,
+and uma-art published it as two minor releases (uma-platform P45, P46). The racer pins **2.7.0** (D364):
 
-One minor release of `uma-art` (2.6.0), drawn by `scripts/pixel-art` (original, deterministic, in git), for the canvas
-Hub. The world map and crests serve phase 9's Expedition Map. Until the release, the Hub draws §10.4's interim art:
-
-| What | Ids | Size | For |
+| What | Ids | Size | Where it shows |
 |---|---|---|---|
-| Buildings | `racecourse`, `trophy-hall` (page `racing`), `card-library` (page `town`), `gym` (page `learning`) | 48×48, `anchorY` 44 | §10.1. Added to the shared `buildings` atlas, so the re-architecture's planned `racer` family is these four frames |
-| Racing tiles | `racing/ground-0…3`, `racing/path-0…15`, `racing/rail`, `racing/furlong-post`, `racing/pennant`, `racing/flower-box` | 16, tall props 16×32 | §10.2 |
-| Expedition world map | A composition like `world`'s islands: seven regions with pin spots | Map cells 16 | [10](../rework/10-expeditions.md) "The Expedition Map" |
-| Region crests | Seven: United States, South Korea, Dubai, Hong Kong, Australia, Britain, France/Europe | 16×16 and 32×32 | The Map's pins, and local champions' face rings ([10](../rework/10-expeditions.md)) |
-| Speed Ticket icon | `speed-ticket` in `items` | 32×32 | The Warehouse, job cards ([08](08-item-catalogue-and-recipes.md) §9: uma-art has no ticket icon) |
-| Currency marks | `currency/prize-money`, `currency/speed-ticket`, `currency/uma-ticket` in `ui` | 16×16 | The account bar and prices |
-| Tier crests | `tier/1`, `tier/2`, `tier/3` in `ui` | 12×12 | Stable badges, pips, the Map's chips |
+| Buildings (2.6.0) | `racecourse`, `trophy-hall` (page `racing`), `card-library` (page `town`), `gym` (page `learning`) | 48×48, `anchorY` 44 | The map and every DOM building sprite (§10.1); appended to the shared `buildings` atlas, so the re-architecture's planned `racer` family is these four frames |
+| Racing tiles (2.6.0) | `racing/ground-0…3` (mown turf), `racing/path-0…15` (raked dirt with rail edging), props `racing/rail`, `racing/furlong-post`, `racing/pennant`, `racing/flower-box` | 16, tall props 16×32 | The Racing page (§10.2) |
+| Currency marks (2.7.0) | `currency/prize-money`, `currency/speed-ticket`, `currency/uma-ticket` in `ui` | 16×16, drawn at 16 pt | The account bar, the Exchange's prices and wallet, the race result's prize, the profile's results (`ui/UiMark.tsx`) |
+| Tier crests (2.7.0) | `tier/1`, `tier/2`, `tier/3` in `ui` (bronze, silver, gold) | 12×12, drawn at 24 pt | Uma tiles, the featured Uma, her profile (`TierCrest`, read as "Tier N") |
+| Speed Ticket item (2.7.0) | `speed-ticket` in `items`, `kind: 'ticket'` | 32×32 | The Warehouse, job cards and prices (`ui/ItemIcon` takes the release's frame; the catalogue keeps no art for it) |
+
+**Not drawn yet (phase 9):** the Expedition world map (a composition like `world`'s islands: seven regions with pin
+spots) and its seven region crests (United States, South Korea, Dubai, Hong Kong, Australia, Britain, France/Europe, at
+16 and 32 px) for [10](../rework/10-expeditions.md)'s Map. Their packet is written when phase 9 is specified.
 
 Uma art stays the platform release's: outfit chibis for the plaza and busy buildings, character faces for pips,
 outfit icons as the fallback ([rearchitecture/03](../rearchitecture/03-rendering-and-textures.md) §4). The tier-3 wet
 course ([10](../rework/10-expeditions.md)) is a palette parameter of the code-drawn race course, not new art.
 
-The racer pins the release and checks every registry frame against the index in a test, as uma-rpg's
-`frames.test.ts` does. A frame the pinned release lacks fails CI, never a blank building, except the four listed in
-`AWAITING_ART` (§10.4).
+The racer checks every registry frame against the pinned index in a test, as uma-rpg's `frames.test.ts` does: a frame
+the pinned release lacks fails CI, never a blank building.
 
-### 10.4 Interim art, as built (T145)
+### 10.4 Missing art, as built (T145)
 
-uma-art 2.5.0 is pinned (it changed only the gear atlas, which the racer doesn't draw). Until the release that draws
-§10.3's list:
-- **The four new buildings are code placeholders.** The registry already carries A01's frame ids (`card-library`,
-  `gym`, `racecourse`, `trophy-hall`). Where the pinned atlas lacks a frame, the map draws uma-rpg's code-drawn marker
-  for it in the page's palette (`hub/scene/markers.ts`, `palettes.ts`): a library with an arched window of shelves and
-  a hanging sign, a low brick gym with an open front and a dumbbell rack, a grandstand behind white rails with a finish
-  post and a pennant, and a columned hall under a gold cup. The DOM's building art (`ui/BuildingSprite.tsx`, on a
-  Page's header or a default Peek) draws the same marker as SVG. Any other missing frame is a house in the palette;
-  nothing is ever an empty or white box.
-- **The Racing page draws on Town's tiles** (`tilePageFor`: `racing` when the atlas has `racing/ground-0`, else `town`),
-  with Town's props and its own seed, so its layout is still its own.
-- **The test lets exactly these wait.** `AWAITING_ART` in `@racer/domain/hub` lists the four; the registry test reports
-  each one waiting and fails once a pinned release draws it, until it leaves the list. Empty, the frames test is strict.
-
-When 2.6.0 is pinned, with no code change: the scene stamps the four buildings from the atlas instead of their
-markers, the DOM shows their sprites, the Racing page switches to its turf, dirt track and A01's props (rail, furlong
-post, pennant, flower box), and a building whose frame carries `smoke` smokes. Emptying `AWAITING_ART` is the one edit.
+A frame the pinned atlas lacks is never an empty or white box:
+- **The map draws uma-rpg's code-drawn marker** for it in the page's palette (`hub/scene/markers.ts`, `palettes.ts`),
+  and the DOM's building art (`ui/BuildingSprite.tsx`) draws the same marker as SVG. T145 shipped the four racer
+  buildings this way until 2.6.0; any future place does the same until its art ships.
+- **A page whose ground isn't drawn yet borrows Town's tiles** (`tilePageFor`: `racing` when the atlas has
+  `racing/ground-0`, else `town`), as Racing did until 2.6.0.
+- **`AWAITING_ART`** in `@racer/domain/hub` lists the frames the registry test lets be missing. It is empty since 2.6.0,
+  so the frames test is strict; a future place waiting for its art goes there, and leaves it when its release is pinned.
 
 ## 11. When it ships
 
@@ -536,6 +524,7 @@ interiors are.
 | One 30-second clock, stopped while hidden, for pips and labels (T137) | §4's 30 seconds; 02 §8's labels are cut to the minute anyway |
 | The Uma Tickets chip shows Shards as n/5, held at 5/5 in gold once a ticket can be made (T137) | The exchange is the owner's tap in the Stable (04 §6), so Shards can pass 5 |
 | "Sync paused" means signed out (T137) | Sync waits for a token; T136's own states are offline and error, and §2.1 names a paused chip |
+| Currency marks and tier crests are uma-art's 2.7.0 frames, drawn at whole-number scales (D364; supersedes T137's vector icons) | They sit on the pixel-art town; A02 drew them for the racer |
 | Currency icons: a new two-tone coin, today's ticket and Uma coupon icons (T137) | §10.3's marks aren't in the pinned uma-art (A02); the visual system wants two-tone currencies |
 | A Peek is uma-rpg's side panel: modal, 88% wide from the right, Enter for the Page (T145; supersedes T137's non-modal half sheet and its second tap) | The owner asked for uma-rpg's navigation lifted and shifted (D363) |
 | Global sheets are `?sheet=` routes; Collect all's intent rides in navigation state (T137) | Back closes them, and a reload never collects again |

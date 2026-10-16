@@ -2,7 +2,7 @@
 
 Self-contained tasks that a ChatGPT (or Codex) session can take without this conversation's context, one pull request
 each. Start a fresh session with [master-prompt.md](master-prompt.md). A packet is deleted once its work merges (D104),
-so [tasks/](tasks/) only holds work still ahead.
+so `tasks/` only holds work still ahead.
 
 ## How a packet reads
 
@@ -19,13 +19,14 @@ release afterwards; Claude does that side.
 
 ## For ChatGPT, in order
 
-| Packet | What | Repo | Size |
-|---|---|---|---|
-| [A01](tasks/A01-racer-buildings-and-racing-page.md) | The racer's four buildings (Card Library, Gym, Racecourse, Trophy Hall) and the Racing page's tiles | uma-platform | M |
-| [A02](tasks/A02-home-screen-marks.md) | The account bar's currency marks, tier crests and the Speed Ticket icon | uma-platform | S |
+No ready packets. The `tasks/` folder is recreated with the next one.
 
-A01 is the one the owner is waiting on: until it ships, the Hub draws those four places as plain placeholders and the
-Racing page borrows another page's ground. A02 can follow it, or run alongside it as a separate pull request.
+| Done | What | Landed |
+|---|---|---|
+| A01 | The racer's four buildings and the Racing page's tiles | uma-art 2.6.0 (uma-platform #19, P45), pinned in the racer by D364 |
+| A02 | The account bar's currency marks, tier crests and the Speed Ticket icon | uma-art 2.7.0 (uma-platform #20, P46), pinned by D364 |
+
+The packets are readable with `git show d25d4e9:docs/handoff/tasks/<file>`.
 
 ## Later, not ready
 

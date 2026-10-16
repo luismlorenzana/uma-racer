@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 // A place's building in the DOM (docs/game/11-hub-and-places.md §10.3): the atlas frame where the pinned uma-art draws
 // it, else the map's code placeholder as SVG in its page's palette, never an empty or white box.
-import { AWAITING_ART, placeById } from '@racer/domain/hub'
+import { placeById } from '@racer/domain/hub'
 import { cleanup, render } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
 import { PALETTES } from '../hub/scene/palettes'
@@ -19,17 +19,11 @@ describe('BuildingSprite', () => {
     expect(sprite.style.backgroundPosition).toMatch(/^-\d+px -\d+px$/)
   })
 
-  it.each(AWAITING_ART.map((frame) => [frame]))("draws %s, which the pinned art lacks, as its placeholder in its page's palette", (frame) => {
+  it.each([['card-library'], ['gym'], ['racecourse'], ['trophy-hall']])('draws %s from the atlas since uma-art 2.6.0 (A01)', (frame) => {
     const place = placeById(frame)!
     const { container } = render(<BuildingSprite frame={place.frame} page={place.page} />)
-    const svg = container.querySelector('svg[data-sprite="placeholder"]')!
-    expect(svg.getAttribute('data-frame')).toBe(frame)
-    const fills = [...svg.querySelectorAll('[fill]')].map((shape) => shape.getAttribute('fill'))
-    expect(fills.length).toBeGreaterThan(10)
-    const { wall, roof } = PALETTES[place.page].building
-    expect(fills).toContain(hex(wall))
-    expect(fills).toContain(hex(roof))
-    expect(new Set(fills).size).toBeGreaterThan(3)
+    expect(container.querySelector(`[data-sprite="${frame}"]`)).not.toBeNull()
+    expect(container.querySelector('svg[data-sprite="placeholder"]')).toBeNull()
   })
 
   it('never draws an empty box: an unknown frame or none is a house in the palette', () => {

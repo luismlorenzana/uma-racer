@@ -23,7 +23,7 @@ and bonded per Uma, uma-rpg's farming catalogue, Prize Money and the Exchange, a
 | 2 | M033 — the rework's rules and `sim:loop` (T125–T133) | **Done, 2026-10-14** (D340–D351) |
 | 3 | [M034 — the generation-2 cutover and the new game](M034-generation-2-cutover.md) | **Shipped 2026-10-15** (T134–T144, D352–D361): `ec5b1bd`, racer-api-00188, content `9ba4cdd37cca`; the owner's old save is purged and the retired content deleted. Left: T144's follow-up, which removes the purge endpoint once the owner confirms the new account is theirs |
 | 4 | Push notifications, a port of uma-rpg's | Only if the owner asks after playing (D336) |
-| 6 | The Hub: uma-rpg's Phaser town on the four pages | **Shipped 2026-10-15, ahead of phase 5** (T145, D363): `b2cb668`, racer-api-00189. Its new art comes from ChatGPT packets [A01 and A02](../handoff/README.md); until then four places draw stand-ins |
+| 6 | The Hub: uma-rpg's Phaser town on the four pages | **Shipped 2026-10-15, ahead of phase 5** (T145, D363): `b2cb668`, racer-api-00189. Its own art (four buildings, the Racing ground, currency marks, tier crests) landed as uma-art 2.7.0 from ChatGPT's packets A01 and A02 (D364) |
 | 5, 7–8 | Platform master data · the Farm and Training scenes · the race on Phaser | Specified in turn. Whether the whole interface moves to pixel art is the owner's call after living with the Hub |
 | 9 | World Expeditions | Starts when phase 3 ships; must land within about 16–20 weeks of it |
 

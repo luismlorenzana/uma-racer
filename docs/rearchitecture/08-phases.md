@@ -18,7 +18,7 @@ session first, and the racer then pins the released version.
 | **3** | **Clean slate and the new game:** generation-2 save in the rework's shape, the wipe and purge, every deletion (RPG, Spark, Puzzles, Friendship, CL, stars, tokens, today's Farm), the new game on plain DOM screens. **The owner starts playing here** | **Done, 2026-10-15** (T134–T144, D352–D361; [M034](../tasks/M034-generation-2-cutover.md)) | Phase 2 |
 | 4 | **Optional:** push notifications, a port of uma-rpg's, only if the owner asks | Waits on the owner | — (new) |
 | 5 | Platform master data and the first shared packages | Planned | Phase 3 |
-| **6** | The Hub: four pages, the place registry, art ([game/11](../game/11-hub-and-places.md)) | **Done, 2026-10-15, ahead of phase 5** (T145, D363): uma-rpg's Phaser town; new art via [A01–A02](../handoff/README.md) | Phase 4 |
+| **6** | The Hub: four pages, the place registry, art ([game/11](../game/11-hub-and-places.md)) | **Done, 2026-10-15, ahead of phase 5** (T145, D363): uma-rpg's Phaser town, with its own uma-art 2.7.0 (A01–A02, D364) | Phase 4 |
 | 7 | The Farm and Training Hub as pixel-art scenes on `uma-idle` | Planned | Phase 5 |
 | 8 | The race on Phaser; PixiJS leaves the repo | Planned | Phase 6 |
 | **9** | **World Expeditions:** 13 pools, about 89 course layouts, local champions, the Expedition Map, `sim:expeditions`. **Deadline:** before the first Uma finishes tier 1's last career, about 16–20 weeks after phase 3 | Starts as soon as phase 3 ships | — (new) |

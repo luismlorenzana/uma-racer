@@ -102,7 +102,8 @@ function hall(g: Pen, x: number, y: number, wall: number, roof: number, banner: 
   g.fillRect(x - 6, y + 6, 12, 12)
 }
 
-// §10.3's four new drawings, as A01 describes them, until uma-art draws them: walls, roof and trim in the page's palette.
+// The racer's four buildings as A01 describes them, drawn here until uma-art 2.6.0 drew them, and kept as the stand-in
+// for a frame the pinned atlas lacks: walls, roof and trim in the page's palette.
 
 /** A two-storey library: a tall arched window of shelves and a hanging sign with a card on it. */
 const cardLibrary: Draw = (g, x, y, { building: { wall, roof, trim } }) => {

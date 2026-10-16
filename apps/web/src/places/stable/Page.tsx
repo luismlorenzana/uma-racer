@@ -24,6 +24,7 @@ import {
   type StableEntry, type StableTab,
 } from './model'
 import { revealPath } from '../reveal/path'
+import { TierCrest } from '../../ui/UiMark'
 
 const Profile = lazy(() => import('./Profile'))
 
@@ -84,7 +85,7 @@ function Tile({ entry, list, picking, picked, full, onOpen }: {
       tight={list}
       className={`${entry.hallOfFame ? 'border-2 border-tier-gold' : ''} ${picked ? 'outline outline-2 outline-offset-1 outline-accent' : ''}`}
       overlay={list ? undefined : entry.owned
-        ? <><Crest>T{entry.uma!.tier}</Crest>{entry.isNew && <Crest tone="accent">NEW</Crest>}</>
+        ? <><TierCrest tier={entry.uma!.tier} />{entry.isNew && <Crest tone="accent">NEW</Crest>}</>
         : <Crest><LockedIcon size={16} title="Locked" /></Crest>}
       corner={list ? undefined : picking ? <Crest tone={picked ? 'accent' : 'neutral'}>{picked ? <CheckIcon size={16} title="Picked" /> : <span className="size-4" />}</Crest> : marks}
     />

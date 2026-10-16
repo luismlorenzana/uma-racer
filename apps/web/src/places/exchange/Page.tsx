@@ -9,10 +9,10 @@ import { Link, useSearchParams } from 'react-router'
 import { BottomSheet } from '../../ui/BottomSheet'
 import { Button } from '../../ui/Button'
 import { Chip } from '../../ui/Chip'
-import { LockedIcon, TicketIcon } from '../../ui/icons'
+import { LockedIcon } from '../../ui/icons'
+import { UiMark } from '../../ui/UiMark'
 import { Panel } from '../../ui/Panel'
 import { useGame, useNow, useRuntime } from '../../app/game'
-import { CoinIcon } from '../../ui/icons'
 import { amount } from '../../ui/labels'
 import { PlaceHeader } from '../../ui/PlaceHeader'
 import { TapNoteLine, useTap } from '../../ui/work'
@@ -51,7 +51,7 @@ function BuyButton({ sku, name, qty, unitPrice, prizeMoney, label = 'Buy' }: {
   return (
     <div>
       <Button className="w-full" disabled={check === null || check.short !== null || tap.pending !== null} onClick={() => (check?.asks ? setAsking(true) : void buy())}>
-        {label}{check !== null && <span className="flex items-center gap-1"><CoinIcon size={16} variant="duotone" />{amount(check.total)}</span>}
+        {label}{check !== null && <span className="flex items-center gap-1"><UiMark mark="currency/prize-money" />{amount(check.total)}</span>}
       </Button>
       {check?.short != null && <p className="mt-1 text-center text-[12px] text-danger" data-reason>{check.short}</p>}
       {qty === null && <p className="mt-1 text-center text-[12px] text-ink-soft">Type how many, from 1.</p>}
@@ -141,8 +141,8 @@ export default function ExchangePage({ place, rest }: PageProps) {
       <PlaceHeader place={place} rest={rest} lines={['Speed Tickets take 30 minutes off one running job or session. Raw ingredients are stocked up to the highest grade any Uma has opened.']} />
       <div className="space-y-3 px-4 pt-3 pb-24">
         <Panel className="flex items-center justify-around p-3" data-g2="exchange-header">
-          <span className="flex items-center gap-1.5 text-[15px]"><CoinIcon size={20} variant="duotone" /><strong className="tabular-nums">{amount(prizeMoney)}</strong><span className="sr-only">Prize Money</span></span>
-          <span className="flex items-center gap-1.5 text-[15px]"><TicketIcon size={20} variant="duotone" /><strong className="tabular-nums">{held}</strong><span className="sr-only">Speed Tickets held</span></span>
+          <span className="flex items-center gap-1.5 text-[15px]"><UiMark mark="currency/prize-money" /><strong className="tabular-nums">{amount(prizeMoney)}</strong><span className="sr-only">Prize Money</span></span>
+          <span className="flex items-center gap-1.5 text-[15px]"><UiMark mark="currency/speed-ticket" /><strong className="tabular-nums">{held}</strong><span className="sr-only">Speed Tickets held</span></span>
         </Panel>
         <div className="rounded-md border border-hairline bg-panel px-3 py-2 shadow-1" data-g2="purse-bar" data-band={bar.band}>
           <p className="text-[13px] font-semibold text-ink">{bar.words}</p>
@@ -188,7 +188,7 @@ export default function ExchangePage({ place, rest }: PageProps) {
                     <span className="block truncate text-[14px] font-semibold">{row.item.name} · G{row.grade}</span>
                     <span className="block text-[12px] text-ink-soft">{row.held} in the Warehouse{row.badge !== null && <> · <span className="font-semibold text-warning">{row.badge}</span></>}</span>
                   </span>
-                  <span className="flex shrink-0 items-center gap-1 font-semibold tabular-nums"><CoinIcon size={16} variant="duotone" />{row.price}</span>
+                  <span className="flex shrink-0 items-center gap-1 font-semibold tabular-nums"><UiMark mark="currency/prize-money" />{row.price}</span>
                 </button>
               </li>
             ))}

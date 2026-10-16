@@ -80,11 +80,11 @@ const FAR_RIGHT = 0.79
 const at = (x: number, y: number): PlaceAt => Object.freeze({ x, y })
 
 /**
- * §10.3's four new drawings (A01) that the pinned uma-art doesn't draw yet: the Hub draws a code placeholder for each,
- * and the registry test lets exactly these be missing from the atlas. Emptied when the release that draws them (2.6.0)
- * is pinned, which makes the test strict again.
+ * Frames a registry place names that the pinned uma-art doesn't draw yet: the Hub draws a code placeholder for each, and
+ * the registry test lets exactly these be missing from the atlas. Empty since uma-art 2.6.0 drew A01's four (Card
+ * Library, Gym, Racecourse, Trophy Hall), so every frame is checked; a future place waiting for its art goes here.
  */
-export const AWAITING_ART: readonly string[] = Object.freeze(['card-library', 'gym', 'racecourse', 'trophy-hall'])
+export const AWAITING_ART: readonly string[] = Object.freeze([])
 
 /** The Town Hall plaza, where the featured Uma stands on the road between the four places (§3.1, §5). */
 export const PLAZA_AT: PlaceAt = at(MIDDLE, 0.45)

@@ -20,7 +20,7 @@ import { Meter } from '../../ui/Meter'
 import { Panel } from '../../ui/Panel'
 import { useGame, useHub, useNow, useRuntime } from '../../app/game'
 import { useAlbumPrefs } from '../../ui/albumPrefs'
-import { CoinIcon } from '../../ui/icons'
+import { TierCrest, UiMark } from '../../ui/UiMark'
 import { UmaSquare } from '../../ui/ArtSquare'
 import {
   amount, DISTANCE_LABEL, DISTANCES, STAT_KEYS, STAT_LABEL, STYLE_LABEL, STYLES, SURFACE_KEYS, SURFACE_LABEL,
@@ -145,7 +145,7 @@ export default function Profile({ place, rest, umaId, tab: routeTab }: PageProps
       <div className="space-y-3 px-4 pt-3 pb-24">
         <header className="flex gap-3" data-g2="profile-header">
           <span className="w-24 shrink-0">
-            <UmaSquare outfitId={umaId} name={name} className={uma.hallOfFame !== null ? 'border-2 border-tier-gold' : ''} overlay={<Crest>T{uma.tier}</Crest>} />
+            <UmaSquare outfitId={umaId} name={name} className={uma.hallOfFame !== null ? 'border-2 border-tier-gold' : ''} overlay={<TierCrest tier={uma.tier} />} />
           </span>
           <div className="min-w-0 flex-1 space-y-1.5">
             <div className="flex items-start gap-2">
@@ -392,7 +392,7 @@ function Racing({ umaId }: { umaId: string }) {
             {latest.map((result) => (
               <li key={result.id} className="flex items-center justify-between gap-2 text-[13px]">
                 <span className="min-w-0 truncate">{result.race}</span>
-                <span className="shrink-0 tabular-nums">{result.place === null ? '' : ordinal(result.place)} · <CoinIcon size={16} variant="duotone" title="Prize Money" /> {amount(result.paid)}</span>
+                <span className="shrink-0 tabular-nums">{result.place === null ? '' : ordinal(result.place)} · <UiMark mark="currency/prize-money" /><span className="sr-only">Prize Money</span> {amount(result.paid)}</span>
               </li>
             ))}
           </ul>

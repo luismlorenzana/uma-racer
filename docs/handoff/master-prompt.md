@@ -1,7 +1,7 @@
 # Master prompt for a fresh ChatGPT session
 
 Paste the block below as the first message of a new ChatGPT or Codex session that can reach the owner's machine or the
-GitHub repos. The packets it points to are in [tasks/](tasks/), ranked in [README.md](README.md).
+GitHub repos. The packets it points to are in `tasks/`, ranked in [README.md](README.md).
 
 ---
 

@@ -1,14 +1,14 @@
 // The account bar (docs/game/11-hub-and-places.md §2.1): the trainer's initial, Prize Money, Speed Tickets, Uma
-// Tickets with the Shards toward the next one, and the Sync chip when anything isn't synced (D157). Every chip is a
+// Tickets with the Shards toward the next one (each with its uma-art mark, A02), and the Sync chip when anything isn't synced (D157). Every chip is a
 // 44 pt link to the place that sells or spends it. Numbers fill in when the game chunk arrives and move by a CSS
 // transition when they change.
 import { hubWords, type HubView } from '@racer/domain/hub'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router'
-import { OfflineIcon, TicketIcon, UmaCouponIcon, WarningIcon } from '../ui/icons'
+import { OfflineIcon, WarningIcon } from '../ui/icons'
 import { useGame, useHub, type G2Sync } from '../app/game'
 import { AnimatedNumber } from '../ui/AnimatedNumber'
-import { CoinIcon } from '../ui/icons'
+import { UiMark } from '../ui/UiMark'
 import { initialOf } from '../ui/uma'
 
 function Chip({ to, label, children, className = '' }: { to: string; label: string; children: ReactNode; className?: string }) {
@@ -47,18 +47,18 @@ export function AccountBar() {
         </Link>
         <div className="ml-auto flex min-w-0 items-center gap-0.5">
           <Chip to="/town/exchange" label={hubWords('prize-money', { n: wallet?.prizeMoney.toLocaleString('en-US') ?? '' })}>
-            <CoinIcon size={20} variant="duotone" />
+            <UiMark mark="currency/prize-money" />
             <span className="font-display font-semibold">{wallet ? <AnimatedNumber value={wallet.prizeMoney} /> : blank}</span>
           </Chip>
           <Chip to="/town/exchange?row=speed-tickets" label={hubWords('speed-tickets', { n: wallet?.speedTickets ?? '' })}>
-            <TicketIcon size={20} variant="duotone" />
+            <UiMark mark="currency/speed-ticket" />
             <span className="font-display font-semibold">{wallet ? <AnimatedNumber value={wallet.speedTickets} /> : blank}</span>
           </Chip>
           <Chip
             to="/town/stable?tab=locked"
             label={hubWords('uma-tickets', { n: wallet?.umaTickets ?? '', shards: wallet ? Math.min(wallet.shards, wallet.shardsPerTicket) : '', per: wallet?.shardsPerTicket ?? '' })}
           >
-            <UmaCouponIcon size={20} variant="duotone" />
+            <UiMark mark="currency/uma-ticket" />
             <span className="font-display font-semibold">
               {wallet ? (
                 <>

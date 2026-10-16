@@ -7,7 +7,6 @@ import { scenarioNumber, scenarioRow } from '@racer/domain/tiers'
 import { useMemo, useState } from 'react'
 import { Link, useLocation } from 'react-router'
 import { Button } from '../../ui/Button'
-import { Crest } from '../../ui/Crest'
 import { useGame, useHub, useNow, useRuntime } from '../../app/game'
 import { navState, withParam } from '../../hub/nav'
 import { TapNoteLine, useTap } from '../../ui/work'
@@ -15,6 +14,7 @@ import { UmaArt } from '../../ui/UmaArt'
 import { UmaPicker } from '../../ui/UmaPicker'
 import type { FeaturedSheetProps, PlazaProps } from '../registry'
 import { doingNow, doingWords } from './model'
+import { TierCrest } from '../../ui/UiMark'
 
 /** Her card: still art and her name; a tap opens her quick sheet (`?sheet=featured`). Empty with no Umas. */
 export function FeaturedUmaCard({ umaId }: PlazaProps) {
@@ -32,7 +32,7 @@ export function FeaturedUmaCard({ umaId }: PlazaProps) {
     >
       <span className="relative">
         <UmaArt outfitId={umaId} size={72} />
-        {tier !== null && <Crest className="absolute -right-2 -bottom-1">T{tier}</Crest>}
+        {tier !== null && <TierCrest tier={tier} className="absolute -right-2 -bottom-1" />}
       </span>
       <span aria-hidden className="max-w-28 truncate rounded-full border border-accent/40 bg-accent-wash px-2 py-0.5 text-[11px] leading-4 font-semibold text-ink">{name}</span>
     </Link>
@@ -68,7 +68,7 @@ export function FeaturedSheet({ umaId, onClose }: FeaturedSheetProps) {
         <div className="min-w-0">
           <h2 data-sheet-heading tabIndex={-1} className="flex items-center gap-2 text-lg outline-none">
             <span className="truncate">{name}</span>
-            <Crest>T{uma.tier}</Crest>
+            <TierCrest tier={uma.tier} />
           </h2>
           <p className="text-[13px] text-ink-soft">{scenarioRow(scenarioNumber(uma)).name} · Racing Lv {uma.racing.level}</p>
           {doing !== null && <p className="text-[13px] font-semibold" data-g2="doing">{doingWords(doing, game.utcOffsetMin(now))}</p>}

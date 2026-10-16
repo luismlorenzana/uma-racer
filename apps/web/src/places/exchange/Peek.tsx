@@ -3,9 +3,8 @@
 import { itemById, SPEED_TICKET_ID } from '@racer/domain/items'
 import { useMemo } from 'react'
 import { Link } from 'react-router'
-import { TicketIcon } from '../../ui/icons'
+import { UiMark } from '../../ui/UiMark'
 import { useGame, useNow } from '../../app/game'
-import { CoinIcon } from '../../ui/icons'
 import { amount } from '../../ui/labels'
 import type { PeekProps } from '../registry'
 import { exchangeView, topShortage } from './model'
@@ -21,14 +20,14 @@ export default function ExchangePeek(_: PeekProps) {
   return (
     <div className="space-y-2 text-[14px]" data-g2="exchange-peek">
       <p className="flex items-center gap-4">
-        <span className="flex items-center gap-1"><CoinIcon size={20} variant="duotone" /><strong>{amount(view.current.profile.prizeMoney)}</strong> Prize Money</span>
-        <span className="flex items-center gap-1"><TicketIcon size={20} variant="duotone" /><strong>{view.current.items[SPEED_TICKET_ID] ?? 0}</strong> Speed Tickets</span>
+        <span className="flex items-center gap-1"><UiMark mark="currency/prize-money" /><strong>{amount(view.current.profile.prizeMoney)}</strong> Prize Money</span>
+        <span className="flex items-center gap-1"><UiMark mark="currency/speed-ticket" /><strong>{view.current.items[SPEED_TICKET_ID] ?? 0}</strong> Speed Tickets</span>
       </p>
       {top !== null && item !== null && item?.kind === 'raw' && (
         <Link to={`/town/exchange?family=${item.family}&grade=${item.grade}`} state={{ back: true }}
           className="flex min-h-11 items-center justify-between rounded-sm bg-sunken/60 px-3 font-semibold">
           <span className="truncate">Short {top.line.short} {item.name}</span>
-          <span className="flex shrink-0 items-center gap-1"><CoinIcon size={16} variant="duotone" />{amount(top.total)}</span>
+          <span className="flex shrink-0 items-center gap-1"><UiMark mark="currency/prize-money" />{amount(top.total)}</span>
         </Link>
       )}
     </div>
