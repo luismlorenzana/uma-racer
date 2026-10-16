@@ -105,7 +105,7 @@ export interface StripTile {
   readonly tier: number
   readonly level: number
   readonly lifetime: number
-  /** Her career has goals left: she leads the strip. */
+  /** Her career has goals left: the optional Open goals filter includes her. */
   readonly open: boolean
   /** Her work in one chip ("Kitchen · 2h 10m", how long it has left, D366), or null when she is free. Never a lock (D328). */
   readonly work: string | null
@@ -121,10 +121,11 @@ export function workChip(row: WorkRow | undefined, now: number): string | null {
 }
 
 /**
- * The strip's order (11 §9.2): open goals first, then D181's order by lifetime level, highest first, then name; finished
- * careers last.
+ * The strip's order (11 §9.2, A03): lifetime level highest first, then newest release and name. Career completion
+ * and work never demote or lock her; Open goals is a separate filter on the Racecourse.
  */
-export function stripOrder(state: Pick<WorkState, 'umas' | 'work'>, name: (umaId: string) => string, now: number): StripTile[] {
+export function stripOrder(state: Pick<WorkState, 'umas' | 'work'>, name: (umaId: string) => string, now: number,
+  release: (umaId: string) => string = () => ''): StripTile[] {
   return Object.values(state.umas).map((uma): StripTile => ({
     umaId: uma.outfitId,
     name: name(uma.outfitId),
@@ -133,7 +134,7 @@ export function stripOrder(state: Pick<WorkState, 'umas' | 'work'>, name: (umaId
     lifetime: lifetimeLevel(uma.tier, uma.racing.level),
     open: !careerComplete(uma.career),
     work: workChip(state.work[uma.outfitId] as WorkRow | undefined, now),
-  })).sort((a, b) => Number(b.open) - Number(a.open) || b.lifetime - a.lifetime || a.name.localeCompare(b.name) ||
+  })).sort((a, b) => b.lifetime - a.lifetime || release(b.umaId).localeCompare(release(a.umaId)) || a.name.localeCompare(b.name) ||
     (a.umaId < b.umaId ? -1 : a.umaId > b.umaId ? 1 : 0))
 }
 

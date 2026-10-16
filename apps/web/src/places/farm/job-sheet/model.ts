@@ -2,10 +2,10 @@
 // T140, D366), one screen for all ten buildings, opened over a building page or the map's side panel by its query, with
 // everything preselected so one tap starts the job. Pure readings of the domain:
 // 1. **Uma**: Free Umas only (`freeUmas`), never one working, in a session or Ready with a finished job, each with her
-//    Farm Level and a suited mark (`suits`); suited first, then Farm Level. Queue next names her and skips the step.
+//    Farm Level and a suited mark (`suits`); Farm Level first, then suited (A03). Queue next names her and skips the step.
 // 2. **What**: a site's ten raw grades; the Pantry's crafted items in family tabs in `FAMILY_RING` order; the Kitchen's
 //    tabs by destination, Duos, Feasts and Can cook now, each tab an icon. A grade above her Farm Level shows its lock.
-// 3. **Preselected**: the planner's suggestion here (`suggestFrom`), else the best Free Uma and the item the plan wants
+// 3. **Preselected**: the first Free Uma by Farm Level (unless the link names her), and the item the plan wants
 //    most that she can make, else the highest grade she can work; the size the check-in fits.
 // 4. **How many** and its preview from the kind's own `plan`: how long it takes, the Farm EXP and every input against
 //    free stock.
@@ -241,7 +241,7 @@ export interface SheetUma {
   readonly highestGrade: number
   /** Her best family's Farm EXP, in tenths, for the families that count; null when no family is known yet. */
   readonly tenths: number | null
-  /** An S or A letter for what she'd make (`suits`): the strip's mark, and she goes first. */
+  /** An S or A letter for what she'd make (`suits`): the strip's mark and the Farm Level tie-break. */
   readonly suited: boolean
   /** "Sprint A · Farm EXP ×1.6" (07 §3). */
   readonly aptitude: string | null
@@ -283,18 +283,18 @@ function sheetUma(view: WorkView, building: FarmBuildingId, outfitId: string, it
 }
 
 /**
- * The strip (07 §10, D366): **Free Umas only**, suited for `item` (or the site's family) first, then Farm Level, highest
- * first, then name. An Uma working anywhere, in a session or Ready with a finished job still holding its slot is left
+ * The strip (07 §10, A03): **Free Umas only**, Farm Level highest first, then suited for `item` (or the site's family),
+ * then newest release and name. An Uma working anywhere, in a session or Ready with a finished job still holding its slot is left
  * out: she can't start here without a Collect or a Recall first.
  */
 export function freeRows(view: WorkView, building: FarmBuildingId, item: ItemId | null): SheetUma[] {
   return freeUmas(view.settled)
     .map((uma) => sheetUma(view, building, uma.outfitId, item))
-    .sort((a, b) => Number(b.suited) - Number(a.suited)
-      || b.farmLevel - a.farmLevel
-      || (b.tenths ?? 0) - (a.tenths ?? 0)
+    .sort((a, b) => b.farmLevel - a.farmLevel
+      || Number(b.suited) - Number(a.suited)
+      || (view.env.content.umas.get(b.outfitId)?.jpRelease ?? '').localeCompare(view.env.content.umas.get(a.outfitId)?.jpRelease ?? '')
       || a.name.localeCompare(b.name)
-      || (a.outfitId < b.outfitId ? -1 : 1))
+      || a.outfitId.localeCompare(b.outfitId))
 }
 
 /** The Uma a queue entry is for (Queue next names her): shown, never picked. */
@@ -337,10 +337,9 @@ export function bestItem(state: Pick<WorkState, 'items'>, building: FarmBuilding
 /**
  * The sheet's preselection (D366), so most starts are one tap:
  * - Queue next names her and her current job's item; the link's count, else the fitted size.
- * - A link that names an item (a target's icon, Make more) keeps it and its count, with the planner's Free Uma for it or
- *   the best Free Uma whose Farm Level opens it (suited first, then Farm Level), else the best Free Uma.
- * - Otherwise the planner's suggestion at this building (`suggestFrom`: Uma, item and size), else the best Free Uma and
- *   `bestItem` for her, sized to the check-in.
+ * - A link naming an Uma keeps her. An item link keeps its item and count, with the first Free Uma whose level opens it.
+ * - Otherwise the first row by Farm Level; use the planner's suggested item and size only when they're for her at this
+ *   building, else `bestItem` for her, sized to the check-in. The planner never overrides the level-first Uma (A03).
  */
 export function preselect(view: WorkView, building: FarmBuildingId, query: SheetQuery, planned: Plan, timing: Timing): Preselection {
   const asked = query.job !== null && itemById(query.job) !== undefined ? query.job : null
@@ -356,10 +355,13 @@ export function preselect(view: WorkView, building: FarmBuildingId, query: Sheet
   }
   if (named !== undefined) return { uma: named.outfitId, item: bestItem(view.settled, building, named.farmLevel, neededByItem(planned)), count: query.count }
   const { suggestions } = suggestFrom(view.settled, planned, {}, timing)
-  const suggested = suggestions.find((s) => s.kind === 'job' && s.slot.building === building && s.item !== null)
-  if (suggested !== undefined) return { uma: suggested.outfitId, item: suggested.item, count: query.count ?? suggested.size }
-  const best = rows.find((row) => row.suited) ?? rows[0]!
-  return { uma: best.outfitId, item: bestItem(view.settled, building, best.farmLevel, neededByItem(planned)), count: query.count }
+  const best = rows[0]!
+  const suggested = suggestions.find((s) => s.kind === 'job' && s.slot.building === building && s.item !== null && s.outfitId === best.outfitId)
+  const item = suggested?.item ?? bestItem(view.settled, building, best.farmLevel, neededByItem(planned))
+  // The Pantry/Kitchen gain their aptitude tie-break once an item is chosen. All top-level Umas open the same grades;
+  // keep that item's first row selected too, not a former first row from when its family was still unknown.
+  const first = freeRows(view, building, item)[0]!
+  return { uma: first.outfitId, item, count: query.count ?? (suggested?.outfitId === first.outfitId ? suggested.size : null) }
 }
 
 // --- How many and the preview (07 §10, 02 §3) -------------------------------------------------------------------------

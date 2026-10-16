@@ -1,8 +1,8 @@
 // Race select (T141 "Racecourse"; docs/game/11-hub-and-places.md §3.3, §9.2; 09 §3.5, §4): the header with the purse
 // bar and the featured bonuses still open, the Uma strip, Today's featured, Next up and every race, then the pre-race
-// sheet. `?uma=&race=` preselects. Racing is never blocked (D328): no lock, no cost, and she races as her current
-// scenario (03 §6). Start race commits the race before it plays (09 §8) and opens the run on the committed result.
-import { BottomSheet, Button } from '@luismlorenzana/uma-kit/ui'
+// sheet. `?uma=&race=` preselects; `?goals=open` filters the level-first strip (A03). Racing is never blocked (D328): no
+// lock, no cost, and she races as her current scenario (03 §6). Start race commits before it plays (09 §8).
+import { BottomSheet, Button, Chip } from '@luismlorenzana/uma-kit/ui'
 import {
   DISTANCE_CATEGORIES, STRATEGIES, goalRaceIds, progressionFieldSize, raceExp, recommendedRacePreferences, regularRaceCatalog,
   type DistanceCategory, type RaceTemplate, type Strategy,
@@ -320,11 +320,13 @@ export function RaceSelect({ place }: { place: Place }) {
   const offset = game.utcOffsetMin(now)
   const localDay = localDayAt(now, offset)
   const name = (umaId: string) => content?.umas.byId.get(umaId)?.name ?? umaId
-  const strip = useMemo(() => (state ? stripOrder(state, name, now) : []),
+  const allStrip = useMemo(() => (state ? stripOrder(state, name, now, (id) => content?.umas.byId.get(id)?.jpRelease ?? '') : []),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [state, content, now])
+  const openGoals = params.get('goals') === 'open'
+  const strip = openGoals ? allStrip.filter((tile) => tile.open) : allStrip
   const asked = params.get('uma')
-  const umaId = asked !== null && state?.umas[asked] ? asked : strip[0]?.umaId ?? null
+  const umaId = strip.find((tile) => tile.umaId === asked)?.umaId ?? strip[0]?.umaId ?? null
   const uma = umaId === null ? undefined : state?.umas[umaId]
   const raceParam = params.get('race')
   const presets = useMemo(() => (uma && env
@@ -335,13 +337,30 @@ export function RaceSelect({ place }: { place: Place }) {
   const bar = purseBar(state.profile.purse, localDay)
   const featured = featuredView(state.profile, localDay, content.races.items)
   const header = <PlacePageHeader place={place} lines={bar.about} />
+  const filter = allStrip.length === 0 ? null : (
+    <div className="px-3 pt-3">
+      <Chip selected={openGoals} className="min-h-11" onClick={() => {
+        const next = new URLSearchParams(params)
+        if (openGoals) next.delete('goals')
+        else next.set('goals', 'open')
+        const shown = openGoals ? allStrip : allStrip.filter((tile) => tile.open)
+        const selected = shown.find((tile) => tile.umaId === umaId) ?? shown[0]
+        if (selected) next.set('uma', selected.umaId)
+        else next.delete('uma')
+        // A pre-race sheet belongs to the Uma it opened for, never the filter's new first choice.
+        next.delete('race')
+        setParams(next, { replace: true })
+      }}>{racingWords('open-goals')}</Chip>
+    </div>
+  )
 
   if (!uma || !presets) {
     return (
       <div data-place-page="racecourse">
         {header}
         <PurseHeader bar={bar} featured={featured} />
-        <p className="px-4 py-8 text-center text-[13px] text-ink-soft">{racingWords('no-umas')}</p>
+        {filter}
+        <p className="px-4 py-8 text-center text-[13px] text-ink-soft">{racingWords(allStrip.length > 0 && openGoals ? 'no-open-goals' : 'no-umas')}</p>
       </div>
     )
   }
@@ -380,6 +399,7 @@ export function RaceSelect({ place }: { place: Place }) {
     <div data-place-page="racecourse" className="pb-6">
       {header}
       <PurseHeader bar={bar} featured={featured} />
+      {filter}
       <div className="pt-3"><Strip tiles={strip} selected={uma.outfitId} onPick={chooseUma} /></div>
       <div className="flex flex-col gap-3 px-3 pt-3">
         {tracker && (

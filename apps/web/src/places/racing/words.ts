@@ -21,6 +21,8 @@ export const RACING_WORDS = Object.freeze({
   'tile-label': '{name}, tier {tier}, Racing Level {level}',
   'tile-done': 'Career complete',
   'no-umas': 'No Uma races yet. Unlock one at the Stable.',
+  'open-goals': 'Open goals',
+  'no-open-goals': 'Every career is complete. Turn off Open goals to race with any Uma.',
   'open-stable': 'Open the Stable',
   featured: "Today's featured",
   'featured-bonus': 'Bonus +{n}',

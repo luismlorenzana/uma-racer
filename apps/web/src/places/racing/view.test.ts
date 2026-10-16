@@ -68,20 +68,32 @@ describe("today's featured (09 §4)", () => {
 })
 
 describe('the Uma strip (11 §9.2)', () => {
-  it('leads with open goals, then lifetime level, then name; finished careers last; work in one chip', () => {
+  it('leads with lifetime level even for a complete career, with work in one chip and no race lock', () => {
     const state = busy().state
     const umas = Object.values(state.umas)
     const done: UmaState = { ...umas[3]!, racing: { level: 9, exp: 0 }, career: { ...umas[3]!.career, goals: umas[3]!.career.goals.map((goal) => ({ ...goal, status: 'completed' as const })) } }
     const high: UmaState = { ...umas[7]!, racing: { level: 8, exp: 0 } }
     const strip = stripOrder({ ...state, umas: { ...state.umas, [done.outfitId]: done, [high.outfitId]: high } }, name, busy().at)
-    expect(strip[0]!.umaId).toBe(high.outfitId)
-    expect(strip.at(-1)!.umaId).toBe(done.outfitId)
-    expect(strip.at(-1)!.open).toBe(false)
-    const rest = strip.slice(1, -1)
+    expect(strip[0]!.umaId).toBe(done.outfitId)
+    expect(strip[0]!.open).toBe(false)
+    expect(strip[1]!.umaId).toBe(high.outfitId)
+    const rest = strip.slice(2)
     expect(rest.map((tile) => tile.name)).toEqual([...rest.map((tile) => tile.name)].sort((a, b) => a.localeCompare(b)))
     // Her work reads how long it has left, never a clock time (D366).
     expect(strip.filter((tile) => tile.work !== null).every((tile) => /^.+ · ((\d+d ?)?(\d+h ?)?(\d+m)?|Ready)$/.test(tile.work!) && !/\d\d:\d\d/.test(tile.work!))).toBe(true)
     expect(strip.some((tile) => tile.work !== null)).toBe(true)
+  })
+
+  it('uses lifetime rather than tier-local level, then newest release and name', () => {
+    const umas = Object.values(busy().state.umas).slice(0, 4).map((uma, i): UmaState => ({
+      ...uma, tier: i === 0 ? 1 : 2, racing: { level: i === 0 ? 50 : 1, exp: 0 },
+    }))
+    const names = new Map(umas.map((uma, i) => [uma.outfitId, ['First tier', 'Zulu', 'Alpha', 'Beta'][i]!]))
+    const releases = new Map(umas.map((uma, i) => [uma.outfitId, ['2040-01-01', '2030-01-01', '2020-01-01', '2030-01-01'][i]!]))
+    const strip = stripOrder({ umas: Object.fromEntries(umas.map(uma => [uma.outfitId, uma])), work: {} }, id => names.get(id)!, busy().at, id => releases.get(id)!)
+    expect(strip.map(tile => tile.umaId)).toEqual([umas[3]!.outfitId, umas[1]!.outfitId, umas[2]!.outfitId, umas[0]!.outfitId])
+    expect(strip.map(tile => tile.lifetime)).toEqual([51, 51, 51, 50])
+    expect(stripOrder({ umas: {}, work: {} }, name, busy().at)).toEqual([])
   })
 
   it('offers the next Uma after hers, round to the first', () => {
