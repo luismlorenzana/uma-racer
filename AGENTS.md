@@ -14,6 +14,8 @@ the Claude session that runs production; when the two differ, **this file govern
 4. `docs/decisions.md` — what's decided (append-only log). `docs/open-questions.md` — what needs the owner.
 5. `docs/game/architecture.md` — how the pieces fit together, and the checks a change must pass.
 6. Your task spec or handoff packet, if you were given one (`docs/tasks/*`, `docs/handoff/tasks/*`).
+7. `docs/change-protocol.md` — one game or both: a change to anything uma-kit draws (frame, bars, menu, side panel,
+   sheets, Hub map, theme) goes through uma-platform as a "Both apps:" request and a kit release, never a fork here.
 
 ## Hard rules
 
