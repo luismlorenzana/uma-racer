@@ -39,7 +39,7 @@ export default function ExpeditionMap({ place, rest }: PageProps) {
               {row.complete ? (
                 <div className="mt-2 flex items-center gap-2">
                   <p className="min-w-0 flex-1 text-[13px] font-semibold text-accent-strong">{racingWords('map-promote')}</p>
-                  <Link to={`/racing/scenario-gate/${encodeURIComponent(row.umaId)}?sheet=promote`} state={{ back: true }} className="font-display flex min-h-11 items-center rounded-sm bg-accent px-4 font-bold text-ink shadow-1">
+                  <Link to={`/racing/scenario-gate/${encodeURIComponent(row.umaId)}?sheet=promote`} state={{ back: true }} className="font-display flex min-h-11 items-center rounded-sm bg-accent px-4 font-bold text-accent-ink shadow-1">
                     {racingWords('promote')}
                   </Link>
                 </div>

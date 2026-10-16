@@ -32,7 +32,7 @@ export default function Reveal({ params }: FlowProps) {
     return (
       <main className="pt-safe pb-safe flex h-dvh flex-col items-center justify-center gap-4 bg-stage px-6 text-center text-ink-on-dark" data-g2="reveal">
         <p className="text-lg">That Uma isn't in your Stable.</p>
-        <Link to="/town/stable" replace className={`${button} bg-accent text-ink`}>Open the Stable</Link>
+        <Link to="/town/stable" replace className={`${button} bg-accent text-accent-ink`}>Open the Stable</Link>
       </main>
     )
   }
@@ -63,11 +63,11 @@ export default function Reveal({ params }: FlowProps) {
         <p className="mt-3 text-[13px] text-ink-on-dark-soft">{saveWords(sync)}</p>
         <div className="mt-7 grid gap-2">
           {queue.then.length > 0 && (
-            <Link to={revealPath(queue.then, queue.of)} replace className={`${button} bg-accent text-ink`}>
+            <Link to={revealPath(queue.then, queue.of)} replace className={`${button} bg-accent text-accent-ink`}>
               Next ({queue.at + 1} of {queue.of})
             </Link>
           )}
-          <Link to={profile} replace className={`${button} ${queue.then.length > 0 ? 'border border-hairline-dark bg-stage-soft text-ink-on-dark' : 'bg-accent text-ink'}`}>
+          <Link to={profile} replace className={`${button} ${queue.then.length > 0 ? 'border border-hairline-dark bg-stage-soft text-ink-on-dark' : 'bg-accent text-accent-ink'}`}>
             Open profile
           </Link>
           {queue.then.length > 0 && (

@@ -220,7 +220,7 @@ function Roster({ place, rest }: PageProps) {
               <span aria-label={`Uma Tickets ${note.tickets}, Uma Shards ${Math.min(note.shards, 5)} of 5`}>Uma Tickets {note.text}</span>
               {note.canExchange && (
                 <button type="button" disabled={tap.pending !== null} onClick={() => void tap.run('exchange-shards', {}, 'exchange-shards')}
-                  className="font-display min-h-11 rounded-sm bg-accent px-3 text-[13px] font-semibold text-ink shadow-1 disabled:opacity-45">
+                  className="font-display min-h-11 rounded-sm bg-accent px-3 text-[13px] font-semibold text-accent-ink shadow-1 disabled:opacity-45">
                   Exchange
                 </button>
               )}

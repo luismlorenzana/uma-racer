@@ -25,7 +25,7 @@ export default function TargetToggle({ umaId }: ProfileSlotProps) {
         disabled={tap.pending !== null}
         onClick={() => void tap.run('set-targets', { outfitIds: toggledTargets(marked, umaId) }, `targets:${umaId}`)}
         className={`font-display inline-flex min-h-11 items-center justify-center gap-1.5 rounded-sm px-3 text-[13px] font-semibold whitespace-nowrap shadow-1 disabled:opacity-45 ${
-          isTarget ? 'border border-hairline-strong bg-panel text-ink' : 'bg-accent text-ink'
+          isTarget ? 'border border-hairline-strong bg-panel text-ink' : 'bg-accent text-accent-ink'
         }`}
       >
         <TargetIcon size={16} variant={isTarget ? 'duotone' : 'line'} />

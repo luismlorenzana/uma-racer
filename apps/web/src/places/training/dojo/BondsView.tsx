@@ -102,7 +102,7 @@ function Bonds({ build }: { build: BuildContext }) {
       <section aria-labelledby="dojo-more" className="space-y-1.5">
         <h2 id="dojo-more" className="text-micro">{trainingWords('bond-more')}</h2>
         <p className="text-[13px] text-ink-soft">{trainingWords('bond-more-hint')}</p>
-        <button type="button" onClick={() => setBonding(true)} data-action="bond-more" className={`${BUTTON} w-full bg-accent text-ink`}>
+        <button type="button" onClick={() => setBonding(true)} data-action="bond-more" className={`${BUTTON} w-full bg-accent text-accent-ink`}>
           {trainingWords('bond-more')}
         </button>
       </section>

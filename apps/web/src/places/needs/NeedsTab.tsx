@@ -99,7 +99,7 @@ export default function NeedsTab({ umaId }: ProfileSlotProps) {
                       disabled={taps.pending !== null}
                       onClick={() => void taps.run(key, 'start', { outfitId: start.outfitId, slot: start.slot, request: start.request }, 'needs:start')}
                       aria-label={needsWords('start-label', { what: line.label, uma: context.umaName(start.outfitId) || start.outfitId })}
-                      className="font-display inline-flex min-h-11 items-center justify-center rounded-sm bg-accent px-4 text-[14px] font-semibold text-ink shadow-1 disabled:opacity-45"
+                      className="font-display inline-flex min-h-11 items-center justify-center rounded-sm bg-accent px-4 text-[14px] font-semibold text-accent-ink shadow-1 disabled:opacity-45"
                     >
                       {needsWords('start')}
                     </button>

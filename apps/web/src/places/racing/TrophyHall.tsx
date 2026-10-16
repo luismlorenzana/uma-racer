@@ -47,7 +47,7 @@ function ScopeTabs({ scope, umaId }: { scope: Scope; umaId: string | null }) {
       to={to}
       replace
       aria-current={scope === value ? 'page' : undefined}
-      className={`font-display flex min-h-11 flex-1 items-center justify-center rounded-sm text-sm font-semibold ${scope === value ? 'bg-accent text-ink' : 'bg-panel text-ink'}`}
+      className={`font-display flex min-h-11 flex-1 items-center justify-center rounded-sm text-sm font-semibold ${scope === value ? 'bg-accent text-accent-ink' : 'bg-panel text-ink'}`}
     >{label}</Link>
   )
   return (
@@ -74,7 +74,7 @@ function Tile({ item, pinMode, pinnable, onPin }: { item: BadgeCollectionItem | 
         </div>
       )}
       {pinMode && pinnable && (
-        <button type="button" aria-pressed={item.pinned} onClick={onPin} className={`mt-2 min-h-11 w-full rounded-sm px-2 text-xs font-semibold ${item.pinned ? 'bg-accent text-ink' : 'bg-panel/80'}`}>
+        <button type="button" aria-pressed={item.pinned} onClick={onPin} className={`mt-2 min-h-11 w-full rounded-sm px-2 text-xs font-semibold ${item.pinned ? 'bg-accent text-accent-ink' : 'bg-panel/80'}`}>
           {racingWords(item.pinned ? 'pinned' : 'pin-this')}
         </button>
       )}

@@ -36,7 +36,7 @@ import { SpeedUpAll } from './SpeedUpAll'
 import { summaryWords } from './words'
 
 const BUTTON = 'font-display inline-flex min-h-11 items-center justify-center rounded-sm px-3 text-[14px] font-semibold shadow-1 disabled:opacity-45 disabled:shadow-none'
-const PRIMARY = `${BUTTON} bg-accent text-ink`
+const PRIMARY = `${BUTTON} bg-accent text-accent-ink`
 const SECONDARY = `${BUTTON} border border-hairline-strong bg-panel text-ink`
 /** T138's Account at its sync row, where Sync now is. */
 const SYNC_ROW = '/town/account?row=sync'

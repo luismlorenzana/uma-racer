@@ -79,7 +79,7 @@ function HereActions({ model, tap, now }: { model: BuildingView; tap: Tap; now: 
       <ReceiptLines collected={collected} repeated={repeated} context={context} now={now} />
       <TapNoteLine tap={tap} />
       <div className="grid grid-cols-2 gap-2">
-        <button type="button" data-action="collect-here" disabled={busy || model.ready === 0} onClick={() => void collect()} className={`${BUTTON} w-full bg-accent text-ink`}>
+        <button type="button" data-action="collect-here" disabled={busy || model.ready === 0} onClick={() => void collect()} className={`${BUTTON} w-full bg-accent text-accent-ink`}>
           {model.ready > 0 ? farmWords('collect-here-n', { n: model.ready }) : farmWords('nothing-to-collect')}
         </button>
         <button type="button" data-action="repeat-here" disabled={busy || model.repeatable.length === 0} onClick={() => void repeat()} className={`${BUTTON} w-full border border-hairline-strong bg-panel text-ink`}>

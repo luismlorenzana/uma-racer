@@ -80,7 +80,7 @@ export default function BuildingPeek({ place }: PeekProps) {
             data-action="collect-here"
             disabled={tap.pending !== null}
             onClick={collect}
-            className="font-display flex min-h-12 w-full items-center justify-center rounded-sm bg-accent text-base font-bold text-ink shadow-1 disabled:opacity-45"
+            className="font-display flex min-h-12 w-full items-center justify-center rounded-sm bg-accent text-base font-bold text-accent-ink shadow-1 disabled:opacity-45"
           >
             {farmWords('collect-here-n', { n: model.ready })}
           </button>

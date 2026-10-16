@@ -30,7 +30,7 @@ export function UnfilledReveal({ params }: FlowProps) {
       <Link
         to={`/town/stable/outfit/${encodeURIComponent(umaId)}`}
         replace
-        className="font-display flex min-h-12 items-center rounded-sm bg-accent px-6 font-bold text-ink shadow-1"
+        className="font-display flex min-h-12 items-center rounded-sm bg-accent px-6 font-bold text-accent-ink shadow-1"
       >
         {hubWords('profile')}
       </Link>

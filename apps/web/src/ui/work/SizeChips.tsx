@@ -67,7 +67,7 @@ export function SizeChips({ start, itemSeconds, max, value, onChange, heading = 
               <span className="font-display text-[14px] leading-4 font-bold">{workWords('size-chip', { n: chip.size })}</span>
               <span className="text-[11px] leading-4 whitespace-nowrap tabular-nums">{chip.duration}</span>
               {isMarked && (
-                <span aria-hidden data-fit={view.overnight ? 'overnight' : 'next'} className="absolute -top-1.5 -right-1.5 flex size-5 items-center justify-center rounded-full bg-accent text-ink shadow-1">
+                <span aria-hidden data-fit={view.overnight ? 'overnight' : 'next'} className="absolute -top-1.5 -right-1.5 flex size-5 items-center justify-center rounded-full bg-accent text-accent-ink shadow-1">
                   <Mark size={16} variant="solid" />
                 </span>
               )}

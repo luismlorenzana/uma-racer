@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react'
 
 const TONE = {
-  neutral: 'bg-ink/70 text-ink-on-dark',
-  accent: 'bg-accent text-ink',
+  neutral: 'bg-scrim/70 text-ink-on-dark',
+  accent: 'bg-accent text-accent-ink',
   turf: 'bg-turf text-ink-on-dark',
   dirt: 'bg-dirt text-ink-on-dark',
 } as const

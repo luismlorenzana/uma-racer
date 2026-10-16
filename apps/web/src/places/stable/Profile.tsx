@@ -96,7 +96,7 @@ export default function Profile({ place, rest, umaId, tab: routeTab }: PageProps
         <PlacePageHeader place={place} rest={rest} title="Uma" />
         <Panel className="m-4 text-center">
           <p className="text-[15px]" data-g2="unknown-uma">{TIER_REFUSALS['unknown-uma']}</p>
-          <Link to="/town/stable" replace className="font-display mt-3 inline-flex min-h-12 items-center rounded-sm bg-accent px-5 font-semibold text-ink shadow-1">Open the Stable</Link>
+          <Link to="/town/stable" replace className="font-display mt-3 inline-flex min-h-12 items-center rounded-sm bg-accent px-5 font-semibold text-accent-ink shadow-1">Open the Stable</Link>
         </Panel>
       </div>
     )
@@ -250,7 +250,7 @@ function Overview({ umaId, featured, ready }: { umaId: string; featured: boolean
         </ul>
         {next !== null && (
           <Link to={`/racing/scenario-gate/${id}`} state={{ back: true }}
-            className="font-display mt-3 flex min-h-12 items-center justify-center rounded-sm bg-accent font-semibold text-ink shadow-1">
+            className="font-display mt-3 flex min-h-12 items-center justify-center rounded-sm bg-accent font-semibold text-accent-ink shadow-1">
             {next === 'advance' ? 'Advance' : 'Promote'}
           </Link>
         )}

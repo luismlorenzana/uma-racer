@@ -26,9 +26,9 @@ const PACK_ICON: Partial<Record<RacePackCue, IconComponent>> = {
 
 type Tone = 'mine' | 'player' | 'rival' | 'alert'
 const TONE: Record<Tone, { toast: string; badge: string; eyebrow: string }> = {
-  mine: { toast: 'bg-accent text-ink', badge: 'bg-panel text-accent-strong', eyebrow: 'text-ink/75' },
+  mine: { toast: 'bg-accent text-accent-ink', badge: 'bg-panel text-accent-strong', eyebrow: 'text-accent-ink/75' },
   player: { toast: 'bg-panel/95 text-ink', badge: 'bg-accent-wash text-accent-strong', eyebrow: 'text-ink-soft' },
-  rival: { toast: 'bg-ink/80 text-white', badge: 'bg-white/15 text-white', eyebrow: 'text-white/75' },
+  rival: { toast: 'bg-scrim/80 text-white', badge: 'bg-white/15 text-white', eyebrow: 'text-white/75' },
   alert: { toast: 'bg-danger text-white', badge: 'bg-white/20 text-white', eyebrow: 'text-white/80' },
 }
 

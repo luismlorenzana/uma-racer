@@ -68,7 +68,7 @@ export function BuildFrame({ place, umaId, title, lines = [], fullScreen = false
         <PlacePageHeader place={place} rest={umaId} title={place.name} />
         <div className="m-4 rounded-md border border-hairline bg-panel p-4 text-center">
           <p>{TIER_REFUSALS['unknown-uma']}</p>
-          <Link to="/town/stable" replace className="font-display mt-3 inline-flex min-h-12 items-center rounded-sm bg-accent px-5 font-semibold text-ink shadow-1">
+          <Link to="/town/stable" replace className="font-display mt-3 inline-flex min-h-12 items-center rounded-sm bg-accent px-5 font-semibold text-accent-ink shadow-1">
             {trainingWords('unknown-back')}
           </Link>
         </div>
@@ -97,7 +97,7 @@ export function BuildFrame({ place, umaId, title, lines = [], fullScreen = false
               data-action="collect-chip"
               disabled={tap.pending !== null}
               onClick={() => void tap.run('collect', { outfitId: umaId }, `collect:${umaId}`)}
-              className="font-display min-h-11 shrink-0 rounded-full bg-accent px-3 text-[13px] font-semibold text-ink shadow-1 disabled:opacity-45"
+              className="font-display min-h-11 shrink-0 rounded-full bg-accent px-3 text-[13px] font-semibold text-accent-ink shadow-1 disabled:opacity-45"
             >
               {header.collect === 1 ? trainingWords('collect-chip-one') : trainingWords('collect-chip', { n: header.collect })}
             </button>

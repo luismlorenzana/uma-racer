@@ -63,7 +63,7 @@ function ItemCell({ row, chosen, onPick }: { row: SheetItem; chosen: boolean; on
       <span aria-hidden className="absolute top-0.5 left-1 text-[10px] leading-3 font-bold text-ink-soft">{row.grade}</span>
       {row.stock > 0 && <span aria-hidden className="absolute right-1 bottom-0.5 text-[10px] leading-3 font-semibold text-ink tabular-nums">{grouped(row.stock)}</span>}
       {row.locked === null && row.needed > 0 && (
-        <span aria-hidden className="font-display absolute -top-1.5 -right-1 rounded-full bg-accent px-1 text-[10px] leading-4 font-bold text-ink tabular-nums shadow-1">
+        <span aria-hidden className="font-display absolute -top-1.5 -right-1 rounded-full bg-accent px-1 text-[10px] leading-4 font-bold text-accent-ink tabular-nums shadow-1">
           {farmWords('needed-badge', { n: grouped(row.needed) })}
         </span>
       )}
@@ -90,7 +90,7 @@ function NoFreeUma({ view, building }: { view: WorkView; building: FarmBuildingI
     <div data-g2="no-free-uma" className="flex min-h-11 flex-wrap items-center gap-2">
       <p className="flex-1 text-[14px] font-semibold">{farmWords('no-free-uma')}</p>
       {ready && (
-        <button type="button" data-action="collect-here" disabled={tap.pending !== null} onClick={() => void collect()} className={`${BUTTON} min-h-11 bg-accent text-ink`}>
+        <button type="button" data-action="collect-here" disabled={tap.pending !== null} onClick={() => void collect()} className={`${BUTTON} min-h-11 bg-accent text-accent-ink`}>
           {farmWords('collect-here')}
         </button>
       )}
@@ -307,7 +307,7 @@ function Sheet({ place, building, query, onClose, view }: {
               data-action="sheet-go"
               disabled={blockedWords !== null || tap.pending !== null}
               onClick={() => void go()}
-              className={`${BUTTON} w-full bg-accent text-ink tabular-nums`}
+              className={`${BUTTON} w-full bg-accent text-accent-ink tabular-nums`}
             >
               {label}
             </button>

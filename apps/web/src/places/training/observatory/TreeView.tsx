@@ -50,7 +50,7 @@ function NodeSheet({ node, build, cap, onClose }: { node: NodeView; build: Build
           <p className="text-[14px]">{node.words}</p>
           {node.unlock !== null && (
             <Link to={unlockPath(uma.outfitId, node.unlock, here)} state={{ back: true }} data-action="unlock"
-              className="font-display flex min-h-12 items-center justify-center rounded-sm bg-accent font-semibold text-ink shadow-1">
+              className="font-display flex min-h-12 items-center justify-center rounded-sm bg-accent font-semibold text-accent-ink shadow-1">
               {trainingWords('unlock')}
             </Link>
           )}

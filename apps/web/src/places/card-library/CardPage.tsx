@@ -69,7 +69,7 @@ export default function CardPage({ place, rest, cardId }: PageProps & { cardId: 
         <PlacePageHeader place={place} rest={rest} title="Card" />
         <Panel className="m-4 text-center">
           <p>That card isn't in the Library.</p>
-          <Link to="/town/card-library" replace className="font-display mt-3 inline-flex min-h-12 items-center rounded-sm bg-accent px-5 font-semibold text-ink shadow-1">Open the Library</Link>
+          <Link to="/town/card-library" replace className="font-display mt-3 inline-flex min-h-12 items-center rounded-sm bg-accent px-5 font-semibold text-accent-ink shadow-1">Open the Library</Link>
         </Panel>
       </div>
     )
@@ -181,7 +181,7 @@ export default function CardPage({ place, rest, cardId }: PageProps & { cardId: 
           if (choice.canQueue) {
             return (
               <button type="button" onClick={() => navigate(bondSessionPath(entry.id, card, back, true), { state: { back: true } })}
-                className="font-display mt-1 min-h-11 w-full rounded-sm bg-accent px-3 text-[13px] font-semibold text-ink shadow-1">
+                className="font-display mt-1 min-h-11 w-full rounded-sm bg-accent px-3 text-[13px] font-semibold text-accent-ink shadow-1">
                 Queue
               </button>
             )

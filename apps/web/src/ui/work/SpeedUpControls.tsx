@@ -50,7 +50,7 @@ export function SpeedUpControls({ outfitId, className = '' }: { outfitId: string
     return (
       <div data-g2="speed-up-ask" className={`flex w-full flex-wrap items-center gap-2 rounded-sm bg-accent-wash p-2 text-[13px] ${className}`}>
         <span className="min-w-0 flex-1">{question}</span>
-        <button type="button" disabled={busy} onClick={() => void finish()} className={`${BUTTON} bg-accent text-ink`}>{workWords('yes')}</button>
+        <button type="button" disabled={busy} onClick={() => void finish()} className={`${BUTTON} bg-accent text-accent-ink`}>{workWords('yes')}</button>
         <button type="button" onClick={() => setAsking(false)} className="min-h-11 px-3 font-semibold text-ink-soft">{workWords('not-now')}</button>
       </div>
     )

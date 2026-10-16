@@ -26,7 +26,7 @@ export function TapNoteLine({ tap, onDone, className = '' }: {
           if (answer?.kind === 'done') onDone?.(answer)
         })}
         disabled={tap.pending !== null}
-        className="font-display min-h-11 rounded-sm bg-accent px-4 font-semibold text-ink shadow-1 disabled:opacity-45"
+        className="font-display min-h-11 rounded-sm bg-accent px-4 font-semibold text-accent-ink shadow-1 disabled:opacity-45"
       >
         {workWords('yes')}
       </button>

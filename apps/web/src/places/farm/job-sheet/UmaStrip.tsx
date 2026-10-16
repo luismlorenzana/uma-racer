@@ -14,11 +14,11 @@ function Face({ uma, chosen }: { uma: SheetUma; chosen: boolean }) {
       <span className={`block size-11 overflow-hidden rounded-full bg-sunken ring-2 ring-offset-1 ring-offset-panel ${chosen ? 'ring-accent' : 'ring-transparent'}`}>
         <UmaFace outfitId={uma.outfitId} size={44} />
       </span>
-      <span className="font-display absolute -bottom-1 left-1/2 -translate-x-1/2 rounded-full bg-ink px-1 text-[10px] leading-4 font-bold text-ink-on-dark tabular-nums">
+      <span className="font-display absolute -bottom-1 left-1/2 -translate-x-1/2 rounded-full bg-scrim px-1 text-[10px] leading-4 font-bold text-ink-on-dark tabular-nums">
         {uma.farmLevel}
       </span>
       {uma.suited && (
-        <span data-suited className="absolute -top-1 -right-1 flex size-4 items-center justify-center rounded-full bg-accent text-ink">
+        <span data-suited className="absolute -top-1 -right-1 flex size-4 items-center justify-center rounded-full bg-accent text-accent-ink">
           <StarIcon size={16} variant="solid" className="scale-75" />
         </span>
       )}

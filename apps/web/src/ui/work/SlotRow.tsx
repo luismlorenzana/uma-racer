@@ -85,7 +85,7 @@ function CollectButton({ card, what, tap }: { card: HeldSlotCard; what: string; 
       onClick={() => void tap.run('collect', { outfitId: card.outfitId }, `collect:${card.outfitId}`)}
       aria-label={workWords('collect-label', { n: card.waiting, what })}
       data-action="collect"
-      className="font-display flex h-11 min-w-11 shrink-0 items-center justify-center gap-0.5 rounded-full bg-accent px-2.5 text-[15px] font-bold text-ink shadow-1 tabular-nums disabled:opacity-45"
+      className="font-display flex h-11 min-w-11 shrink-0 items-center justify-center gap-0.5 rounded-full bg-accent px-2.5 text-[15px] font-bold text-accent-ink shadow-1 tabular-nums disabled:opacity-45"
     >
       <ArrowDownIcon size={16} />
       {card.waiting}
@@ -225,7 +225,7 @@ export function SlotRow({ card, what, startTo, startLabel = workWords('start-job
             {queueTo !== undefined && (queueFull ? (
               <span className="flex min-h-11 items-center text-[13px] text-ink-soft" data-action="queue-full">{WORK_REFUSALS['queue-full']}</span>
             ) : (
-              <Link to={queueTo} state={{ back: true }} onClick={() => setSheet(null)} data-action="queue" className="font-display inline-flex min-h-11 flex-1 items-center justify-center rounded-sm bg-accent px-3 text-[14px] font-semibold text-ink shadow-1">
+              <Link to={queueTo} state={{ back: true }} onClick={() => setSheet(null)} data-action="queue" className="font-display inline-flex min-h-11 flex-1 items-center justify-center rounded-sm bg-accent px-3 text-[14px] font-semibold text-accent-ink shadow-1">
                 {workWords('queue-next')}
               </Link>
             ))}
@@ -288,7 +288,7 @@ export function PeekRow({ card, what, text, startTo, startLabel = workWords('sta
         <span aria-hidden className="flex size-8 shrink-0 items-center justify-center">{shown.icon}</span>
         <span aria-hidden className="min-w-0 flex-1 truncate tabular-nums">{text ?? `×${card.count} · ${workWords('made', { made: card.made, count: card.count })}`}</span>
         {next !== undefined && (
-          <span aria-label={[workWords('queued-label', { n: card.queue.length }), workWords('next-queued-label', { what: requestWords(next) })].join(', ')} className="flex shrink-0 items-center gap-0.5 rounded-full bg-ink px-1 text-[11px] leading-5 font-bold text-ink-on-dark">
+          <span aria-label={[workWords('queued-label', { n: card.queue.length }), workWords('next-queued-label', { what: requestWords(next) })].join(', ')} className="flex shrink-0 items-center gap-0.5 rounded-full bg-scrim px-1 text-[11px] leading-5 font-bold text-ink-on-dark">
             +{card.queue.length}
             {next.kind !== SESSION_KIND && <ItemIcon item={next.item} scale={0.5} decorative />}
           </span>

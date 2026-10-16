@@ -69,7 +69,7 @@ function Needs({ model, noUmas }: { model: FacilityView; noUmas: boolean }) {
               </Link>
             )}
             {line.start !== null && (
-              <Link to={line.start} state={{ back: true }} className={`${BUTTON} bg-accent text-ink`} data-action="needs-start">{trainingWords('start')}</Link>
+              <Link to={line.start} state={{ back: true }} className={`${BUTTON} bg-accent text-accent-ink`} data-action="needs-start">{trainingWords('start')}</Link>
             )}
           </li>
         ))}
@@ -141,7 +141,7 @@ function CollectHere({ model, tap }: { model: FacilityView; tap: Tap }) {
     <div className="pb-safe sticky bottom-0 z-10 space-y-1.5 border-t border-hairline bg-panel/95 px-4 py-2 backdrop-blur">
       <ReceiptLines receipt={receipt} context={context} />
       <TapNoteLine tap={tap} />
-      <button type="button" data-action="collect-here" disabled={tap.pending !== null || model.ready === 0} onClick={() => void collect()} className={`${BUTTON} w-full bg-accent text-ink`}>
+      <button type="button" data-action="collect-here" disabled={tap.pending !== null || model.ready === 0} onClick={() => void collect()} className={`${BUTTON} w-full bg-accent text-accent-ink`}>
         {model.ready > 0 ? trainingWords('collect-here-n', { n: model.ready }) : trainingWords('nothing-to-collect')}
       </button>
     </div>

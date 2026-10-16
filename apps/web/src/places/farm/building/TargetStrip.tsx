@@ -35,7 +35,7 @@ export function TargetStrip({ lines, sheetTo, className = '' }: {
             >
               <ItemIcon item={line.line.item} decorative className={line.gate !== null ? 'opacity-45' : ''} />
               {line.line.short > 0 ? (
-                <span aria-hidden className="font-display absolute -top-1.5 -right-1.5 rounded-full bg-accent px-1 text-[10px] leading-4 font-bold text-ink tabular-nums shadow-1">
+                <span aria-hidden className="font-display absolute -top-1.5 -right-1.5 rounded-full bg-accent px-1 text-[10px] leading-4 font-bold text-accent-ink tabular-nums shadow-1">
                   {farmWords('target-short', { n: grouped(line.line.short) })}
                 </span>
               ) : (

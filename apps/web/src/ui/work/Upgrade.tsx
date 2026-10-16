@@ -80,7 +80,7 @@ export function UpgradeButton({ upgrade: next, building, name }: {
             : <p className="text-[13px]">{workWords('upgrade-ask', { place: name, level: next.to, cost })}</p>}
           <TapNoteLine tap={tap} />
           <div className="flex gap-2">
-            <button type="button" disabled={refusal !== null || tap.pending !== null} onClick={() => void run()} className={`${BUTTON} flex-1 bg-accent text-ink`}>
+            <button type="button" disabled={refusal !== null || tap.pending !== null} onClick={() => void run()} className={`${BUTTON} flex-1 bg-accent text-accent-ink`}>
               {workWords('yes')}
             </button>
             <button type="button" onClick={() => setOpen(false)} className="min-h-12 flex-1 rounded-sm font-semibold text-ink-soft">{workWords('not-now')}</button>

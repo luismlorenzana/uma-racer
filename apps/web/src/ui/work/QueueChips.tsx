@@ -31,7 +31,7 @@ export function requestMark(request: WorkRequest, label: (request: WorkRequest) 
 export function QueueCount({ n }: { n: number }) {
   if (n <= 0) return null
   return (
-    <span aria-label={workWords('queued-label', { n })} className="font-display rounded-full bg-ink px-1.5 text-[11px] leading-5 font-bold text-ink-on-dark">
+    <span aria-label={workWords('queued-label', { n })} className="font-display rounded-full bg-scrim px-1.5 text-[11px] leading-5 font-bold text-ink-on-dark">
       {workWords('queued', { n })}
     </span>
   )

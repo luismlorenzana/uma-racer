@@ -52,7 +52,7 @@ export function ArtViewer({
               type="button"
               aria-label="Close"
               onClick={onClose}
-              className="flex h-11 w-11 items-center justify-center rounded-full bg-panel/12 text-white"
+              className="flex h-11 w-11 items-center justify-center rounded-full bg-white/12 text-white"
             >
               <CloseIcon size={24} />
             </button>
