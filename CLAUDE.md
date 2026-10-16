@@ -97,7 +97,7 @@ pnpm assets:import  # image sources → private WebP atlases; run after data:imp
 | API | Cloud Run `racer-api` (us-central1), `https://racer-api-tmzkhylhfq-uc.a.run.app`; `/api/health` (not `/healthz`, which Cloud Run's front end reserves) |
 | GCP project | `uma-racer` (number 1026964321499), plus a private bucket `uma-racer-content` |
 | Deploy | `.github/workflows/deploy.yml`, keyless WIF. Repo variables: GCP_PROJECT_ID, WIF_PROVIDER, CONTENT_BUCKET, ALLOWED_EMAIL, DEPLOY_ENABLED |
-| Live on 2026-10-16 | `8caac6a` as racer-api-00191 (T146, the compact Farm), content `9ba4cdd37cca`, uma-art 2.7.0 |
+| Live on 2026-10-16 | `652cc58` as racer-api-00192 (T147, uma-kit 0.1.2 and dark mode), content `9ba4cdd37cca`, uma-art 2.7.0 |
 
 - **Local gcloud has two accounts, and the active one is the owner's work account. Never change it.** Scope every uma-racer
   command with environment variables only:
