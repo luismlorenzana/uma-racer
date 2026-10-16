@@ -5,7 +5,7 @@
 // shows; the roster line; and what an Uma is doing. Pure: the screens draw what this returns. The Uma picker (D181) and
 // the profile's previous and next order read the same album.
 import { placeById, type PlaceId } from '@racer/domain/hub'
-import { clockTime, type OperationEnv } from '@racer/domain/check-in'
+import { durationText, type OperationEnv } from '@racer/domain/check-in'
 import { farmExpAtLevel, farmExpToNext, FARM_LEVEL_CAP, QUARTERS_PER_EXP } from '@racer/domain/farm'
 import { advanceReadiness, lifetimeLevel, promotionReadiness, racingExpToNext, scenarioNumber, scenarioRow, TIER_REFUSALS, UMA_SHARDS_PER_TICKET } from '@racer/domain/tiers'
 import { isRefusal, type Tier, type UmaState } from '@racer/domain/state'
@@ -258,13 +258,13 @@ export function doingOf(state: WorkState, outfitId: string, now: number): Doing 
   }
 }
 
-/** "Kitchen · 2 of 4 · 16:40", "Kitchen · Ready", or "Free". */
-export function doingWords(doing: Doing, utcOffsetMin: number): string {
+/** "Kitchen · 2 of 4 · 2h 10m" (how long her current entry has left, D366), "Kitchen · Ready", or "Free". */
+export function doingWords(doing: Doing, now: number): string {
   if (doing.kind === 'free') return 'Free'
   const place = placeById(doing.place)?.name ?? doing.place
   if (doing.kind === 'ready') return `${place} · Ready`
   const queued = doing.queued > 0 ? ` · +${doing.queued} queued` : ''
-  return `${place} · ${doing.done} of ${doing.of} · ${clockTime(doing.endsAt, utcOffsetMin)}${queued}`
+  return `${place} · ${doing.done} of ${doing.of} · ${durationText(doing.endsAt - now)}${queued}`
 }
 
 /** `doingOf` after the queues due by `now` have started. */

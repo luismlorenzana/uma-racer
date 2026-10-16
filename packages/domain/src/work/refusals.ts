@@ -1,13 +1,13 @@
 // Every rule failure of the work engine and the Farm, in plain words (docs/game/02-check-ins-and-notifications.md §9,
 // docs/game/07-farm.md §10–§11). `{uma}` is her outfit and `{item}` an item, which the screen turns into names;
-// `{time}` is a timestamp it shows as a clock time. The data carries what the screen needs to ask again with new numbers
+// `{time}` is a timestamp it shows as how long until then (D366). The data carries what the screen needs to ask again with new numbers
 // ("Only 3 left now. Start ×3?"): `freeAt`, the shortfall and `largestCoverable`. One table, so T131's banned-word test
 // reads every sentence the work rules can show.
 import { refuse, type Refusal } from '../state/types'
 
 export const WORK_REFUSALS = {
   'slot-taken': 'That slot is taken.',
-  busy: '{uma} is busy until {time}.',
+  busy: '{uma} is busy for another {time}.',
   count: 'Make 1 to 10 at a time.',
   'not-here': "That isn't made here.",
   grade: 'Needs Farm Lv {level}.',

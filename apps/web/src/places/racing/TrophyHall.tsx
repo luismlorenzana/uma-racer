@@ -137,7 +137,7 @@ function UmaScope({ umaId }: { umaId: string }) {
   const content = useRaceContent()!
   const [pinMode, setPinMode] = useState(false)
   const badge = umaBadge(records, umaId)
-  const strip = stripOrder(state, (id) => content.umas.byId.get(id)?.name ?? id, now, game.utcOffsetMin(now))
+  const strip = stripOrder(state, (id) => content.umas.byId.get(id)?.name ?? id, now)
     .sort((a, b) => b.lifetime - a.lifetime || a.name.localeCompare(b.name))
   const races = raceRecords(state, records)
   const events = eventList(records)

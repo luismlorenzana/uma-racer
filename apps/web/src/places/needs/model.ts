@@ -84,7 +84,7 @@ export function needsView(state: WorkState, settled: WorkState, outfitId: string
       start,
       words: needsWords('start-line', {
         uma: context.umaName(start.outfitId) || start.outfitId,
-        what: startWords(start.slot, start.request, start.endsAt, context.utcOffsetMin),
+        what: startWords(start.slot, start.request, start.endsAt, context.now),
       }),
     })),
     pickCards: mine.pickCards > 0 ? fill(say(CHECK_IN_WORDS['pick-cards-count'], { n: mine.pickCards })) : null,

@@ -56,5 +56,5 @@ export function withSetCard(state: WorkState, outfitId: string, type: 'speed' | 
 /** The view at `now`, as the screens read it. */
 export const viewAt = (state: WorkState, now: number): WorkView => workView(state, now, DEV_ENV)
 
-/** Names from the synthetic content; UTC, as the seeds run. */
-export const CONTEXT: WordsContext = Object.freeze({ umaName: (outfitId: string) => content.umas.get(outfitId)?.name ?? '', utcOffsetMin: 0 })
+/** Names from the synthetic content; UTC, as the seeds run; the fresh account's clock. */
+export const CONTEXT: WordsContext = Object.freeze({ umaName: (outfitId: string) => content.umas.get(outfitId)?.name ?? '', utcOffsetMin: 0, now: farmAccount(0).at })

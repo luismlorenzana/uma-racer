@@ -1,8 +1,9 @@
 // The words every timed thing shows (docs/game/02-check-ins-and-notifications.md §9; T140, D366): a rule's or a
 // question's template from the domain filled for the screen, `{uma}` with her template's name, `{item}` with the
-// item's, `{place}` with the building's and `{time}` as a clock time, numbers grouped ("1,200"); and the shared pieces'
-// own copy, which reads how long work takes or has left (`durationText`), never when it ends. 02 §9's banned words never appear here (`work.test.ts` holds every template to `hasBannedWord`).
-import { clockTime, fill, type Words } from '@racer/domain/check-in'
+// item's, `{place}` with the building's and `{time}` as how long until then from the clock's `now` (`durationText`),
+// numbers grouped ("1,200"); and the shared pieces' own copy, which reads how long work takes or has left, never when it
+// ends. 02 §9's banned words never appear here (`work.test.ts` holds every template to `hasBannedWord`).
+import { durationText, fill, type Words } from '@racer/domain/check-in'
 import { BUILDINGS, isBuildingId } from '@racer/domain/farm'
 import { itemById } from '@racer/domain/items'
 
@@ -10,8 +11,10 @@ import { itemById } from '@racer/domain/items'
 export interface WordsContext {
   /** Her template's name, or '' when the content lacks her. */
   readonly umaName: (outfitId: string) => string
-  /** The device's offset from UTC, for clock times. */
+  /** The device's offset from UTC: the owner's check-in times are the only clock times on screen (D366). */
   readonly utcOffsetMin: number
+  /** The clock's now: a `{time}` reads as how long until then. */
+  readonly now: number
 }
 
 export const itemName = (item: string): string => itemById(item)?.name ?? item
@@ -20,7 +23,7 @@ export const placeName = (building: string): string => (isBuildingId(building) ?
 
 export const grouped = (n: number): string => n.toLocaleString('en-US')
 
-/** A template filled for the screen: names for outfits, items and places, clock times for `{time}`. */
+/** A template filled for the screen: names for outfits, items and places, how long until a `{time}` (D366). */
 export function showWords(words: Words, context: WordsContext): string {
   const data = words.data
   if (data === undefined) return words.text
@@ -29,7 +32,7 @@ export function showWords(words: Words, context: WordsContext): string {
     if (key === 'uma' && typeof value === 'string') named[key] = context.umaName(value) || value
     else if (key === 'item' && typeof value === 'string') named[key] = itemName(value)
     else if (key === 'place' && typeof value === 'string') named[key] = placeName(value)
-    else if (key === 'time' && typeof value === 'number') named[key] = clockTime(value, context.utcOffsetMin)
+    else if (key === 'time' && typeof value === 'number') named[key] = durationText(value - context.now)
     else named[key] = typeof value === 'number' ? grouped(value) : value
   }
   return fill({ text: words.text, data: named })
@@ -95,7 +98,7 @@ export const WORK_WORDS = Object.freeze({
   'queue-title': 'Queued behind',
   /** StoppedQueueCard (02 §3, §4; T142). */
   'stopped-label': '{uma}’s queue stopped: {line}',
-  'stopped-line': '{place} ×{n} at {time}',
+  'stopped-line': '{place} ×{n} · stopped {time} ago',
   restart: 'Restart',
   'buy-restart': 'Buy {n} and restart · {price}',
   'buy-restart-ask': 'Buy {items} for {price} Prize Money and restart her queue?',

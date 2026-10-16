@@ -4,7 +4,7 @@
 // order, the suggestions, the stopped queues' fixes (`queueStopped`, `buyFor`, `makeThem`), Speed up all's counts
 // (`speedUpAllPlan`, its refusal from `speedUpAll` run on the current state) and Best use.
 import {
-  checkInSummary, CHECK_IN_WORDS, clockTime, fill, makeThem, nextCheckIn, say, speedUpAll, speedUpAllPlan, SPEED_UP_SPANS,
+  checkInSummary, CHECK_IN_WORDS, clockTime, durationText, fill, makeThem, nextCheckIn, say, speedUpAll, speedUpAllPlan, SPEED_UP_SPANS,
   type BuyLine, type CheckInSummary, type CollectAllReceipt, type OperationEnv, type RepeatReceipt, type SpeedUpSpan,
   type SummarySection, type Words,
 } from '@racer/domain/check-in'
@@ -37,21 +37,17 @@ export const sectionOf = <K extends SummarySection['kind']>(summary: CheckInSumm
 // --- The header -----------------------------------------------------------------------------------------------------
 
 /** "5 h ago" (02 §4): minutes under an hour, hours under two days, then days. */
+/** "5h 2m ago", in whole minutes cut down, or "just now" under a minute (D366: `durationText`'s words). */
 export function agoWords(since: number, now: number): string {
   const minutes = Math.max(0, Math.floor((now - since) / 60_000))
   if (minutes < 1) return summaryWords('ago-now')
-  if (minutes < 60) return summaryWords('ago-minutes', { n: minutes })
-  const hours = Math.floor(minutes / 60)
-  if (hours < 48) return summaryWords('ago-hours', { n: hours })
-  const days = Math.floor(hours / 24)
-  return days === 1 ? summaryWords('ago-day') : summaryWords('ago-days', { n: days })
+  return summaryWords('ago', { time: durationText(minutes * 60_000) })
 }
 
-/** "Check-in · since 08:02 (5 h ago)", or `title` alone the first time this device shows the sheet. */
-export function headerWords(title: string, since: number | null, now: number, utcOffsetMin: number): string {
+/** "Check-in · last visit 5h 2m ago", or `title` alone the first time this device shows the sheet. */
+export function headerWords(title: string, since: number | null, now: number): string {
   if (since === null) return title
-  const at = Math.min(since, now)
-  return summaryWords('since', { time: clockTime(at, utcOffsetMin), ago: agoWords(at, now) })
+  return summaryWords('since', { ago: agoWords(Math.min(since, now), now) })
 }
 
 // --- Words for work -------------------------------------------------------------------------------------------------
@@ -68,16 +64,16 @@ export function unlockWords(work: WorkUnlockRef, env: OperationEnv): string {
   return env.content.cards.has(ref.target) ? summaryWords('note-bond', { name: cardName(env.content, ref.target) }) : unlockLabel(ref)
 }
 
-/** A suggestion or a start in 02 §4's words: "Gather Fruits G2 ×3 → 17:30", "Lineage Hall ×1 → 16:15". */
-export function startWords(slot: SlotRef, request: WorkRequest, endsAt: number, utcOffsetMin: number): string {
-  const time = clockTime(endsAt, utcOffsetMin)
+/** A suggestion or a start in 02 §4's words: "Gather Fruits G2 ×3 → in 5h 42m", "Lineage Hall ×1 → in 3h 36m" (D366). */
+export function startWords(slot: SlotRef, request: WorkRequest, endsAt: number, now: number): string {
+  const time = durationText(endsAt - now)
   if (request.kind === SESSION_KIND) return summaryWords('suggest-session', { place: placeName(slot.building), n: request.unlocks.length, time })
   const key = request.kind === 'gather' ? 'suggest-gather' : request.kind === 'craft' ? 'suggest-craft' : 'suggest-cook'
   return summaryWords(key, { what: lineLabel(request.item), n: request.count, time })
 }
 
-export const suggestionWords = (suggestion: Suggestion, utcOffsetMin: number): string =>
-  startWords(suggestion.slot, suggestion.request, suggestion.endsAt, utcOffsetMin)
+export const suggestionWords = (suggestion: Suggestion, now: number): string =>
+  startWords(suggestion.slot, suggestion.request, suggestion.endsAt, now)
 
 // --- Links (T139–T141's routes) -------------------------------------------------------------------------------------
 
@@ -177,7 +173,7 @@ export interface RepeatedView {
 export function repeatedView(receipt: RepeatReceipt, settled: WorkState, context: WordsContext): RepeatedView {
   const lines = receipt.started.filter((start) => start.notes.length > 0).map((start): RepeatedLine => {
     const notes = start.notes.map(fill)
-    const what = [startWords(start.slot, start.request, start.endsAt, context.utcOffsetMin), ...notes].join(' · ')
+    const what = [startWords(start.slot, start.request, start.endsAt, context.now), ...notes].join(' · ')
     // Switch recalls her repeated job, so it shows only while that job is still her latest.
     const current = settled.work[start.outfitId]?.entries.at(-1)
     const still = current !== undefined && sameRequest(current.request, start.request)
@@ -208,11 +204,11 @@ export interface FreeLine {
   readonly canRepeat: boolean
 }
 
-export function freeLines(section: Section<'free'>, settled: WorkState, back: string, utcOffsetMin: number): FreeLine[] {
+export function freeLines(section: Section<'free'>, settled: WorkState, back: string, now: number): FreeLine[] {
   return section.umas.map(({ outfitId, suggestion }): FreeLine => ({
     outfitId,
     suggestion,
-    words: suggestion === null ? summaryWords('free-idle') : suggestionWords(suggestion, utcOffsetMin),
+    words: suggestion === null ? summaryWords('free-idle') : suggestionWords(suggestion, now),
     to: suggestion === null ? needsLink(outfitId) : suggestionLink(suggestion, back),
     canRepeat: (settled.work[outfitId]?.last ?? null) !== null,
   }))
@@ -258,7 +254,7 @@ export function skipViews(section: Section<'couldnt-repeat'>, settled: WorkState
         case 'queue-stopped':
           return settled.work[skip.outfitId]?.dropped ? [{ kind: 'queue-stopped' }] : []
         case 'suggestion':
-          return skip.suggestion === null ? [] : [{ kind: 'suggestion', suggestion: skip.suggestion, words: suggestionWords(skip.suggestion, utcOffsetMin) }]
+          return skip.suggestion === null ? [] : [{ kind: 'suggestion', suggestion: skip.suggestion, words: suggestionWords(skip.suggestion, now) }]
       }
     }),
   }))
@@ -266,12 +262,12 @@ export function skipViews(section: Section<'couldnt-repeat'>, settled: WorkState
 
 // --- Next and Money -------------------------------------------------------------------------------------------------
 
-/** "Next: 14:10 Kitchen ×1 · all done by 22:05". */
-export function nextWords(section: Section<'next'>, utcOffsetMin: number): string {
+/** "Next in 1h 20m: Kitchen ×1 · all done in 9h" (D366). */
+export function nextWords(section: Section<'next'>, now: number): string {
   const { next, allDoneAt } = section
   const n = next.request.kind === SESSION_KIND ? next.request.unlocks.length : next.request.count
   return summaryWords('next', {
-    time: clockTime(next.at, utcOffsetMin), place: placeName(next.slot.building), n, done: clockTime(allDoneAt, utcOffsetMin),
+    time: durationText(next.at - now), place: placeName(next.slot.building), n, done: durationText(allDoneAt - now),
   })
 }
 
@@ -311,7 +307,7 @@ export function speedOptions(state: WorkState, env: OperationEnv, now: number, u
 
 export interface BestUseLine {
   readonly outfitId: string
-  /** "Amber Sprint: Carrot Salad ×3 → 14:10". */
+  /** "Amber Sprint: Kitchen · Carrot Salad ×3 → in 2h 10m". */
   readonly words: string
 }
 
@@ -325,7 +321,7 @@ export function bestUseLines(view: WorkView, context: WordsContext): BestUseLine
       outfitId: use.outfitId,
       words: summaryWords('line-label', {
         uma: context.umaName(use.outfitId) || use.outfitId,
-        what: summaryWords('best-line', { what, time: clockTime(use.endsAt, context.utcOffsetMin) }),
+        what: summaryWords('best-line', { what, time: durationText(use.endsAt - view.now) }),
       }),
     }
   })

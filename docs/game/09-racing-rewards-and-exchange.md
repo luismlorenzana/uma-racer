@@ -475,7 +475,7 @@ result, the operation, the building.
 | The first showing on this device plays the fanfare; a reload or a reopen shows the stored row's result, prize and band quietly (T141) | §7's last line: what was paid is the receipt's, the fanfare this visit's |
 | The tired line reads "Tired purse: paid a quarter (6,420 of 12,000)" and the spent line "Spent purse: paid a twentieth (13,100 today)"; the shares' words come from `PURSE_BANDS` (T141) | §7 names only the tired line; the spent band has no upper edge to name |
 | The purse bar reads the device's date: a later day is an empty purse; its (i) gives the bands in two lines from `PURSE_BANDS` (T141) | §3.5's bar; the next race starts the new day's purse |
-| The strip leads with open goals, then D181's order by lifetime level, then name, finished careers last; a tile reads "T1 · Lv 13" with her work in one chip. **Next Uma** is the next in that order, round to the first (T141) | [11](11-hub-and-places.md) §9.2 |
+| The strip leads with open goals, then D181's order by lifetime level, then name, finished careers last; a tile reads "T1 · Lv 13" with her work in one chip ("Kitchen · 2h 10m", how long it has left, D366). **Next Uma** is the next in that order, round to the first (T141) | [11](11-hub-and-places.md) §9.2 |
 | Race select opens on the first Uma in the strip; `?uma=&race=` preselects her and opens the pre-race sheet. The sheet's running style starts at her race defaults (her preferences, else today's recommendation) and is not saved (T141) | 11 §9.2's first Uma with an unwon goal; the Uma profile owns `set-race-defaults` (T138) |
 
 ## 11. Done when

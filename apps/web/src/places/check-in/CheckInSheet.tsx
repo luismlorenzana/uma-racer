@@ -306,7 +306,7 @@ export default function CheckInSheet({ collect }: CheckInSheetProps) {
   const busy = taps.pending !== null || starting
   const collecting = collect && nav.collectId === undefined
   const free = sectionOf(summary, 'free')
-  const lines = free === undefined ? [] : freeLines(free, settled, back, offset)
+  const lines = free === undefined ? [] : freeLines(free, settled, back, now)
   const startable = lines.filter((line) => line.suggestion !== null)
   const stoppedSection = sectionOf(summary, 'queue-stopped')
   const stoppedNow = new Set(stoppedSection?.queues.map((queue) => queue.outfitId) ?? [])
@@ -361,7 +361,7 @@ export default function CheckInSheet({ collect }: CheckInSheetProps) {
 
   return (
     <div data-g2="check-in" className="flex flex-col">
-      <h2 data-sheet-heading tabIndex={-1} className="pb-2 text-lg outline-none">{headerWords(hubWords('check-in-title'), since, now, offset)}</h2>
+      <h2 data-sheet-heading tabIndex={-1} className="pb-2 text-lg outline-none">{headerWords(hubWords('check-in-title'), since, now)}</h2>
       {collecting && <p role="status" className="pb-2 text-[13px] text-ink-soft">{summaryWords('collecting')}</p>}
       {nothing && <p className="pb-2 text-[14px] text-ink-soft">{summaryWords('nothing-to-do')}</p>}
 
@@ -510,7 +510,7 @@ export default function CheckInSheet({ collect }: CheckInSheetProps) {
 
       {(next !== undefined || money !== undefined) && (
         <div className="space-y-1 border-t border-hairline py-2 text-[13px]">
-          {next !== undefined && <p data-g2="next" className="tabular-nums">{nextWords(next, offset)}</p>}
+          {next !== undefined && <p data-g2="next" className="tabular-nums">{nextWords(next, now)}</p>}
           {money !== undefined && (
             <div className="flex items-center gap-2">
               <p data-g2="money" className="min-w-0 flex-1 tabular-nums">{moneyWords(money)}</p>

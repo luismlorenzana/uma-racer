@@ -3,7 +3,7 @@
 // result's lines. Pure: the rules give every number (`purseFor`, `bandAt`, `PURSE_BANDS`, `featuredBoard`,
 // `grossPrize`, `payFromPurse`, the race finish's receipt), and the words are `words.ts`'s.
 import { careerComplete, careerHoldLevel, CAREER_STAGE_LABELS, careerStage, regularRaceCatalog, type RaceGrade, type RaceTemplate } from '@racer/domain'
-import { clockTime, hasReady } from '@racer/domain/check-in'
+import { durationText, hasReady } from '@racer/domain/check-in'
 import {
   bandAt, boardDay, featuredBoard, featuredSeed, grossPrize, payFromPurse, purseFor, PURSE_BANDS, PURSE_SHARE_DENOMINATOR, WIN_PRIZE,
   type LocalDay, type PurseBand, type RacePrize,
@@ -107,24 +107,24 @@ export interface StripTile {
   readonly lifetime: number
   /** Her career has goals left: she leads the strip. */
   readonly open: boolean
-  /** Her work in one chip ("Kitchen · 16:40"), or null when she is free. Never a lock (D328). */
+  /** Her work in one chip ("Kitchen · 2h 10m", how long it has left, D366), or null when she is free. Never a lock (D328). */
   readonly work: string | null
 }
 
-/** Her work in one chip: where, and when it ends, or Ready. */
-export function workChip(row: WorkRow | undefined, now: number, utcOffsetMin: number): string | null {
+/** Her work in one chip: where, and how long it has left, or Ready. */
+export function workChip(row: WorkRow | undefined, now: number): string | null {
   const entry = row?.entries[row.entries.length - 1]
   const building = row?.slot?.building
   if (row === undefined || entry === undefined || building === undefined) return null
   const place = BUILDINGS[building].name
-  return hasReady(row, now) ? racingWords('tile-ready', { place }) : racingWords('tile-work', { place, time: clockTime(endsAt(entry), utcOffsetMin) })
+  return hasReady(row, now) ? racingWords('tile-ready', { place }) : racingWords('tile-work', { place, time: durationText(endsAt(entry) - now) })
 }
 
 /**
  * The strip's order (11 §9.2): open goals first, then D181's order by lifetime level, highest first, then name; finished
  * careers last.
  */
-export function stripOrder(state: Pick<WorkState, 'umas' | 'work'>, name: (umaId: string) => string, now: number, utcOffsetMin: number): StripTile[] {
+export function stripOrder(state: Pick<WorkState, 'umas' | 'work'>, name: (umaId: string) => string, now: number): StripTile[] {
   return Object.values(state.umas).map((uma): StripTile => ({
     umaId: uma.outfitId,
     name: name(uma.outfitId),
@@ -132,7 +132,7 @@ export function stripOrder(state: Pick<WorkState, 'umas' | 'work'>, name: (umaId
     level: uma.racing.level,
     lifetime: lifetimeLevel(uma.tier, uma.racing.level),
     open: !careerComplete(uma.career),
-    work: workChip(state.work[uma.outfitId] as WorkRow | undefined, now, utcOffsetMin),
+    work: workChip(state.work[uma.outfitId] as WorkRow | undefined, now),
   })).sort((a, b) => Number(b.open) - Number(a.open) || b.lifetime - a.lifetime || a.name.localeCompare(b.name) ||
     (a.umaId < b.umaId ? -1 : a.umaId > b.umaId ? 1 : 0))
 }

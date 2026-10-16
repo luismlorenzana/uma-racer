@@ -1,6 +1,6 @@
 // The featured Uma (docs/game/11-hub-and-places.md §5; T138): `FeaturedUmaCard`, the Town Hall plaza's cell and the
 // Stable Peek's first card, and her quick sheet: her name, tier crest, scenario, Racing Level and what she's doing
-// ("Kitchen · 2 of 4 · 16:40"); Train (her Needs), Race (the Racecourse with her picked), Profile, and Feature another
+// ("Kitchen · 2 of 4 · 2h 10m"); Train (her Needs), Race (the Racecourse with her picked), Profile, and Feature another
 // Uma through the one Uma picker, which runs `feature-uma`. The plaza's chibi and its animation wait for phase 5's
 // `outfit-chibis` release (§5).
 import { hubWords } from '@racer/domain/hub'
@@ -8,7 +8,7 @@ import { scenarioNumber, scenarioRow } from '@racer/domain/tiers'
 import { useMemo, useState } from 'react'
 import { Link, useLocation } from 'react-router'
 import { Button } from '../../ui/Button'
-import { useGame, useHub, useNow, useRuntime } from '../../app/game'
+import { useGame, useHub, useNow } from '../../app/game'
 import { navState, withParam } from '../../hub/nav'
 import { TapNoteLine, useTap } from '../../ui/work'
 import { UmaArt } from '../../ui/UmaArt'
@@ -43,7 +43,6 @@ export function FeaturedUmaCard({ umaId }: PlazaProps) {
 /** Her quick sheet (§5). */
 export function FeaturedSheet({ umaId, onClose }: FeaturedSheetProps) {
   const location = useLocation()
-  const { game } = useRuntime()
   const now = useNow()
   const view = useHub()
   const state = useGame((snapshot) => snapshot.state)
@@ -72,7 +71,7 @@ export function FeaturedSheet({ umaId, onClose }: FeaturedSheetProps) {
             <TierCrest tier={uma.tier} />
           </h2>
           <p className="text-[13px] text-ink-soft">{scenarioRow(scenarioNumber(uma)).name} · Racing Lv {uma.racing.level}</p>
-          {doing !== null && <p className="text-[13px] font-semibold" data-g2="doing">{doingWords(doing, game.utcOffsetMin(now))}</p>}
+          {doing !== null && <p className="text-[13px] font-semibold" data-g2="doing">{doingWords(doing, now)}</p>}
         </div>
       </div>
       <div className="grid grid-cols-3 gap-2">

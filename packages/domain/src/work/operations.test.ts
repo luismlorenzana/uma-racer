@@ -53,7 +53,7 @@ describe('start', () => {
     // She is Working elsewhere: refused with when she's free.
     const working = ok(start(state, { outfitId: PLAIN.id, slot: GARDEN, request: carrots(2) }, T0, ENV)).state
     expect(start(working, { outfitId: PLAIN.id, slot: KITCHEN, request: { kind: 'cook', item: 'x', count: 0 } }, T0 + 1, ENV)).toEqual({
-      refused: true, code: 'busy', reason: '{uma} is busy until {time}.', data: { uma: PLAIN.id, time: T0 + 2 * GATHER_MS, freeAt: T0 + 2 * GATHER_MS },
+      refused: true, code: 'busy', reason: '{uma} is busy for another {time}.', data: { uma: PLAIN.id, time: T0 + 2 * GATHER_MS, freeAt: T0 + 2 * GATHER_MS },
     })
     expect(start(state, { outfitId: PLAIN.id, slot: PANTRY, request: chopped(0) }, T0, ENV)).toMatchObject({ code: 'count', reason: 'Make 1 to 10 at a time.' })
     expect(start(state, { outfitId: PLAIN.id, slot: PANTRY, request: chopped(11) }, T0, ENV)).toMatchObject({ code: 'count' })

@@ -124,10 +124,10 @@ describe("02 §9's stale screens end in a result or a one-sentence question", ()
     expect(session.kind === 'ask' && 'request' in session.input && session.input.request.kind === 'session' && session.input.request.unlocks.length).toBe(2)
   })
 
-  it('a real rule: says it plainly, as "{uma} is busy until {time}."', () => {
+  it('a real rule: says it plainly, as "{uma} is busy for another {time}."', () => {
     const state = ok(start(account(1, { carrot: 4 }), { outfitId: uma(1), slot: slot('pantry'), request: craft('chopped-carrot', 4) }, NOW, ENV)).state
     const answer = recheck(state, { id: 'b', name: 'start', input: { outfitId: uma(1), slot: slot('fields'), request: gather('wheat', 1) } }, NOW + 60_000, ENV)
-    expect(answer).toEqual({ kind: 'say', words: { text: '{uma} is busy until {time}.', data: { uma: uma(1), time: NOW + 108 * 60_000, freeAt: NOW + 108 * 60_000 } } })
+    expect(answer).toEqual({ kind: 'say', words: { text: '{uma} is busy for another {time}.', data: { uma: uma(1), time: NOW + 108 * 60_000, freeAt: NOW + 108 * 60_000 } } })
     if (answer.kind === 'say') sentence(answer.words.text)
     sentence(CHECK_IN_WORDS.offline)
     sentence(CHECK_IN_WORDS.unexpected)

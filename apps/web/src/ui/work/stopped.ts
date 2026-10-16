@@ -1,15 +1,15 @@
 // A stopped queue's card, as a pure reading (docs/game/02-check-ins-and-notifications.md §3 "Queues", §4; T142): the
-// entry that couldn't start, where and when ("Pantry ×10 at 06:00"), what came behind it, what was short in the rule's
+// entry that couldn't start, where and how long ago ("Pantry ×10 · stopped 7h 5m ago", D366), what came behind it, what was short in the rule's
 // words, and the fixes `queueStopped` offers at today's stock and prices: Restart, Buy and restart, Start ×N, Make them
 // and Dismiss. Every number is the domain's.
-import { clockTime, type StoppedQueue, type Words } from '@racer/domain/check-in'
+import { durationText, type StoppedQueue, type Words } from '@racer/domain/check-in'
 import { SESSION_KIND } from '@racer/domain/work'
 import { requestWords } from './QueueChips'
 import { itemsList, placeName, workWords, type WordsContext } from './words'
 
 export interface StoppedCardView {
   readonly outfitId: string
-  /** "Pantry ×10 at 06:00". */
+  /** "Pantry ×10 · stopped 7h 5m ago". */
   readonly line: string
   /** The entries that stopped behind it: "then Chopped Carrot ×5". */
   readonly behind: readonly string[]
@@ -31,7 +31,7 @@ export function stoppedCardView(queue: StoppedQueue, context: WordsContext): Sto
   return {
     outfitId: queue.outfitId,
     line: workWords('stopped-line', {
-      place: placeName(queue.dropped.slot.building), n: size, time: clockTime(queue.dropped.at, context.utcOffsetMin),
+      place: placeName(queue.dropped.slot.building), n: size, time: durationText(Math.floor(Math.max(0, context.now - queue.dropped.at) / 60_000) * 60_000),
     }),
     behind: queue.dropped.requests.slice(1).map((request) => workWords('queue-then-unknown', { what: requestWords(request) })),
     words: queue.words,

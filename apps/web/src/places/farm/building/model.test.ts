@@ -13,8 +13,8 @@ import { apply, farmAccount, HOUR, uma, withFarmLevel } from '../__fixtures__/fa
 import { FARM_WORDS } from '../words'
 import { buildingView, exchangeRow, lineLabel, lineWords, sheetQuery, stockByGrade, withSheet } from './model'
 
-const context = (env: { content: { umas: ReadonlyMap<string, { name?: string }> } }): WordsContext =>
-  ({ umaName: (id) => env.content.umas.get(id)?.name ?? '', utcOffsetMin: 0 })
+const context = (env: { content: { umas: ReadonlyMap<string, { name?: string }> } }, now = 0): WordsContext =>
+  ({ umaName: (id) => env.content.umas.get(id)?.name ?? '', utcOffsetMin: 0, now })
 
 describe('the header and the Counter (07 §10, 11 §3.4)', () => {
   it('counts slots, speed and the upgrade, and refuses an upgrade it can\'t pay in its own words', () => {
@@ -54,7 +54,7 @@ describe('For your targets (02 §6)', () => {
   it("lists the planner's lines here in 02 §6's words, each opening the sheet filled in", () => {
     const busy = seed('busy')
     const view = workView(busy.state, busy.at, busy.env)
-    const model = buildingView(view, 'vegetable-garden', context(busy.env))
+    const model = buildingView(view, 'vegetable-garden', context(busy.env, busy.at))
     expect(model.lines.length).toBeGreaterThan(0)
     const grades = model.lines.map((line) => line.line.grade)
     expect(grades).toEqual([...grades].sort((a, b) => a - b))
@@ -66,11 +66,11 @@ describe('For your targets (02 §6)', () => {
       expect(line.words).not.toMatch(/\d\d:\d\d/)
       expect(line.sheet.startsWith(`?job=${line.line.item}`)).toBe(true)
     }
-    // The Farm says how long until each coming output lands; the planner's Needs views keep the clock time (02 §6).
+    // Each coming output says how long until it lands, never its clock time (D366), here and in the Needs views.
     const coming = model.lines.find((line) => line.line.coming > 0)!
     expect(coming).toBeDefined()
-    expect(lineWords(coming.line, context(busy.env))).toMatch(/coming \d+ \([^,]+, \d\d:\d\d/)
-    expect(lineWords(coming.line, context(busy.env), busy.at)).toBe(coming.words)
+    expect(lineWords(coming.line, context(busy.env, busy.at))).toBe(coming.words)
+    expect(coming.words).toMatch(/coming \d+ \([^,]+, in \d+[dhm]/)
     expect(lineLabel('cabbage')).toBe('Vegetables G3')
     expect(lineLabel('dish-vegetables-1')).toBe('Vegetables G1')
     expect(lineLabel('duo-stamina-wit-3')).toBe('Duo G3')

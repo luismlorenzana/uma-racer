@@ -3,16 +3,16 @@
 // 07 §2's Potato job reads "3/10" with its time left from `endsAt`; SpeedUpControls' four states; a Recall's preview
 // equals the receipt `recall` gives; queue chips' durations and warnings; the size chips as durations with `sizeChips`'
 // marked size, never a clock time; and every template passes 02 §9's banned words.
-import { durationText, hasBannedWord, sizeChips } from '@racer/domain/check-in'
+import { durationText, hasBannedWord, say, sizeChips } from '@racer/domain/check-in'
 import { FARM_BUILDING_IDS, farmItemSeconds, totalSlots, type BuildingLevel } from '@racer/domain/farm'
-import { endsAt, itemEnds, recall, type WorkState } from '@racer/domain/work'
+import { endsAt, itemEnds, recall, WORK_REFUSALS, type WorkState } from '@racer/domain/work'
 import { describe, expect, it } from 'vitest'
 import { apply, farmAccount, HOUR, MINUTE, uma, withFarmLevel } from '../../places/farm/__fixtures__/farm'
 import { recallLines } from './RecallSheet'
 import { speedUpQuestion } from './SpeedUpControls'
 import { queueChips, recallPreview, sizeChipsView, slotCards, speedUpModel } from './model'
 import { workView } from './view'
-import { WORK_WORDS, workWords } from './words'
+import { showWords, WORK_WORDS, workWords } from './words'
 
 const at = farmAccount(0).at
 
@@ -164,6 +164,14 @@ describe('size chips (02 §3, D366)', () => {
     expect(sizeChipsView(at, seconds, 0, times, 0).chips).toHaveLength(1)
     const night = sizeChipsView(at + 15 * HOUR, seconds, 10, times, 0)
     expect(night).toMatchObject({ overnight: true, fit: 'runs overnight' })
+  })
+})
+
+describe('a time in a rule (D366)', () => {
+  it("reads as how long until then from the clock's now, never a clock time", () => {
+    const context = { umaName: (id: string) => (id === uma(1) ? 'Amber Sprint' : ''), utcOffsetMin: 0, now: at }
+    expect(showWords(say(WORK_REFUSALS.busy, { uma: uma(1), time: at + 2 * HOUR + 10 * MINUTE }), context)).toBe('Amber Sprint is busy for another 2h 10m.')
+    expect(showWords(say(WORK_REFUSALS.busy, { uma: uma(1), time: at + 30_000 }), { ...context, utcOffsetMin: 540 })).toBe('Amber Sprint is busy for another 1m.')
   })
 })
 

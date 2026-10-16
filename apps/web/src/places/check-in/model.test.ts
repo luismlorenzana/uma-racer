@@ -3,7 +3,7 @@
 // only Collected and Repeat all; the totals line; suggestions' words and preselected links; each skip's fixes; Speed up
 // all's counts and refusal; Best use; 02 §3's check-in-fits table, cell by cell, as size chips from base-minute items;
 // and every template held to the banned words.
-import { collectAll, DEFAULT_CHECK_INS, hasBannedWord, repeat, SUMMARY_SECTIONS, speedUpAllPlan } from '@racer/domain/check-in'
+import { collectAll, DEFAULT_CHECK_INS, durationText, hasBannedWord, repeat, SUMMARY_SECTIONS, speedUpAllPlan } from '@racer/domain/check-in'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -22,7 +22,7 @@ import { SUMMARY_WORDS } from './words'
 beforeEach(stubStorage)
 afterEach(() => vi.unstubAllGlobals())
 
-const context = (env: ReturnType<typeof seed>['env']): WordsContext => ({ umaName: (id) => env.content.umas.get(id)?.name ?? '', utcOffsetMin: 0 })
+const context = (env: ReturnType<typeof seed>['env'], now = 0): WordsContext => ({ umaName: (id) => env.content.umas.get(id)?.name ?? '', utcOffsetMin: 0, now })
 
 /** A seed's check-in: Collect all, then Repeat all, at the seed's clock. */
 function checkedIn(name: string) {
@@ -33,16 +33,16 @@ function checkedIn(name: string) {
 }
 
 describe('the header (02 §4)', () => {
-  it('reads "since 08:02 (5 h ago)", minutes under an hour, days past two, and no since the first time', () => {
+  it('reads "last visit 5h ago" as how long ago, never a clock time (D366), and nothing the first time', () => {
     const now = 13 * HOUR + 2 * MINUTE
-    expect(headerWords('Check-in', 8 * HOUR + 2 * MINUTE, now, 0)).toBe('Check-in · since 08:02 (5 h ago)')
-    expect(agoWords(now - 20 * MINUTE, now)).toBe('20 min ago')
+    expect(headerWords('Check-in', 8 * HOUR + 2 * MINUTE, now)).toBe('Check-in · last visit 5h ago')
+    expect(agoWords(now - 20 * MINUTE - 30_000, now)).toBe('20m ago')
     expect(agoWords(now, now)).toBe('just now')
-    expect(agoWords(now - 30 * HOUR, now)).toBe('30 h ago')
-    expect(agoWords(now - 50 * HOUR, now)).toBe('2 days ago')
-    expect(headerWords('Check-in', null, now, 0)).toBe('Check-in')
-    // A clock moved back never shows a since in the future.
-    expect(headerWords('Check-in', now + HOUR, now, 0)).toBe('Check-in · since 13:02 (just now)')
+    expect(agoWords(now - 30 * HOUR, now)).toBe('1d 6h ago')
+    expect(agoWords(now - 50 * HOUR, now)).toBe('2d 2h ago')
+    expect(headerWords('Check-in', null, now)).toBe('Check-in')
+    // A clock moved back never shows a visit in the future.
+    expect(headerWords('Check-in', now + HOUR, now)).toBe('Check-in · last visit just now')
   })
 
   it("keeps this device's since and folded sections in uma-racer:g2: keys, forgiving a bad value", () => {
@@ -92,10 +92,15 @@ describe('the sections (02 §4)', () => {
     expect(view.notes.some((note) => /Observatory node \d/.test(note.words))).toBe(true)
   })
 
-  it('Next reads the next finish and when all is done', () => {
+  it('Next reads how long until the next finish and until all is done (D366)', () => {
     const made = seed('quiet')
     const summary = summaryOf(made.state, made.env, made.at, 0, null, null, null)
-    expect(nextWords(sectionOf(summary, 'next')!, 0)).toMatch(/^Next: \d\d:\d\d [A-Z][\w ]+ ×\d+ · all done by \d\d:\d\d$/)
+    const next = sectionOf(summary, 'next')!
+    const words = nextWords(next, made.at)
+    expect(words).toMatch(/^Next in \S.*: [A-Z][\w ]+ ×\d+ · all done in \S.*$/)
+    expect(words).toContain(`Next in ${durationText(next.next.at - made.at)}: `)
+    expect(words.endsWith(`all done in ${durationText(next.allDoneAt - made.at)}`)).toBe(true)
+    expect(words).not.toMatch(/\d\d:\d\d/)
   })
 })
 
@@ -104,11 +109,12 @@ describe('Free and its suggestions (02 §4, §6)', () => {
     const { made, collected } = checkedIn('busy')
     const summary = summaryOf(collected.state, made.env, made.at, 0, null, collected.receipt, null)
     const settled = workView(collected.state, made.at, made.env).settled
-    const lines = freeLines(sectionOf(summary, 'free')!, settled, '/farm?sheet=check-in', 0)
+    const lines = freeLines(sectionOf(summary, 'free')!, settled, '/farm?sheet=check-in', made.at)
     const job = lines.find((line) => line.suggestion?.kind === 'job')!
     const session = lines.find((line) => line.suggestion?.kind === 'session')!
-    expect(job.words).toMatch(/^(Gather|Craft|Cook) [\w &]+ G\d+ ×\d+ → \d\d:\d\d$/)
-    expect(session.words).toMatch(/^(Observatory|Lineage Hall|Gym|Dojo) ×\d+ → \d\d:\d\d$/)
+    expect(job.words).toMatch(/^(Gather|Craft|Cook) [\w &]+ G\d+ ×\d+ → in \d+[dhm]/)
+    expect(job.words.endsWith(`→ in ${durationText(job.suggestion!.endsAt - made.at)}`)).toBe(true)
+    expect(session.words).toMatch(/^(Observatory|Lineage Hall|Gym|Dojo) ×\d+ → in \d+[dhm]/)
     const s = job.suggestion!
     expect(job.to).toBe(`/farm/${s.slot.building}?job=${s.item}&uma=${s.outfitId}&count=${s.size}&slot=${s.slot.slot}&back=%2Ffarm%3Fsheet%3Dcheck-in`)
     expect(suggestionLink(session.suggestion!, '/farm')).toMatch(/^\/training\/(observatory|lineage-hall|gym|dojo)\?session=sim-uma-\d+(&room=\w+)?&unlocks=[\w-]+%3A[\w-]+(%2C[\w-]+%3A[\w-]+)*&back=%2Ffarm$/)
@@ -180,7 +186,8 @@ describe('Speed up all and Best use (02 §4)', () => {
     const lines = bestUseLines(workView(made.state, made.at, made.env), context(made.env))
     expect(lines.length).toBeGreaterThan(0)
     expect(lines.length).toBeLessThanOrEqual(3)
-    expect(lines[0]!.words).toMatch(/^[A-Z][a-z]+ [A-Z][a-z]+: [\w ]+ · [^→]+ → \d\d:\d\d$/)
+    expect(lines[0]!.words).toMatch(/^[A-Z][a-z]+ [A-Z][a-z]+: [\w ]+ · [^→]+ → in \d+[dhm]/)
+    expect(lines.every((line) => !/\d\d:\d\d/.test(line.words))).toBe(true)
   })
 })
 

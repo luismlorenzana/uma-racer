@@ -106,11 +106,11 @@ export function useTaps(): Taps {
   return useMemo(() => ({ run: tap, pending, notes, line: lineTap, clear }), [tap, pending, notes, lineTap, clear])
 }
 
-/** What filling a template needs on screen: names from the game's content, and the device's offset now. */
+/** What filling a template needs on screen: names from the game's content, the clock's now and the device's offset. */
 export function useWordsContext(): WordsContext {
   const { game } = useRuntime()
   const now = useNow()
   const umas = useGame((snapshot) => snapshot.env?.content.umas)
   const utcOffsetMin = game.utcOffsetMin(now)
-  return useMemo(() => ({ umaName: (outfitId: string) => umas?.get(outfitId)?.name ?? '', utcOffsetMin }), [umas, utcOffsetMin])
+  return useMemo(() => ({ umaName: (outfitId: string) => umas?.get(outfitId)?.name ?? '', utcOffsetMin, now }), [umas, utcOffsetMin, now])
 }

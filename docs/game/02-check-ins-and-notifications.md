@@ -4,7 +4,7 @@
 > Umas working in visits of under a minute: Collect all, batch sizes, queues, Repeat, the check-in summary, the "what
 > she still needs" planner, offline time, retries and plain words. `pnpm sim:loop` ([12](12-economy-and-pacing.md) §12)
 > measures how much they raise utilisation. §1–§6 and §8–§9 run in the game (T142, D360), with §11's last rows; §3's
-> picker and queue chips read durations since T146 (D366). Push
+> picker, queue chips, summary, planner views and every other screen read durations since T146 (D366). Push
 > notifications (§7) are not built: phase 4, only if the owner asks.
 
 The pacing target assumes about **75% utilisation**: each Uma works about 18 hours a day, with three check-ins and
@@ -112,10 +112,12 @@ it.
 ## 4. The check-in summary
 
 Collect all opens the summary as a bottom sheet. The Hub's **Check-in** button opens the same sheet without
-collecting. At 390 × 844 it reads top to bottom, with the primary action in the thumb zone:
+collecting. At 390 × 844 it reads top to bottom, with the primary action in the thumb zone. Every time on it says how
+long from now, or how long ago, never a clock time (D366); the owner's check-in times are the only clock times on any
+screen (Account, and Speed up all's "to 13:00"):
 
 ```
- Check-in · since 08:02 (5 h ago)
+ Check-in · last visit 5h 2m ago
  ─────────────────────────────────────────────
  Collected     41 items · 6 dishes · 5 unlocks
    Kitasan Black   Observatory node 11
@@ -124,16 +126,16 @@ collecting. At 390 × 844 it reads top to bottom, with the primary action in the
  ─────────────────────────────────────────────
  Needs you
    Free (3)                    [Start suggestions]
-     Mejiro McQueen  Gather Fruits G2 ×3 → 17:30
-     Tokai Teio      Lineage Hall ×1 → 16:15
-     Rice Shower     Cook Sweets dish G2 ×1 → 17:20
+     Mejiro McQueen  Gather Fruits G2 ×3 → in 5h 42m
+     Tokai Teio      Lineage Hall ×1 → in 3h 36m
+     Rice Shower     Cook Sweets dish G2 ×1 → in 5h
    Queue stopped (1)
-     Special Week    Pantry ×10 at 06:00: short 2 raw Vegetables G2
+     Special Week    Pantry ×10 · stopped 7h ago: short 2 raw Vegetables G2
        [Buy 2 and restart · 190]  [Start ×8]  [Make them: Garden ×2]
    Training done (1)
      Daiwa Scarlet   scenario 1 training complete   [Race]
  ─────────────────────────────────────────────
- Next: 14:10 Kitchen ×1 · all done by 22:05
+ Next in 1h 8m: Kitchen ×1 · all done in 9h 3m
  Prize Money 1,240 · Speed Tickets 18   [Speed up]
             [ Repeat all (11) ]
 ```
@@ -142,11 +144,11 @@ collecting. At 390 × 844 it reads top to bottom, with the primary action in the
 |---|---|---|
 | **Collected** | Totals, then a line per notable change: unlocks, Farm Level-ups, new grades open, queues that moved on. Everything else folds into "41 items" | Tap a line to open that Uma or place |
 | **Free** | Umas with nothing running or queued, each with the planner's suggestion (§6) and its fitted size | **Start suggestions** starts them all; tapping a line opens its sheet with the suggestion preselected or opens the place |
-| **Queue stopped** | Queues that dropped since the last visit: the entry that couldn't start, when, and which input was short by how many. The dropped entries are kept here so they can be put back | **Buy and restart**: buys the shortfall at the Exchange ([09](09-racing-rewards-and-exchange.md)) and restarts the entry with the rest of its queue. **Start ×8**: restarts it at the size the stock covers. **Make them**: starts the missing input with a free Uma, preselected and sized |
+| **Queue stopped** | Queues that dropped since the last visit: the entry that couldn't start, how long ago, and which input was short by how many. The dropped entries are kept here so they can be put back | **Buy and restart**: buys the shortfall at the Exchange ([09](09-racing-rewards-and-exchange.md)) and restarts the entry with the rest of its queue. **Start ×8**: restarts it at the size the stock covers. **Make them**: starts the missing input with a free Uma, preselected and sized |
 | **Couldn't repeat** | Jobs Repeat skipped (§5), with the reason: no inputs, layer done for that facility, no free slot ("Kitchen full") | The same fixes, or **Pick another** |
 | **Training done** | Umas whose current scenario layer is complete | **Race**, which opens her next goal race |
 | **Ready to advance** | Umas at the gate with their career complete ([03](03-uma-progression.md)) | **Advance**, with its usual confirmation |
-| **Next** | The next finish, and when everything running will be done | — |
+| **Next** | How long until the next finish, and until everything running is done | — |
 | **Money** | Prize Money and Speed Tickets on hand | **Speed up** (below) |
 
 Empty sections don't show. A check-in with nothing to fix is just the Collected block and **Repeat all**.
@@ -159,7 +161,7 @@ to spend them:
 - **Speed up all**, which takes 1 h, 2 h or "to the next check-in" off every running job and session in one tap.
   Its confirmation shows the ticket count.
 - **Best use** marks: the planner (§6) flags running jobs whose finish unblocks the most work, such as a Kitchen job
-  three sessions wait on. These are the first to speed up after a free evening of racing ([01](01-game-loop.md) §5).
+  three sessions wait on, each with how long until it lands ("Kitchen · Carrot Salad ×3 → in 2h 10m"). These are the first to speed up after a free evening of racing ([01](01-game-loop.md) §5).
 
 ## 5. Repeat
 
@@ -230,7 +232,7 @@ Reserved inputs of running work are already spent; the planner never counts them
 | Where | Shows |
 |---|---|
 | **Her Needs tab** | Layer progress (Observatory 8/12, Lineage Hall 1/2, Gym 4/10, Dojo 3/6), then the cascade: dishes short → crafted short → raw short. Then an estimate, "about 120 Uma-hours of work", and the three jobs that unblock her most, each with **Start** |
-| **Each Farm site, the Pantry and the Kitchen** | **For your targets:** what the targets need from this place, lowest grade first. Each line reads "Vegetables G3 · short 6 · Warehouse 4 · coming 2 (Gold Ship, 14:10)". Tapping a line opens the job sheet with it filled in ([07](07-farm.md) §10). The recipe picker badges target lines ("Target ×3") |
+| **Each Farm site, the Pantry and the Kitchen** | **For your targets:** what the targets need from this place, lowest grade first. Each line is its item's icon with "×6" short; VoiceOver reads "Vegetables G3 · short 6 · Warehouse 4 · coming 2 (Gold Ship, in 1h 20m)". Tapping one opens the job sheet with it filled in ([07](07-farm.md) §10). The recipe picker badges target lines ("Target ×3") |
 | **Each Training facility** | Per target: unlocks left here, dishes ready, dishes coming. **Start** when she's free and a dish is in stock |
 | **The check-in summary** | Its suggestions for free Umas (§4) |
 | **Roster view** | The planner's totals for every Uma's layer at once: unlocks left, dishes short by family and grade. Big-picture only; place lists stay with the targets |
@@ -360,7 +362,7 @@ current choices before confirming", and called the banners internal messages.
 | Offline | "Saved on this phone. It'll sync when you're back online." | "Sync failed (503)" |
 | Done on the other device | "Already collected." | "Stale revision", "conflict" |
 | Stock changed | "Only 3 left now. Start ×3?" | "Farm changed; reload and review…" |
-| A real rule | "Kitasan Black is busy until 18:30." · "Needs Farm Lv 16." | "bad-slot", "gate failed" |
+| A real rule | "Kitasan Black is busy for another 2h 10m." · "Needs Farm Lv 16." | "bad-slot", "gate failed" |
 | Short inputs | "Short 2 raw Vegetables G2." | "insufficient stock" |
 | Anything unexpected | "That didn't work. Try again." (the outbox also retries by itself) | Codes, ids, stack traces |
 
@@ -453,7 +455,7 @@ The planner, suggestions, finish times and the badge count are **derived on read
 | Start suggestions is one `start` per line, each its own operation (T142) | 13 §6 has no batch start, and a line the state refuses mustn't stop the rest (T131's `startSuggestions`) |
 | The summary shows the server's receipt once it has one, else the local one (T142) | "Already collected" then shows in place, with no second screen (§9) |
 | Collect all runs once from navigation state, then keeps its id there, as Repeat all does (T142) | A reload shows the same receipt and never collects again |
-| `since` (`uma-racer:g2:check-in:shown-at`) is written when the sheet closes; folded sections are `uma-racer:g2:check-in:collapsed`; the first showing on a device has no "since" (T142) | Reopening the sheet's entry keeps "since 08:02"; a device that never showed it has no visit to measure from |
+| `since` (`uma-racer:g2:check-in:shown-at`) is written when the sheet closes; folded sections are `uma-racer:g2:check-in:collapsed`; the first showing on a device has no "last visit" (T142) | Reopening the sheet's entry keeps the same last visit; a device that never showed it has no visit to measure from |
 | Per-Uma Repeat sits on her Free line; each place's Repeat here is T140's (T142) | §5's "on every collected card" in a summary that folds slots into totals |
 | A Free line's tap opens its sheet preselected: T140's job sheet, or T139's session sheet (`?session=&room=&unlocks=&back=`); a Free Uma with nothing to suggest reads "Nothing she can start for your targets now." and opens her Needs tab (T142) | T131 plans one suggestion per Uma; §4's "swap for another suggestion" has no rule |
 | Repeat all's starts with a note ("×6 → ×3", "grade 2 open") list under **Repeated (N)** after Collected; **Switch** is Recall, then a start at the higher grade at the same place and size, through `recheck`, while that job is still her latest (T142) | Repeat already started the old grade; Recall returns its inputs ([07](07-farm.md)) |
@@ -461,6 +463,7 @@ The planner, suggestions, finish times and the badge count are **derived on read
 | Spending (Buy and restart, a fix's Buy, Speed up all) confirms once with the amount; everything else is one tap, one tap in flight for the whole sheet (T142) | §1 counts two taps for Buy and restart; §4 confirms Speed up all; §9's double tap |
 | A gated Needs line links to the Exchange row (`?family=&grade=`); only Queue stopped's and Couldn't repeat's fixes buy inline (T142) | T140's rule: a purchase stays one deliberate tap, outside §4's fixes |
 | `SizeChips` shows a chip per size, 1 to what the stock covers, each with how long it takes, the fitting one marked by an icon (T142, built by T140; D366) | §3: "a chip per size with how long it takes" |
+| **No screen shows the clock time work ends** (D366): the summary's header ("last visit 5h 2m ago"), Free's and Repeat's lines ("→ in 5h 42m"), Queue stopped ("stopped 7h ago"), Next ("Next in 1h 8m: … · all done in 9h 3m"), Best use, the Needs views' coming lines ("Gold Ship, in 1h 20m") and a rule's `{time}` ("busy for another 2h 10m") read how long from the clock's now. Only the owner's check-in times stay clock times | The owner: "the time the job is going to take, not the hour it finishes" |
 | The shared pieces came with T140 in `ui/work/`; T142 adds `StoppedQueueCard` and `useTaps`, `useTap` for a list (T142) | One runner and one set of pieces for every timed thing (D358) |
 | Offline shows one line in the summary's footer, linking to Account's sync row; the save's refused taps show there in plain words until dismissed; a stopped card another device already put back leaves its answer there (T142) | §9's words, where the owner just tapped |
 | "Already collected." names the Uma, or the place when nobody holds the slot now (T142) | The other device's collect freed the slot |

@@ -154,7 +154,7 @@ describe('the summary sheet (02 §4)', () => {
     // Opened by a link from outside the app, so Close replaces the entry rather than going back.
     renderG2({ pathname: '/farm', search: '?sheet=check-in' }, game)
     const sheet = await screen.findByRole('dialog', { name: 'Check-in' })
-    within(sheet).getByRole('heading', { name: /^Check-in · since \d\d:\d\d \(5 h ago\)$/ })
+    within(sheet).getByRole('heading', { name: /^Check-in · last visit 5h ago$/ })
     expect(localStorage.getItem(SHOWN_AT_KEY)).toBe(String(made.at - 5 * HOUR))
     fireEvent.click(within(sheet).getByRole('button', { name: 'Close' }))
     await waitFor(() => expect(localStorage.getItem(SHOWN_AT_KEY)).toBe(String(made.at)))
@@ -209,8 +209,8 @@ describe('Repeat (02 §5)', () => {
     expect(calls.at(-1)).toEqual({ name: 'repeat', input: { utcOffsetMin: 0 } })
     const block = section(sheet, 'repeated')!
     // Collect all brought in Bluebell Dash's two Carrots, so five cover ×5 of the six.
-    within(block).getByText(/^Amber Sprint: Craft Vegetables G1 ×5 → \d\d:\d\d · ×6 → ×5$/)
-    within(block).getByText(/^Bluebell Dash: Gather Vegetables G1 ×2 → \d\d:\d\d · grade 2 open$/)
+    within(block).getByText(/^Amber Sprint: Craft Vegetables G1 ×5 → in \d+[dhm][\dhm ]* · ×6 → ×5$/)
+    within(block).getByText(/^Bluebell Dash: Gather Vegetables G1 ×2 → in \d+[dhm][\dhm ]* · grade 2 open$/)
     expect(repeated).toBeTruthy()
     fireEvent.click(within(block).getByRole('button', { name: 'Switch Bluebell Dash to grade 2' }))
     await waitFor(() => expect(calls.slice(-2).map((call) => call.name)).toEqual(['recall', 'start']))
@@ -326,7 +326,7 @@ describe('Queue stopped (02 §3, §4)', () => {
     const made = seed('stopped')
     const { game, calls } = spied(made)
     const { sheet } = await openSheet(game, false)
-    const card = within(sheet).getByRole('article', { name: /^Tidal Charm’s queue stopped: Pantry ×10 at 12:30$/ })
+    const card = within(sheet).getByRole('article', { name: /^Tidal Charm’s queue stopped: Pantry ×10 · stopped 35m ago$/ })
     within(card).getByText('Short 10 Carrot.')
     within(card).getByText('then Chopped Carrot ×5')
     fireEvent.click(within(card).getByRole('button', { name: 'Buy 10 and restart · 1,080' }))

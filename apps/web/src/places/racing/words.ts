@@ -169,7 +169,7 @@ export const RACING_WORDS = Object.freeze({
   'resets-list': 'Racing Level, Farm Level, every unlock, every bond and her presets',
   'carries-list': 'Her badges, titles, records and race defaults; Prize Money, the Warehouse and the buildings',
   'her-work': 'Her work',
-  'work-running': '{place} · until {time}',
+  'work-running': '{place} · {time} left',
   'work-ready': '{place} · Ready to collect',
   'work-queued': '{n} queued',
   collect: 'Collect',

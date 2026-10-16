@@ -344,7 +344,8 @@ at a glance.
 
 She stands in the Town Hall plaza as a code-animated chibi (release `outfit-chibis`: bob, hop, squash; still with
 reduced motion; her outfit icon if the chibi is missing). Tapping her opens a **quick sheet**:
-- her name, tier crest, scenario, Racing Level and what she's doing ("Kitchen · 2 of 4 · 16:40");
+- her name, tier crest, scenario, Racing Level and what she's doing ("Kitchen · 2 of 4 · 2h 10m", how long it has
+  left, D366);
 - **Train**, which opens her profile's **Needs** tab, where each next session has a Start ([02](02-check-ins-and-notifications.md) §6);
 - **Race**, the Racecourse with her picked;
 - **Profile**;
@@ -358,8 +359,8 @@ picker or her profile's **Feature her** (T138, `tiers/roster.ts`).
 **As built (T138, T145):** she stands on the road between the four Town Hall places (`PLAZA_AT`, kept clear of props),
 still art in `FeaturedUmaCard`, also the Stable Peek's first card, until phase 5's `outfit-chibis` release gives her the
 code-animated chibi. "What she's doing" is her work row settled to the clock: the place, the current
-entry's finished items of its count and its end ("Kitchen · 2 of 4 · 16:40", "+N queued" behind), "Kitchen · Ready", or
-"Free".
+entry's finished items of its count and how long it has left ("Kitchen · 2 of 4 · 2h 10m", "+N queued" behind),
+"Kitchen · Ready", or "Free".
 
 ## 6. Full-screen flows
 
@@ -677,7 +678,7 @@ interiors are.
 | Her latest results read the save's `raceResults` log through the port's `logs`; her title, Prestige frame and showcase pins are the Trophy Hall's, linked from the Racing tab (T138) | Badge state is the Trophy Hall's (T141) and isn't in the rework state |
 | The Exchange's header shows T141's purse bar, drawn from its `purseBar` view at the device's day (T138) | The purse bar's words and bands are T141's; the Exchange only shows them (09 §5.5) |
 | Deep links: Exchange `?row=speed-tickets` and `?family=&grade=` (the grade opens its quantity sheet); Account `?row=sync`. Counters hide at 0 (T138) | §2.1's chips open "at the row", and the planner's "Buy at the Exchange" needs one; §2.2 keeps the bar quiet |
-| Bond opens the Uma picker: Umas who can bond it now first, each with the dish, its stock and the real time; a busy Uma reads "Busy until 14:20" and shows Queue only when her running session is in that card's Dojo room; the rest follow with their reason. A pick goes to T139's `/training/dojo?session=&room=&unlocks=bond:<cardId>&back=`, `&queue=1` for Queue; "0 in Warehouse" offers Cook, T140's Kitchen job sheet (T138) | [06](06-cards-and-bonds.md) §6, §10; the session sheet is T139's |
+| Bond opens the Uma picker: Umas who can bond it now first, each with the dish, its stock and the real time; a busy Uma reads "Busy · 2h 10m left" (D366) and shows Queue only when her running session is in that card's Dojo room; the rest follow with their reason. A pick goes to T139's `/training/dojo?session=&room=&unlocks=bond:<cardId>&back=`, `&queue=1` for Queue; "0 in Warehouse" offers Cook, T140's Kitchen job sheet (T138) | [06](06-cards-and-bonds.md) §6, §10; the session sheet is T139's |
 | Times on screen are real (× *k*), e.g. "4 h 48 m" (T138) | [05](05-training-hub.md) §2: the pages' examples are base minutes, the game multiplies by *k* |
 | The one Uma picker (`ui/UmaPicker`) is the Stable's album in a sheet with today's `UmaPickerSheet` props (caller sorts, `describe`, `disabledReason`, `candidateIds`, plus an `action` per row), through a portal so it opens over another sheet; T139 and T140 use it (T138) | D181; the Stable owns the album it browses |
 | Taps and their words use T140's `ui/work` (`useTap`, `TapNoteLine`) and `ui/ItemIcon`; a 44 pt tab row (`ui/Tabs`) stands in for today's 32 pt SegmentedControl (T138) | One set of pieces (M034); 44 pt targets |

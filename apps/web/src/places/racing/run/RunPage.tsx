@@ -208,7 +208,7 @@ export default function RunPage() {
   }
   const next = () => {
     const now = game.now()
-    const strip = stripOrder(state, name, now, game.utcOffsetMin(now))
+    const strip = stripOrder(state, name, now)
     navigate(`/racing/racecourse?uma=${encodeURIComponent(nextUma(strip, row.umaId) ?? row.umaId)}`, { replace: true })
   }
 

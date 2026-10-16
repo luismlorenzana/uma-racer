@@ -249,12 +249,12 @@ bottom-right pill, which held stars, now shows:
 
 **Bonding from the card page:**
 1. **Bond** opens the Uma picker, filtered to Umas who can bond this card now: its era is open in her scenario and she is
-   not bonded to it. Each row shows the dish, the Warehouse stock and the minutes. A busy Uma shows "Busy until 14:20"
-   and offers **Queue** where [02](02-check-ins-and-notifications.md)'s queues allow it. Umas who cannot bond it are
+   not bonded to it. Each row shows the dish, the Warehouse stock and the minutes. A busy Uma shows "Busy · 2h 10m
+   left" (D366) and offers **Queue** where [02](02-check-ins-and-notifications.md)'s queues allow it. Umas who cannot bond it are
    listed below with the reason ("Already bonded", "Opens in scenario 3").
 2. Picking an Uma opens the **Dojo session sheet** ([05](05-training-hub.md) §8) with her, this card and the card type's
    room chosen. The owner can add more bonds of the same type to the same session.
-3. **Start** returns to the card page, where the card shows "In session · bonds 01:30".
+3. **Start** returns to the card page, where the card shows "In session · bonds in 3h 36m".
 
 **The card set tab** of an Uma's build uses the same Library, with the lens on her scenario and "bonded to her" on.
 Below her bonded cards, a **Bond more** section lists eligible unbonded cards, each with its dish and a Bond button.
@@ -269,7 +269,7 @@ distance focus pass through `training` from today's `card-focus` (§5). The Libr
 `places/card-library/` with `mode: 'browse' | 'pick'`: pick mode fixes the lens on the Uma it is given, offers only
 the caller's `eligible` cards and calls `onPick(cardId)`, for T139's card set tab and session sheet. Its lens and its
 saved views are device preferences (`uma-racer:g2:album:card-library`). With no Uma chosen the "her bond" filters rest.
-A pending bond reads "In session · bonds 01:30" (the bond's own unlock's end), "Bond ready to collect" once it has
+A pending bond reads "In session · bonds in 3h 36m" (how long until the bond's own unlock ends, D366), "Bond ready to collect" once it has
 finished, or "Queued to bond".
 
 ## 7. Badges and achievements

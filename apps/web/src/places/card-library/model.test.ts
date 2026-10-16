@@ -39,7 +39,7 @@ describe('the lens and the pill (06 §6)', () => {
     acc.run('start', { outfitId: 'sim-uma-01', slot: { building: 'dojo', room: 'speed', slot: 0 }, request: { kind: 'session', unlocks: [{ kind: 'bond', target: 'sim-card-speed-e1' }] } })
     const speed = card(acc, 'sim-card-speed-e1')
     expect(pillFor(acc.state, acc.state.umas['sim-uma-01']!, speed)).toEqual({ kind: 'pending' })
-    expect(pendingBond(acc.state, speed, acc.at, 0)).toEqual([{ umaId: 'sim-uma-01', words: expect.stringMatching(/^In session · bonds \d\d:\d\d$/) }])
+    expect(pendingBond(acc.state, speed, acc.at)).toEqual([{ umaId: 'sim-uma-01', words: 'In session · bonds in 3h 36m' }])
     const end = acc.state.work['sim-uma-01']!.entries[0]!
     const finished = end.startedAt + end.seconds[0]! * 1000
     acc.run('collect', { outfitId: 'sim-uma-01' }, finished)
@@ -107,22 +107,22 @@ describe('Bond (06 §6, §10)', () => {
     for (const id of umaIds(3)) acc.run('unlock-uma', { outfitId: id })
     acc.run('dev-grant', { items: { 'dish-sweets-1': 1 } })
     const speed = card(acc, 'sim-card-speed-e1')
-    const free = bondChoice(acc.state, acc.state.umas['sim-uma-01']!, speed, acc.at, acc.env, 0)
+    const free = bondChoice(acc.state, acc.state.umas['sim-uma-01']!, speed, acc.at, acc.env)
     expect(free).toMatchObject({ reason: null, dishId: 'dish-sweets-1', stock: 1, line: 'Honeycomb Cake · 1 in Warehouse · 3h 36m', canQueue: false })
-    const later = bondChoice(acc.state, acc.state.umas['sim-uma-01']!, card(acc, 'sim-card-speed-e3'), acc.at, acc.env, 0)
+    const later = bondChoice(acc.state, acc.state.umas['sim-uma-01']!, card(acc, 'sim-card-speed-e3'), acc.at, acc.env)
     expect(later.reason).toBe('Opens in scenario 3 · Trackblazer')
-    // Busy in the Speed room: "Busy until …", with Queue there.
+    // Busy in the Speed room: "Busy · 3h 36m left" (D366), with Queue there.
     acc.run('start', { outfitId: 'sim-uma-02', slot: { building: 'dojo', room: 'speed', slot: 0 }, request: { kind: 'session', unlocks: [{ kind: 'bond', target: 'sim-card-speed-e1' }] } })
-    const busy = bondChoice(acc.state, acc.state.umas['sim-uma-02']!, card(acc, 'sim-card-speed-e1'), acc.at, acc.env, 0)
+    const busy = bondChoice(acc.state, acc.state.umas['sim-uma-02']!, card(acc, 'sim-card-speed-e1'), acc.at, acc.env)
     expect(busy.reason).toBe('Already bonding')
     acc.run('dev-grant', { items: { 'dish-sweets-1': 1 } })
-    const other = bondChoice(acc.state, acc.state.umas['sim-uma-02']!, { ...speed, id: 'sim-card-power-e1', type: 'power' }, acc.at, acc.env, 0)
-    expect(other.reason).toMatch(/^Busy until \d\d:\d\d$/)
+    const other = bondChoice(acc.state, acc.state.umas['sim-uma-02']!, { ...speed, id: 'sim-card-power-e1', type: 'power' }, acc.at, acc.env)
+    expect(other.reason).toBe('Busy · 3h 36m left')
     expect(other.canQueue).toBe(false)
-    const sameRoom = bondChoice(acc.state, acc.state.umas['sim-uma-02']!, { ...speed, id: 'sim-card-speed-e1b' }, acc.at, acc.env, 0)
+    const sameRoom = bondChoice(acc.state, acc.state.umas['sim-uma-02']!, { ...speed, id: 'sim-card-speed-e1b' }, acc.at, acc.env)
     expect(sameRoom.canQueue).toBe(true)
     // No dish: "0 in Warehouse", and Cook opens the Kitchen's job sheet.
-    expect(bondChoice(acc.state, acc.state.umas['sim-uma-03']!, card(acc, 'sim-card-wit-e1'), acc.at, acc.env, 0).line).toBe('Basil Curry · 0 in Warehouse · 3h 36m')
+    expect(bondChoice(acc.state, acc.state.umas['sim-uma-03']!, card(acc, 'sim-card-wit-e1'), acc.at, acc.env).line).toBe('Basil Curry · 0 in Warehouse · 3h 36m')
     const back = '/town/card-library/card/sim-card-speed-e1'
     expect(bondSessionPath('sim-uma-01', speed, back)).toBe(`/training/dojo?session=sim-uma-01&room=speed&unlocks=bond%3Asim-card-speed-e1&back=${encodeURIComponent(back)}`)
     expect(cookPath('dish-herbs-spices-1', back)).toBe(`/farm/kitchen?job=dish-herbs-spices-1&back=${encodeURIComponent(back)}`)

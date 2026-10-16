@@ -37,7 +37,7 @@ describe('plain words', () => {
       expect(hasBannedWord(text), text).toBe(true)
     }
     for (const text of ["Saved on this phone. It'll sync when you're back online.", 'Already collected.', 'Only 3 left now. Start ×3?',
-      'Kitasan Black is busy until 18:30.', 'Needs Farm Lv 16.', 'Short 2 raw Vegetables G2.', 'Buy 2 and restart · 99', 'idle', 'Overnight']) {
+      'Kitasan Black is busy for another 2h 10m.', 'Needs Farm Lv 16.', 'Short 2 raw Vegetables G2.', 'Buy 2 and restart · 99', 'idle', 'Overnight']) {
       expect(hasBannedWord(text), text).toBe(false)
     }
   })

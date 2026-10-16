@@ -33,10 +33,10 @@ describe('plain words', () => {
   })
 
   it("says a refusal in its rule's words, filled from its data", () => {
-    const words = refusalWords({ refused: true, code: 'busy', reason: '{uma} is busy until {time}.', data: { uma: 'Kitasan Black', time: '18:30' } })
-    expect(words).toEqual(say('{uma} is busy until {time}.', { uma: 'Kitasan Black', time: '18:30' }))
+    const words = refusalWords({ refused: true, code: 'busy', reason: '{uma} is busy for another {time}.', data: { uma: 'Kitasan Black', time: '2h 10m' } })
+    expect(words).toEqual(say('{uma} is busy for another {time}.', { uma: 'Kitasan Black', time: '2h 10m' }))
     expect(sentence(words)).toBe(fill(words))
-    expect(sentence(words)).toBe('Kitasan Black is busy until 18:30.')
+    expect(sentence(words)).toBe('Kitasan Black is busy for another 2h 10m.')
   })
 
   it('holds no banned word, code or status number in any sentence of save/', () => {

@@ -69,7 +69,7 @@ describe('refusals', () => {
   it('list every rule failure in one table', () => {
     expect(WORK_REFUSALS).toEqual({
       'slot-taken': 'That slot is taken.',
-      busy: '{uma} is busy until {time}.',
+      busy: '{uma} is busy for another {time}.',
       count: 'Make 1 to 10 at a time.',
       'not-here': "That isn't made here.",
       grade: 'Needs Farm Lv {level}.',

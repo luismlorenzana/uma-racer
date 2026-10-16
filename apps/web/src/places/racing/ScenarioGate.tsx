@@ -33,7 +33,7 @@ import { profilePath } from '../stable/model'
 import { amount, racingWords } from './words'
 import type { LoadedContent } from '../../content/runtime'
 import type { OperationEnv } from '@racer/domain/check-in'
-import { clockTime } from '@racer/domain/check-in'
+import { durationText } from '@racer/domain/check-in'
 import { endsAt, type WorkRow } from '@racer/domain/work'
 
 const PRESET_NAME: Record<DistanceCategory, string> = { sprint: 'Sprint', mile: 'Mile', medium: 'Medium', long: 'Long' }
@@ -246,7 +246,7 @@ function PromotePanel({ uma, content, env, onClose }: { uma: UmaState; content: 
         {work === null ? <p className="text-[13px] font-semibold text-success">{racingWords('free')}</p> : (
           <>
             <p className="text-[13px]">
-              {work.ready ? racingWords('work-ready', { place: work.place }) : racingWords('work-running', { place: work.place, time: clockTime(work.end, offset) })}
+              {work.ready ? racingWords('work-ready', { place: work.place }) : racingWords('work-running', { place: work.place, time: durationText(work.end - now) })}
               {work.queued > 0 ? ` · ${racingWords('work-queued', { n: work.queued })}` : ''}
             </p>
             <div className="mt-2 grid grid-cols-3 gap-2">

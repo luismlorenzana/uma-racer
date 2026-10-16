@@ -4,7 +4,7 @@
 // a bond mark, the grade she needs (`bondGrade`) or a lock. The card page's pay (`cardPay`), skills by node, bond cost
 // per tier (`bondDishId`, `sessionSeconds`), who is bonded and where, and who could bond it now; the Bond picker's rows
 // and reasons. Pure.
-import { clockTime, fill, type OperationEnv } from '@racer/domain/check-in'
+import { durationText, fill, type OperationEnv } from '@racer/domain/check-in'
 import { itemById } from '@racer/domain/items'
 import { workAhead } from '@racer/domain/planner'
 import { scenarioNumber, scenarioPlayable, scenarioRow } from '@racer/domain/tiers'
@@ -262,8 +262,8 @@ export function bondedTo(state: WorkState, card: SupportCardTemplate): { readonl
 export const cardSkills = (card: SupportCardTemplate, content: Content) =>
   cardNodeSkills(card, content.skills).map((skill) => ({ ...skill, name: content.skills.get(skill.skillId)?.name ?? skill.skillId }))
 
-/** A bond in progress: "In session · bonds 01:30", or queued behind her running work. */
-export function pendingBond(state: WorkState, card: SupportCardTemplate, now: number, utcOffsetMin: number): readonly { readonly umaId: string; readonly words: string }[] {
+/** A bond in progress: "In session · bonds in 2h 10m" (D366), or queued behind her running work. */
+export function pendingBond(state: WorkState, card: SupportCardTemplate, now: number): readonly { readonly umaId: string; readonly words: string }[] {
   const out: { umaId: string; words: string }[] = []
   for (const row of Object.values(state.work)) {
     let found = false
@@ -272,7 +272,7 @@ export function pendingBond(state: WorkState, card: SupportCardTemplate, now: nu
       const k = entry.request.unlocks.findIndex((unlock) => unlock.kind === 'bond' && unlock.target === card.id)
       if (k < 0) continue
       const end = itemEnds(entry.startedAt, entry.seconds, entry.acceleratedMs)[k]!
-      out.push({ umaId: row.outfitId, words: end > now ? `In session · bonds ${clockTime(end, utcOffsetMin)}` : 'Bond ready to collect' })
+      out.push({ umaId: row.outfitId, words: end > now ? `In session · bonds in ${durationText(end - now)}` : 'Bond ready to collect' })
       found = true
     }
     if (!found && row.queue.some((request) => request.kind === 'session' && request.unlocks.some((unlock) => unlock.kind === 'bond' && unlock.target === card.id))) {
@@ -288,7 +288,7 @@ export interface BondChoice {
   readonly umaId: string
   /** Why she can't bond it now; null when she can. */
   readonly reason: string | null
-  /** The dish, its stock and the time: "Wheat Bread · 2 in Warehouse · 3 h 36 m". */
+  /** The dish, its stock and the time: "Wheat Bread · 2 in Warehouse · 3h 36m". */
   readonly line: string | null
   readonly dishId: string | null
   readonly stock: number
@@ -296,7 +296,7 @@ export interface BondChoice {
   readonly canQueue: boolean
 }
 
-export function bondChoice(state: WorkState, uma: UmaState, card: SupportCardTemplate, now: number, env: OperationEnv, utcOffsetMin: number): BondChoice {
+export function bondChoice(state: WorkState, uma: UmaState, card: SupportCardTemplate, now: number, env: OperationEnv): BondChoice {
   const status = bondOf(state, uma, card)
   const dishId = bondDishId(card, uma.tier)
   const grade = bondGrade(card.era, uma.tier)
@@ -315,7 +315,7 @@ export function bondChoice(state: WorkState, uma: UmaState, card: SupportCardTem
   if (status.status === 'pending') return { ...base, reason: 'Already bonding' }
   if (statusOf(row, now) === 'working') {
     const until = freeAt(state, uma.outfitId, now, env)
-    return { ...base, canQueue, reason: until === null ? 'Busy' : `Busy until ${clockTime(until, utcOffsetMin)}` }
+    return { ...base, canQueue, reason: until === null ? 'Busy' : `Busy · ${durationText(until - now)} left` }
   }
   return { ...base, reason: null }
 }

@@ -208,7 +208,7 @@ While it runs, its button is disabled, so a double tap does nothing. Its answer 
 | Answer | On screen |
 |---|---|
 | **Done** | The screen moves on. No toast |
-| **A rule** (`say`) | One plain sentence: "Kitasan Black is busy until 18:30." · "Needs Farm Lv 16." |
+| **A rule** (`say`) | One plain sentence: "Kitasan Black is busy for another 2h 10m." · "Needs Farm Lv 16." |
 | **A question** (`ask`) | One sentence with the new numbers, then **Yes** or **Not now**: "Only 3 left now. Start ×3?" |
 | **Unexpected** | "That didn't work. Try again." The outbox also retries by itself |
 

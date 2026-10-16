@@ -73,18 +73,19 @@ describe('the Uma strip (11 §9.2)', () => {
     const umas = Object.values(state.umas)
     const done: UmaState = { ...umas[3]!, racing: { level: 9, exp: 0 }, career: { ...umas[3]!.career, goals: umas[3]!.career.goals.map((goal) => ({ ...goal, status: 'completed' as const })) } }
     const high: UmaState = { ...umas[7]!, racing: { level: 8, exp: 0 } }
-    const strip = stripOrder({ ...state, umas: { ...state.umas, [done.outfitId]: done, [high.outfitId]: high } }, name, busy().at, busy().utcOffsetMin)
+    const strip = stripOrder({ ...state, umas: { ...state.umas, [done.outfitId]: done, [high.outfitId]: high } }, name, busy().at)
     expect(strip[0]!.umaId).toBe(high.outfitId)
     expect(strip.at(-1)!.umaId).toBe(done.outfitId)
     expect(strip.at(-1)!.open).toBe(false)
     const rest = strip.slice(1, -1)
     expect(rest.map((tile) => tile.name)).toEqual([...rest.map((tile) => tile.name)].sort((a, b) => a.localeCompare(b)))
-    expect(strip.filter((tile) => tile.work !== null).every((tile) => /^.+ · (\d\d:\d\d|Ready)$/.test(tile.work!))).toBe(true)
+    // Her work reads how long it has left, never a clock time (D366).
+    expect(strip.filter((tile) => tile.work !== null).every((tile) => /^.+ · ((\d+d ?)?(\d+h ?)?(\d+m)?|Ready)$/.test(tile.work!) && !/\d\d:\d\d/.test(tile.work!))).toBe(true)
     expect(strip.some((tile) => tile.work !== null)).toBe(true)
   })
 
   it('offers the next Uma after hers, round to the first', () => {
-    const strip = stripOrder(busy().state, name, busy().at, busy().utcOffsetMin)
+    const strip = stripOrder(busy().state, name, busy().at)
     expect(nextUma(strip, strip[0]!.umaId)).toBe(strip[1]!.umaId)
     expect(nextUma(strip, strip.at(-1)!.umaId)).toBe(strip[0]!.umaId)
   })

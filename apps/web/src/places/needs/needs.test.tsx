@@ -31,7 +31,7 @@ function recorded(made: G2Seed) {
 }
 
 const state = (game: G2Game) => game.getSnapshot().state!
-const context = (made: G2Seed) => ({ umaName: (id: string) => made.env.content.umas.get(id)?.name ?? '', utcOffsetMin: 0 })
+const context = (made: G2Seed) => ({ umaName: (id: string) => made.env.content.umas.get(id)?.name ?? '', utcOffsetMin: 0, now: made.at })
 
 describe('her Needs tab (02 §6)', () => {
   it("shows her layer progress, the domain's cascade, the estimate and her startable lines, and Start runs the suggestion", async () => {

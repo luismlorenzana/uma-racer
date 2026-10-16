@@ -72,7 +72,7 @@ Every Uma is in exactly one of three work states. Racing is never one of them.
 |---|---|---|
 | **An Uma mid-session wants to race** | **Allowed.** The race reads her build at race start. Unlocks the session has already finished are collected first, in the same tap. The unlock still in progress counts only once it finishes | Racing is never blocked, and she should never race without an unlock she has already earned |
 | An Uma mid-job (Farm) wants to race | Allowed, as above. The job runs on | Same rule |
-| **An Uma mid-job is assigned to a session** | **Refused until the job is collected or recalled.** The sheet says when she is free ("Free at 18:30") and offers **Recall** in the same place. Recall pays what she has finished and returns the inputs of what she hasn't ([07](07-farm.md)) | One passive thing at a time. Recall makes the choice explicit and loses only time |
+| **An Uma mid-job is assigned to a session** | **Refused until the job is collected or recalled.** The sheet says how long until she is free ("Busy · 2h 10m left", D366) and offers **Recall** in the same place. Recall pays what she has finished and returns the inputs of what she hasn't ([07](07-farm.md)) | One passive thing at a time. Recall makes the choice explicit and loses only time |
 | An Uma mid-session is assigned to a Farm job | Refused the same way, with **Recall** for the session: finished unlocks stay, unused dishes go back to the Warehouse ([05](05-training-hub.md)) | Same rule |
 | A Ready Uma is assigned elsewhere | Her finished work is **collected first, in the same tap**, then the new work starts | Nothing is lost, so refusing would only add a tap |
 | Queue a session behind a Farm job | **Not possible.** A queue stays in one slot at one place ([02](02-check-ins-and-notifications.md) §3) | A queue that moved her between buildings would need a second slot held for her |
@@ -273,7 +273,7 @@ is the one automatic start, and the owner set that up.
 | Three work states: Free, Working, Ready. Racing is open in all three | One rule the screens can show on every Uma card |
 | A race collects the Uma's finished unlocks first (with [05](05-training-hub.md) §2) | She never races without an unlock she has earned, and it needs no extra tap |
 | Moving a Ready Uma collects her work first (with [07](07-farm.md) §5) | Nothing is lost, so a refusal would only cost a tap |
-| Mid-job or mid-session Umas can't start other work until it is collected or recalled; the sheet shows "Free at" and Recall | The D328 rule, with the way out on the same sheet |
+| Mid-job or mid-session Umas can't start other work until it is collected or recalled; the sheet shows how long she is busy ("Busy · 2h 10m left", D366) and Recall | The D328 rule, with the way out on the same sheet |
 | Queues never cross buildings | A queue holds one slot; crossing would hold two |
 | Advancing a scenario needs the career only, not the full layer; unfinished unlocks stay open for the tier ([03](03-uma-progression.md) §5) | Layers last the tier (D328), so nothing is lost, and the owner can push a strong Uma on |
 | Advancing doesn't touch running work; promotion settles it as [04](04-tiers-and-promotion.md) §5 says | Promotion resets the Uma; advancing doesn't |

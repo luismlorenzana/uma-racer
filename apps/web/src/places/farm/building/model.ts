@@ -3,7 +3,7 @@
 // in use, speed and the next upgrade against stock; "For your targets", the planner's lines here, one icon each with
 // what is short, each opening the job sheet filled in; one row per slot; the Umas with finished outputs here (the
 // Counter), and who Repeat here would take. Pure: every number is the domain's.
-import { CHECK_IN_WORDS, buyFor, clockTime, durationText, fill, fitSize, hasReady, repeatable, say } from '@racer/domain/check-in'
+import { CHECK_IN_WORDS, buyFor, durationText, fill, fitSize, hasReady, repeatable, say } from '@racer/domain/check-in'
 import {
   BUILDINGS, buildingSpeed, farmItemSeconds, type BuildingLevel, type FarmBuildingId,
 } from '@racer/domain/farm'
@@ -73,20 +73,14 @@ export function lineLabel(item: ItemId): string {
   return `${FAMILIES[def.family].name} G${def.grade}`
 }
 
-/**
- * A plan line in 02 §6's words. Each coming output says when it lands: by default the clock time (the planner's Needs
- * views, 02 §6); the Farm passes `now` and says how long until then ("in 1h 20m", D366).
- */
-export function lineWords(line: PlanLine, context: WordsContext, now?: number): string {
+/** A plan line in 02 §6's words, each coming output with how long until it lands ("Gold Ship, in 1h 20m", D366). */
+export function lineWords(line: PlanLine, context: WordsContext): string {
   const parts = [lineLabel(line.item)]
   if (line.short > 0) parts.push(farmWords('line-short', { n: grouped(line.short) }))
   parts.push(farmWords('line-warehouse', { n: grouped(line.have) }))
   if (line.coming > 0) {
     const from = line.comingFrom
-      .map((coming) => {
-        const uma = context.umaName(coming.outfitId) || coming.outfitId
-        return now === undefined ? `${uma}, ${clockTime(coming.at, context.utcOffsetMin)}` : farmWords('line-from', { uma, time: durationText(coming.at - now) })
-      })
+      .map((coming) => farmWords('line-from', { uma: context.umaName(coming.outfitId) || coming.outfitId, time: durationText(coming.at - context.now) }))
       .join('; ')
     parts.push(farmWords('line-coming', { n: grouped(line.coming), from }))
   }
@@ -153,7 +147,7 @@ function targetLines(view: WorkView, planned: Plan, building: FarmBuildingId, co
     const { uma, count } = prefill(view, planned, suggestions, building, line.item, timing)
     return {
       line,
-      words: lineWords(line, context, view.now),
+      words: lineWords(line, context),
       gate,
       buy: offer === null || def?.kind !== 'raw' ? null : { price: offer.items[0]!.unitPrice, to: exchangeRow(def.family, def.grade) },
       sheet: sheetQuery({ job: line.item, uma, count }),

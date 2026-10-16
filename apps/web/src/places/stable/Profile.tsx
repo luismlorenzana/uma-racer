@@ -70,7 +70,6 @@ function PresetSwitch({ umaId, preset, tap }: { umaId: string; preset: DistanceC
 export default function Profile({ place, rest, umaId, tab: routeTab }: PageProps & { umaId: string; tab: 'skills' | 'needs' | null }) {
   const location = useLocation()
   const navigate = useNavigate()
-  const { game } = useRuntime()
   const now = useNow()
   const view = useHub()
   const state = useGame((snapshot) => snapshot.state)
@@ -157,7 +156,7 @@ export default function Profile({ place, rest, umaId, tab: routeTab }: PageProps
               <Bar label="Racing EXP" fill={racing.fill} text={racing.toNext === null ? 'Max' : `${racing.exp}/${racing.toNext}`} color="var(--color-accent)" />
               <Bar label="Farm EXP" fill={farm.fill} text={farm.toNext === null ? 'Max' : `${farm.exp}/${farm.toNext}`} color="var(--color-turf)" />
             </div>
-            {doing !== null && <p className="text-[13px] text-ink-soft" data-g2="doing">{doingWords(doing, game.utcOffsetMin(now))}</p>}
+            {doing !== null && <p className="text-[13px] text-ink-soft" data-g2="doing">{doingWords(doing, now)}</p>}
           </div>
         </header>
         <nav aria-label="Profile" className="flex gap-1 rounded-sm bg-sunken p-1">

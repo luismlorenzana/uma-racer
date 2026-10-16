@@ -127,7 +127,7 @@ export type Answer<N extends OperationName, S> =
   | { readonly kind: 'done'; readonly state: S; readonly receipt: OperationReceipt<N>; readonly repeated: boolean }
   /** "Only 3 left now. Start ×3?": one sentence, and the input that answers yes. */
   | { readonly kind: 'ask'; readonly question: Words; readonly input: OperationInput<N> }
-  /** A real rule in plain words: "Kitasan Black is busy until 18:30." */
+  /** A real rule in plain words: "Kitasan Black is busy for another 2h 10m." */
   | { readonly kind: 'say'; readonly words: Words }
 
 const atSize = (request: WorkRequest, n: number): WorkRequest =>

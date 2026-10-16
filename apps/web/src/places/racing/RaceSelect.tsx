@@ -321,9 +321,9 @@ export function RaceSelect({ place }: { place: Place }) {
   const offset = game.utcOffsetMin(now)
   const localDay = localDayAt(now, offset)
   const name = (umaId: string) => content?.umas.byId.get(umaId)?.name ?? umaId
-  const strip = useMemo(() => (state ? stripOrder(state, name, now, offset) : []),
+  const strip = useMemo(() => (state ? stripOrder(state, name, now) : []),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [state, content, now, offset])
+    [state, content, now])
   const asked = params.get('uma')
   const umaId = asked !== null && state?.umas[asked] ? asked : strip[0]?.umaId ?? null
   const uma = umaId === null ? undefined : state?.umas[umaId]

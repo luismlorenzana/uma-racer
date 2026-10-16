@@ -90,21 +90,24 @@ describe('the roster and an Uma at a glance', () => {
     expect(rosterLine({ umas: {} })).toBe('0 Umas')
   })
 
-  it("says what she's doing: a job's place, count and end, a session's, Ready, or Free (11 §5)", () => {
+  it("says what she's doing: a job's place, count and time left, a session's, Ready, or Free (11 §5, D366)", () => {
     const acc = account('fresh')
     for (const id of umaIds(2)) acc.run('unlock-uma', { outfitId: id })
     acc.run('dev-grant', { items: { 'dish-vegetables-1': 2 } })
-    expect(doingWords(doingOf(acc.state, 'sim-uma-01', acc.at), 0)).toBe('Free')
+    expect(doingWords(doingOf(acc.state, 'sim-uma-01', acc.at), acc.at)).toBe('Free')
     const job = acc.run('start', { outfitId: 'sim-uma-01', slot: { building: 'vegetable-garden', slot: 0 }, request: { kind: 'gather', item: 'carrot', count: 4 } })
     const session = acc.run('start', {
       outfitId: 'sim-uma-02', slot: { building: 'observatory', slot: 0 }, request: { kind: 'session', unlocks: [{ kind: 'node', target: 'n1' }, { kind: 'node', target: 'n2' }] },
     })
     const gather = 108 * MINUTE
     const later = acc.at + 2 * gather + MINUTE
-    const clock = (at: number) => new Date(at).toISOString().slice(11, 16)
-    expect(doingWords(doingOf(acc.state, 'sim-uma-01', later), 0)).toBe(`Vegetable Garden · 2 of 4 · ${clock(job.endsAt)}`)
-    expect(doingWords(doingOf(acc.state, 'sim-uma-02', acc.at), 0)).toBe(`Observatory · 0 of 2 · ${clock(session.endsAt)}`)
-    expect(doingWords(doingOf(acc.state, 'sim-uma-01', job.endsAt), 0)).toBe('Vegetable Garden · Ready')
+    // Two of four Carrots made, a minute past the second: the last two have 3h 35m left.
+    expect(doingWords(doingOf(acc.state, 'sim-uma-01', later), later)).toBe('Vegetable Garden · 2 of 4 · 3h 35m')
+    expect(job.endsAt - later).toBe(2 * gather - MINUTE)
+    // Two nodes of 3h 36m each.
+    expect(doingWords(doingOf(acc.state, 'sim-uma-02', acc.at), acc.at)).toBe(`Observatory · 0 of 2 · 7h 12m`)
+    expect(session.endsAt - acc.at).toBe(2 * 216 * MINUTE)
+    expect(doingWords(doingOf(acc.state, 'sim-uma-01', job.endsAt), job.endsAt)).toBe('Vegetable Garden · Ready')
   })
 })
 

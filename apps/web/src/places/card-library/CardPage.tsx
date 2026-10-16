@@ -2,7 +2,7 @@
 // era, style and distance; what it pays in the lens (`cardPay`: the split, SP per node for Friend and Group, the eraPct
 // it keeps later in the tier, the full Race Bonus); its skills by node, golds first; the bond's dish and real time per
 // tier; who is bonded and where, then who could bond it now; and Bond in the thumb zone, which opens the Uma picker and
-// goes on to T139's Dojo session with her, this card and its room. A bond in progress reads "In session · bonds 01:30".
+// goes on to T139's Dojo session with her, this card and its room. A bond in progress reads "In session · bonds in 2h 10m".
 import { scenarioRow } from '@racer/domain/tiers'
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router'
@@ -13,7 +13,7 @@ import { DistanceTypeIcon, RunningStyleIcon } from '../../ui/CardFocusIcons'
 import { Panel } from '../../ui/Panel'
 import { TypeIcon } from '../../ui/TypeIcon'
 import { useG2Content } from '../../app/content'
-import { useGame, useNow, useRuntime } from '../../app/game'
+import { useGame, useNow } from '../../app/game'
 import { useAlbumPrefs } from '../../ui/albumPrefs'
 import { CardSquare } from '../../ui/ArtSquare'
 import { DISTANCE_LABEL, STAT_LABEL, STYLE_LABEL } from '../../ui/labels'
@@ -39,7 +39,6 @@ function Block({ title, children }: { title: string; children: ReactNode }) {
 export default function CardPage({ place, rest, cardId }: PageProps & { cardId: string }) {
   const location = useLocation()
   const navigate = useNavigate()
-  const { game } = useRuntime()
   const now = useNow()
   const state = useGame((snapshot) => snapshot.state)
   const env = useGame((snapshot) => snapshot.env)
@@ -53,8 +52,7 @@ export default function CardPage({ place, rest, cardId }: PageProps & { cardId: 
   // In All, a card pays as it does in its own scenario (or the last playable one).
   const T = lens === 'all' ? Math.min(card?.era ?? 1, PLAYABLE.at(-1)!) : lens
   const pay = useMemo(() => (card === null ? null : cardPay(card, T)), [card, T])
-  const offset = game.utcOffsetMin(now)
-  const choices = useMemo(() => (state === null || env === null || card === null ? new Map() : new Map(Object.values(state.umas).map((uma) => [uma.outfitId, bondChoice(state, uma, card, now, env, offset)]))), [state, env, card, now, offset])
+  const choices = useMemo(() => (state === null || env === null || card === null ? new Map() : new Map(Object.values(state.umas).map((uma) => [uma.outfitId, bondChoice(state, uma, card, now, env)]))), [state, env, card, now])
 
   // Opening its page is what clears a card's NEW mark (ux "Shared behaviours"), as her profile does an Uma's. A device
   // that has never opened the Library first takes every card as seen, as the Library would, so only cards a content
@@ -83,7 +81,7 @@ export default function CardPage({ place, rest, cardId }: PageProps & { cardId: 
   const skills = cardSkills(card, content)
   const costs = bondCosts(card)
   const who = bondedTo(state, card)
-  const pending = pendingBond(state, card, now, offset)
+  const pending = pendingBond(state, card, now)
   const back = `${location.pathname}${location.search}`
   const chip = 'inline-flex min-h-8 items-center gap-1 rounded-full border border-hairline bg-sunken px-2.5 text-[12px] font-semibold'
 

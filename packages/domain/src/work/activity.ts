@@ -44,7 +44,7 @@ export function chainEnd(state: WorkState, row: WorkRow, now: number, env: WorkE
   return chainTimes(row, queued).endsAt!
 }
 
-/** When a Working Uma stops working ("busy until 18:30", 01 §2), or null when she isn't Working. */
+/** When a Working Uma stops working ("busy for another 2h 10m", 01 §2), or null when she isn't Working. */
 export function freeAt(state: WorkState, outfitId: string, now: number, env: WorkEnv): number | null {
   assertNow(now)
   const settled = settle(state, now, env).state
