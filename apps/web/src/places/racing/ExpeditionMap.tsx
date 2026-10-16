@@ -23,7 +23,7 @@ export default function ExpeditionMap({ place, rest }: PageProps) {
   return (
     <div data-place-page="expedition-map" className="pb-6">
       <PlaceHeader place={place} />
-      <div className="flex justify-center pt-4"><BuildingSprite frame={place.frame} /></div>
+      <div className="flex justify-center pt-4"><BuildingSprite frame={place.frame} page={place.page} /></div>
       <div className="flex flex-col gap-2 p-3">
         {!anyone && <h2 className="font-display text-center text-[17px] font-semibold" data-g2="map-empty">{racingWords('map-empty')}</h2>}
         <ul className="grid gap-2">

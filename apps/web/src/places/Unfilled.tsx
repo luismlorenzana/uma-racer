@@ -14,7 +14,7 @@ export function UnfilledPage({ place, rest }: PageProps) {
     <div data-g2="unfilled-page" data-place-page={place.id}>
       <PlaceHeader place={place} rest={rest} />
       <div className="flex justify-center py-10">
-        <BuildingSprite frame={place.frame} />
+        <BuildingSprite frame={place.frame} page={place.page} />
       </div>
     </div>
   )

@@ -1,5 +1,5 @@
 // Slot pips (docs/game/11-hub-and-places.md §4): up to eight 20 pt pips in two rows of four under a building's name
-// pill, display only (the tile is the target, and VoiceOver reads its line). Busy: her face in a ring filled by the
+// pill, display only (the place link is the target, and VoiceOver reads its line). Busy: her face in a ring filled by the
 // current item's progress, with "+N" on its shoulder for requests queued behind. Ready: the ring full and gold with a
 // small bounce (none with reduced motion). Free: a hollow ring. The Gym's and Dojo's rings take their room's stat or
 // card-type colour. Past eight slots the eighth pip is "+N".
@@ -40,8 +40,10 @@ function Pip({ pip }: { pip: HubPip }) {
 }
 
 export function Pips({ building }: { building: HubBuilding }) {
+  // Four to a row, and no wider than the pips it holds, so its backing on the map fits them.
+  const columns = Math.min(4, building.pips.length + (building.more > 0 ? 1 : 0))
   return (
-    <span aria-hidden data-pips className="grid grid-cols-4 gap-1">
+    <span aria-hidden data-pips className="grid gap-1" style={{ gridTemplateColumns: `repeat(${Math.max(1, columns)}, 1.25rem)` }}>
       {building.pips.map((pip, i) => <Pip key={i} pip={pip} />)}
       {building.more > 0 && (
         <span data-pip="more" className="font-display flex size-5 items-center justify-center rounded-full bg-sunken text-[9px] font-bold text-ink-soft">

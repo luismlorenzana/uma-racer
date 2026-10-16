@@ -33,6 +33,12 @@ export function stubStorage(): void {
   vi.stubGlobal('sessionStorage', memoryStorage())
 }
 
+/** jsdom has no PointerEvent, so a fired one would lose its coordinates: a MouseEvent stands in for the Hub's swipes. */
+export function stubPointerEvents(): void {
+  if (typeof globalThis.PointerEvent === 'function') return
+  vi.stubGlobal('PointerEvent', class PointerEvent extends MouseEvent {})
+}
+
 const made = new Map<string, G2Seed>()
 
 /** A seed, built once per test file: the loop takes a moment. */
