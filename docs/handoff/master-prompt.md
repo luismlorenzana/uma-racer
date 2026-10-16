@@ -1,5 +1,9 @@
 # Master prompt for a fresh ChatGPT session
 
+> **Sibling packets (SA7, SB6, SC5, SD4, SE1, SE4)** start from uma-platform's
+> [master prompt](https://github.com/luismlorenzana/uma-platform/blob/main/docs/handoff/master-prompt.md) instead,
+> which works for any of the three repos and for Claude sessions too. The prompt below stays for this repo's own packets.
+
 Paste the block below as the first message of a new ChatGPT or Codex session that can reach the owner's machine or the
 GitHub repos. The packets it points to are in `tasks/`, ranked in [README.md](README.md).
 

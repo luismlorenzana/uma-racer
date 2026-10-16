@@ -17,6 +17,33 @@ The art packets follow uma-rpg's delivered precedent: H01's calibration (its D90
 drawn from code in uma-platform's `scripts/pixel-art` and published as `@luismlorenzana/uma-art`. uma-racer pins the
 release afterwards; Claude does that side.
 
+## Sibling packets (any worker), 2026-10-16
+
+The sibling apps plan's phases B to E, broken into self-contained packets by uma-platform's session (its P51). This
+repo's packets are below. The whole program, across uma-platform, uma-rpg and uma-racer, with its parallel tracks, is
+uma-platform's [queue](https://github.com/luismlorenzana/uma-platform/blob/main/docs/handoff/README.md).
+- Any worker, a Claude session or ChatGPT, starts with uma-platform's
+  [master prompt](https://github.com/luismlorenzana/uma-platform/blob/main/docs/handoff/master-prompt.md) and a packet
+  id ("Take SA7").
+- A Claude session commits to `main` as `CLAUDE.md` says. ChatGPT uses a branch and a pull request, as `AGENTS.md`
+  says.
+- The worker flags its packet done: it deletes the file, adds a Done row here, and sets the State in uma-platform's
+  queue.
+
+| Id | Task | Who | Size | Needs | State |
+|---|---|---|---|---|---|
+| [SA7](tasks/SA7-plaza-crowd.md) | The plaza crowd: small chibis on Town Hall (uma-kit 0.3.0) | Either | S | — | Ready |
+| [SE1](tasks/SE1-racer-phase-5.md) | Phase 5: uma-platform's master data and art; the GameTora pipeline goes | Claude | L | — | Ready |
+| [SB6](tasks/SB6-racer-album.md) | The Stable, every picker and every small Uma on the kit album; busts in races | Either | L | SB3 (SB1 + SE1 for faces) | Waiting |
+| [SC5](tasks/SC5-racer-on-uma-work.md) | Work on `@luismlorenzana/uma-work` and `uma-kit/work` | Either | L | SC1, SC2 | Waiting |
+| [SD4](tasks/SD4-racer-places.md) | Getting in, Account, Warehouse, Exchange and the profile frame on the kit; the API's guard from `uma-server` | Either | M | SD1, SD2 | Waiting |
+| [SE4](tasks/SE4-racer-content.md) | Data and art through `uma-kit/content` and `uma-server/content` | Either | M | SE1, SE2 | Waiting |
+
+**Done (sibling packets)**
+
+| Id | Task | Commit |
+|---|---|---|
+
 ## For ChatGPT, in order
 
 No ready packets remain. The owner authorized A03's implementation, merge and deployment in chat; its proof records
