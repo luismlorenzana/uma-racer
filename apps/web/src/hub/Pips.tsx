@@ -1,8 +1,8 @@
 // Slot pips (docs/game/11-hub-and-places.md §4): up to eight 20 pt pips in two rows of four under a building's name
 // pill, display only (the place link is the target, and VoiceOver reads its line). Busy: her face in a ring filled by the
 // current item's progress, with "+N" on its shoulder for requests queued behind. Ready: the ring full and gold with a
-// small bounce (none with reduced motion). Free: a hollow ring. The Gym's and Dojo's rings take their room's stat or
-// card-type colour. Past eight slots the eighth pip is "+N".
+// small bounce (none with reduced motion). Free: a small dark dot, as uma-rpg draws an open slot on its map. The Gym's
+// and Dojo's rings and dots take their room's stat or card-type colour. Past eight slots the eighth pip is "+N".
 import type { HubBuilding, HubPip } from '@racer/domain/hub'
 import type { RoomId } from '@racer/domain/farm'
 import { UmaFace } from '../ui/UmaArt'
@@ -23,7 +23,12 @@ function Pip({ pip }: { pip: HubPip }) {
   const tone = pip.room === null ? null : ROOM_TONE[pip.room]
   const common = { 'data-pip': pip.state, 'data-outfit': pip.outfitId ?? undefined, 'data-room': pip.room ?? undefined }
   if (pip.state === 'free') {
-    return <span {...common} className="block size-5 rounded-full border-2 border-ink-faint/50" style={tone === null ? undefined : { borderColor: tone }} />
+    // uma-rpg's open slot: a small dark dot on the map, in its 20 pt cell so the rows keep their shape.
+    return (
+      <span {...common} className="flex size-5 items-center justify-center">
+        <span className="block size-2 rounded-full border border-white/60 bg-black/30" style={tone === null ? undefined : { borderColor: tone }} />
+      </span>
+    )
   }
   const ready = pip.state === 'ready'
   const ring = ready ? 'var(--color-accent)' : `conic-gradient(${tone ?? BUSY_TONE} ${Math.round(pip.progress * 360)}deg, ${TRACK} 0)`
@@ -40,7 +45,7 @@ function Pip({ pip }: { pip: HubPip }) {
 }
 
 export function Pips({ building }: { building: HubBuilding }) {
-  // Four to a row, and no wider than the pips it holds, so its backing on the map fits them.
+  // Four to a row, and no wider than the pips it holds.
   const columns = Math.min(4, building.pips.length + (building.more > 0 ? 1 : 0))
   return (
     <span aria-hidden data-pips className="grid gap-1" style={{ gridTemplateColumns: `repeat(${Math.max(1, columns)}, 1.25rem)` }}>

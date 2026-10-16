@@ -230,14 +230,14 @@ at a glance.
 | **Busy** | The worker's face (release `character-faces`, falling back to her outfit icon) in a ring filled by the current output's or unlock's progress |
 | **Ready** | The ring full and gold, a small bounce (none with reduced motion); the building gets a **Ready** badge with the count |
 | **Queued behind** | A "+2" chip on the busy pip's shoulder |
-| **Free** | A hollow ring |
+| **Free** | A small dark dot, as uma-rpg draws an open slot |
 | **Room** (Gym, Dojo) | The ring tinted by its room's stat or card type |
 
 - **Up to 8 pips**, in two rows of four: busy first, then ready, then free. That fits the Kitchen at Lv 2 and 3 (8 slots,
   [07](07-farm.md) §6). Beyond 8 (the Gym at Lv 2 has 10, the Dojo 12, [05](05-training-hub.md) §7), the eighth pip
   becomes "+N".
-- **Pips are display only.** The place link is the target; a pip at 20 pt would be under 44. On the map they sit on a
-  light backing under the name pill, no wider than the pips it holds, so a hollow ring reads on any ground.
+- **Pips are display only.** The place link is the target; a pip at 20 pt would be under 44. On the map they sit straight on
+  the ground under the name pill, with no backing, as in uma-rpg: faces in their rings, open slots as dots.
 - **Progress is computed from start times** with the shared idle math, redrawn every 30 seconds and on foreground,
   never animated per frame.
 - **VoiceOver** reads the button as one line: "Kitchen. 6 of 8 slots busy, 2 ready, 1 queued."

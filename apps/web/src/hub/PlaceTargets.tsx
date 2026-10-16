@@ -71,7 +71,7 @@ function PlaceTarget({ place, view, grid }: { place: Place; view: HubView | null
         )}
       </span>
       {building !== undefined && (
-        <span className="mt-0.5 rounded-md bg-panel/85 p-px shadow-1">
+        <span className="mt-0.5 drop-shadow-sm">
           <Pips building={building} />
         </span>
       )}
