@@ -32,7 +32,6 @@ uma-platform's [queue](https://github.com/luismlorenzana/uma-platform/blob/main/
 
 | Id | Task | Who | Size | Needs | State |
 |---|---|---|---|---|---|
-| [SA7](tasks/SA7-plaza-crowd.md) | The plaza crowd: small chibis on Town Hall (uma-kit 0.3.0) | Either | S | — | Ready |
 | [SE1](tasks/SE1-racer-phase-5.md) | Phase 5: uma-platform's master data and art; the GameTora pipeline goes | Claude | L | — | Ready |
 | [SB6](tasks/SB6-racer-album.md) | The Stable, every picker and every small Uma on the kit album; busts in races | Either | L | SB3 (SB1 + SE1 for faces) | Waiting |
 | [SC5](tasks/SC5-racer-on-uma-work.md) | Work on `@luismlorenzana/uma-work` and `uma-kit/work` | Either | L | SC1, SC2 | Waiting |
@@ -43,6 +42,7 @@ uma-platform's [queue](https://github.com/luismlorenzana/uma-platform/blob/main/
 
 | Id | Task | Commit |
 |---|---|---|
+| SA7 | The plaza crowd: small chibis on Town Hall (uma-kit 0.3.0, D371) | `9723a23` |
 
 ## For ChatGPT, in order
 

@@ -1,7 +1,7 @@
 # Architecture
 
 How the code that runs fits together: generation 2, since the phase-3 cutover (M034, D361), with phase 6's canvas Hub
-(T145, D363), uma-art 2.7.0 (D364), and the shell, Hub and primitives from the shared uma-kit 0.2.0 (T147, D367; D369). The infrastructure values and the release runbook are
+(T145, D363), uma-art 2.7.0 (D364), and the shell, Hub and primitives from the shared uma-kit 0.3.0 (T147, D367; D369, D371). The infrastructure values and the release runbook are
 [technical/infrastructure.md](../technical/infrastructure.md); what is done and what comes next is
 [the task plan](../tasks/README.md), and the phases still ahead are [docs/rearchitecture/08](../rearchitecture/08-phases.md)
 with [rework/13](../rework/13-removals-and-plan-changes.md) §4.
@@ -208,7 +208,7 @@ loop itself runs on the domain's source, and its test runs the checks in CI.
 The shell, the Hub map and the primitives are **`@luismlorenzana/uma-kit`**, uma-platform's package that uma-racer and
 uma-rpg both run on (uma-platform P48, its sibling plan; D367). The uma-rpg session built it by moving this game's own
 code (as of `ff8b95a`) into uma-platform's `packages/kit` and making it game-agnostic: components take values, words and
-links as props, and keep no game state. uma-racer pins it exactly (0.2.0, from GitHub Packages like uma-art) and passes
+links as props, and keep no game state. uma-racer pins it exactly (0.3.0, from GitHub Packages like uma-art) and passes
 everything that is its own in as props.
 
 | From uma-kit | Stays uma-racer's |
@@ -527,7 +527,7 @@ How generation 2 became the app (D361). The plan-level choices (the tag, the del
 |---|---|---|---|
 | uma-racer | turbo | ^2.10.13 | dev |
 | @racer/web | @luismlorenzana/uma-art | 2.7.0 | runtime |
-| @racer/web | @luismlorenzana/uma-kit | 0.2.0 | runtime |
+| @racer/web | @luismlorenzana/uma-kit | 0.3.0 | runtime |
 | @racer/web | @racer/domain | workspace:* | runtime |
 | @racer/web | @racer/race | workspace:* | runtime |
 | @racer/web | @tanstack/react-query | ^5.102.8 | runtime |

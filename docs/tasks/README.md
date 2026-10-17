@@ -55,7 +55,7 @@ The `pre-split` tag marks the old game.
 **Retired unbuilt (D339):** M024 (T081), M010 (T035) and M011 (T036–T039). The rework removes what they built on.
 Game feel and device acceptance for the new game are planned after phase 3.
 
-**Next free numbers: M035, T148 and D371** (D362 is reserved for T144's release record). Numbers are never reused, so
+**Next free numbers: M035, T148 and D372** (D362 is reserved for T144's release record). Numbers are never reused, so
 a decision that mentions T014 always means the same work. T057 was consumed by the per-scenario limit-break branch and
 is not reused.
 

@@ -1,7 +1,7 @@
 # 11 · Hub and places
 
 > **Status: as built, phase 3 (generation 2, D361) with phase 6's canvas Hub (T145, D363), the racer's own uma-art
-> 2.7.0 (D364) and the shared uma-kit 0.2.0 (T147, D367; the docked bar, D369); first written 2026-10-13 (D333).** The Hub's four pages, every
+> 2.7.0 (D364) and the shared uma-kit 0.3.0 (T147, D367; the docked bar, D369; the plaza crowd, D371); first written 2026-10-13 (D333).** The Hub's four pages, every
 > place on them, the menu, the routes, the two play modes as tap-by-tap flows, and the art. The registry and Hub view
 > are `@racer/domain/hub` (T137, D353); the routes, redirects and boot `apps/web/src/app/`; the shell and the map are
 > uma-kit's, fed by uma-racer's adapters in `hub/`; every Peek, Page and sheet `places/` (T138–T142). Each page is
@@ -23,7 +23,7 @@ panel (`/:page?peek=:place`, §2.6) and **Enter** opens its Page; the Racecourse
 
 ```text
 /                          the start rule (§2.4): the Stable's Locked tab, the Farm page, or the last page viewed
-├─ Town Hall /town         bottom bar tab 1; the plaza's featured Uma opens ?sheet=featured (§5)
+├─ Town Hall /town         bottom bar tab 1; the plaza's crowd, a tap opens ?sheet=featured&uma=:umaId (§5)
 │  ├─ Stable               Peek; counter: Uma Tickets in hand
 │  │  ├─ /town/stable                the roster album: ?tab=owned | locked; Locked's Select, the Unlock sheet, the reveal
 │  │  ├─ …/outfit/:umaId             her profile, Overview; ?tab=racing for Racing; ‹ › through the Owned tab's order
@@ -364,8 +364,14 @@ at a glance.
 
 ## 5. The featured Uma
 
-She stands in the Town Hall plaza as a code-animated chibi (release `outfit-chibis`: bob, hop, squash; still with
-reduced motion; her outfit icon if the chibi is missing). Tapping her opens a **quick sheet**:
+**The plaza's crowd** (SA7, uma-kit 0.3.0, D371): up to five small Umas stand round the Town Hall plaza in uma-kit's
+loose V (`CROWD_SPOTS`). The featured Uma stands in front, then the Umas with the highest lifetime level, newest release
+first on ties, then name; fewer stand when fewer are owned. uma-racer has no parties, so the level rule fills the
+crowd (P48). Each is 44 pt of her art: her chibi, else her bust, icon or initial (`UmaArt`). Each bobs 2 px on its own
+beat and stands still under reduced motion, and the ground round them is kept clear of props (`CROWD_CLEARING`). No names show on
+the map: each figure's VoiceOver name says who she is ("Featured Uma: …", or "…: Train, Race or Profile").
+
+Tapping a figure opens the **quick sheet** for that Uma (`?sheet=featured&uma=:umaId`; closing it clears both):
 - her name, tier crest, scenario, Racing Level and what she's doing ("Kitchen · 2 of 4 · 2h 10m", how long it has
   left, D366);
 - **Train**, which opens her profile's **Needs** tab, where each next session has a Start ([02](02-check-ins-and-notifications.md) §6);
@@ -616,7 +622,7 @@ and Ready badge. A swipe of more than 60 pt changes page; the quick look is uma-
 `PeekPanel`); the account bar, bottom bar, pill and menu are the kit's too since T147, with this game's words and
 links. The routes, `?peek=` and `?sheet=` are unchanged. The four
 new buildings and the Racing page's ground shipped as T145's stand-ins (§10.4) and are uma-art's own since 2.6.0
-(D364). The plaza's chibi waits for phase 5's `outfit-chibis` release (§5).
+(D364). The plaza holds a crowd of up to five small Umas (§5, SA7, D371).
 
 ### Not built yet (phase 7): the place scenes
 
@@ -701,7 +707,7 @@ interiors are.
 | The Racecourse's counter loads its draw lazily, so the entry holds none; the Scenario Gate's and the Expedition Map's are the hub view's (`ready-to-advance`, `promotable`: 0 before phase 9) (T141) | One rule per counter; §3.3's Map counter is promotable Umas |
 | The Scenario Gate's ceremony is a full-screen flow at `/racing/scenario-gate/:umaId/ceremony?op=:id`; the Advance and Promote sheets are `?sheet=advance` and `?sheet=promote` on her career (T141) | §6 lists the promotion ceremony; a sheet is a route, so Back closes it |
 | The Trophy Hall's scopes are `?scope=` uma, stable or trainer at `/racing/trophy-hall` (the featured Uma's badges by default), one Uma's at `/uma/:umaId` and the trainer profile at `/trainer` (T141) | §7.1's three routes; a scope is a view of one page |
-| The featured Uma is the Stable Peek's first card and `FeaturedUmaCard`, standing on the plaza, with §5's quick sheet (T138, T145) | The plaza chibi needs phase 5's `outfit-chibis` release (§5); her sheet's actions work now |
+| The featured Uma is the Stable Peek's first card (`FeaturedUmaCard`) and stands in front of the plaza's crowd (`PlazaFigure`, SA7), with §5's quick sheet for whichever Uma is tapped (T138, T145, D371) | The owner asked for "smaller but multiple Uma chibis" on Town Hall in both apps (uma-kit 0.3.0) |
 | The Locked tab's multi-select unlocks up to the tickets in hand, one `unlock-uma` each with its own id, then reveals them in turn with Next (2 of 5) and Skip all; the reveal's route carries the rest as `?then=` and the count as `?of=` (T138) | A new account picks 20 ([13](../rework/13-removals-and-plan-changes.md) §5); 20 single unlocks would take about 80 taps; `?of=` keeps "2 of 5" after a reload |
 | A Stable tile reads "T2 · Lv 13" (never the lifetime number) with its tier crest, a Ready dot from `advanceReadiness` or `promotionReadiness`, the planner's crosshair, NEW and a gold frame for an inductee; a Locked tile is desaturated art behind a lock (T138) | 03 §2 keeps the lifetime number for order only; [04](04-tiers-and-promotion.md) §10 |
 | Album preferences live in `uma-racer:g2:album:<album>` keys, bounded as today's (20 views, 4,000 seen ids), not the generation-2 database; a device with none sees what it owns as already seen (T138) | Device conveniences only (rearchitecture/01 §4.2); today's live in today's Dexie, which the wipe removes |
@@ -738,7 +744,7 @@ interiors are.
 | A Farm Peek acts: Collect and Repeat on a finished row, Collect here, and a free row's "+" and the targets open the job sheet over the map from `?peek=:place&job=…`; the sheet sits inside the panel's tree, so Escape and Back close it first, and a sideways drag on it never closes the panel (T146, D366) | The owner wanted uma-rpg's Farm structure with fewer taps: 2 from the map to collect or restart, 3 to start a job |
 | The service worker precaches files up to 3 MB (T145) | uma-rpg's limit: the Phaser chunk and the atlases precache, so the Hub works offline |
 | `/dev/seeds` and `/dev/seeds/` are the seeds' root, which runs the start rule as `/` does; one tested check (`isSeedsPath`) decides the mount (T145) | The 404 came from a checkout without the mount; the router test now holds the root |
-| The shell, the Hub map and the primitives are uma-kit's (uma-platform P48; 0.2.0 since D369), pinned exactly; uma-racer passes its chips, Sync chip, tabs, menu groups, place models, pips' room colours, plaza, ground and words in as props, and forks no kit component (T147, D367) | One shell with uma-rpg: a fix like the iPhone band lands once, in the kit |
+| The shell, the Hub map and the primitives are uma-kit's (uma-platform P48; 0.3.0 since D371), pinned exactly; uma-racer passes its chips, Sync chip, tabs, menu groups, place models, pips' room colours, plaza, ground and words in as props, and forks no kit component (T147, D367) | One shell with uma-rpg: a fix like the iPhone band lands once, in the kit |
 | The frame is fixed to the screen's edges and the bottom panel lifts by `max(inset − 12 pt, 8 pt)`; the reveal uses the same frame without bars (T147) | The band under the bar on an iPhone 15 (A03's 0.1), fixed for every full-screen route |
 | Appearance (System, Light, Dark) in Account, kept on this phone under the game's prefix; System by default (T147) | uma-rpg's dark palette came with the kit; the owner's phone decides unless they choose |
 | A Hub page reads only its own places' counter hooks (`usePlaceCounts` with `active`); the menu reads all (T147) | The kit's map and menu take counts as values; the Racecourse's draw and the Trophy Hall's flair read stay off the other pages |
