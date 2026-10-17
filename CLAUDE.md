@@ -11,7 +11,7 @@ Hub and primitives are uma-kit's, the app both Uma games share.
   Claude's production notes.
 - `docs/tasks/README.md` is the current plan: what shipped, what's open (T144's step 10, the sibling packets in
   `docs/handoff/` with phase 5 as SE1, and phase 9; phases 4, 7, 8 and the pixel-art question are archived, D370) and
-  the next free numbers (M035, T148, D371; **D362 is reserved for T144's release record**). A task spec is deleted once its work merges (D104), so that folder only holds work still ahead.
+  the next free numbers (M035, T148, D372; **D362 is reserved for T144's release record**). A task spec is deleted once its work merges (D104), so that folder only holds work still ahead.
 - **The docs are the source of truth:** [the manual](docs/game/README.md) (`docs/game/`) describes the game as it runs.
   Every screen, route and sheet is [11's menu tree](docs/game/11-hub-and-places.md#the-menu-tree-at-a-glance); the code
   by folder, the checks and the deploy are [the architecture](docs/game/architecture.md). Read the relevant page before
@@ -100,7 +100,7 @@ pnpm assets:import  # image sources → private WebP atlases; run after data:imp
 | API | Cloud Run `racer-api` (us-central1), `https://racer-api-tmzkhylhfq-uc.a.run.app`; `/api/health` (not `/healthz`, which Cloud Run's front end reserves) |
 | GCP project | `uma-racer` (number 1026964321499), plus a private bucket `uma-racer-content` |
 | Deploy | `.github/workflows/deploy.yml`, keyless WIF. Repo variables: GCP_PROJECT_ID, WIF_PROVIDER, CONTENT_BUCKET, ALLOWED_EMAIL, DEPLOY_ENABLED |
-| Live on 2026-10-16 | `3d7f0d2` as racer-api-00194 (uma-kit 0.2.0: the docked bar and a full-screen app on iOS 26, D369), content `9ba4cdd37cca`, uma-art 2.7.0 |
+| Live on 2026-10-16 | `0737c9f` as racer-api-00195 (SA7, the plaza crowd, on uma-kit 0.3.0, D371), content `9ba4cdd37cca`, uma-art 2.7.0 |
 
 - **Local gcloud has two accounts, and the active one is the owner's work account. Never change it.** Scope every uma-racer
   command with environment variables only:
