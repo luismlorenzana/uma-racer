@@ -44,6 +44,7 @@ export const HUB_WORDS = Object.freeze({
   'back-to': 'Back to {to}',
   'peek-label': '{place}, quick look',
   featured: 'Featured Uma: {uma}',
+  'crowd-figure': '{uma}: Train, Race or Profile',
   'featured-title': 'Featured Uma',
   'no-umas': 'No Umas yet',
   train: 'Train',

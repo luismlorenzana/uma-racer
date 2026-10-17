@@ -9,7 +9,7 @@ const filled = (slot: SlotId): boolean => {
   switch (slot) {
     case 'sheet:check-in': return SHEET_UI['check-in'] !== undefined
     case 'sheet:featured': return SHEET_UI.featured !== undefined
-    case 'plaza': return TOWN_PLAZA.Card !== undefined
+    case 'plaza': return TOWN_PLAZA.Figure !== undefined
     case 'flow:reveal': return FLOW_UI.reveal !== undefined
     default: {
       const place = PLACES.find((entry) => entry.id === slot)!

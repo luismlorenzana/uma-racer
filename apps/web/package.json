@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@luismlorenzana/uma-art": "2.7.0",
-    "@luismlorenzana/uma-kit": "0.2.0",
+    "@luismlorenzana/uma-kit": "0.3.0",
     "@racer/domain": "workspace:*",
     "@racer/race": "workspace:*",
     "@tanstack/react-query": "^5.102.8",

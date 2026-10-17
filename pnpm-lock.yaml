@@ -64,8 +64,8 @@ importers:
         specifier: 2.7.0
         version: 2.7.0
       '@luismlorenzana/uma-kit':
-        specifier: 0.2.0
-        version: 0.2.0(motion@12.43.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(phaser@4.2.1)(react-dom@19.3.0(react@19.3.0))(react-router@7.18.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react@19.3.0)
+        specifier: 0.3.0
+        version: 0.3.0(motion@12.43.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(phaser@4.2.1)(react-dom@19.3.0(react@19.3.0))(react-router@7.18.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react@19.3.0)
       '@racer/domain':
         specifier: workspace:*
         version: link:../../packages/domain
@@ -1575,8 +1575,8 @@ packages:
     resolution: {integrity: sha512-HuyoLWqV54722nYo3CqpsH3HM0sL3LN/qctGn4Q/jGM8T1XsUfnx/VdjIfyTXRqlrTOAiYfppU70HIWmyEr1+A==, tarball: https://npm.pkg.github.com/download/@luismlorenzana/uma-data/1.0.0/07ff967fe87a003984bee150577f153322865f2e}
     engines: {node: '>=20'}
 
-  '@luismlorenzana/uma-kit@0.2.0':
-    resolution: {integrity: sha512-jigUKO2PctS9TUxe1OEJk4ikHfRJAmEsJIcUNHb9c+AzOb2ioSJs8+rQZanynkiuooAaf1aUWfcExR7tamzPPA==, tarball: https://npm.pkg.github.com/download/@luismlorenzana/uma-kit/0.2.0/a0f3d1364d61ba545e0ad4052f8db303a39a5072}
+  '@luismlorenzana/uma-kit@0.3.0':
+    resolution: {integrity: sha512-Rnf2a7HtoTg+YnCxKqoHR/3NBoI1m5uFM6dy0l+Z/KhLa3PtF2h7YIo44ahzHwa1xamthbZ9aeZPliVPU2XuJw==, tarball: https://npm.pkg.github.com/download/@luismlorenzana/uma-kit/0.3.0/92c96b11f2a383648a85b8bce808acd5d91e9ec9}
     peerDependencies:
       motion: ^12.43.0
       phaser: 4.2.1
@@ -6254,7 +6254,7 @@ snapshots:
 
   '@luismlorenzana/uma-data@1.0.0': {}
 
-  '@luismlorenzana/uma-kit@0.2.0(motion@12.43.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(phaser@4.2.1)(react-dom@19.3.0(react@19.3.0))(react-router@7.18.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react@19.3.0)':
+  '@luismlorenzana/uma-kit@0.3.0(motion@12.43.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(phaser@4.2.1)(react-dom@19.3.0(react@19.3.0))(react-router@7.18.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react@19.3.0)':
     dependencies:
       motion: 12.43.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       phaser: 4.2.1

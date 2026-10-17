@@ -11,39 +11,29 @@ import { useKitArt, useReducedMotionSetting } from '@luismlorenzana/uma-kit/ui'
 import { HUB_PAGE_NAMES, HUB_PAGES, hubWords, pillWords, PLAZA_AT, placesOn, tileLabel, type HubPage as HubPageId, type HubView } from '@racer/domain/hub'
 import type { BuildingId } from '@racer/domain/farm'
 import { Suspense, useMemo } from 'react'
-import { Link, Navigate, useLocation, useNavigate, useSearchParams } from 'react-router'
-import { useHub } from '../app/game'
+import { Navigate, useLocation, useNavigate, useSearchParams } from 'react-router'
+import { useGame, useHub } from '../app/game'
 import { TOWN_PLAZA } from '../places/registry'
-import { UmaArt, UmaFace } from '../ui/UmaArt'
-import { useUmaName } from '../ui/uma'
+import { UmaFace } from '../ui/UmaArt'
 import { shownCount, usePlaceCounts } from './counts'
 import { isGlobalSheet } from './nav'
 import { PlacePeek } from './PlacePeek'
-import { pageGround, pipModels } from './racerHub'
+import { pageGround, pipModels, plazaCrowd } from './racerHub'
 
 const face = (outfitId: string) => <UmaFace outfitId={outfitId} size={16} />
+const Figure = TOWN_PLAZA.Figure
 const NO_FRAMES: Readonly<Record<string, unknown>> = {}
 
-/** The Town Hall plaza (§5): T138's card standing on the road, else the featured Uma as still art; empty with no Umas. */
-function Plaza() {
-  const location = useLocation()
+/** The Town Hall plaza's crowd (§5, SA7): the featured Uma in front, then the highest lifetime levels; five at most. */
+function useCrowd(): readonly string[] {
   const view = useHub()
-  const umaId = view?.featured ?? null
-  const name = useUmaName(umaId)
-  const Card = TOWN_PLAZA.Card
-  if (Card !== undefined) return <Suspense fallback={null}><Card umaId={umaId} /></Suspense>
-  if (umaId === null) return null
-  return (
-    <Link
-      to={withParam(location, 'sheet', 'featured')}
-      state={{ back: true }}
-      aria-label={hubWords('featured', { uma: name })}
-      className="flex min-h-24 min-w-24 flex-col items-center justify-center gap-1 rounded-md p-1 active:bg-ink/5"
-    >
-      <UmaArt outfitId={umaId} size={72} />
-      <span aria-hidden className="max-w-28 truncate rounded-full border border-accent/40 bg-accent-wash px-2 py-0.5 text-[11px] leading-4 font-semibold text-ink">{name}</span>
-    </Link>
-  )
+  const umas = useGame((snapshot) => snapshot.state?.umas ?? null)
+  const content = useGame((snapshot) => snapshot.env?.content ?? null)
+  const featured = view?.featured ?? null
+  return useMemo(() => (umas === null || content === null ? [] : plazaCrowd(umas, featured, (umaId) => {
+    const template = content.umas.get(umaId)
+    return { name: template?.name ?? umaId, release: template?.jpRelease ?? '' }
+  })), [umas, content, featured])
 }
 
 /** The floating pill (§2.3), right thumb zone above the bar: Collect all, else Check-in, else nothing. */
@@ -82,8 +72,15 @@ export default function HubPage({ page }: { page: HubPageId }) {
     }
     // `counts` is a new object each render; its values for this page are `countKey`.
   }), [places, view, countKey])
-  // Her art (72 pt, under the card's 4 pt padding) stands on the plaza's ground line: the kit lifts the plaza 76 px.
-  const plaza = useMemo(() => (page === 'town' ? { at: PLAZA_AT, node: <Plaza /> } : undefined), [page])
+  // The crowd stands round the plaza's spot in uma-kit's V (`CROWD_SPOTS`), each figure 44 pt and bobbing (SA7).
+  const crowd = useCrowd()
+  const crowdKey = crowd.join('|')
+  const plaza = useMemo(() => (page === 'town' && Figure !== undefined
+    ? { at: PLAZA_AT, figures: crowd.map((umaId, i) => ({ key: umaId, node: <Suspense fallback={null}><Figure umaId={umaId} front={i === 0} /></Suspense> })) }
+    : undefined),
+  // `crowd` is a new array when any Uma changes; who stands there is `crowdKey`.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  [page, crowdKey])
   const peekId = params.get('peek')
   const peek = peekId === null ? undefined : places.find((place) => place.id === peekId && !place.direct)
   const sheet = isGlobalSheet(params.get('sheet'))

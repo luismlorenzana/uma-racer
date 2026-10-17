@@ -59,8 +59,8 @@ describe('paddock tokens', () => {
     expect(css).not.toContain('m-plus-rounded')
   })
 
-  it('stills the Ready pip and the numbers under reduced motion, from the device switch and the system alike', () => {
-    expect(theme).toMatch(/:root\[data-reduced-motion\] \.kit-number,\s*:root\[data-reduced-motion\] \.kit-pip-ready \{\s*transition: none;\s*animation: none;/)
+  it('stills the Ready pip, the numbers and the plaza crowd under reduced motion, from the device switch and the system alike', () => {
+    expect(theme).toMatch(/:root\[data-reduced-motion\] \.kit-number,\s*:root\[data-reduced-motion\] \.kit-pip-ready,\s*:root\[data-reduced-motion\] \.kit-bob \{\s*transition: none;\s*animation: none;/)
     expect(theme).toMatch(/@media \(prefers-reduced-motion: reduce\)/)
   })
 

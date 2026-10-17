@@ -1,9 +1,11 @@
 // uma-racer's Hub as uma-kit's map draws it (docs/game/11-hub-and-places.md §1, §4, §10.2; T147): which uma-art tile
-// page and palette each racer page stands on, and a building's slot pips with the Gym's and Dojo's room colours. Pure,
-// so the props the map takes are tested without it.
+// page and palette each racer page stands on, a building's slot pips with the Gym's and Dojo's room colours, and the
+// Town Hall plaza's crowd (SA7). Pure, so the props the map takes are tested without it.
 import { PALETTES, type PageGround, type PipModel } from '@luismlorenzana/uma-kit/hub'
 import type { RoomId } from '@racer/domain/farm'
 import type { HubBuilding, HubPage } from '@racer/domain/hub'
+import type { UmaState } from '@racer/domain/state'
+import { lifetimeLevel } from '@racer/domain/tiers'
 import type { ReactNode } from 'react'
 
 /** uma-art's tile pages the racer's Hub draws with. */
@@ -50,4 +52,26 @@ export function pipModels(building: HubBuilding, face: (outfitId: string) => Rea
     face: pip.outfitId === null ? undefined : face(pip.outfitId),
     tone: pip.room === null ? undefined : ROOM_TONE[pip.room],
   }))
+}
+
+/** How many stand in the Town Hall plaza's crowd: uma-kit's `CROWD_SPOTS` (SA7). */
+export const PLAZA_CROWD = 5
+
+/**
+ * The Town Hall plaza's crowd (§5, SA7): the featured Uma in front, then the Umas with the highest lifetime level,
+ * newest release first, then name; five at most, fewer when fewer are owned. uma-racer has no parties, so the level rule
+ * fills it (P48's level rule).
+ */
+export function plazaCrowd(
+  umas: Readonly<Record<string, Pick<UmaState, 'outfitId' | 'tier' | 'racing'>>>,
+  featured: string | null,
+  about: (umaId: string) => { readonly name: string; readonly release: string },
+): string[] {
+  const rest = Object.values(umas)
+    .filter((uma) => uma.outfitId !== featured)
+    .map((uma) => ({ id: uma.outfitId, level: lifetimeLevel(uma.tier, uma.racing.level), ...about(uma.outfitId) }))
+    .sort((a, b) => b.level - a.level || b.release.localeCompare(a.release) || a.name.localeCompare(b.name) || a.id.localeCompare(b.id))
+    .map((row) => row.id)
+  const front = featured !== null && umas[featured] !== undefined ? [featured] : []
+  return [...front, ...rest].slice(0, PLAZA_CROWD)
 }

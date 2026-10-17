@@ -179,13 +179,32 @@ describe('place links and the side panel (§1, §4)', () => {
     expect(screen.getByRole('link', { name: /^Scenario Gate\./ }).getAttribute('href')).toBe('/racing?peek=scenario-gate')
   })
 
-  it("draws the featured Uma in the plaza, opening her sheet", async () => {
+  it("draws the featured Uma in front of the plaza's crowd, opening her sheet (SA7)", async () => {
     const { where } = renderG2('/town', seedGame('busy'))
     fireEvent.click(await screen.findByRole('link', { name: 'Featured Uma: Amber Sprint' }))
-    await waitFor(() => expect(where()).toBe('/town?sheet=featured'))
+    await waitFor(() => expect(where()).toBe('/town?sheet=featured&uma=sim-uma-01'))
     const sheet = await screen.findByRole('dialog', { name: 'Featured Uma' })
     expect((await within(sheet).findByRole('link', { name: 'Profile' })).getAttribute('href')).toBe('/town/stable/outfit/sim-uma-01')
     expect(within(sheet).getByRole('link', { name: 'Race' }).getAttribute('href')).toBe('/racing/racecourse?uma=sim-uma-01')
+  })
+
+  it("stands five in the crowd, and a figure behind opens her own sheet; closing clears her (SA7)", async () => {
+    const { where } = renderG2('/town', seedGame('busy'))
+    await screen.findByRole('link', { name: 'Featured Uma: Amber Sprint' })
+    const figures = await waitFor(() => {
+      const all = [...document.querySelectorAll<HTMLElement>('[data-g2="plaza-figure"]')]
+      expect(all).toHaveLength(5)
+      return all
+    })
+    const behind = figures[1]!
+    const umaId = behind.dataset.uma!
+    expect(behind.getAttribute('aria-label')).toMatch(/: Train, Race or Profile$/)
+    fireEvent.click(behind)
+    await waitFor(() => expect(where()).toBe(`/town?sheet=featured&uma=${umaId}`))
+    const sheet = await screen.findByRole('dialog', { name: 'Featured Uma' })
+    expect((await within(sheet).findByRole('link', { name: 'Profile' })).getAttribute('href')).toBe(`/town/stable/outfit/${umaId}`)
+    fireEvent.click(within(sheet).getByRole('button', { name: 'Close' }))
+    await waitFor(() => expect(where()).toBe('/town'))
   })
 })
 

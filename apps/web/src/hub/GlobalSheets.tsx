@@ -2,7 +2,7 @@
 // kit's place menu: every drawn place by page with its counter, then Account and the planner's roster view), the
 // featured Uma's quick sheet (T138's slot) and the check-in sheet (T142's slot). Focus moves into the sheet and returns
 // to what opened it; Escape (the sheet's own), the close button, the handle and Back close it.
-import { navState, PlaceMenu, peekPath, useLeave, withParam, type MenuGroup, type MenuPlace } from '@luismlorenzana/uma-kit/shell'
+import { navState, PlaceMenu, peekPath, useLeave, type MenuGroup, type MenuPlace } from '@luismlorenzana/uma-kit/shell'
 import { BottomSheet } from '@luismlorenzana/uma-kit/ui'
 import { HUB_PAGE_NAMES, HUB_PAGES, hubWords, placeById, placesOn, type Place } from '@racer/domain/hub'
 import { Suspense, useEffect, useRef, useState, type ReactNode } from 'react'
@@ -88,7 +88,15 @@ export default function GlobalSheets({ sheet }: { sheet: GlobalSheet | null }) {
   const [shown, setShown] = useState<GlobalSheet | null>(sheet)
   const body = useRef<HTMLDivElement>(null)
   const opener = useRef<HTMLElement | null>(null)
-  const close = () => leave(withParam(location, 'sheet', null))
+  // Closing drops the sheet and the crowd figure it was opened for (`&uma=`, SA7).
+  const close = () => {
+    const params = new URLSearchParams(location.search)
+    params.delete('sheet')
+    params.delete('uma')
+    const rest = params.toString()
+    leave(`${location.pathname}${rest === '' ? '' : `?${rest}`}`)
+  }
+  const asked = new URLSearchParams(location.search).get('uma')
 
   useEffect(() => {
     if (sheet === null) {
@@ -111,7 +119,7 @@ export default function GlobalSheets({ sheet }: { sheet: GlobalSheet | null }) {
       <div ref={body}>
         <Suspense fallback={null}>
           {shown === 'menu' && <MenuSheet />}
-          {shown === 'featured' && (Featured ? <Featured umaId={view?.featured ?? null} onClose={close} /> : <FeaturedSheet umaId={view?.featured ?? null} />)}
+          {shown === 'featured' && (Featured ? <Featured umaId={asked ?? view?.featured ?? null} onClose={close} /> : <FeaturedSheet umaId={view?.featured ?? null} />)}
           {shown === 'check-in' && (CheckIn ? <CheckIn collect={collect} onClose={close} /> : <CheckInSheet />)}
         </Suspense>
       </div>

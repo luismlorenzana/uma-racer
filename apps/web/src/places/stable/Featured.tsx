@@ -1,8 +1,8 @@
-// The featured Uma (docs/game/11-hub-and-places.md §5; T138): `FeaturedUmaCard`, the Town Hall plaza's cell and the
-// Stable Peek's first card, and her quick sheet: her name, tier crest, scenario, Racing Level and what she's doing
+// The featured Uma (docs/game/11-hub-and-places.md §5; T138, SA7): `FeaturedUmaCard`, the Stable Peek's first card;
+// `PlazaFigure`, one of the Town Hall plaza's crowd; and the quick sheet: her name, tier crest, scenario, Racing Level and what she's doing
 // ("Kitchen · 2 of 4 · 2h 10m"); Train (her Needs), Race (the Racecourse with her picked), Profile, and Feature another
-// Uma through the one Uma picker, which runs `feature-uma`. The plaza's chibi and its animation wait for phase 5's
-// `outfit-chibis` release (§5).
+// Uma through the one Uma picker, which runs `feature-uma`. The sheet shows the Uma tapped in the crowd (`&uma=`), else the
+// featured one.
 import { navState, withParam } from '@luismlorenzana/uma-kit/shell'
 import { Button, TierCrest } from '@luismlorenzana/uma-kit/ui'
 import { hubWords } from '@racer/domain/hub'
@@ -13,7 +13,7 @@ import { useGame, useHub, useNow } from '../../app/game'
 import { TapNoteLine, useTap } from '../../ui/work'
 import { UmaArt } from '../../ui/UmaArt'
 import { UmaPicker } from '../../ui/UmaPicker'
-import type { FeaturedSheetProps, PlazaProps } from '../registry'
+import type { FeaturedSheetProps, PlazaFigureProps, PlazaProps } from '../registry'
 import { doingNow, doingWords } from './model'
 
 /** Her card: still art and her name; a tap opens her quick sheet (`?sheet=featured`). Empty with no Umas. */
@@ -39,7 +39,31 @@ export function FeaturedUmaCard({ umaId }: PlazaProps) {
   )
 }
 
-/** Her quick sheet (§5). */
+/**
+ * One Uma in the Town Hall plaza's crowd (§5, SA7): her 44 pt art (chibi, else bust, icon or initial), no name on the
+ * map. A tap opens her quick sheet (`?sheet=featured&uma=:id`); the featured Uma stands in front.
+ */
+export function PlazaFigure({ umaId, front }: PlazaFigureProps) {
+  const location = useLocation()
+  const name = useGame((snapshot) => snapshot.env?.content.umas.get(umaId)?.name ?? '')
+  const params = new URLSearchParams(location.search)
+  params.set('sheet', 'featured')
+  params.set('uma', umaId)
+  return (
+    <Link
+      to={`${location.pathname}?${params.toString()}`}
+      state={{ back: true }}
+      aria-label={hubWords(front ? 'featured' : 'crowd-figure', { uma: name })}
+      data-g2="plaza-figure"
+      data-uma={umaId}
+      className="flex size-11 items-end justify-center rounded-md active:bg-ink/5"
+    >
+      <UmaArt outfitId={umaId} size={44} />
+    </Link>
+  )
+}
+
+/** Her quick sheet (§5): the Uma tapped in the plaza's crowd, else the featured one. */
 export function FeaturedSheet({ umaId, onClose }: FeaturedSheetProps) {
   const location = useLocation()
   const now = useNow()
@@ -48,7 +72,7 @@ export function FeaturedSheet({ umaId, onClose }: FeaturedSheetProps) {
   const env = useGame((snapshot) => snapshot.env)
   const tap = useTap()
   const [picking, setPicking] = useState(false)
-  const featured = view?.featured ?? umaId
+  const featured = umaId !== null && state?.umas[umaId] !== undefined ? umaId : view?.featured ?? umaId
   const uma = featured === null ? null : state?.umas[featured] ?? null
   const doing = useMemo(() => (state === null || env === null || uma === null ? null : doingNow(state, uma.outfitId, now, env)), [state, env, uma, now])
   if (uma === null || env === null) return <h2 data-sheet-heading tabIndex={-1} className="pb-2 text-lg outline-none">{hubWords('no-umas')}</h2>

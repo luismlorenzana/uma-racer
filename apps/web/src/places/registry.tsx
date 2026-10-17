@@ -104,13 +104,19 @@ export const SHEET_UI: {
   'check-in': lazy(() => import('./check-in/CheckInSheet')), // T142
 }
 
-/** The Town Hall plaza's cell (§5): T138's `FeaturedUmaCard`. It opens `?sheet=featured` itself. */
+/** The featured Uma's card (§5): T138's `FeaturedUmaCard`, the Stable Peek's first card. It opens `?sheet=featured`. */
 export interface PlazaProps {
   readonly umaId: string | null
 }
 
-export const TOWN_PLAZA: { readonly Card?: Lazy<PlazaProps> } = {
-  Card: lazy(() => import('./stable/Featured').then((mod) => ({ default: mod.FeaturedUmaCard }))),
+/** One figure in the Town Hall plaza's crowd (§5, SA7): `front` is the featured Uma. It opens `?sheet=featured&uma=`. */
+export interface PlazaFigureProps {
+  readonly umaId: string
+  readonly front: boolean
+}
+
+export const TOWN_PLAZA: { readonly Figure?: Lazy<PlazaFigureProps> } = {
+  Figure: lazy(() => import('./stable/Featured').then((mod) => ({ default: mod.PlazaFigure }))),
 }
 
 /** A full-screen flow outside the shell: `/collection/reveal/uma/:umaId` (T138). */
