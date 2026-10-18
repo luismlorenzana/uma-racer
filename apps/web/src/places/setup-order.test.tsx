@@ -68,6 +68,24 @@ describe('level-first setup (A03)', () => {
     expect(Object.keys(game.getSnapshot().receipts)).toHaveLength(0)
   })
 
+  it('keeps Recall behind the existing confirmation after the shared picker Options sheet', async () => {
+    const game = createMemoryGame(account(), () => 0)
+    renderG2('/training/observatory?session=', game)
+    const picker = await screen.findByRole('dialog', { name: 'Who trains at the Observatory?' })
+    fireEvent.click(await within(picker).findByRole('button', { name: 'Busy' }))
+    const options = await screen.findByRole('dialog', { name: 'Busy' })
+    expect(within(options).queryByRole('button', { name: 'Choose Busy' })).toBeNull()
+    expect(Object.keys(game.getSnapshot().receipts)).toHaveLength(0)
+    fireEvent.click(within(options).getByRole('button', { name: 'Close' }))
+    const reopened = await screen.findByRole('dialog', { name: 'Who trains at the Observatory?' })
+    fireEvent.click(within(reopened).getByRole('button', { name: 'Busy' }))
+    const second = await screen.findByRole('dialog', { name: 'Busy' })
+    fireEvent.click(within(second).getByRole('button', { name: 'Recall' }))
+    await screen.findByRole('dialog', { name: 'Recall Busy' })
+    expect(Object.keys(game.getSnapshot().receipts)).toHaveLength(0)
+    expect(game.getSnapshot().state!.work[uma(4)]!.entries).toHaveLength(1)
+  })
+
   it('opens a lineage slot on level, not Adds, retaining the reason on an unavailable high-level outfit', async () => {
     const game = createMemoryGame(account(), () => 0)
     renderG2(`/training/lineage-hall/${uma(1)}`, game)
