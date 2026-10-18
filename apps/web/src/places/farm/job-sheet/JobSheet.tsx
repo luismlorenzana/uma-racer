@@ -1,6 +1,6 @@
 // The job sheet (docs/game/07-farm.md §10; T140, D366): one screen over a building page or the map's side panel, from
-// its query, with everything preselected so one tap starts the job (`preselect`). Top to bottom: **Free Umas** as a strip
-// of faces (`UmaStrip`; a Queue next names her instead); **What** as an icon grid, five to a row, each cell with its
+// its query, with everything preselected so one tap starts the job (`preselect`). Top to bottom: **Free Umas** as a
+// selected face opening the shared picker (`UmaStrip`; a Queue next names her instead); **What** as an icon grid, five to a row, each cell with its
 // grade, stock, the plan's "×N" and a lock, under icon tabs at the Pantry and the Kitchen; **How many** as size chips
 // with durations (`SizeChips`); the inputs as icons with have/need; and one **Start · ×4 · 3h 36m** (or **Queue**)
 // button, which says why it can't in the rule's words. A shortfall links to the building that makes it (and the

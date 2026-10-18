@@ -386,11 +386,11 @@ From the page, a new job is 2 taps (+, Start), and so is a target's (its icon, S
 ### The job sheet
 
 One screen, everything preselected:
-1. **Free Umas:** a strip of 44 pt faces, each with her Farm Level as a badge and a star when her aptitude suits what
-   she'd make (§3); one line under it names the chosen one with her aptitude. **Only Free Umas** are listed: never one
+1. **Free Umas:** the preselected Uma's 44 pt face and aptitude line; tapping it opens the kit's five-column face
+   picker (SB6, D373), with her Farm Level, suited mark and aptitude. **Only Free Umas** are listed: never one
    working anywhere, in a session, or Ready with a finished job still holding its slot. With none, the sheet says "No
    free Uma", with **Collect here** when a finished job here would free one, and nothing else. **Queue next** (a row's
-   ⋯) names her and skips this step. The strip opens on **Farm Level, highest first**, then suited (S or A), then
+   ⋯) names her and skips this step. The picker opens on **Farm Level, highest first**, then suited (S or A), then
    release newest first, name and id (D368), not the EXP multiplier. Unless a link names her, the preselected Uma is
    the first row. The planner's item and size are kept when they belong to her; otherwise the item the plan most needs
    that she can make (else her highest grade) is preselected, sized to the check-in.
@@ -541,7 +541,7 @@ The old Farm, the Stable Kitchen (M031, D304–D320; deleted with the cutover, r
 | A row's ring is the current item's progress (`itemProgress`) round her face, as the Hub's pips are, redrawn on the 30-second clock (T140, D366) | One look for the pip and its row ([11](11-hub-and-places.md) §4) |
 | The quick look's stock by open grade runs up to the highest grade any current Uma has open; every building shows its targets as icons (T140, D366) | [11](11-hub-and-places.md) §3.4 says "by open grade"; the same reading as the Exchange's stock ([09](09-racing-rewards-and-exchange.md) §5.3) |
 | Collect here and Repeat here sit in the page's thumb zone; off, each says why on itself ("Nothing to collect", "Nobody to repeat"); their receipt lists each line and each skip in the rule's words, a restart with how long it takes (T140, D366) | §10 puts them beside the global ones; [02](02-check-ins-and-notifications.md) §5's "Kitchen full", "4 Honey short" |
-| `ui/work/` (SlotRow and PeekRow, PlaceStats, UpgradeButton, SpeedUpControls, RecallSheet, QueueChips, SizeChips) and `ui/ItemIcon` are shared with T139's facilities and T142's check-in; the job sheet's Uma strip is its own (T140, D366) | One look for every timed thing and every item; the Farm makes the items |
+| `ui/work/` (SlotRow and PeekRow, PlaceStats, UpgradeButton, SpeedUpControls, RecallSheet, QueueChips, SizeChips) and `ui/ItemIcon` are shared with Training and the check-in; the job sheet's selected-Uma control opens the kit's picker (SB6) | One look for every timed thing and every item; the Farm makes the items |
 | **Every Farm screen shows how long work takes or has left, never the clock time it ends:** rows ("1h 20m", **Done**), size chips ("×4 · 7h 12m"), Start ("Start · ×4 · 7h 12m"), queue chips ("then Carrot ×4 · 7h 12m"), no-slot words and Repeat's receipt, all through the domain's `durationText` (D366) | The owner: "I don't like that you show the hour the job finishes instead of the time the job is going to take" |
 | **The sheet preselects everything:** the first Free Uma in level order unless a link names her; the planner's item and size when they belong to her, else `bestItem` and the fitted size; a link's item and count are kept (D368) | "Less clicks": a free slot's job is one tap from the open sheet, with its Uma matching the new order |
 | **Repeat on a finished row** is `collect`, then `repeat { outfitIds: [her] }`, two operations; the profile's Repeat sizing (same or fit, [02](02-check-ins-and-notifications.md) §5) applies as it does to Repeat here (D366) | The domain's Repeat, for one Uma; nothing restarts outside it (§9) |

@@ -1,7 +1,7 @@
 # 11 · Hub and places
 
 > **Status: as built, phase 3 (generation 2, D361) with phase 6's canvas Hub (T145, D363), the racer's own uma-art
-> 2.7.0 (D364) and the shared uma-kit 0.3.0 (T147, D367; the docked bar, D369; the plaza crowd, D371); first written 2026-10-13 (D333).** The Hub's four pages, every
+> 2.7.0 (D364) and the shared uma-kit 0.7.1 (SB6, D373; the shared places, D372; the docked bar, D369; the plaza crowd, D371); first written 2026-10-13 (D333).** The Hub's four pages, every
 > place on them, the menu, the routes, the two play modes as tap-by-tap flows, and the art. The registry and Hub view
 > are `@racer/domain/hub` (T137, D353); the routes, redirects and boot `apps/web/src/app/`; the shell and the map are
 > uma-kit's, fed by uma-racer's adapters in `hub/`; every Peek, Page and sheet `places/` (T138–T142). Each page is
@@ -283,6 +283,28 @@ for two rows of pips.
 | **Card Library** (`card-library`) | Every SSR, open (D329): lens and Uma controls, sorts, filters, the card page with its bond cost and bonded Umas, **Bond** into the Dojo's session sheet ([06](06-cards-and-bonds.md) §6) | The newest cards; bonds made this tier; cards the featured Uma could bond now | — | Open | `/cards`, `/cards/:cardId` |
 | **Account** (`account`, hidden) | uma-kit's Account frame (SD4): the trainer's name, which can be changed (1–32 characters, saved on the trainer badge row); the wallet (Prize Money, Speed Tickets, Uma Tickets); this phone's **Appearance** (System, Light or Dark, kept in `uma-racer:g2:appearance`, T147); then this game's sections: check-in times ([02](02-check-ins-and-notifications.md); no notifications, D336), sync status and Sync now (D157), reduced motion and default race speed; app build and content (02 §9 keeps "id" and "version" off the screen); Sign out; in dev builds only, a dev section that runs `dev-grant` (grants, Finish her work, Jump to her gate) and, on the seeds' mount, loads another synthetic seed | — | — | Open; reached from the trainer button and the menu, not drawn on the map, so it has no Peek | `/settings` |
 
+**The shared Uma album (SB6, D373).** The Stable uses `uma-kit/album`'s `AlbumChrome`, `AlbumGrid` and
+`useAlbumPrefs`: Icons is five face crops across, Cards three busts, List one full-width face row. Owned/Locked,
+tier, Ready, planner target, New and A+ aptitude filters, and Level (lifetime), Release, Name, Tier, Racing and Farm
+sorts remain racer-owned. The labels show tier-local levels, not lifetime numbers. Her tier, Ready, target, NEW and
+Hall of Fame marks remain visible; opening her profile clears only her NEW mark. The existing
+`uma-racer:g2:album:<album>` keys are also the kit's keys, so saved queries, views and seen ids need no migration.
+The Library shares the chrome and query but keeps its card-specific tiles, lens, filters and sorts.
+
+Every Uma chooser is the kit's `UmaPicker`: Farm, sessions, Lineage, Bond, Library lens, featured Uma, Racecourse,
+Trophy Hall and dev grants. A compact selected-Uma face control replaces the Farm and Racing list strips. Work uses
+Free first, then Farm Level; Lineage and Racing keep lifetime Level. The Farm's tie keeps suited first. Unavailable
+Umas retain their reasons, and racer-only Queue, Recall and Cook appear in a follow-up after choosing an Options
+tile, without nesting a second button inside the kit's. The original operations, confirmations, links and save
+rules do not change. See [05](05-training-hub.md) §8 and [07](07-farm.md) §10.
+
+`AlbumArtProvider` is the racer's `app/albumArt.tsx`, using authenticated, hash-verified content and held image URLs.
+Small Umas are `FaceTile` (round in pips and slots); large Umas are `UmaBust`. **Today's `face` is per character:**
+SE1 has not yet adopted uma-data 1.1.0's published `outfit-faces`, and SB6 explicitly keeps the existing face pack
+until then. A missing or failed face/bust keeps her outfit icon, then her initial. Only the Town Hall plaza requests
+chibis; its card and quick sheet use busts. Race art is busts, including pre-race runners, PixiJS tokens, feed,
+finishing order and result hero; no race code requests chibis.
+
 ### 3.2 Training (`/training`)
 
 ```text
@@ -314,7 +336,7 @@ The Racecourse sits lowest and central, on the road, nearest the raised Race but
 
 | Place (id) | Opens | Peek | Counter | Lock | Replaces |
 |---|---|---|---|---|---|
-| **Racecourse** (`racecourse`, `direct`) | Race select: the Uma strip, the Daily Purse bar, **Today's featured**, Next up, every race; then the pre-race sheet, the run (full screen) and the result ([09](09-racing-rewards-and-exchange.md) §3–§7) | None: it opens at once. Its header carries what a Peek would (featured races, purse) | Featured bonuses still open today (0–3) | Open | `/race`, `/race/run` |
+| **Racecourse** (`racecourse`, `direct`) | Race select: the selected-Uma face and Change picker, the Daily Purse bar, **Today's featured**, Next up, every race; then the pre-race sheet, the run (full screen) and the result ([09](09-racing-rewards-and-exchange.md) §3–§7) | None: it opens at once. Its header carries what a Peek would (featured races, purse) | Featured bonuses still open today (0–3) | Open | `/race`, `/race/run` |
 | **Scenario Gate** (`scenario-gate`) | Every Uma's career: stage, goal races, holds; the **Advance** sheet ([03](03-uma-progression.md)); per Uma at `/:umaId` | Goals in progress for the featured Uma; Umas ready to advance | Umas ready to advance | Open | Home's career panel; `/scenario/:umaId/start` |
 | **Expedition Map** (`expedition-map`) | **Phase 3: a placeholder** (T141) listing each Uma's distance to entry, and Promote for an Uma holding a completed run (only the dev seeds). **Phase 9:** the world map with seven region pins, the list view, each Expedition's page with her run, Start, Resume, Pause and **Promote** ([10](../rework/10-expeditions.md) "Places and screens") | Umas on Expeditions with their wins ("5/8"); Umas eligible to start | Umas whose run is complete and who can promote | **Open from day one.** Before anyone qualifies it opens on "No Uma has finished her tier yet" with each Uma's distance to entry ([10](../rework/10-expeditions.md)) | Nothing (new) |
 | **Trophy Hall** (`trophy-hall`) | Badges in Uma, Stable and Trainer scopes, titles, showcases, the G1 trophy wall, records, Prestige, the trainer profile and achievements | Recent flair (today's Home panel) | New flair since the last visit | Open | `/badges`, `/trainer`; Home's flair panels |
@@ -374,7 +396,7 @@ at a glance.
 **The plaza's crowd** (SA7, uma-kit 0.3.0, D371): up to five small Umas stand round the Town Hall plaza in uma-kit's
 loose V (`CROWD_SPOTS`). The featured Uma stands in front, then the Umas with the highest lifetime level, newest release
 first on ties, then name; fewer stand when fewer are owned. uma-racer has no parties, so the level rule fills the
-crowd (P48). Each is 44 pt of her art: her chibi, else her bust, icon or initial (`UmaArt`). Each bobs 2 px on its own
+crowd (P48). Each is 44 pt of her art: the kit's `UmaChibi`, else her bust, icon or initial. Each bobs 2 px on its own
 beat and stands still under reduced motion, and the ground round them is kept clear of props (`CROWD_CLEARING`). No names show on
 the map: each figure's VoiceOver name says who she is ("Featured Uma: …", or "…: Train, Race or Profile").
 
@@ -391,9 +413,9 @@ After that the owner picks her: **`feature-uma { outfitId }`** sets `profile.fea
 in the Stable is refused with `unknown-uma`'s words; the one already featured changes nothing), from the quick sheet's
 picker or her profile's **Feature her** (T138, `tiers/roster.ts`).
 
-**As built (T138, T145):** she stands on the road between the four Town Hall places (`PLAZA_AT`, kept clear of props),
-still art in `FeaturedUmaCard`, also the Stable Peek's first card, until phase 5's `outfit-chibis` release gives her the
-code-animated chibi. "What she's doing" is her work row settled to the clock: the place, the current
+**As built (T138, T145, SA7, SB6):** she stands on the road between the four Town Hall places (`PLAZA_AT`, kept clear
+of props), as the front chibi in the kit's gently bobbing crowd. `FeaturedUmaCard`, also the Stable Peek's first card,
+uses her bust. "What she's doing" is her work row settled to the clock: the place, the current
 entry's finished items of its count and how long it has left ("Kitchen · 2 of 4 · 2h 10m", "+N queued" behind),
 "Kitchen · Ready", or "Free".
 
@@ -530,7 +552,7 @@ Three taps and about 30 seconds ([02](02-check-ins-and-notifications.md) §1). A
 | A race card: **Today's featured** or **Next up** | The pre-race sheet | 1 |
 | **Start race** | The run, full screen | 1 |
 | **Skip** (optional) | The result: Racing EXP, Prize Money with its band, goals, flair | 1 |
-| **Next Uma** | Race select on the next Uma in the strip, Daily Purse bar updated | 1 |
+| **Next Uma** | Race select on the next Uma in the shared picker's lifetime order, Daily Purse bar updated | 1 |
 | A race card, **Start race**, Skip, Next Uma … | Four taps a race | 4 |
 | Back to the Hub | The Racing page; then the summary's **Speed up** or the Exchange to spend the evening's Prize Money | 1–2 |
 
@@ -595,8 +617,9 @@ and uma-art published it as two minor releases (uma-platform P45, P46). The race
 spots) and its seven region crests (United States, South Korea, Dubai, Hong Kong, Australia, Britain, France/Europe, at
 16 and 32 px) for [10](../rework/10-expeditions.md)'s Map. Their packet is written when phase 9 is specified.
 
-Uma art stays the platform release's: outfit chibis for the plaza and busy buildings, character faces for pips,
-outfit icons as the fallback ([rearchitecture/03](../rearchitecture/03-rendering-and-textures.md) §4). The tier-3 wet
+Uma art stays private: chibis only in the plaza, faces for small Umas and busts for large Umas and every race surface;
+outfit icons are the fallback. Faces still map to today's per-character pack until SE1 adopts the published
+`outfit-faces` family. The tier-3 wet
 course ([10](../rework/10-expeditions.md)) is a palette parameter of the code-drawn race course, not new art.
 
 The racer checks every registry frame against the pinned index in a test, as uma-rpg's `frames.test.ts` does: a frame
@@ -726,7 +749,7 @@ interiors are.
 | Deep links: Exchange `?row=speed-tickets` and `?family=&grade=` (the grade opens its quantity sheet); Account `?row=sync`. Counters hide at 0 (T138) | §2.1's chips open "at the row", and the planner's "Buy at the Exchange" needs one; §2.2 keeps the bar quiet |
 | Bond opens the Uma picker: Umas who can bond it now first, each with the dish, its stock and the real time; a busy Uma reads "Busy · 2h 10m left" (D366) and shows Queue only when her running session is in that card's Dojo room; the rest follow with their reason. A pick goes to T139's `/training/dojo?session=&room=&unlocks=bond:<cardId>&back=`, `&queue=1` for Queue; "0 in Warehouse" offers Cook, T140's Kitchen job sheet (T138) | [06](06-cards-and-bonds.md) §6, §10; the session sheet is T139's |
 | Times on screen are real (× *k*), e.g. "4 h 48 m" (T138) | [05](05-training-hub.md) §2: the pages' examples are base minutes, the game multiplies by *k* |
-| The one Uma picker (`ui/UmaPicker`) is the Stable's album in a sheet with today's `UmaPickerSheet` props (caller sorts, `describe`, `disabledReason`, `candidateIds`, plus an `action` per row), through a portal so it opens over another sheet; T139 and T140 use it (T138) | D181; the Stable owns the album it browses |
+| Every Uma picker is `uma-kit/album`'s `UmaPicker` through `ui/racerAlbum.tsx` (SB6): candidates, order, eligibility and descriptions stay racer-owned; Queue, Recall and Cook open a follow-up Options sheet | One shared compact five-face album; no local picker or album fork |
 | Taps and their words use T140's `ui/work` (`useTap`, `TapNoteLine`) and `ui/ItemIcon`; a 44 pt tab row (`ui/Tabs`) stands in for today's 32 pt SegmentedControl (T138) | One set of pieces (M034); 44 pt targets |
 | The dev seeds carry invented skills and card names and run `dev-grant`; Account's dev section loads a seed in place through the port's `fixtures` and `loadFixture` (T138) | A profile's Skills tab needs a library to equip and the Library names to search; M034's rehearsal reaches a gate in one tap |
 | The session sheet opens over a facility page from its query (`?session=:umaId&room=:room&unlocks=<kind>:<target>,…&back=<path>`, plus `&queue=1` and a slot row's `&slot=n`); `back` is an in-app path only, `session=` empty opens T138's picker, and only the facility's own unlocks are read (T139) | Every place is a link (§1); the Library's Bond, the planner, a Needs line and the build views reach it without importing it |
@@ -751,7 +774,7 @@ interiors are.
 | A Farm Peek acts: Collect and Repeat on a finished row, Collect here, and a free row's "+" and the targets open the job sheet over the map from `?peek=:place&job=…`; the sheet sits inside the panel's tree, so Escape and Back close it first, and a sideways drag on it never closes the panel (T146, D366) | The owner wanted uma-rpg's Farm structure with fewer taps: 2 from the map to collect or restart, 3 to start a job |
 | The service worker precaches files up to 3 MB (T145) | uma-rpg's limit: the Phaser chunk and the atlases precache, so the Hub works offline |
 | `/dev/seeds` and `/dev/seeds/` are the seeds' root, which runs the start rule as `/` does; one tested check (`isSeedsPath`) decides the mount (T145) | The 404 came from a checkout without the mount; the router test now holds the root |
-| The shell, the Hub map and the primitives are uma-kit's (uma-platform P48; 0.3.0 since D371), pinned exactly; uma-racer passes its chips, Sync chip, tabs, menu groups, place models, pips' room colours, plaza, ground and words in as props, and forks no kit component (T147, D367) | One shell with uma-rpg: a fix like the iPhone band lands once, in the kit |
+| The shell, Hub map, primitives, album and place frames are uma-kit's (0.7.1 since SB6), pinned exactly; uma-racer passes its chips, Sync chip, tabs, menu groups, place models, pips' room colours, plaza, ground and words in as props, and forks no kit component (T147, SD4, SB6) | One shell with uma-rpg: a fix like the iPhone band lands once, in the kit |
 | The frame is fixed to the screen's edges and the bottom panel lifts by `max(inset − 12 pt, 8 pt)`; the reveal uses the same frame without bars (T147) | The band under the bar on an iPhone 15 (A03's 0.1), fixed for every full-screen route |
 | Appearance (System, Light, Dark) in Account, kept on this phone under the game's prefix; System by default (T147) | uma-rpg's dark palette came with the kit; the owner's phone decides unless they choose |
 | A Hub page reads only its own places' counter hooks (`usePlaceCounts` with `active`); the menu reads all (T147) | The kit's map and menu take counts as values; the Racecourse's draw and the Trophy Hall's flair read stay off the other pages |

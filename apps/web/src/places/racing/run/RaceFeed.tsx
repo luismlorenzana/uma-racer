@@ -1,6 +1,6 @@
 // The race feed (D178), ported from today's `screens/race/RaceFeed.tsx` unchanged in behaviour: small toasts on the
-// right of the course, newest on top, each a pure function of playback time. Faces are the new game's (`UmaFace`, her
-// initial on the seeds' mount); names come from the race's content.
+// right of the course, newest on top, each a pure function of playback time. SB6 uses shared-kit busts, with the
+// outfit icon or initial while verified art loads; names come from the race's content.
 import { ArrowDownIcon, ArrowUpIcon, BurstIcon, CrownIcon, GateIcon, type IconComponent, MoveToIcon, WarningIcon } from '@luismlorenzana/uma-kit/ui'
 import type { RacePackCue, RaceCue } from '../../../scenes/race/presentation'
 import { TypeIcon, type TypeIconKind } from '../../../ui/TypeIcon'
