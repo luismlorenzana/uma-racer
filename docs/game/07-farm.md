@@ -421,19 +421,22 @@ Queue next live on the slot's row.
 ### The Warehouse's Farm goods
 
 The Warehouse is in Town Hall ([11](11-hub-and-places.md)). It is the one inventory, and it doesn't reset at promotion.
-- **Shelves:** Raw · Crafted · Dishes · Tickets. Filters: the eight families (with their destination icons) and grades
-  1–10.
-- **A row:** icon, name, grade, count, then **reserved** (inside running jobs), **coming** (unfinished outputs) and
-  **needed** (the planner's open needs).
-- **A stock sheet:** family, grade and destination; the recipes that use it; **Make more** (opens the building's job
-  sheet); **Sell × 1 / × 10 / surplus** at a third of its work value ([09](09-racing-rewards-and-exchange.md),
-  [08](08-item-catalogue-and-recipes.md) §8). Surplus is stock beyond the planner's needs; reserved items can't be sold.
+It is uma-kit's shelf frame (`ShelfView`, SD4), filled with this game's stock:
+- **Shelves:** Raw · Crafted · Dishes · Tickets. Grade chips: every grade, one grade, or **Highest** (the highest grade
+  held in each family).
+- **A row** for each stack held: icon, name, count, then **reserved** (inside running jobs), **coming** (unfinished
+  outputs) and **needed** (the planner's open needs).
+- **A stock sheet:** what's held; family, grade and destination; what's reserved, coming, needed and free; the recipes
+  that use it; **Make more** (opens the building's job sheet); **Sell ×1 / ×10 / All** at a third of its work value
+  ([09](09-racing-rewards-and-exchange.md), [08](08-item-catalogue-and-recipes.md) §8). Reserved items aren't held
+  (they're inside their jobs), so they can't be sold; selling into what the planner needs asks first.
 
 **As built (T138).** A row's counts come from one projection of the work at the clock: **held** is the Warehouse
 settled to now; **reserved** is `reservedStock(state, now)` (`work/activity.ts`), the inputs of every item not yet
 made in a started entry, which is exactly what Recall would hand back; **coming** is `projectWork(...).coming` by item;
-**needed** is `neededFromStock` over the plan for `targetsOf`. A stack with all four at 0 is hidden, and an empty
-Warehouse reads [09](09-racing-rewards-and-exchange.md) §8's "Nothing to sell yet: the Farm's first harvest lands here".
+**needed** is `neededFromStock` over the plan for `targetsOf`. The shelves list what's held (a stack only reserved,
+coming or needed shows in the Peek's shortfalls and the planner, not on a shelf), and an empty Warehouse reads
+[09](09-racing-rewards-and-exchange.md) §8's "Nothing to sell yet: the Farm's first harvest lands here".
 A dish reads its destination ("Carrot Salad · Constellation · grade 1"), an ingredient its family; **Make more** opens T140's
 job sheet at the building that makes it (`/farm/:building?job=&back=`).
 

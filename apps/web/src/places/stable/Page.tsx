@@ -1,8 +1,9 @@
 // The Stable (docs/game/11-hub-and-places.md §3.1; docs/game/04-tiers-and-promotion.md §6; ux "Albums",
 // D176, D181): the roster in the shared album chrome, Owned and Locked tabs with counts, the ticket note with the Shard
-// exchange, Unlock in a sheet, and the Locked tab's multi-select that unlocks up to the tickets in hand, then reveals
-// them in turn. Each profile (`outfit/:umaId`, `/skills`, `/needs`) is its own chunk.
-import { BottomSheet, Button, CheckIcon, LockedIcon, Tabs, TargetIcon, TierCrest } from '@luismlorenzana/uma-kit/ui'
+// exchange, one Uma's Unlock in uma-kit's confirm (`UnlockConfirm`, SD4), and the Locked tab's multi-select that unlocks
+// up to the tickets in hand, then reveals them in turn (the multi-unlock and the reveal stay this game's). Each profile (`outfit/:umaId`, `/skills`, `/needs`) is its own chunk.
+import { UnlockConfirm } from '@luismlorenzana/uma-kit/places'
+import { Button, CheckIcon, LockedIcon, Tabs, TargetIcon, TierCrest, UiMark } from '@luismlorenzana/uma-kit/ui'
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router'
 import { VirtualGrid } from '../../ui/album/VirtualGrid'
@@ -13,7 +14,7 @@ import { useGame } from '../../app/game'
 import { useAlbumPrefs } from '../../ui/albumPrefs'
 import { UmaSquare } from '../../ui/ArtSquare'
 import { PlacePageHeader } from '../PlacePageHeader'
-import { TapNoteLine, useTap } from '../../ui/work'
+import { doneOrThrow, TapNoteLine, useTap, useWordsContext } from '../../ui/work'
 import type { PageProps } from '../registry'
 import {
   buildStableAlbum, openingTab, queryStable, STABLE_ALBUM, STABLE_DEFAULT_QUERY, STABLE_FACETS, STABLE_SORTS, ticketNote, unlockBlocked,
@@ -121,35 +122,26 @@ function Tile({ entry, list, picking, picked, full, onOpen }: {
   )
 }
 
-/** Unlock · 1 Uma Ticket, or why not (04 §6). */
+/** One Uma's Unlock in uma-kit's confirm: her Uma Tickets N → N−1, then Unlock, or why not (04 §6). */
 function UnlockSheet({ entry, onClose, onUnlocked }: { entry: StableEntry | null; onClose: () => void; onUnlocked: (id: string) => void }) {
   const profile = useGame((snapshot) => snapshot.state?.profile ?? null)
   const tap = useTap()
-  if (entry === null || profile === null) return <BottomSheet open={false} onClose={onClose}>{null}</BottomSheet>
-  const blocked = unlockBlocked(profile, entry.name)
-  const key = `unlock:${entry.id}`
-  const unlock = async () => {
-    const answer = await tap.run('unlock-uma', { outfitId: entry.id }, key)
-    if (answer?.kind === 'done') onUnlocked(entry.id)
-  }
+  const context = useWordsContext()
+  const blocked = entry === null || profile === null ? null : unlockBlocked(profile, entry.name)
   return (
-    <BottomSheet open onClose={onClose} label={entry.name}>
-      <div className="flex items-center gap-3 pb-3">
-        <span className="w-24 shrink-0"><UmaSquare outfitId={entry.id} name={entry.name} dimmed /></span>
-        <div className="min-w-0">
-          <h2 data-sheet-heading tabIndex={-1} className="font-display text-xl font-bold outline-none">{entry.name}</h2>
-          {entry.outfit && <p className="text-[13px] text-ink-soft">{entry.outfit}</p>}
-          <p className="mt-1 text-[13px] text-ink-soft">Joins at tier 1, scenario 1, Racing Lv 1 and Farm Lv 1.</p>
-        </div>
-      </div>
-      <Button className="w-full" size="lg" disabled={blocked !== null || tap.pending === key} onClick={() => void unlock()}>
-        Unlock · 1 Uma Ticket
-      </Button>
-      {blocked !== null && (
-        <p className="mt-2 text-[13px] text-ink-soft" data-reason>{blocked.reason} {blocked.shards}.</p>
-      )}
-      <TapNoteLine tap={tap} className="mt-2" />
-    </BottomSheet>
+    <UnlockConfirm
+      open={entry !== null && profile !== null}
+      onClose={onClose}
+      name={entry?.name ?? ''}
+      tickets={profile?.umaTickets ?? 0}
+      ticketMark={<UiMark mark="currency/uma-ticket" />}
+      onConfirm={async () => {
+        if (entry === null) return
+        doneOrThrow(await tap.run('unlock-uma', { outfitId: entry.id }, `unlock:${entry.id}`), context)
+        onUnlocked(entry.id)
+      }}
+      words={{ final: blocked === null ? 'Unlocking is final. She joins at tier 1, scenario 1, Racing Lv 1 and Farm Lv 1.' : `${blocked.reason} ${blocked.shards}.` }}
+    />
   )
 }
 

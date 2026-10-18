@@ -1,33 +1,27 @@
 // Account (docs/game/11-hub-and-places.md §3.1; docs/game/02-check-ins-and-notifications.md §3, §9, §10; D157; M034;
-// T138): the trainer's name (read-only: no screen edits it yet, 02 §11), check-in times (`set-check-in-times`), sync
-// and Sync now, this device's Appearance (System, Light or Dark: uma-kit's, T147), reduced motion and default race
-// speed, App build and Content, Sign in or Sign out (the auth provider's, T143), and in dev builds only a dev section
-// that loads the synthetic fixtures and runs `dev-grant`. `?row=sync` opens at the sync row. Notifications are phase 4.
-import { APPEARANCES, Button, Chip, CloseIcon, Panel, setAppearance, useAppearance, type Appearance } from '@luismlorenzana/uma-kit/ui'
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+// T138, SD4): uma-kit's Account frame (`AccountPage`), filled with this game's content: the trainer's name, saved as
+// the trainer badge row this device writes; the wallet (Prize Money, Speed Tickets, Uma Tickets); this phone's
+// Appearance (the kit's card); then this game's sections: check-in times (`set-check-in-times`), sync and Sync now,
+// reduced motion and default race speed, and in dev builds only a dev section that loads the synthetic fixtures and
+// runs `dev-grant`; App build and Content; and Sign out (the kit's auth). No notifications slot: push is off (D336).
+// `?row=sync` opens at the sync row.
+import { AccountPage as AccountFrame } from '@luismlorenzana/uma-kit/places'
+import { Button, Chip, CloseIcon, Panel, UiMark } from '@luismlorenzana/uma-kit/ui'
+import { SPEED_TICKET_ID } from '@racer/domain/items'
+import { useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router'
 import { APP_BUILD_ID } from '../../app/build'
 import { useG2Content } from '../../app/content'
 import { useGame, useHub, useRuntime } from '../../app/game'
+import { amount } from '../../ui/labels'
+import { badgeRow } from '../racing/trophy'
 import { RACE_SPEEDS, setRaceSpeed, setReducedMotion, useDevicePrefs } from '../../ui/devicePrefs'
 import { PlacePageHeader } from '../PlacePageHeader'
 import { TapNoteLine, useTap } from '../../ui/work'
 import { UmaPicker } from '../../ui/UmaPicker'
 import { umaName } from '../../ui/words'
 import type { PageProps } from '../registry'
-import { checkInTimes, clockOf, DEV_GRANTS, MAX_CHECK_INS, SYNC_WORDS } from './model'
-
-function Row({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div className="flex min-h-11 items-center justify-between gap-3 text-[14px]">
-      <span className="text-ink-soft">{label}</span>
-      <span className="min-w-0 text-right font-semibold">{children}</span>
-    </div>
-  )
-}
-
-/** Appearance's choices (T147): the phone's setting, or always light or dark, on this phone only. */
-const APPEARANCE_WORDS: Readonly<Record<Appearance, string>> = { system: 'System', light: 'Light', dark: 'Dark' }
+import { checkInTimes, clockOf, DEV_GRANTS, MAX_CHECK_INS, renamedTrainer, SYNC_WORDS, TRAINER_NAME_MAX } from './model'
 
 function CheckInTimes() {
   const saved = useGame((snapshot) => snapshot.state?.profile.checkIns ?? [])
@@ -138,81 +132,87 @@ function DevSection() {
   )
 }
 
-export default function AccountPage({ place, rest }: PageProps) {
+function SyncSection() {
   const [params] = useSearchParams()
   const { game } = useRuntime()
-  const name = useGame((snapshot) => snapshot.trainerName)
   const sync = useGame((snapshot) => snapshot.sync)
-  const content = useG2Content()
-  const prefs = useDevicePrefs()
-  const appearance = useAppearance()
-  const syncRow = useRef<HTMLElement>(null)
-  const [signingOut, setSigningOut] = useState(false)
+  const row = useRef<HTMLElement>(null)
   useEffect(() => {
-    if (params.get('row') === 'sync') syncRow.current?.scrollIntoView?.({ block: 'start' })
+    if (params.get('row') === 'sync') row.current?.scrollIntoView?.({ block: 'start' })
   }, [params])
+  return (
+    <section ref={row} aria-label="Sync" className="scroll-mt-16" data-row="sync">
+      <Panel className="space-y-2 p-3">
+        <h2 className="text-[15px] font-semibold">Sync</h2>
+        <p className="text-[14px]" data-g2="sync-words">{SYNC_WORDS[sync]}</p>
+        <Button variant="secondary" size="sm" disabled={game.syncNow === undefined || sync === 'paused'} onClick={() => game.syncNow?.()}>Sync now</Button>
+        {game.syncNow === undefined && <p className="text-[12px] text-ink-soft">Nothing is waiting to sync.</p>}
+      </Panel>
+    </section>
+  )
+}
+
+/** Reduced motion and the default race speed, on this phone only (Appearance is the kit's own card). */
+function ThisPhone() {
+  const prefs = useDevicePrefs()
+  return (
+    <Panel className="space-y-2 p-3" aria-label="This phone">
+      <h2 className="text-[15px] font-semibold">This phone</h2>
+      <label className="flex min-h-11 items-center justify-between gap-3 text-[14px]">
+        <span>Reduce motion</span>
+        <input type="checkbox" role="switch" checked={prefs.reducedMotion} onChange={(event) => setReducedMotion(event.target.checked)} className="size-6 accent-[var(--color-accent)]" />
+      </label>
+      <div className="flex min-h-11 items-center justify-between gap-3 text-[14px]">
+        <span>Race speed</span>
+        <span className="flex gap-1.5" role="group" aria-label="Race speed">
+          {RACE_SPEEDS.map((speed) => <Chip key={speed} selected={prefs.raceSpeed === speed} className="min-h-11 min-w-11 justify-center" onClick={() => setRaceSpeed(speed)}>{speed}×</Chip>)}
+        </span>
+      </div>
+      <p className="text-[12px] text-ink-soft">Kept on this phone only.</p>
+    </Panel>
+  )
+}
+
+export default function AccountPage({ place, rest }: PageProps) {
+  const { game } = useRuntime()
+  const name = useGame((snapshot) => snapshot.trainerName)
+  const stored = useGame((snapshot) => snapshot.badges?.['trainer'])
+  const profile = useGame((snapshot) => snapshot.state?.profile ?? null)
+  const speedTickets = useGame((snapshot) => snapshot.state?.items[SPEED_TICKET_ID] ?? 0)
+  const content = useG2Content()
+  const writeDevice = game.writeDevice
+  const signOut = game.signOut
 
   return (
     <div data-place-page="account">
-      <PlacePageHeader place={place} rest={rest} lines={['Settings for this account and this phone. Notifications come later.']} />
-      <div className="space-y-3 px-4 pt-3 pb-24">
-        <Panel className="p-3" aria-label="Trainer">
-          <Row label="Trainer">{name || 'Trainer'}</Row>
-        </Panel>
-        <CheckInTimes />
-        <section ref={syncRow} aria-label="Sync" className="scroll-mt-16" data-row="sync">
-          <Panel className="space-y-2 p-3">
-            <h2 className="text-[15px] font-semibold">Sync</h2>
-            <p className="text-[14px]" data-g2="sync-words">{SYNC_WORDS[sync]}</p>
-            <Button variant="secondary" size="sm" disabled={game.syncNow === undefined || sync === 'paused'} onClick={() => game.syncNow?.()}>Sync now</Button>
-            {game.syncNow === undefined && <p className="text-[12px] text-ink-soft">Nothing is waiting to sync.</p>}
-            {game.syncNow !== undefined && sync === 'paused' && <p className="text-[12px] text-ink-soft">Sign in first.</p>}
-          </Panel>
-        </section>
-        <Panel className="space-y-2 p-3" aria-label="This phone">
-          <h2 className="text-[15px] font-semibold">This phone</h2>
-          <div className="flex min-h-11 items-center justify-between gap-3 text-[14px]">
-            <span>Appearance</span>
-            <span className="flex gap-1.5" role="group" aria-label="Appearance">
-              {APPEARANCES.map((choice) => (
-                <Chip key={choice} selected={appearance === choice} className="min-h-11 justify-center" onClick={() => setAppearance(choice)}>
-                  {APPEARANCE_WORDS[choice]}
-                </Chip>
-              ))}
-            </span>
-          </div>
-          <label className="flex min-h-11 items-center justify-between gap-3 text-[14px]">
-            <span>Reduce motion</span>
-            <input type="checkbox" role="switch" checked={prefs.reducedMotion} onChange={(event) => setReducedMotion(event.target.checked)} className="size-6 accent-[var(--color-accent)]" />
-          </label>
-          <div className="flex min-h-11 items-center justify-between gap-3 text-[14px]">
-            <span>Race speed</span>
-            <span className="flex gap-1.5" role="group" aria-label="Race speed">
-              {RACE_SPEEDS.map((speed) => <Chip key={speed} selected={prefs.raceSpeed === speed} className="min-h-11 min-w-11 justify-center" onClick={() => setRaceSpeed(speed)}>{speed}×</Chip>)}
-            </span>
-          </div>
-          <p className="text-[12px] text-ink-soft">Kept on this phone only.</p>
-        </Panel>
-        <Panel className="p-3" aria-label="About">
-          <Row label="App build">{APP_BUILD_ID}</Row>
-          <Row label="Content">{content === null ? 'Not loaded here' : `${content.manifest.version} · ${content.origin === 'offline-cache' ? 'offline' : 'network'}`}</Row>
-        </Panel>
-        <div data-g2="sign-in-row">
-          {sync === 'paused' && game.signIn !== undefined ? (
-            <Button className="w-full" disabled={signingOut}
-              onClick={() => { setSigningOut(true); void game.signIn?.().finally(() => setSigningOut(false)) }}>
-              Sign in
-            </Button>
-          ) : (
-            <Button variant="destructive" className="w-full" disabled={game.signOut === undefined || signingOut}
-              onClick={() => { setSigningOut(true); void game.signOut?.().finally(() => setSigningOut(false)) }}>
-              Sign out
-            </Button>
-          )}
-          {game.signOut === undefined && game.signIn === undefined && <p className="mt-1 text-center text-[12px] text-ink-soft">Nobody is signed in on this phone.</p>}
-        </div>
-        {import.meta.env.DEV && <DevSection />}
-      </div>
+      <PlacePageHeader place={place} rest={rest} lines={['Settings for this account and this phone.']} />
+      <AccountFrame
+        {...(writeDevice === undefined ? {} : {
+          rename: {
+            value: name || 'Trainer',
+            maxLength: TRAINER_NAME_MAX,
+            onSave: (next: string) => writeDevice({ badges: badgeRow(renamedTrainer(stored, next, game.now())) }),
+          },
+        })}
+        wallet={profile === null ? [] : [
+          { key: 'prize-money', icon: <UiMark mark="currency/prize-money" />, value: amount(profile.prizeMoney), label: 'Prize Money' },
+          { key: 'speed-tickets', icon: <UiMark mark="currency/speed-ticket" />, value: speedTickets, label: 'Speed Tickets' },
+          { key: 'uma-tickets', icon: <UiMark mark="currency/uma-ticket" />, value: profile.umaTickets, label: 'Uma Tickets' },
+        ]}
+        sections={(
+          <>
+            <CheckInTimes />
+            <SyncSection />
+            <ThisPhone />
+            {import.meta.env.DEV && <DevSection />}
+          </>
+        )}
+        info={[
+          { label: 'App build', value: APP_BUILD_ID },
+          { label: 'Content', value: content === null ? 'Not loaded here' : `${content.manifest.version} · ${content.origin === 'offline-cache' ? 'offline' : 'network'}` },
+        ]}
+        {...(signOut === undefined ? {} : { onSignOut: () => signOut() })}
+      />
     </div>
   )
 }

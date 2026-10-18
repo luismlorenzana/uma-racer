@@ -187,7 +187,7 @@ export function neededFor(plan: Plan, itemId: ItemId): { readonly outfitId: stri
  * (grade 3) for 698? Each took about 17 hours of work."), what it leaves the planner short and for whom, or a sale of
  * 1,000 or more. Null when it asks nothing. `uma` names an Uma.
  */
-export function sellQuestion(row: StockRow, option: SellOption, plan: Plan, uma: (outfitId: string) => string): string | null {
+export function sellQuestion(row: StockRow, option: Pick<SellOption, 'qty' | 'total'>, plan: Plan, uma: (outfitId: string) => string): string | null {
   const asks = sellConfirmations({ itemId: row.item.id, qty: option.qty, held: row.held, needed: row.needed })
   if (asks.length === 0) return null
   const grade = gradeOf(row.item)
@@ -224,6 +224,29 @@ export function surplusWorth(rows: readonly StockRow[]): number {
     return price === undefined ? sum : sum + stackCounts({ held: row.held, reserved: row.reserved, needed: row.needed }).sizes.surplus * price
   }, 0)
 }
+
+// ---- uma-kit's shelves (SD4) ----------------------------------------------------------------------------------------
+
+/** A stack as uma-kit's `ShelfView` lists it: its shelf, grade, family (for "Highest") and what's held, with its row. */
+export interface StockItem {
+  readonly id: string
+  readonly name: string
+  readonly shelf: Shelf
+  readonly grade: number | null
+  readonly count: number
+  readonly group?: string
+  readonly row: StockRow
+}
+
+/** Every held stack, in catalogue order: the kit lists only what's held (09 §8's empty line covers an empty Warehouse). */
+export const stockItems = (rows: readonly StockRow[]): readonly StockItem[] =>
+  rows.map((row) => ({
+    id: row.item.id, name: row.item.name, shelf: row.shelf, grade: row.grade, count: row.held, row,
+    ...(row.family === null ? {} : { group: row.family }),
+  }))
+
+/** Each one's sale price, or null for the Speed Ticket, which can't be sold. */
+export const salePrice = (row: StockRow): number | null => sellPrice(row.item.id) ?? null
 
 /** The Speed Ticket's id, for the Tickets shelf. */
 export const SPEED_TICKET = SPEED_TICKET_ID

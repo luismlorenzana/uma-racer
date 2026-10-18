@@ -8,7 +8,8 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { readRevealQueue, revealPath } from '../reveal/path'
 import { SAVE_WORDS } from '../reveal/words'
-import { checkInTimes, clockOf, DEV_GRANTS, minuteOf, SYNC_WORDS } from './model'
+import { createTrainerBadgeState } from '@racer/domain'
+import { checkInTimes, clockOf, DEV_GRANTS, minuteOf, renamedTrainer, SYNC_WORDS, TRAINER_NAME_MAX } from './model'
 
 describe('check-in times (02 §3)', () => {
   it('reads and writes clock times as minutes after local midnight, ascending', () => {
@@ -80,5 +81,20 @@ describe('the Town Hall says nothing banned (02 §9)', () => {
     expect(seen).toContain('Feature another Uma')
     expect(seen).toContain('Nothing is waiting to sync.')
     expect(offenders).toEqual([])
+  })
+})
+
+describe("the trainer's name (SD4)", () => {
+  it('renames the stored trainer row, or a new one, and keeps the rest of it', () => {
+    const stored = createTrainerBadgeState(1_000)
+    const renamed = renamedTrainer(stored, 'Invented Trainer', 2_000)
+    expect(renamed.preferences.displayName).toBe('Invented Trainer')
+    expect({ ...renamed.preferences, displayName: stored.preferences.displayName }).toEqual(stored.preferences)
+    expect(renamedTrainer(undefined, 'Fresh', 3_000).preferences.displayName).toBe('Fresh')
+  })
+
+  it('refuses a name the badge rules refuse', () => {
+    expect(() => renamedTrainer(undefined, 'x'.repeat(TRAINER_NAME_MAX + 1), 1_000)).toThrow()
+    expect(() => renamedTrainer(undefined, '   ', 1_000)).toThrow()
   })
 })

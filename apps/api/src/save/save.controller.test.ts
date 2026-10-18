@@ -13,7 +13,8 @@ import { NestFactory } from '@nestjs/core'
 import type { NestExpressApplication } from '@nestjs/platform-express'
 import { createTrainerBadgeState } from '@racer/domain'
 import { SAVE_LIMITS, type OperationEnv } from '@racer/domain/save'
-import { AuthGuard } from '../auth/auth.guard'
+import { AuthGuard } from '@luismlorenzana/uma-server/auth'
+import { authModule } from '../app.module'
 import { ContentService } from '../content/content.service'
 import { FirestoreSaveRepository } from './firestore-save.repository'
 import { ContentUnavailable, MANIFEST_TTL_MS, OperationContent } from './operation-content'
@@ -149,8 +150,8 @@ describe('the routes', () => {
 
 // --- Over HTTP ------------------------------------------------------------------------------------------------------
 
-/** The module on its own app, as main.ts mounts AppModule: the `api` prefix and the 5 MB JSON body. */
-@Module({ imports: [ConfigModule.forRoot({ isGlobal: true, ignoreEnvFile: true }), SaveModule] })
+/** The module on its own app, as main.ts mounts AppModule: the guard, the `api` prefix and the 5 MB JSON body. */
+@Module({ imports: [ConfigModule.forRoot({ isGlobal: true, ignoreEnvFile: true }), authModule(), SaveModule] })
 class SaveTestApp {}
 
 const ENV_KEYS = ['AUTH_MODE', 'ALLOWED_EMAIL', 'PERSISTENCE', 'LOCAL_SAVE_FILE', 'CONTENT_SOURCE', 'CONTENT_DIR', 'DEV_OPERATIONS'] as const
@@ -161,8 +162,6 @@ describe('over HTTP', () => {
   const apps: INestApplication[] = []
 
   beforeAll(async () => {
-    // Vitest's transform emits no decorator metadata, so the guard's one dependency is named here; `nest build` emits it.
-    if (Reflect.getMetadata('design:paramtypes', AuthGuard) === undefined) Reflect.defineMetadata('design:paramtypes', [ConfigService], AuthGuard)
     dir = await mkdtemp(join(tmpdir(), 'racer-g2-http-'))
     for (const key of ENV_KEYS) saved[key] = process.env[key]
     for (const key of ENV_KEYS) delete process.env[key]

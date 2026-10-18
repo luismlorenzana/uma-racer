@@ -91,6 +91,9 @@ export function profileLine(uma: UmaState): string {
   return `T${uma.tier} · ${scenarioRow(scenarioNumber(uma)).name} · Racing Lv ${uma.racing.level} · Farm Lv ${uma.farm.level}`
 }
 
+/** The profile frame's line under her name (SD4): her scenario and Farm Level; the frame shows her level label. */
+export const profileTitle = (uma: UmaState): string => `${scenarioRow(scenarioNumber(uma)).name} · Farm Lv ${uma.farm.level}`
+
 /** "T2 · Lv 13": the tile's level, her tier and Racing Level. */
 export const levelLabel = (uma: Pick<UmaState, 'tier' | 'racing'>): string => `T${uma.tier} · Lv ${uma.racing.level}`
 

@@ -6,12 +6,12 @@
 // - `bootDevice` is the device save under any options: the seeds' mount (`dev/boot.ts`) opens it on the seeds' content.
 // A page holds one device save: one database connection and one sync lane. A second boot (StrictMode runs the
 // provider's effect twice in development) gets the first one's port. Every tap holds the update prompt's restart until
-// it has committed (`criticalGameplayAction`), as today's actions did.
+// it has committed (uma-kit's `criticalAction`), as today's actions did.
 import type { G2Game, G2Rules } from './game'
 import type { SaveGame } from '../save'
 import type { SaveBootOptions } from '../save/boot'
 import type { OperationContent } from '../save/env'
-import { criticalGameplayAction } from './update-lifecycle'
+import { criticalAction } from '@luismlorenzana/uma-kit/places'
 
 export interface G2Boot {
   readonly game: G2Game
@@ -42,8 +42,8 @@ export function bootDevice(options: () => Promise<SaveBootOptions>, account: Pic
     const { writeDevice } = save
     const game: G2Game = {
       ...save,
-      run: (name, input, busyKey, options) => criticalGameplayAction(() => save.run(name, input, busyKey, options)),
-      ...(writeDevice === undefined ? {} : { writeDevice: (rows) => criticalGameplayAction(() => writeDevice(rows)) }),
+      run: (name, input, busyKey, options) => criticalAction(() => save.run(name, input, busyKey, options)),
+      ...(writeDevice === undefined ? {} : { writeDevice: (rows) => criticalAction(() => writeDevice(rows)) }),
       ...(account.signIn === undefined ? {} : { signIn: account.signIn }),
       ...(account.signOut === undefined ? {} : { signOut: account.signOut }),
     }

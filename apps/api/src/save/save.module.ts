@@ -3,7 +3,6 @@
 import { resolve } from 'node:path'
 import { Module } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
-import { AuthGuard } from '../auth/auth.guard'
 import { ContentService } from '../content/content.service'
 import { FirestoreSaveRepository } from './firestore-save.repository'
 import { LocalSaveRepository } from './local-save.repository'
@@ -17,7 +16,6 @@ export const DEFAULT_LOCAL_SAVE_FILE = '.data/save-g2.json'
 @Module({
   controllers: [SaveController],
   providers: [
-    AuthGuard,
     {
       provide: SAVE_REPOSITORY,
       inject: [ConfigService],

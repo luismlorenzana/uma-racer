@@ -1,6 +1,7 @@
 // Account's view model (docs/game/11-hub-and-places.md §3.1; docs/game/02-check-ins-and-notifications.md §3, §9;
-// M034 "Dev shortcuts are dev-only"; T138): check-in times as clock times, the sync row's words (D157), and the dev
-// section's grants for `dev-grant`. Pure.
+// M034 "Dev shortcuts are dev-only"; T138, SD4): the trainer's new name as the trainer badge row the device writes,
+// check-in times as clock times, the sync row's words (D157), and the dev section's grants for `dev-grant`. Pure.
+import { createTrainerBadgeState, replaceTrainerPreferences, type BadgeStateV1, type TrainerBadgeStateV1 } from '@racer/domain'
 import { MAX_CHECK_INS, MINUTES_PER_DAY, type DevGrantInput } from '@racer/domain/check-in'
 import { FAMILY_IDS, craftedItem, planetDish, rawItem } from '@racer/domain/items'
 import type { G2Sync } from '../../app/game'
@@ -43,3 +44,12 @@ export const DEV_GRANTS: readonly { readonly key: string; readonly label: string
     input: { items: Object.fromEntries(FAMILY_IDS.flatMap((family) => [rawItem(family, 1).id, craftedItem(family, 1).id, planetDish(family, 1).id]).map((id) => [id, 10])) },
   },
 ]
+
+/** The trainer's name, as the badge rules allow it: 1 to 32 characters (`replaceTrainerPreferences`). */
+export const TRAINER_NAME_MAX = 32
+
+/** The trainer badge row with a new display name, from the stored row or a new one at `now`; the rules check the name. */
+export function renamedTrainer(stored: BadgeStateV1 | undefined, name: string, now: number): TrainerBadgeStateV1 {
+  const trainer = stored?.scope === 'trainer' ? stored : createTrainerBadgeState(now)
+  return replaceTrainerPreferences(trainer, { ...trainer.preferences, displayName: name })
+}

@@ -8,7 +8,7 @@ import {
   isCurrentStamp, parsePurgeRequest, parseSnapshotQuery, parseSyncRequestV2, SAVE_GENERATION, SAVE_PROTOCOL, type PurgeResponse,
   type SaveSnapshotV2, type SyncResponseV2,
 } from '@racer/domain/save'
-import { AuthGuard, CurrentUid } from '../auth/auth.guard'
+import { AuthGuard, CurrentUid } from '@luismlorenzana/uma-server/auth'
 import { ContentUnavailable, OperationContent } from './operation-content'
 import { NO_SAVE, parseCursor } from './resolve'
 import { SAVE_REPOSITORY, type SaveRepository } from './save.repository'

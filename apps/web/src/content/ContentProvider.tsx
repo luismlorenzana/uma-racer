@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { createContext, useCallback, useContext, useEffect, useMemo, type ReactNode } from 'react'
-import { useAuth } from '../auth/AuthProvider'
+import { useAuth } from '@luismlorenzana/uma-kit/auth'
 import {
   diagnoseContentError,
   diagnoseLoadedContent,

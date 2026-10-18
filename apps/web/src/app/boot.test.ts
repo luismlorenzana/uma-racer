@@ -8,7 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { SaveGame } from '../save'
 import type { OperationContent } from '../save/env'
 import { memoryStorage } from '../save/__fixtures__/server'
-import { appUpdateLifecycle } from './update-lifecycle'
+import { appUpdateLifecycle } from '@luismlorenzana/uma-kit/places'
 import { bootSaveGame, forgetDeviceBoot } from './boot'
 
 const fetch = vi.fn(async (_input: string | URL | Request, _init?: RequestInit): Promise<Response> => Promise.reject(new TypeError('no network in tests')))

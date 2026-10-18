@@ -165,9 +165,16 @@ It is account-wide on every page: one tap collects Farm jobs and Training sessio
 `?sheet=check-in` over the page; Collect all's intent rides in navigation state, so a reload shows the same summary
 and never collects again (§13).
 
-### 2.4 Where the app opens
+### 2.4 Getting in, and where the app opens
 
-`/` decides once, at launch:
+**Getting in** is uma-kit's `BootGates` (SD4), both games' frame in one order: the game's name on the page colour while
+the app starts; **Sign in with Google** while nobody is signed in; the boot (the private content, then this phone's save);
+then the start page. uma-racer has no first-launch step. A boot that stops says why in plain words, with the one button
+that helps: **Try again** loads the content again, **Switch account** (a Google account that can't play) signs out to the
+sign-in screen, and a save that couldn't open reloads the app. Nothing is ever cleared. Signing out in Account returns to
+the sign-in screen.
+
+`/` decides once, at launch, after the boot:
 1. **A new account with no Umas** opens the Stable's Locked tab, to pick the first 20 with 20 Uma Tickets
    ([13](../rework/13-removals-and-plan-changes.md) §5).
 2. **Anything needs a tap** (an Uma Ready or Free, `needsATap`: the count [02](02-check-ins-and-notifications.md)
@@ -270,11 +277,11 @@ for two rows of pips.
 
 | Place (id) | Opens | Peek | Counter | Lock | Replaces |
 |---|---|---|---|---|---|
-| **Stable** (`stable`) | The roster: Owned and Locked tabs with counts, a tier crest on every owned tile (uma-art's bronze, silver and gold, §10.3), a tier filter, the shared picker's sorts and filters (D181). An Uma's profile: tier, scenario, Racing Level, Farm Level, what she's doing, her build per facility, **Needs** ([02](02-check-ins-and-notifications.md) §6), Skills, Racing. A locked Uma: **Unlock · 1 Uma Ticket** (tier 1, [04](04-tiers-and-promotion.md)), then the collection reveal | The featured Uma; "23 Umas · T1 21 · T2 2"; Umas ready to advance or promote; Uma Tickets in hand | Uma Tickets in hand | Open | `/stable`, Uma profile, skills; Home's featured hero |
-| **Warehouse** (`warehouse`) | Every item: Raw, Crafted, Dishes and Tickets shelves; family and grade filters; each row's reserved, coming and needed counts; the stock sheet with **Make more** and **Sell** ([07](07-farm.md) §10, [09](09-racing-rewards-and-exchange.md) §6) | The biggest stacks; what the planner is short of; "Surplus worth 1,240" | — | Open | `/farm/items` |
-| **Exchange** (`exchange`) | Speed Tickets and raw ingredients ([09](09-racing-rewards-and-exchange.md) §5) | Prize Money, Speed Tickets held, the planner's top shortage with its price | — (its currencies are in the account bar) | Open | Nothing (new) |
+| **Stable** (`stable`) | The roster: Owned and Locked tabs with counts, a tier crest on every owned tile (uma-art's bronze, silver and gold, §10.3), a tier filter, the shared picker's sorts and filters (D181). An Uma's profile in uma-kit's profile frame (SD4): her portrait, name, scenario and Farm Level, the shared level label ("Lv 13", "T2 · Lv 13"), her tier crest, what she's doing, then the Overview (her build per facility), **Needs** ([02](02-check-ins-and-notifications.md) §6), Skills and Racing tabs. A locked Uma: uma-kit's unlock confirm (Uma Tickets N → N−1, **Unlock for 1 Ticket**; tier 1, [04](04-tiers-and-promotion.md)), then the collection reveal; the Locked tab's multi-select and the reveal stay this game's | The featured Uma; "23 Umas · T1 21 · T2 2"; Umas ready to advance or promote; Uma Tickets in hand | Uma Tickets in hand | Open | `/stable`, Uma profile, skills; Home's featured hero |
+| **Warehouse** (`warehouse`) | uma-kit's shelves (SD4): every stack held on the Raw, Crafted, Dishes and Tickets shelves; grade chips (every grade, one grade, or the highest held per family); each row's reserved, coming and needed counts; the stock sheet with what it is, what's free, the recipes that use it, **Make more** and **Sell** ×1, ×10 or All ([07](07-farm.md) §10, [09](09-racing-rewards-and-exchange.md) §6) | The biggest stacks; what the planner is short of; "Surplus worth 1,240" | — | Open | `/farm/items` |
+| **Exchange** (`exchange`) | Prize Money, Speed Tickets held and the Daily Purse, then uma-kit's buy rows (SD4): Speed Tickets, and raw ingredients by family tab; each row's sheet takes how many and shows the total ([09](09-racing-rewards-and-exchange.md) §5) | Prize Money, Speed Tickets held, the planner's top shortage with its price | — (its currencies are in the account bar) | Open | Nothing (new) |
 | **Card Library** (`card-library`) | Every SSR, open (D329): lens and Uma controls, sorts, filters, the card page with its bond cost and bonded Umas, **Bond** into the Dojo's session sheet ([06](06-cards-and-bonds.md) §6) | The newest cards; bonds made this tier; cards the featured Uma could bond now | — | Open | `/cards`, `/cards/:cardId` |
-| **Account** (`account`, hidden) | Trainer name; check-in times ([02](02-check-ins-and-notifications.md); Notifications come with push, phase 4); sync status and Sync now (D157); this phone's **Appearance** (System, Light or Dark: uma-kit's, kept in `uma-racer:g2:appearance`, T147), reduced motion and default race speed; app build and content (02 §9 keeps "id" and "version" off the screen); Sign in or Sign out; in dev builds only, a dev section that runs `dev-grant` (grants, Finish her work, Jump to her gate) and, on the seeds' mount, loads another synthetic seed | — | — | Open; reached from the trainer button and the menu, not drawn on the map, so it has no Peek | `/settings` |
+| **Account** (`account`, hidden) | uma-kit's Account frame (SD4): the trainer's name, which can be changed (1–32 characters, saved on the trainer badge row); the wallet (Prize Money, Speed Tickets, Uma Tickets); this phone's **Appearance** (System, Light or Dark, kept in `uma-racer:g2:appearance`, T147); then this game's sections: check-in times ([02](02-check-ins-and-notifications.md); no notifications, D336), sync status and Sync now (D157), reduced motion and default race speed; app build and content (02 §9 keeps "id" and "version" off the screen); Sign out; in dev builds only, a dev section that runs `dev-grant` (grants, Finish her work, Jump to her gate) and, on the seeds' mount, loads another synthetic seed | — | — | Open; reached from the trainer button and the menu, not drawn on the map, so it has no Peek | `/settings` |
 
 ### 3.2 Training (`/training`)
 

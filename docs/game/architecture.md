@@ -167,16 +167,15 @@ loop itself runs on the domain's source, and its test runs the checks in CI.
 
 | Folder | What |
 |---|---|
-| `main.tsx` | The entry: uma-kit's setup (`app/kit.ts`), TanStack Query, the auth provider (Firebase lazy), the content provider, the kit's motion root and art provider, the session, the live router and the update prompt. In dev builds a path under `/dev/seeds/` mounts the seeds instead |
+| `main.tsx` | The entry: uma-kit's setup (`app/kit.ts`), TanStack Query, uma-kit's auth provider with the game's Firebase config (`app/auth.ts`; Firebase lazy), the content provider, the kit's motion root and art provider, the session, the live router (the routes inside the kit's `BootGates`) and the kit's update prompt (`watchAppUpdates`, `UpdateNotice`). In dev builds a path under `/dev/seeds/` mounts the seeds instead |
 | `index.css` | Tailwind, then uma-kit's `theme.css` (the tokens in light and dark, the base styles and utilities) with Tailwind reading the kit's classes, then what is uma-racer's own: the fonts, the Dojo's Friend room colour and the race feed's keyframes ([below](#uma-kit)) |
-| `app/` | uma-kit's setup (`kit.ts`: the device-key prefix and Appearance at boot) and the art it draws with (`art.ts`), the router (`router.tsx`, `routes.tsx`), the old app's redirects (`redirects.ts`), the start rule (`start.ts`), the root's save-error panel (`Root.tsx`), the session (`session.tsx`), the game port (`game.ts`, `G2Game`), its provider and 30-second clock (`GameProvider.tsx`, `clock.ts`), its lazy boot (`boot.ts`) and the rules it runs (`rules.ts`, `hubView`), the content the art reads (`content.ts`), scroll restore (`scroll.ts`), the update prompt (`UpdateNotice.tsx`, `register-updates.ts`, `update-lifecycle.ts`) and the build id (`build.ts`) |
+| `app/` | uma-kit's setup (`kit.ts`: the device-key prefix and Appearance at boot) and the art it draws with (`art.ts`), the router (`router.tsx`, `routes.tsx`), the old app's redirects (`redirects.ts`), the start rule (`start.ts`), getting in (`auth.ts`: the Firebase config and the owner's token; `gates.tsx`: the kit's `BootGates` around the live routes), the root's save-error panel (`Root.tsx`), the session (`session.tsx`), the game port (`game.ts`, `G2Game`), its provider and 30-second clock (`GameProvider.tsx`, `clock.ts`), its lazy boot (`boot.ts`) and the rules it runs (`rules.ts`, `hubView`), the content the art reads (`content.ts`), scroll restore (`scroll.ts`) and the build id (`build.ts`) |
 | `hub/` | The racer's adapters to uma-kit's shell and Hub ([11](11-hub-and-places.md) §2, [below](#uma-kit)): `RacerShell.tsx` (the kit's frame, account bar and bottom bar with the racer's chips, Sync chip and tabs), `HubPage.tsx` (the kit's map with each page's places, pips, counters and plaza, and the floating pill), `racerHub.ts` (each page's tile page and palette, `tilePageFor`, and the pips' room colours), `PlacePeek.tsx` (the kit's side panel with the registry's Peek), the global sheets with the ☰ menu (`GlobalSheets.tsx` on the kit's sheet and place menu, `SheetHost.tsx`), the global sheets' names and navigation state (`nav.ts`) and counters (`counts.ts`) |
 | `places/` | Every place's Peek, Page, sub-pages and sheets, filled through `places/registry.tsx` (`PLACE_UI`, `SHEET_UI`, `TOWN_PLAZA`, `FLOW_UI`, `PROFILE_UI`; each a lazy chunk): `stable`, `reveal`, `warehouse`, `exchange`, `card-library`, `account`, `training`, `farm`, `racing` (its slots in `racing/ui.ts`), `check-in`, `needs`; `PlacePageHeader.tsx` is the kit's place header with a place's words, and `Unfilled.tsx` the fallback for a slot with nothing in it (none today). Each screen draws a pure view model (`model.ts`) over the rules' state |
 | `save/` | The device's generation-2 save and its one sync lane ([below](#the-save-and-sync)) |
 | `ui/` | The racer's own shared pieces (the primitives and icons are uma-kit's): the work pieces (`ui/work/`: slot rows, Speed Tickets, Recall, queue and size chips, `useTap`), `ItemIcon`, `TreeGraph`, the one Uma picker (`UmaPicker`, D181), the album chrome and query engine (`ui/album/`), `BuildingSprite` ([below](#the-art)), the Uma art from private content (`UmaArt`), the original's type and focus icons, labels and device preferences (`devicePrefs.ts`, `albumPrefs.ts`) |
 | `scenes/race/` | The race scene: PixiJS 8, lazy, the only PixiJS in the repo until phase 8 ([below](#the-race)) |
 | `content/` | The private content runtime ([below](#private-content)) |
-| `auth/` | Firebase Auth, loaded on demand; `idToken()` feeds both the content client and the save |
 | `api/client.ts` | The content client |
 | `dev/` | The synthetic seeds' mount and the dev proofs, dev builds only ([below](#dev-seeds)) |
 | `__fixtures__/` | Test support (`testing.tsx`, `testing-ops.ts`); places keep their own under `places/*/__fixtures__/` |
@@ -189,12 +188,17 @@ loop itself runs on the domain's source, and its test runs the checks in CI.
   for race results, the ledger, the Warehouse's movements and an operation's own row (its name, time and receipt: the
   folded state never holds a confirmed tap's, so the Scenario Gate's ceremony reads it here), and `writeDevice` for
   badge and flair rows. The seeds' in-memory port has the same shape: its operations live beside the state. Every tap and
-  device write holds the update prompt's restart until it commits (`criticalGameplayAction`).
-- **The session** (`app/session.tsx`) boots the device save once the private content is ready, since operations need
-  its env. Before the save has opened, a signed-out phone or content that can't load gets one full-screen panel in the
-  content diagnostics' words, with its way on; once it has opened, signing out pauses sync and play goes on. Account's
-  last row is Sign in while sync is paused and Sign out otherwise; with auth off (local dev) neither shows and the
-  phone acts signed in.
+  device write holds the update prompt's restart until it commits (uma-kit's `criticalAction`).
+- **Getting in** is uma-kit's `BootGates` (SD4, `app/gates.tsx`), in both games' order: the splash, Google sign-in
+  while nobody is signed in, the boot, then the start page (`start.ts`), opened once and only when the app was opened
+  at `/`. uma-racer has no first-launch step: a new account's start page is the Stable's Locked tab. The seeds' mount
+  and the tests render the routes without the gates.
+- **The session** (`app/session.tsx`) is the gates' boot: it waits for the private content (operations need its env),
+  opens the device save on it and waits for its first snapshot, then reads the start page from it. A boot that stops
+  shows the content diagnostics' words, or the save's, and its button does what helps: Try again reloads the content,
+  Switch account (a Google account that isn't the owner's, 403) signs out to the sign-in gate, and a save that couldn't
+  open reloads the page. Signing out (Account's last row) returns to the sign-in gate; with auth off (local dev) nobody
+  signs in and the phone acts signed in.
 - **Lazy by default.** The entry holds the router, the shell's frame and bars, the place registry and the port's
   interface; the rules, the save, Dexie, Firebase, the Hub map and Phaser, the race engine and scene, and every page and
   sheet load on demand.
@@ -208,8 +212,9 @@ loop itself runs on the domain's source, and its test runs the checks in CI.
 The shell, the Hub map and the primitives are **`@luismlorenzana/uma-kit`**, uma-platform's package that uma-racer and
 uma-rpg both run on (uma-platform P48, its sibling plan; D367). The uma-rpg session built it by moving this game's own
 code (as of `ff8b95a`) into uma-platform's `packages/kit` and making it game-agnostic: components take values, words and
-links as props, and keep no game state. uma-racer pins it exactly (0.3.0, from GitHub Packages like uma-art) and passes
-everything that is its own in as props.
+links as props, and keep no game state. uma-racer pins it exactly (0.6.0, from GitHub Packages like uma-art) and passes
+everything that is its own in as props. Since SD4 (sibling Phase D) the screens around the game are kit frames too, and
+the API's guard is `@luismlorenzana/uma-server` (below).
 
 | From uma-kit | Stays uma-racer's |
 |---|---|
@@ -217,6 +222,9 @@ everything that is its own in as props.
 | `/ui`: the icon set, `UiMark` and `TierCrest`, `Button`, `Chip`, `Tabs`, `Panel`, `BottomSheet` and `Sheet`, `AnimatedNumber`, `MotionRoot` and the reduced-motion setting, Appearance, device preferences (`readPref`, `writePref`, `subscribePrefs`), `KitArtProvider` | The type and focus icons (`TypeIcon`, `CardFocusIcons`), `ItemIcon`, `UmaArt`, `BuildingSprite`, `UmaPicker`, the work pieces, the album |
 | `/shell`: `AppFrame`, `AccountBar`, `BottomBar`, `PlaceMenu`, `PeekPanel`, `PlaceHeader`, `FloatingPill`, and `withParam`, `navState`, `useLeave`, `peekPath` | `RacerShell` (the chips, the Sync chip, the tabs and badges, the menu's `?sheet=` link), the global sheets and their registry (`GlobalSheets`, `nav.ts`), `PlacePeek`, `PlacePageHeader`, the check-in sheet's navigation state (`collect`, `collectId`, `repeatId`) |
 | `/hub`: `HubMap` (the lazy Phaser canvas, the place links, swipes), `Pips`, the grid, `layTerrain`, the tile props, palettes and markers | Which places stand on which page and where (`@racer/domain/hub`, `AWAITING_ART`), `tilePageFor` (the ground each page draws), the rooms' pip colours (`ROOM_TONE`), the Town Hall plaza, the counters (`counts.ts`), the dev hooks' switch (`debug`, `?canvas`) |
+| `/auth`: `AuthProvider` (Google sign-in by redirect, Firebase loaded only by `import()`), `useAuth`, `idToken`, `signIn`, `signOut` | The Firebase config (`app/auth.ts`) |
+| `/places` (SD4): `BootGates`, `UpdateNotice` and `criticalAction`, `AccountPage`, `ShelfView`, `ExchangeRows`, `ProfileFrame`, `UnlockConfirm` | Their content: the start rule and the boot's words; Account's check-in times, sync, reduce motion, race speed and dev section; the Warehouse's shelves, row counts, stock lines, Make more and sell question; the Exchange's purse bar, family tabs and goods; the profile's sections and tabs; the multi-unlock and the reveal |
+| `/roster`: `formatLevel` ("Lv 13", "T2 · Lv 13") | The album and its query engine, until SB6 |
 
 - **Setup** (`app/kit.ts`, called first in `main.tsx`): `configureKit({ storagePrefix: 'uma-racer:g2:' })` puts the kit's
   device keys beside the game's own, so Account's Reduce motion keeps `uma-racer:g2:reducedMotion` and Appearance is
@@ -330,8 +338,10 @@ API as built", "The web save as built"); this is the outline.
 | `POST /api/legacy/purge` | Deletes the old save once (until T144's step 10 removes it) |
 | `GET /api/content/manifest`, `GET /api/content/files/*path` | Private content from the `uma-racer-content` bucket, hash-named and immutable |
 
-- **Auth.** Every route except health sits behind `AuthGuard`: a Firebase ID token whose email matches
-  `ALLOWED_EMAIL`. In development, `AUTH_MODE=disabled` acts as a fixed local user.
+- **Auth.** Every route except health (`@Public()`) sits behind `@luismlorenzana/uma-server/auth`'s `AuthGuard`, both
+  games' (SD4): a Firebase ID token whose email matches `ALLOWED_EMAIL`. No token or an invalid one is 401, a valid token
+  for anyone else 403, and Firebase Admin failing to start 500. In development, `AUTH_MODE=disabled` lets every request
+  in as `local-dev`.
 - **Stamps.** The save's three routes run the guard, then the stamp: anything but `protocol: 2` and `generation: 2` is
   426 with nothing read or written, so a stale app can't write. Bodies are checked by the domain's parsers (400).
 - **Operations run on the server's content:** the `umas`, `races`, `cards` and `skills` packs, verified by hash and
@@ -340,8 +350,9 @@ API as built", "The web save as built"); this is the outline.
 - **`dev-grant`** runs only when the API starts with `DEV_OPERATIONS=true`. `pnpm dev` and `pnpm api` set it through
   the API's package scripts; no deploy, Dockerfile or Cloud Run setting does, so production refuses it.
 - `app.module.test.ts` holds the API to exactly these six routes.
-- **Modules** (`apps/api/src/`): `AppModule` imports a global `ConfigModule`, `SaveModule` and `ContentModule`, and
-  serves `HealthController`. `SaveModule` (`save/`) holds `SaveController`, the repository `PERSISTENCE` picks
+- **Modules** (`apps/api/src/`): `AppModule` imports a global `ConfigModule`, uma-server's `AuthModule` (`authModule()`:
+  the guard on every route, its options read from `AUTH_MODE` and `ALLOWED_EMAIL`), `SaveModule` and `ContentModule`,
+  and serves `HealthController`. `SaveModule` (`save/`) holds `SaveController`, the repository `PERSISTENCE` picks
   (`FirestoreSaveRepository` at `saves/{uid}`, or `LocalSaveRepository` at `LOCAL_SAVE_FILE`, default
   `.data/save-g2.json` under the API's folder) and `OperationContent`. `ContentModule` (`content/`) holds
   `ContentController` and `ContentService`, which reads `CONTENT_SOURCE`: the local `content/` folder or the private
@@ -527,7 +538,7 @@ How generation 2 became the app (D361). The plan-level choices (the tag, the del
 |---|---|---|---|
 | uma-racer | turbo | ^2.10.13 | dev |
 | @racer/web | @luismlorenzana/uma-art | 2.7.0 | runtime |
-| @racer/web | @luismlorenzana/uma-kit | 0.3.0 | runtime |
+| @racer/web | @luismlorenzana/uma-kit | 0.6.0 | runtime |
 | @racer/web | @racer/domain | workspace:* | runtime |
 | @racer/web | @racer/race | workspace:* | runtime |
 | @racer/web | @tanstack/react-query | ^5.102.8 | runtime |
@@ -557,6 +568,7 @@ How generation 2 became the app (D361). The plan-level choices (the tag, the del
 | @racer/web | vite-plugin-pwa | ^1.3.0 | dev |
 | @racer/web | vitest | ^3.2.7 | dev |
 | @racer/api | @google-cloud/storage | ^7.22.0 | runtime |
+| @racer/api | @luismlorenzana/uma-server | 0.2.0 | runtime |
 | @racer/api | @nestjs/common | ^11.2.4 | runtime |
 | @racer/api | @nestjs/config | ^4.0.4 | runtime |
 | @racer/api | @nestjs/core | ^11.2.4 | runtime |

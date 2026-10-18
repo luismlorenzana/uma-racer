@@ -272,12 +272,15 @@ purchase.
 
 ### 5.5 The Exchange screen
 
-- **Header:** Prize Money, Speed Tickets held, and the purse bar (§3.5).
-- **Speed Tickets:** ×1, ×10, ×50, or a typed amount; the total; Buy.
+- **Header:** Prize Money, Speed Tickets held, and the purse bar (§3.5): this game's rows, above uma-kit's buy rows
+  (`ExchangeRows`, SD4).
+- **Speed Tickets:** one row; its sheet takes ×1, ×10, ×50 or a typed amount, with the total and **Buy**.
 - **Raw ingredients:** eight family tabs; one row per stocked grade with its icon (uma-art `items`), price, Warehouse
-  count and planner badge; a quantity sheet (1–99).
-- **Links:** "Sell surplus → Warehouse" and "Upgrades are bought at each building".
-- **Buy** is disabled with "Need 120 more" when the balance is short. Any purchase of 1,000 or more asks once.
+  count and planner badge, then the next grade's lock; a row's sheet takes ×1, ×10, ×25, ×99 or a typed amount (1–99).
+- **Links:** "Sell surplus → Warehouse" and "Upgrades are bought at each building". A link to one grade (the Farm's
+  "buy it", the Peek's shortage) opens its family's tab with that row in view.
+- **Buy** is disabled with "Need 120 more" when the balance is short. The sheet is the confirmation: it names the
+  quantity and the total before Buy, so no second question follows (SD4).
 
 ### 5.6 Where the money goes in tier 1
 
@@ -344,22 +347,22 @@ Each stack in the Warehouse shows three counts:
 | **Needed** | What the planner says the roster still needs from this stack ([02](02-check-ins-and-notifications.md)), and inputs of queued jobs that don't reserve | Yes, after a confirmation that names what it leaves short |
 | **Free** | The rest | Yes |
 
-The stock sheet offers **Sell ×1**, **×10**, **Surplus** (free minus needed) and **All free**, with the unit price and
-the total. It asks once when the sale:
+The stock sheet (uma-kit's, SD4) offers **Sell ×1**, **×10** and **All** of what's held, with the unit price and the
+total. It asks once when the sale:
 - includes any **dish** ("Sell 2 grade-3 Vegetable dishes for 698? Each took about 17 hours of work.");
 - dips into **needed** stock ("This leaves the planner 4 short for Hishi Akebono's Observatory layer.");
 - is worth **1,000 or more**.
 
 No undo: a confirmed sale is final, and buying back costs three times as much, so the confirmations are the guard.
 
-**As built (T138).** Reserved is `reservedStock` (`work`), what Recall would return; the sizes are `stackCounts`'s,
-each priced by `sellPrice` with its total, a size of 0 off with its reason. ×1 and ×10 are capped at what is held, and
-each button says what it sells: with 9 held, ×10 reads "Sell ×9" (`sellLabel`). `sellConfirmations` decides the one question,
+**As built (T138, SD4).** Reserved is `reservedStock` (`work`), what Recall would return, and isn't held. The sizes are
+the kit's (`sellOptions`): ×1 and ×10 where that many are held, and All, each priced by `sellPrice` with its total.
+`sellConfirmations` decides the one question,
 which reads all that apply in one sentence at live prices: "Sell 2 Cabbage Salad (grade 3) for 698? Each took about 17
 hours of work. This leaves the planner 4 short for Hishi Akebono's Observatory layer." (hours from `workValueSeconds`; the
 target is the first in the plan's order whose unlocks take the stack, as a dish or inside one). The sale carries the
 price shown, so a stale one reads `price-changed`'s "Price changed." and the sheet reads the live price again. The
-Exchange's Buy is off with "Need 120 more" when short and asks once at 1,000 or more (`buyNeedsConfirm`).
+Exchange's Buy is off with "Need 120 more" when short; its sheet is the confirmation.
 
 ## 7. The race result screen
 

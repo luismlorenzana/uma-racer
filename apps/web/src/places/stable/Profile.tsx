@@ -1,9 +1,12 @@
 // An Uma's profile (docs/game/11-hub-and-places.md §3.1; docs/game/03-uma-progression.md §2, §6–§8, §12; Collection
-// "Uma album"; T138): her header with "T1 · URA Finale · Racing Lv 1 · Farm Lv 1", both EXP bars, what she's doing and
-// T142's target slot; Previous, Next and a swipe through the Stable's filtered order; Overview (the preset switch and
+// "Uma album"; T138, SD4): uma-kit's profile frame (`ProfileFrame`) with her portrait (icon, then bust), name, her
+// scenario and Farm Level, the shared level label ("Lv 13", "T2 · Lv 13"), her tier crest, T142's target slot, both EXP
+// bars and what she's doing; Previous, Next and a swipe through the Stable's filtered order; Overview (the preset switch and
 // that preset's stats, her build per facility, Collect, her career, Advance or Promote, Feature her), Needs (T142's;
 // layer progress until it lands), Skills (library and loadout) and Racing (race defaults, career record, latest
 // results, the Trophy Hall). An unknown or locked id says `unknown-uma`'s words with a way back.
+import { ProfileFrame } from '@luismlorenzana/uma-kit/places'
+import { formatLevel } from '@luismlorenzana/uma-kit/roster'
 import { Button, ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon, ChevronUpIcon, Chip, Panel, Tabs, TierCrest, UiMark } from '@luismlorenzana/uma-kit/ui'
 import { hubWords } from '@racer/domain/hub'
 import { layerProgress } from '@racer/domain/planner'
@@ -25,7 +28,7 @@ import { PlacePageHeader } from '../PlacePageHeader'
 import { TapNoteLine, useTap, type Tap } from '../../ui/work'
 import { PROFILE_UI, type PageProps } from '../registry'
 import {
-  buildStableAlbum, careerOf, doingNow, doingWords, farmBar, latestResults, moved, ordinal, profileLine, queryStable, racingBar, readiness,
+  buildStableAlbum, careerOf, doingNow, doingWords, farmBar, latestResults, moved, ordinal, profileTitle, queryStable, racingBar, readiness,
   skillsView, STABLE_ALBUM, STABLE_DEFAULT_QUERY, STABLE_FACETS, STABLE_SORTS,
 } from './model'
 
@@ -112,8 +115,9 @@ export default function Profile({ place, rest, umaId, tab: routeTab }: PageProps
   const racing = racingBar(uma)
   const farm = farmBar(uma)
   const base = `/town/stable/outfit/${encodeURIComponent(umaId)}`
-  const tabs: readonly [Tab, string, string][] = [
-    ['overview', 'Overview', base], ['needs', 'Needs', `${base}/needs`], ['skills', 'Skills', `${base}/skills`], ['racing', 'Racing', `${base}?tab=racing`],
+  const tabs: readonly { readonly key: Tab; readonly label: string; readonly to: string }[] = [
+    { key: 'overview', label: 'Overview', to: base }, { key: 'needs', label: 'Needs', to: `${base}/needs` },
+    { key: 'skills', label: 'Skills', to: `${base}/skills` }, { key: 'racing', label: 'Racing', to: `${base}?tab=racing` },
   ]
   const Target = PROFILE_UI.TargetToggle
   const Needs = PROFILE_UI.Needs
@@ -132,41 +136,43 @@ export default function Profile({ place, rest, umaId, tab: routeTab }: PageProps
         if (Math.abs(dx) > 70 && Math.abs(dx) > 2 * Math.abs(event.clientY - from.y)) step(dx < 0 ? 1 : -1)
       }}
     >
-      <PlacePageHeader place={place} rest={rest} title={name}>
+      <PlacePageHeader place={place} rest={rest}>
         <button type="button" className={arrow} disabled={at <= 0} onClick={() => step(-1)} aria-label="Previous Uma"><ChevronLeftIcon /></button>
         <button type="button" className={arrow} disabled={at < 0 || at >= order.length - 1} onClick={() => step(1)} aria-label="Next Uma"><ChevronRightIcon /></button>
       </PlacePageHeader>
-      <div className="space-y-3 px-4 pt-3 pb-24">
-        <header className="flex gap-3" data-g2="profile-header">
-          <span className="w-24 shrink-0">
-            <UmaSquare outfitId={umaId} name={name} className={uma.hallOfFame !== null ? 'border-2 border-tier-gold' : ''} overlay={<TierCrest tier={uma.tier} />} />
-          </span>
-          <div className="min-w-0 flex-1 space-y-1.5">
-            <div className="flex items-start gap-2">
-              <p className="min-w-0 flex-1 text-[14px] leading-snug font-semibold" data-g2="profile-line">{profileLine(uma)}</p>
-              {Target !== undefined && <Suspense fallback={null}><Target umaId={umaId} /></Suspense>}
-            </div>
+      <ProfileFrame
+        portrait={<UmaSquare outfitId={umaId} name={name} className={uma.hallOfFame !== null ? 'border-2 border-tier-gold' : ''} />}
+        name={name}
+        title={profileTitle(uma)}
+        level={formatLevel(uma.racing.level, uma.tier)}
+        chips={(
+          <span className="flex flex-wrap items-center gap-1.5" data-g2="profile-chips">
+            <TierCrest tier={uma.tier} />
             {uma.hallOfFame !== null && <Crest tone="accent">Hall of Fame</Crest>}
+          </span>
+        )}
+        corner={Target === undefined ? undefined : <Suspense fallback={null}><Target umaId={umaId} /></Suspense>}
+        summary={(
+          <div className="space-y-1.5" data-g2="profile-header">
             <div className="flex gap-3">
               <Bar label="Racing EXP" fill={racing.fill} text={racing.toNext === null ? 'Max' : `${racing.exp}/${racing.toNext}`} color="var(--color-accent)" />
               <Bar label="Farm EXP" fill={farm.fill} text={farm.toNext === null ? 'Max' : `${farm.exp}/${farm.toNext}`} color="var(--color-turf)" />
             </div>
             {doing !== null && <p className="text-[13px] text-ink-soft" data-g2="doing">{doingWords(doing, now)}</p>}
           </div>
-        </header>
-        <nav aria-label="Profile" className="flex gap-1 rounded-sm bg-sunken p-1">
-          {tabs.map(([key, label, to]) => (
-            <Link key={key} to={to} replace state={location.state} aria-current={tab === key ? 'page' : undefined}
-              className={`flex min-h-11 flex-1 items-center justify-center rounded-xs text-[13px] font-semibold ${tab === key ? 'bg-panel text-ink shadow-1' : 'text-ink-soft'}`}>
-              {label}
-            </Link>
-          ))}
-        </nav>
+        )}
+        tabs={tabs}
+        tab={tab}
+        onTab={(key) => {
+          const to = tabs.find((entry) => entry.key === key)?.to
+          if (to !== undefined) navigate(to, { replace: true, state: location.state })
+        }}
+      >
         {tab === 'overview' && <Overview umaId={umaId} featured={view?.featured === umaId} ready={doing?.kind === 'ready'} />}
         {tab === 'needs' && (Needs !== undefined ? <Suspense fallback={null}><Needs umaId={umaId} /></Suspense> : <NeedsFallback umaId={umaId} />)}
         {tab === 'skills' && <Skills umaId={umaId} />}
         {tab === 'racing' && <Racing umaId={umaId} />}
-      </div>
+      </ProfileFrame>
     </div>
   )
 }

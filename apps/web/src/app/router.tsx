@@ -6,6 +6,7 @@
 import { lazy, Suspense, type ComponentType } from 'react'
 import { createBrowserRouter, Navigate, useLocation, useParams, type RouteObject } from 'react-router'
 import { RacerShell } from '../hub/RacerShell'
+import { LiveGates } from './gates'
 import { REDIRECTS, redirectPath } from './redirects'
 import { Root } from './Root'
 import { PageRoute, PlaceRoute, RevealRoute, StartRoute } from './routes'
@@ -57,3 +58,6 @@ export const SEEDS_PATH = '/dev/seeds'
 export const isSeedsPath = (pathname: string): boolean => pathname === SEEDS_PATH || pathname.startsWith(`${SEEDS_PATH}/`)
 
 export const createG2Router = (basename?: string) => createBrowserRouter(G2_ROUTES, basename === undefined ? {} : { basename })
+
+/** The live router (`main.tsx`): the same routes inside uma-kit's boot gates (SD4, `gates.tsx`). */
+export const createLiveRouter = () => createBrowserRouter([{ element: <LiveGates />, children: G2_ROUTES }])

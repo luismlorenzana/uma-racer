@@ -35,7 +35,6 @@ uma-platform's [queue](https://github.com/luismlorenzana/uma-platform/blob/main/
 | [SE1](tasks/SE1-racer-phase-5.md) | Phase 5: uma-platform's master data and art; the GameTora pipeline goes | Claude | L | — | Ready |
 | [SB6](tasks/SB6-racer-album.md) | The Stable, every picker and every small Uma on the kit album; busts in races | Either | L | SB3 (SB1 + SE1 for faces) | Waiting |
 | [SC5](tasks/SC5-racer-on-uma-work.md) | Work on `@luismlorenzana/uma-work` and `uma-kit/work` | Either | L | SC1, SC2 | Waiting |
-| [SD4](tasks/SD4-racer-places.md) | Getting in, Account, Warehouse, Exchange and the profile frame on the kit; the API's guard from `uma-server` | Either | M | SD1, SD2 | Waiting |
 | [SE4](tasks/SE4-racer-content.md) | Data and art through `uma-kit/content` and `uma-server/content` | Either | M | SE1, SE2 | Waiting |
 
 **Done (sibling packets)**

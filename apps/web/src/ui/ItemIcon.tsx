@@ -33,6 +33,9 @@ export function itemLabel(def: ItemDef | undefined, id: string): string {
   return def.kind === 'ticket' ? def.name : `${def.name}, grade ${def.grade}`
 }
 
+/** The scale that draws an icon at `size` points, for frames that ask by size (uma-kit's shelves: 32 and 64). */
+export const itemIconScale = (size: number): 0.5 | 0.75 | 1 | 2 => (size >= 64 ? 2 : size >= 32 ? 1 : size >= 24 ? 0.75 : 0.5)
+
 export function ItemIcon({ item, scale = 1, decorative = false, className = '' }: {
   item: string
   /** 1 draws 32 pt and 2 draws 64 pt; 0.5 and 0.75 draw a chip's 16 pt and a badge's 24 pt (D366). */
