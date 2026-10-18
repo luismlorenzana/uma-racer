@@ -16,6 +16,13 @@ as they were). What the rework added around them lives on its own pages:
 | The Racecourse, race select and the run on screen | [11](11-hub-and-places.md) §3.3, [09](09-racing-rewards-and-exchange.md) §3.5, §4 and §7 |
 | The engine, determinism and the race scene | [Architecture](architecture.md#the-race) |
 
+## Race presentation
+
+**Art (SB6, D373).** Race presentation uses each outfit's bust: the pre-race runner and field, PixiJS runner tokens,
+feed, result hero and finishing order. The scene loads only verified `bust` images in runner order, holds them while
+playing and falls back to gate numbers if unavailable. Small Uma-selection controls and the shared picker use faces;
+only the Town Hall plaza uses chibis. No result, reward, seed, playback timing or race rule changes.
+
 ## What a finish pays
 
 A win pays the grade's EXP × (1 + Σ Race Bonus) over the cards in the race's preset, every card at its full Race Bonus

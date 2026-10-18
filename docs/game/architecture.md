@@ -1,7 +1,7 @@
 # Architecture
 
 How the code that runs fits together: generation 2, since the phase-3 cutover (M034, D361), with phase 6's canvas Hub
-(T145, D363), uma-art 2.7.0 (D364), and the shell, Hub and primitives from the shared uma-kit 0.3.0 (T147, D367; D369, D371). The infrastructure values and the release runbook are
+(T145, D363), uma-art 2.7.0 (D364), and shared uma-kit 0.7.1 (T147, D367; SD4, D372; the album, SB6, D373). The infrastructure values and the release runbook are
 [technical/infrastructure.md](../technical/infrastructure.md); what is done and what comes next is
 [the task plan](../tasks/README.md), and the phases still ahead are [docs/rearchitecture/08](../rearchitecture/08-phases.md)
 with [rework/13](../rework/13-removals-and-plan-changes.md) §4.
@@ -173,7 +173,7 @@ loop itself runs on the domain's source, and its test runs the checks in CI.
 | `hub/` | The racer's adapters to uma-kit's shell and Hub ([11](11-hub-and-places.md) §2, [below](#uma-kit)): `RacerShell.tsx` (the kit's frame, account bar and bottom bar with the racer's chips, Sync chip and tabs), `HubPage.tsx` (the kit's map with each page's places, pips, counters and plaza, and the floating pill), `racerHub.ts` (each page's tile page and palette, `tilePageFor`, and the pips' room colours), `PlacePeek.tsx` (the kit's side panel with the registry's Peek), the global sheets with the ☰ menu (`GlobalSheets.tsx` on the kit's sheet and place menu, `SheetHost.tsx`), the global sheets' names and navigation state (`nav.ts`) and counters (`counts.ts`) |
 | `places/` | Every place's Peek, Page, sub-pages and sheets, filled through `places/registry.tsx` (`PLACE_UI`, `SHEET_UI`, `TOWN_PLAZA`, `FLOW_UI`, `PROFILE_UI`; each a lazy chunk): `stable`, `reveal`, `warehouse`, `exchange`, `card-library`, `account`, `training`, `farm`, `racing` (its slots in `racing/ui.ts`), `check-in`, `needs`; `PlacePageHeader.tsx` is the kit's place header with a place's words, and `Unfilled.tsx` the fallback for a slot with nothing in it (none today). Each screen draws a pure view model (`model.ts`) over the rules' state |
 | `save/` | The device's generation-2 save and its one sync lane ([below](#the-save-and-sync)) |
-| `ui/` | The racer's own shared pieces (the primitives and icons are uma-kit's): the work pieces (`ui/work/`: slot rows, Speed Tickets, Recall, queue and size chips, `useTap`), `ItemIcon`, `TreeGraph`, the one Uma picker (`UmaPicker`, D181), the album chrome and query engine (`ui/album/`), `BuildingSprite` ([below](#the-art)), the Uma art from private content (`UmaArt`), the original's type and focus icons, labels and device preferences (`devicePrefs.ts`, `albumPrefs.ts`) |
+| `ui/` | Racer-owned work pieces (`ui/work/`: slot rows, Speed Tickets, Recall, queues and `useTap`), `ItemIcon`, `TreeGraph`, `BuildingSprite`, original type/focus icons and labels, `devicePrefs.ts`; `racerAlbum.tsx` projects game rows and callbacks into the kit's album and picker. `useContentArt.ts` is the card/reveal's private-art hook; the kit's art port is `app/albumArt.tsx`. No local album engine, grid, chrome, preferences or Uma picker implementation remains |
 | `scenes/race/` | The race scene: PixiJS 8, lazy, the only PixiJS in the repo until phase 8 ([below](#the-race)) |
 | `content/` | The private content runtime ([below](#private-content)) |
 | `api/client.ts` | The content client |
@@ -212,14 +212,15 @@ loop itself runs on the domain's source, and its test runs the checks in CI.
 The shell, the Hub map and the primitives are **`@luismlorenzana/uma-kit`**, uma-platform's package that uma-racer and
 uma-rpg both run on (uma-platform P48, its sibling plan; D367). The uma-rpg session built it by moving this game's own
 code (as of `ff8b95a`) into uma-platform's `packages/kit` and making it game-agnostic: components take values, words and
-links as props, and keep no game state. uma-racer pins it exactly (0.6.0, from GitHub Packages like uma-art) and passes
+links as props, and keep no game state. uma-racer pins it exactly (0.7.1, from GitHub Packages like uma-art) and passes
 everything that is its own in as props. Since SD4 (sibling Phase D) the screens around the game are kit frames too, and
 the API's guard is `@luismlorenzana/uma-server` (below).
 
 | From uma-kit | Stays uma-racer's |
 |---|---|
 | `theme.css`: the Paddock tokens in light and dark, base styles, utilities (`pt-safe`, `pb-safe`, `pb-bar-safe`, `mb-bar-safe`, `scroll-strip` …), and `fillScreen()` for iOS 26's Home Screen viewport | The fonts' `@font-face`, `--g2-room-friend`, the race feed's keyframes (`index.css`) |
-| `/ui`: the icon set, `UiMark` and `TierCrest`, `Button`, `Chip`, `Tabs`, `Panel`, `BottomSheet` and `Sheet`, `AnimatedNumber`, `MotionRoot` and the reduced-motion setting, Appearance, device preferences (`readPref`, `writePref`, `subscribePrefs`), `KitArtProvider` | The type and focus icons (`TypeIcon`, `CardFocusIcons`), `ItemIcon`, `UmaArt`, `BuildingSprite`, `UmaPicker`, the work pieces, the album |
+| `/ui`: the icon set, `UiMark` and `TierCrest`, `Button`, `Chip`, `Tabs`, `Panel`, `BottomSheet` and `Sheet`, `AnimatedNumber`, `MotionRoot`, reduced motion, Appearance, device preferences, `KitArtProvider` | Type/focus icons, `ItemIcon`, `BuildingSprite` and the work pieces |
+| `/roster` and `/album`: the pure query, level/work ordering and preference parsers; `AlbumChrome`, `AlbumGrid`, `VirtualGrid`, `UmaPicker`, `useAlbumPrefs`, `AlbumArtProvider`, `FaceTile`, `UmaBust`, `UmaChibi` | Stable/Card Library facets and sorts, tier-local display vs lifetime order, eligibility/refusal words, marks, unlock/reveal and follow-up actions (`ui/racerAlbum.tsx`); private art ids and loading (`app/albumArt.tsx`) |
 | `/shell`: `AppFrame`, `AccountBar`, `BottomBar`, `PlaceMenu`, `PeekPanel`, `PlaceHeader`, `FloatingPill`, and `withParam`, `navState`, `useLeave`, `peekPath` | `RacerShell` (the chips, the Sync chip, the tabs and badges, the menu's `?sheet=` link), the global sheets and their registry (`GlobalSheets`, `nav.ts`), `PlacePeek`, `PlacePageHeader`, the check-in sheet's navigation state (`collect`, `collectId`, `repeatId`) |
 | `/hub`: `HubMap` (the lazy Phaser canvas, the place links, swipes), `Pips`, the grid, `layTerrain`, the tile props, palettes and markers | Which places stand on which page and where (`@racer/domain/hub`, `AWAITING_ART`), `tilePageFor` (the ground each page draws), the rooms' pip colours (`ROOM_TONE`), the Town Hall plaza, the counters (`counts.ts`), the dev hooks' switch (`debug`, `?canvas`) |
 | `/auth`: `AuthProvider` (Google sign-in by redirect, Firebase loaded only by `import()`), `useAuth`, `idToken`, `signIn`, `signOut` | The Firebase config (`app/auth.ts`) |
@@ -234,6 +235,13 @@ the API's guard is `@luismlorenzana/uma-server` (below).
 - **Art:** the kit imports no images. `app/art.ts` hands it uma-art's `ui`, `tiles` and `buildings` atlases (each a
   `?url` image and its JSON index) through `KitArtProvider`, around the app and around the seeds' mount; a mark or frame
   the atlas lacks falls back (a `fallback` node, or a code-drawn building).
+- **Album art (SB6):** `GameProvider` installs the kit's `AlbumArtProvider` with `app/albumArt.tsx`. Its hook reads
+  `G2ContentContext` and the same hash-verified `ArtLoader`, holds URLs until unmount, ignores late responses and never
+  flashes a previous outfit on a changed id. Face → current per-character `face`, bust → outfit `bust`, plaza →
+  outfit `chibi`-a then bust; icon → the `uma-icons` atlas. SE1 owns adoption of published `outfit-faces`; this packet
+  uses its specified current-face fallback. The kit's preference prefix already matches every old album key, with
+  compatibility tests for query, saved views and seen ids. 0.7.1 includes the compact Filter button's VoiceOver name
+  fixed upstream in [uma-platform #28](https://github.com/luismlorenzana/uma-platform/pull/28), not forked here.
 - **Dark mode:** the theme's tokens have the same names in both modes (light is uma-racer's palette, dark uma-rpg's), so
   a screen drawn in tokens works in both. Account's Appearance (System, Light, Dark) is the kit's `setAppearance`, kept
   on this phone. Text on the gold accent is `text-accent-ink`, a dark surface that stays dark is `bg-stage` or
@@ -283,6 +291,9 @@ also loads another seed in place. A production build holds none of it: `check-si
 | `promote` | `busy` with two Umas through tier 1 and the stand-in Expedition: the Promote sheet |
 | `tired`, `spent` | `busy` with today's Daily Purse past its first or second edge |
 | `stopped` | `busy` with stock drained so queues dropped: Queue stopped's cards, and money for Speed up |
+
+`&art=synthetic` on a seed adds SB6's invented SVG faces and busts through the real album art port. This proof never
+loads private packs or owner data, and is absent from production. The ordinary seeds keep their initials.
 
 **Dev hooks** (dev builds only, every route): `window.__hub` (the Hub's Phaser game, uma-kit's `debug` hook: `scene`,
 `game`, `paused`), `window.__raceScene` (the run's scene: `seek`, `skipToEnd`), and `globalThis.__g2Save` (the device save's
@@ -424,6 +435,9 @@ a minor release, and Claude pins it here and updates [11](11-hub-and-places.md) 
   interpolating between samples (`sampleTimeline`) into pooled runner tokens with no per-frame allocation. Its own
   renderer clock handles the gate pre-roll, close-finish slowdown, seek, skip and reduced motion; none of it is saved or
   read by a reward.
+- **Art is playback-only:** `holdRaceBusts` holds and loads each distinct outfit's verified bust once in runner
+  order, and `RaceScene.setBusts` paints it into a circular token. Missing or invalid art leaves the gate number.
+  Pre-race, feed, result hero and finishing order use the kit's bust; only Uma selection controls use small faces.
 - **Headless runs** use the same engine in Node: the balance sims above.
 
 ## Budgets and checks
@@ -522,7 +536,7 @@ How generation 2 became the app (D361). The plan-level choices (the tag, the del
 | The content runtime ignores manifest files it has no kind for, keeps its manifest under `uma-racer:g2:content-manifest`, and the service worker caches content as `uma-racer-g2-content` | The old manifest stays readable until T144 publishes the new one; under the old names the wipe would delete what the app had just fetched |
 | The wipe finds the old dev proof databases by their shared shape, `<name>-proof-*` | The same databases, dev builds only, without naming a retired mode in code |
 | `g2/` moved to `app/`, `hub/`, `places/`, `save/`, `ui/` and `dev/`; test support to `__fixtures__/`; the `G2`/`g2` names stay in identifiers, CSS classes, `data-g2` attributes and storage keys | Renaming every identifier changes no behaviour, and the keys and database must keep their names |
-| The old race plan, fit and facts, goals, flair, badge-collection and trainer views and badge frame moved to `places/racing/`; the album query to `ui/album/`; the Root and Account read the build id through `app/build.ts` | A module lives with the place that uses it, or in `ui/` when two share it |
+| The old race plan, fit and facts, goals, flair, badge-collection and trainer views and badge frame moved to `places/racing/`; the album query moved to `ui/album/` at the switch and then to uma-kit in SB6; the Root and Account read the build id through `app/build.ts` | A module lives with the place that uses it, or in the shared kit when both games share it |
 | The build-beside boundaries test went whole | With one app, the reach check and the PixiJS check hold what remains |
 | The icon set loses the five icons that drew only retired things; the new game's four join the set | Whole deletion for retired systems; generic icons stay as the visual system's |
 | The API keeps the Firestore codec (D151), moved into the save module; `app.module.test.ts` holds it to six routes | Generation 2's repository stores work rows through it; the API answers only those routes |
@@ -538,7 +552,7 @@ How generation 2 became the app (D361). The plan-level choices (the tag, the del
 |---|---|---|---|
 | uma-racer | turbo | ^2.10.13 | dev |
 | @racer/web | @luismlorenzana/uma-art | 2.7.0 | runtime |
-| @racer/web | @luismlorenzana/uma-kit | 0.6.0 | runtime |
+| @racer/web | @luismlorenzana/uma-kit | 0.7.1 | runtime |
 | @racer/web | @racer/domain | workspace:* | runtime |
 | @racer/web | @racer/race | workspace:* | runtime |
 | @racer/web | @tanstack/react-query | ^5.102.8 | runtime |

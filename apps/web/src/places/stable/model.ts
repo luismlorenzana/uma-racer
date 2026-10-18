@@ -15,7 +15,7 @@ import type { RaceResultRow } from '@racer/domain/save'
 import type { DistanceCategory, UmaTemplate } from '@racer/domain'
 import {
   emptyStateHint, runAlbumQuery, type AlbumQuery, type AlbumResult, type AlbumRow, type FacetDef, type SortDef, type SortDirection,
-} from '../../ui/album/query'
+} from '@luismlorenzana/uma-kit/roster'
 
 export type Content = OperationEnv['content']
 export type StableTab = 'owned' | 'locked'

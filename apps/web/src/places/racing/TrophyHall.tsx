@@ -8,7 +8,7 @@ import {
   FLAIR_CATEGORIES, awardRefsForState, replaceUmaPreferences, type BadgeSort, type BadgeFilter, type UmaBadgeStateV1,
 } from '@racer/domain'
 import { createContext, useContext, useEffect, useRef, useState } from 'react'
-import { Link, Navigate, useSearchParams } from 'react-router'
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router'
 import {
   buildStableBadgeCollection, buildTimelineItems, buildTrophyWall, buildUmaBadgeCollection, filterBadgeItems, sortBadgeItems,
   type BadgeCollectionItem, type StableBadgeItem,
@@ -17,7 +17,8 @@ import { buildTrainerBadgeCollection, buildTrainerShowcase } from './trainer-vie
 import { Meter } from '../../ui/Meter'
 import { NO_RECORDS, useGame, useHub, useNow, useRuntime, type G2Records } from '../../app/game'
 import { PlacePageHeader } from '../PlacePageHeader'
-import { UmaFace } from '../../ui/UmaArt'
+import { FaceTile } from '@luismlorenzana/uma-kit/album'
+import { RacerUmaPicker } from '../../ui/racerAlbum'
 import type { PageProps } from '../registry'
 import { useRaceContent } from './content'
 import { deviceRows, reconcileFlair } from './flair'
@@ -130,12 +131,14 @@ function Collection<T extends BadgeCollectionItem | StableBadgeItem>({ items, pi
 }
 
 function UmaScope({ umaId }: { umaId: string }) {
+  const navigate = useNavigate()
   const { game } = useRuntime()
   const state = useGame((snapshot) => snapshot.state)!
   const records = useContext(RecordsContext)
   const now = useNow()
   const content = useRaceContent()!
   const [pinMode, setPinMode] = useState(false)
+  const [picking, setPicking] = useState(false)
   const badge = umaBadge(records, umaId)
   const strip = stripOrder(state, (id) => content.umas.byId.get(id)?.name ?? id, now)
     .sort((a, b) => b.lifetime - a.lifetime || a.name.localeCompare(b.name))
@@ -157,22 +160,15 @@ function UmaScope({ umaId }: { umaId: string }) {
   const labelOf = (key: string) => collection?.items.find((item) => item.awardKey === key)?.label ?? titleCase(key.replace(/^title:/, ''))
   return (
     <div className="flex flex-col gap-3">
-      <div role="radiogroup" aria-label={racingWords('choose-uma')} className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none]">
-        {strip.map((tile) => (
-          <Link
-            key={tile.umaId}
-            to={`/racing/trophy-hall/uma/${encodeURIComponent(tile.umaId)}`}
-            replace
-            role="radio"
-            aria-checked={tile.umaId === umaId}
-            aria-label={tile.name}
-            className={`flex min-h-11 w-16 shrink-0 flex-col items-center rounded-md border p-1 ${tile.umaId === umaId ? 'border-accent bg-accent-wash' : 'border-hairline bg-panel'}`}
-          >
-            <UmaFace outfitId={tile.umaId} size={36} />
-            <span className="block w-full truncate text-center text-[10px] font-semibold">{tile.name}</span>
-          </Link>
-        ))}
-      </div>
+      <button type="button" aria-label={racingWords('choose-uma')} onClick={() => setPicking(true)}
+        className="flex min-h-13 items-center gap-3 rounded-sm border border-hairline bg-panel p-2 text-left">
+        <FaceTile round label="" outfitId={umaId} size={44} className="shrink-0" />
+        <span className="min-w-0 flex-1 truncate font-semibold">{content.umas.byId.get(umaId)?.name ?? umaId}</span>
+        <span className="text-[13px] font-semibold text-accent-strong">Change</span>
+      </button>
+      <RacerUmaPicker open={picking} onClose={() => setPicking(false)} title={racingWords('choose-uma')}
+        candidateIds={strip.map((row) => row.umaId)} selectedIds={[umaId]}
+        onPick={(id) => navigate(`/racing/trophy-hall/uma/${encodeURIComponent(id)}`, { replace: true })} />
       {!badge || !collection ? <p className="py-6 text-center text-[13px] text-ink-soft">{racingWords('no-badge-state')}</p> : (
         <>
           <div className={`rounded-md border-2 p-3 ${collection.frame.borderClass} ${collection.frame.backgroundClass}`} data-g2="uma-summary">

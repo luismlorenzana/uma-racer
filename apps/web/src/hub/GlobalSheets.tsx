@@ -9,7 +9,7 @@ import { Suspense, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, useLocation } from 'react-router'
 import { useHub } from '../app/game'
 import { SHEET_UI } from '../places/registry'
-import { UmaArt } from '../ui/UmaArt'
+import { UmaBust } from '@luismlorenzana/uma-kit/album'
 import { useUmaName } from '../ui/uma'
 import { shownCount, usePlaceCounts } from './counts'
 import type { G2NavState, GlobalSheet } from './nav'
@@ -56,7 +56,7 @@ function FeaturedSheet({ umaId }: { umaId: string | null }) {
   return (
     <div>
       <div className="flex items-center gap-3 pb-3">
-        <UmaArt outfitId={umaId} size={64} />
+        <UmaBust outfitId={umaId} label="" size={64} className="size-16 overflow-hidden rounded-sm" />
         <Heading>{name}</Heading>
       </div>
       <div className="grid grid-cols-3 gap-2">

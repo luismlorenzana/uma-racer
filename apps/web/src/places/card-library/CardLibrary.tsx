@@ -7,16 +7,16 @@ import { CheckIcon, Chip, LockedIcon, StopwatchIcon } from '@luismlorenzana/uma-
 import type { DistanceCategory } from '@racer/domain'
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
-import { runAlbumQuery, emptyStateHint } from '../../ui/album/query'
-import { AlbumChrome } from '../../ui/album/AlbumChrome'
-import { VirtualGrid } from '../../ui/album/VirtualGrid'
+import { runAlbumQuery, emptyStateHint } from '@luismlorenzana/uma-kit/roster'
+import { AlbumChrome } from '@luismlorenzana/uma-kit/album'
+import { VirtualGrid } from '@luismlorenzana/uma-kit/album'
 import { DistanceTypeIcon, RunningStyleIcon } from '../../ui/CardFocusIcons'
 import { Crest } from '../../ui/Crest'
 import { TypeIcon } from '../../ui/TypeIcon'
 import { useGame, useHub } from '../../app/game'
-import { useAlbumPrefs } from '../../ui/albumPrefs'
+import { useAlbumPrefs } from '@luismlorenzana/uma-kit/album'
 import { CardSquare } from '../../ui/ArtSquare'
-import { UmaPicker } from '../../ui/UmaPicker'
+import { RacerUmaPicker as UmaPicker } from '../../ui/racerAlbum'
 import { umaName } from '../../ui/words'
 import {
   buildLibrary, LENS_MODES, lensMode, lensOf, LIBRARY_ALBUM, LIBRARY_DEFAULT_QUERY, LIBRARY_FACETS, LIBRARY_SORTS, LIBRARY_TIE_BREAK, payWords,
@@ -146,7 +146,21 @@ export function CardLibrary({ mode, umaId: given, preset, eligible, onPick, titl
       <AlbumChrome
         title={title}
         completion={<>{album.rows.length} cards{uma !== null ? ` · ${umaName(content, uma.outfitId)}` : ''}</>}
-        segment={
+        facets={facets}
+        sorts={LIBRARY_SORTS}
+        presets={presets}
+        query={query}
+        counts={result.counts}
+        total={result.total}
+        parameter={parameter}
+        views={prefs.views}
+        emptyHint={emptyStateHint(album.rows, facets, query)}
+        countFor={(draft) => runAlbumQuery(album.rows, facets, draft).total}
+        onQueryChange={prefs.setQuery}
+        onParameterChange={setParameter}
+        onSaveView={prefs.saveView}
+        onDeleteView={prefs.deleteView}
+      >
           <div className="space-y-2">
             <div className="-mx-4 flex gap-1.5 overflow-x-auto px-4 [scrollbar-width:none]" role="group" aria-label="Lens">
               {(['all', ...PLAYABLE] as const).map((value) => (
@@ -166,22 +180,6 @@ export function CardLibrary({ mode, umaId: given, preset, eligible, onPick, titl
               </div>
             )}
           </div>
-        }
-        facets={facets}
-        sorts={LIBRARY_SORTS}
-        presets={presets}
-        query={query}
-        counts={result.counts}
-        total={result.total}
-        parameter={parameter}
-        views={prefs.views}
-        emptyHint={emptyStateHint(album.rows, facets, query)}
-        countFor={(draft) => runAlbumQuery(album.rows, facets, draft).total}
-        onQueryChange={prefs.setQuery}
-        onParameterChange={setParameter}
-        onSaveView={prefs.saveView}
-        onDeleteView={prefs.deleteView}
-      >
         <VirtualGrid
           items={entries}
           columns={query.view === 'list' ? 1 : query.view === 'icons' ? 3 : 2}

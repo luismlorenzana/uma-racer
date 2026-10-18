@@ -138,12 +138,12 @@ never the clock time it ends.
 
 ### Race select and the pre-race sheet
 
-Race select is the Racecourse's Page (`places/racing/RaceSelect.tsx`): the purse bar and featured races, the Uma strip,
+Race select is the Racecourse's Page (`places/racing/RaceSelect.tsx`): the purse bar and featured races, the shared Uma picker control,
 **Today's featured**, **Next up** and every race ([09](../game/09-racing-rewards-and-exchange.md) §3–§4). A race card
 opens the **pre-race sheet**, ordered so starting never means scrolling past the detail (D233):
 1. **The race:** grade, name, its line, and its prize at today's band.
 2. **What's at stake:** every goal the race can complete, with its win rule.
-3. **Her:** face, name, "T1 · Lv 7", the distance preset it runs on with its Race Bonus, and "Collects 2 finished
+3. **Her:** bust, name, "T1 · Lv 7", the distance preset it runs on with its Race Bonus, and "Collects 2 finished
    unlocks first" when her session has some.
 4. **Running style:** four icons with her aptitude letters, starting at her race defaults. The choice isn't saved.
 5. **Start race**, then her aptitudes for this surface, distance and style.
@@ -153,7 +153,7 @@ opens the **pre-race sheet**, ordered so starting never means scrolling past the
    - **Speed, Power, Guts and Wit** are ranked against the field she will meet, from the prepared race: Good when she
      beats two-thirds of it, Average a third. The row says "beats 9/17". Stats above 1,200 count half, as in the race.
    - Nothing is authored per race, and changing the style reads it again.
-7. **Race skills** with their SP (her unique is free), then the **Field**: faces in gate order.
+7. **Race skills** with their SP (her unique is free), then the **Field**: outfit busts in gate order.
 
 If the race can't be prepared, the stats and the field are left out. **Start race** commits the race before it plays
 ([09](../game/09-racing-rewards-and-exchange.md) §8), so a reload or a reopen lands on the same race.
@@ -161,7 +161,8 @@ If the race can't be prepared, the stats and the field are left out. **Start rac
 ### The race
 
 The run is full screen (`places/racing/run/RunPage.tsx`) and always plays a committed result. The PixiJS scene draws
-the course with a numbered, colour-ringed token per runner. The HUD names the phase and the metres left (and the turn,
+the course with each runner's verified outfit bust in a numbered, colour-ringed token (a numbered dot if unavailable).
+The HUD names the phase and the metres left (and the turn,
 in a turn race), and a feed of small toasts on the right calls out skills and moves. In the thumb zone: her HP meter,
 Pause, step back and on while paused, and 1× or 2× (plus Slow in a turn race). **Skip** sits top right. The last spurt
 adds a slight zoom. The screen stays awake while it plays.
@@ -173,7 +174,7 @@ speed the race offers if that one isn't. Dev builds expose `window.__raceScene` 
 
 The result slides up over the run, in [09](../game/09-racing-rewards-and-exchange.md) §7's order:
 1. The placement **stamps** in ("1st!", with confetti on a win).
-2. The finishing order, with margins.
+2. Her bust, then the finishing order with outfit busts and margins.
 3. **Racing EXP**, with a chip for each level gained and a line for a hold or a new Uma Shard.
 4. **Prize Money** with its lines. The amount flies into the Prize Money chip, shown alone at the top.
 5. **Goal ribbons** with their pips, and Scenario Honors when the career is complete.
@@ -189,11 +190,11 @@ headed "Earned in this race", without replaying it.
 | Surface | Behaviour | Code |
 |---|---|---|
 | **Bottom sheet** | Modal, over a scrim that closes it. A drag starts from the grab handle only, so taps inside are never swallowed; a drag past 90 px or a flick closes it. A close button sits by the handle. It never grows past 92% of the screen: the content scrolls under the fixed handle. Escape closes it, before anything under it | uma-kit's `BottomSheet` |
-| **Sheet over a sheet** | uma-kit's `Sheet` and the Uma picker render through a portal, so a question or the picker opens over another sheet | uma-kit's `Sheet`, `ui/UmaPicker.tsx` |
+| **Sheet over a sheet** | uma-kit's `Sheet` and Uma picker render through a portal, so a question or picker opens over another sheet | `uma-kit/ui`, `uma-kit/album` |
 | **Peek** | uma-rpg's side panel: modal, 88% wide from the right, the map dimmed and paused behind it ([Peek, Page and Back](#peek-page-and-back)) | uma-kit's `PeekPanel`, `hub/PlacePeek.tsx` |
 | **Global sheets** | Focus moves to the sheet's heading and returns to what opened it. Escape, the close button, the handle and Back close it | `hub/GlobalSheets.tsx` |
 | **Tab rows** | Two to four tabs at 44 pt on a sunken track, the chosen one raised, moving by a CSS transition: the Stable's Owned and Locked, an Uma's profile, the Warehouse's shelves, the build views | uma-kit's `Tabs` |
-| **Lists and grids** | Rows of at least 44 pt. Long lists stay cheap through `content-visibility`: off-screen rows skip layout and paint, and the scroll position restores because nothing unmounts | `ui/album/VirtualGrid.tsx` |
+| **Lists and grids** | Rows of at least 44 pt. Long lists stay cheap through `content-visibility`: off-screen rows skip layout and paint, and the scroll position restores because nothing unmounts | `uma-kit/album`'s `VirtualGrid` |
 
 **Confirm only what costs or sells, and say the amount.** The check-in summary's Buy and restart and Speed up all
 ([02](../game/02-check-ins-and-notifications.md) §11), a sale that includes a dish, dips into needed stock or is worth
@@ -274,9 +275,10 @@ There is no sound and no haptics: every moment stands on its own visually.
 ## Albums
 
 Two albums share one chrome and one query engine: the **Stable**'s roster (`places/stable/`) and the **Card Library**
-(`places/card-library/`, [06](../game/06-cards-and-bonds.md) §6). The **Uma picker** (`ui/UmaPicker.tsx`, D181) is the
-Stable's album in a sheet, and the one way to choose an Uma anywhere. The engine is pure (`ui/album/query.ts`); the
-chrome is `ui/album/AlbumChrome.tsx`, with `FilterTray.tsx` and `SortSheet.tsx`. The patterns follow the faceted-tray
+(`places/card-library/`, [06](../game/06-cards-and-bonds.md) §6). The **Uma picker** is `uma-kit/album`'s, the one way
+to choose an Uma anywhere (SB6, D373). The engine is pure (`uma-kit/roster`); `uma-kit/album` owns `AlbumChrome`,
+`AlbumGrid`, filters, sorts and preferences. Racer's `ui/racerAlbum.tsx` only projects its rows, orders, badges and
+callbacks. The patterns follow the faceted-tray
 research in [Game UI Reference](../research/game-ui-reference.md).
 
 ### Shared browsing chrome
@@ -308,7 +310,7 @@ research in [Game UI Reference](../research/game-ui-reference.md).
   top (D176). A quick pick sets filters in one tap and never overwrites a saved view.
 - **Saved views:** up to 20 per album, named in up to 40 characters, each the whole query (search, filters, sort,
   direction, view and the Library's lens). Saving under a name already used replaces that view.
-- **Preferences are per device**, in `uma-racer:g2:album:<album>` (`ui/albumPrefs.ts`): the query, the saved views and
+- **Preferences are per device**, in `uma-racer:g2:album:<album>` (`uma-kit/album`'s `useAlbumPrefs`): the query, the saved views and
   the seen set behind NEW (up to 4,000 ids). The albums are `stable`, `card-library`, and `card-library-pick` for the
   Library in pick mode. They are never synced, and a stored value the album no longer knows falls back to its default.
   The Uma picker keeps nothing: it opens on its caller's order each time.
@@ -325,9 +327,10 @@ research in [Game UI Reference](../research/game-ui-reference.md).
 
 - **A missing value sorts last** in either direction, so flipping never surfaces a hole. Locked Umas have no level,
   so the Locked tab falls through to release and name. The id breaks the last tie, so one query always gives one order.
-- **Uma pickers open on highest level (D181, D368)**: lifetime Level for Training sessions, Lineage slots and the
-  Racecourse; Farm Level for the Farm's Free-only strip, with suited as its first tie-break. Release newest first,
-  name and id break the remaining ties. **Left here** and **What she adds** remain optional context sorts; **Open
+- **Uma pickers use the shared order (SB6, D373)**: lifetime Level for Lineage slots, the Racecourse, featured Uma,
+  Trophy Hall and Library lens. Work pickers (Farm, sessions and Bond) use `workOrder`: Free first, then Farm Level;
+  the Farm retains suited as its first level tie-break. The shared work order uses lifetime Level, then release newest
+  first, name and id for remaining ties. **Left here**, **Level** and **What she adds** remain optional context sorts; **Open
   goals** is a Racecourse filter chip, not its default order. Umas a picker can't take follow the ones it can, each
   with her reason. The Scenario Gate's ready-to-advance grouping and Bond's can-bond grouping stay unchanged.
 
@@ -337,23 +340,25 @@ The view switch picks one of three modes, remembered per album with the rest of 
 
 | Mode | Stable and the Uma picker | Card Library |
 |---|---|---|
-| **Icons** | Three to a row: her art, with her name and "T2 · Lv 13" under it | Three to a row: the card's art with its four corners, the character and the card's title |
-| **Cards** | Two to a row, larger art | Two to a row, larger art; in a lens, the per-node pay under it |
+| **Icons** | Five face crops to a row: her name and tier-local level underneath (`Lv 13` in tier 1, `T2 · Lv 13` later) | Three to a row: the card's art with its four corners, the character and the card's title |
+| **Cards** | Three bust cards to a row | Two to a row, larger art; in a lens, the per-node pay under it |
 | **List** | Full-width rows: a small tile, her name and scenario, her level and her marks | Full-width rows: a small tile, the name, and the per-node pay (or the era, in All) |
 
-The picker's tiles carry a line under the name: why she can't be picked, what picking her would do, or the caller's
-sort value.
+The picker is compact, always five face crops across, with search, filters and context sorts but no saved views or
+view switch. Its tiles carry the tier-local level and why she can't be picked, what picking her would do, or the
+caller's sort value. Racer-only Queue, Recall and Cook are follow-up actions after choosing a tile marked Options;
+they use the same operations and refusal words, not nested controls inside the kit's button.
 
 ### Art tiers
 
 | Tier | Size | Source | Where it shows |
 |---|---|---|---|
-| **Icon** | 128 px, atlased (`uma-icons`, `card-icons`) | The content packs | Every card tile; every Uma tile until her bust arrives; the fallback for faces and the plaza |
-| **Uma bust** (`bust`) | 256 px square, head and shoulders | Cut from her portrait at import, one file per Uma | The Stable album, the Uma picker, her profile's header, and the plaza when she has no chibi |
+| **Icon** | 128 px, atlased (`uma-icons`, `card-icons`) | The content packs | Every card tile; the outfit-specific fallback while Uma art loads or fails |
+| **Uma bust** (`bust`) | 256 px square, head and shoulders | Cut from her portrait at import, one file per Uma | Stable Cards, profile, quick sheets, pre-race field, PixiJS runner tokens, feed, finishing order and result hero; the plaza's fallback |
 | **Uma portrait** (`uma`) | 512 px, transparent | One file per Uma, fetched on demand | The collection reveal |
 | **Card art** (`card`) | The full illustration, 600 px on its longest edge (450×600) | One file per card, fetched on demand | The card page's hero and the art viewer |
-| **Race face** (`face`) | 128 px square, transparent | One per character, cut from her summer-uniform stand at import (T059, D160) | Pips, slot rows, the Racecourse strip, the pre-race field, the race feed, the finishing order. The race scene can put them on its tokens, but the run doesn't pass them yet |
-| **Chibi** (`chibi`) | 256 px, transparent: standing (`-a`) and celebrating (`-b`) | One pair per outfit, from the owner's local copy (T059) | Standing: the featured Uma in the plaza, still art (the canvas Hub didn't animate her; the code-animated chibi waits for phase 5's `outfit-chibis` release, 11 §5). Celebrating: not placed |
+| **Face crop** (`face`) | 128 px square, transparent | Today's per-character pack until SE1 adopts the published `outfit-faces` family | Stable Icons/List, all Uma pickers, small selected-Uma controls, pips and slot rows (`FaceTile`, round in pips and slots) |
+| **Chibi** (`chibi`) | 256 px, transparent: standing (`-a`) and celebrating (`-b`) | One pair per outfit, from the owner's local copy (T059) | Only the Town Hall plaza crowd; the kit gently bobs the standing art. Celebrating: not placed |
 | **Outfit stand** (`dress`) | 512 px, transparent: gym clothes, summer and winter uniforms, casual clothes | Four per character, from the owner's local copy (T059) | Not placed |
 
 - **Lists never use the large art; detail surfaces do.** The card page opens on its illustration full width, cropped
@@ -364,7 +369,8 @@ sort value.
   labelled placeholder and Uma art shows her initial.
 - **Large art is never atlased and never precached.** Each file is content-addressed, fetched through the authenticated
   API the first time it's shown, checked against its manifest's size and hash, and cached by the service worker
-  (`uma-racer-g2-content`, cache first). `useArt` (`ui/album/useArt.ts`) holds an entry while it's on screen, and each
+  (`uma-racer-g2-content`, cache first). The `AlbumArtProvider` adapter (`app/albumArt.tsx`) and the card/reveal helper
+  `useArt` (`ui/useContentArt.ts`) hold entries while shown, and each
   kind keeps a bounded window of recent ones.
 - **The bust** is the original's Trainee Select tile. The importer finds her head from the portrait's own alpha,
   centres on it and takes a square of 60% of the frame from near the top (`scripts/assets/src/art.ts`).
@@ -380,14 +386,14 @@ Each tile keeps its marks inside its padding, so nothing covers a face (`ui/ArtT
 
 | Corner | Stable, Owned | Stable, Locked | Card Library |
 |---|---|---|---|
-| **Top left** | Her tier crest (uma-art's bronze, silver or gold, read "Tier 1"), then NEW | A lock | Distance focus, then NEW, then **In set** (pick mode: the preset being filled) |
-| **Top right** | A Ready dot (ready to advance or promote) and the planner's crosshair | The check, while selecting | Running-style focus |
-| **Bottom left** | — | — | Card type |
-| **Bottom right** | — | — | The bond pill |
+| **Top left** | Her tier crest (uma-art's bronze, silver or gold, read "Tier 1") | — | Distance focus, then NEW, then **In set** (pick mode: the preset being filled) |
+| **Top right** | A Ready dot (ready to advance or promote) and the planner's crosshair | — | Running-style focus |
+| **Bottom left** | NEW | — | Card type |
+| **Bottom right** | Gold Hall of Fame mark, if inducted | — | The bond pill |
 
-- **A locked Uma** is her art dimmed and desaturated behind a lock, never an empty box. A Hall of Fame Uma gets a gold
-  frame. In the list view her marks move to the end of the row.
-- **The Uma picker** puts her "T2 · Lv 13" bottom right, and a check with its label top left once she's selected.
+- **A locked Uma** is her art dimmed and desaturated behind the kit's central lock, never an empty box. Selection is
+  the kit's gold outline. A Hall of Fame Uma keeps her gold mark and profile frame.
+- **The Uma picker** puts her tier-local level under the name; the chosen Uma keeps her gold outline and context label.
 - **The bond pill** ([06](../game/06-cards-and-bonds.md) §6): with no Uma chosen, how many Umas are bonded to the card
   in their current tier (hidden at 0). With an Uma chosen: a check if she's bonded, a stopwatch while the bond is in
   her work, "G5" on the card type's colour for the dish grade she needs, or a lock, with the art dimmed, when the
@@ -413,8 +419,9 @@ Each tile keeps its marks inside its padding, so nothing covers a face (`ui/ArtT
   each with its own operation, and the reveal shows them in turn: Next, "2 of 5", Skip all (11 §13).
 - **A filtered album is a browsing session.** An owned tile opens her profile, where Previous, Next and a swipe move
   through the Owned tab's current order.
-- **One tile, one target, one line.** A tile is one link or button, and VoiceOver reads it as one line: her name, "T2 ·
-  Lv 13", ready to advance or promote, planner target, Hall of Fame, new; or a card's name, type, era and pill.
+- **One tile, one target.** A shared Uma tile's accessible name is her name and level ("T2 · Lv 13" above tier 1).
+  Tier, Ready, target, Hall of Fame and NEW remain labelled badges, not extra actions. A card's label keeps its name,
+  type, era and pill. Physical-device VoiceOver traversal remains an owner check.
 - **Not in the albums:** compare, long-press actions, grouping, and a density toggle (the view switch replaced it).
 
 ## Accessibility and comfort

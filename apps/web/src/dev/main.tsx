@@ -14,16 +14,20 @@ import { RACER_ART } from '../app/art'
 import { GameProvider } from '../app/GameProvider'
 import { createG2Router, SEEDS_PATH } from '../app/router'
 import { bootGame } from './boot'
+import { AlbumProofArt } from './AlbumProofArt'
 
 export function mountSeeds(root: Root): void {
   const router = createG2Router(SEEDS_PATH)
   const boot = () => bootGame(location.search)
+  const routed = new URLSearchParams(location.search).get('art') === 'synthetic'
+    ? <AlbumProofArt><RouterProvider router={router} /></AlbumProofArt>
+    : <RouterProvider router={router} />
   root.render(
     <StrictMode>
       <MotionRoot>
         <KitArtProvider art={RACER_ART}>
           <GameProvider boot={boot}>
-            <RouterProvider router={router} />
+            {routed}
           </GameProvider>
         </KitArtProvider>
       </MotionRoot>

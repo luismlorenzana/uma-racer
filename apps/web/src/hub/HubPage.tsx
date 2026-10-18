@@ -14,13 +14,13 @@ import { Suspense, useMemo } from 'react'
 import { Navigate, useLocation, useNavigate, useSearchParams } from 'react-router'
 import { useGame, useHub } from '../app/game'
 import { TOWN_PLAZA } from '../places/registry'
-import { UmaFace } from '../ui/UmaArt'
+import { FaceTile } from '@luismlorenzana/uma-kit/album'
 import { shownCount, usePlaceCounts } from './counts'
 import { isGlobalSheet } from './nav'
 import { PlacePeek } from './PlacePeek'
 import { pageGround, pipModels, plazaCrowd } from './racerHub'
 
-const face = (outfitId: string) => <UmaFace outfitId={outfitId} size={16} />
+const face = (outfitId: string) => <FaceTile round label="" outfitId={outfitId} size={16} />
 const Figure = TOWN_PLAZA.Figure
 const NO_FRAMES: Readonly<Record<string, unknown>> = {}
 

@@ -15,7 +15,7 @@ import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
 import { useGame } from '../../app/game'
 import { ItemIcon } from '../ItemIcon'
-import { UmaFace } from '../UmaArt'
+import { FaceTile } from '@luismlorenzana/uma-kit/album'
 import { speedUpModel, type HeldSlotCard, type SlotCardModel } from './model'
 import { QueueChips, QueueLine, requestWords } from './QueueChips'
 import { RecallSheet } from './RecallSheet'
@@ -45,7 +45,7 @@ export function FaceRing({ outfitId, progress, ready, size = 44 }: { outfitId: s
   return (
     <span aria-hidden data-ring={ready ? 'ready' : Math.round(progress * 100)} className="flex shrink-0 items-center justify-center rounded-full p-[3px]" style={{ width: size, height: size, background: fill }}>
       <span className="block size-full overflow-hidden rounded-full border-2 border-panel bg-sunken">
-        <UmaFace outfitId={outfitId} size={size - 10} />
+        <FaceTile round label="" outfitId={outfitId} size={size - 10} />
       </span>
     </span>
   )

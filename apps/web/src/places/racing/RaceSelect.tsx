@@ -24,7 +24,9 @@ import { TypeIcon } from '../../ui/TypeIcon'
 import type { LoadedContent } from '../../content/runtime'
 import { useGame, useNow, useRuntime, type G2Records } from '../../app/game'
 import { PlacePageHeader } from '../PlacePageHeader'
-import { UmaFace } from '../../ui/UmaArt'
+import { UmaBust } from './UmaBust'
+import { FaceTile } from '@luismlorenzana/uma-kit/album'
+import { RacerUmaPicker } from '../../ui/racerAlbum'
 import { useRaceContent } from './content'
 import { prepareRace } from './prepare'
 import { useRecords } from './records'
@@ -121,29 +123,23 @@ function PurseHeader({ bar, featured }: { bar: PurseBar; featured: FeaturedView 
 }
 
 function Strip({ tiles, selected, onPick }: { tiles: readonly StripTile[]; selected: string; onPick: (umaId: string) => void }) {
+  const [open, setOpen] = useState(false)
+  const tile = tiles.find((row) => row.umaId === selected)
   return (
-    <div role="radiogroup" aria-label={racingWords('who-races')} className="flex gap-2 overflow-x-auto px-3 pb-1 [scrollbar-width:none]" data-g2="uma-strip">
-      {tiles.map((tile) => {
-        const picked = tile.umaId === selected
-        return (
-          <button
-            key={tile.umaId}
-            type="button"
-            role="radio"
-            aria-checked={picked}
-            aria-label={racingWords('tile-label', { name: tile.name, tier: tile.tier, level: tile.level })}
-            onClick={() => onPick(tile.umaId)}
-            data-uma={tile.umaId}
-            className={`flex min-h-11 w-28 shrink-0 flex-col items-center gap-0.5 rounded-md border px-1 py-1.5 ${picked ? 'border-accent bg-accent-wash outline outline-2 outline-accent' : 'border-hairline bg-panel'}`}
-          >
-            <UmaFace outfitId={tile.umaId} size={40} />
-            <span className="block w-full truncate text-center text-[11px] font-semibold text-ink">{tile.name}</span>
-            <span className="font-display text-[11px] text-ink-soft">{racingWords('tile-level', { tier: tile.tier, level: tile.level })}</span>
-            {tile.work !== null && <span className="block max-w-full rounded-sm bg-sunken px-1 text-center text-[10px] leading-3 text-ink-soft">{tile.work}</span>}
-            {!tile.open && <span className="text-[10px] leading-4 text-accent-strong">{racingWords('tile-done')}</span>}
-          </button>
-        )
-      })}
+    <div className="px-3" data-g2="race-uma-control" data-uma={selected}>
+      <button type="button" aria-label={racingWords('who-races')} onClick={() => setOpen(true)}
+        className="flex min-h-13 w-full items-center gap-3 rounded-sm border border-hairline bg-panel p-2 text-left">
+        <FaceTile round label="" outfitId={selected} size={44} className="shrink-0" />
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-[14px] font-semibold">{tile?.name}</span>
+          <span className="block text-[12px] text-ink-soft">{tile === undefined ? '' : racingWords('tile-level', { tier: tile.tier, level: tile.level })}{tile?.work ? ` · ${tile.work}` : ''}</span>
+        </span>
+        <span className="text-[13px] font-semibold text-accent-strong">Change</span>
+      </button>
+      <RacerUmaPicker open={open} onClose={() => setOpen(false)} title={racingWords('who-races')}
+        candidateIds={tiles.map((row) => row.umaId)} selectedIds={[selected]}
+        describe={(entry) => { const one = tiles.find((row) => row.umaId === entry.id); return [one?.work, one?.open === false ? racingWords('tile-done') : null].filter(Boolean).join(' · ') }}
+        onPick={onPick} />
     </div>
   )
 }
@@ -221,7 +217,7 @@ function PreRaceSheet({ race, uma, content, derived, records, onClose }: {
         </div>
       )}
       <div className="flex items-center gap-3 rounded-md bg-sunken p-3">
-        <UmaFace outfitId={uma.outfitId} size={48} />
+        <UmaBust outfitId={uma.outfitId} size={48} />
         <div className="min-w-0 flex-1">
           <p className="flex min-w-0 items-center gap-1.5 font-semibold">
             <span className="truncate">{template.name} · {racingWords('tile-level', { tier: uma.tier, level: uma.racing.level })}</span>
@@ -297,7 +293,7 @@ function PreRaceSheet({ race, uma, content, derived, records, onClose }: {
           <div className="flex gap-2 overflow-x-auto pb-1">
             {preview.runners.map((runner, gate) => (
               <div key={`${gate}:${runner.templateId}`} className={`w-14 shrink-0 rounded-sm border p-1 text-center ${runner.isPlayer ? 'border-accent bg-accent-wash' : 'border-hairline bg-panel'}`}>
-                <span className="flex justify-center"><UmaFace outfitId={runner.templateId} size={36} /></span>
+                <span className="flex justify-center"><UmaBust outfitId={runner.templateId} size={36} /></span>
                 <p className="mt-1 truncate text-[9px] font-semibold">{gate + 1}. {runner.isPlayer ? racingWords('you') : content.umas.byId.get(runner.templateId)?.name ?? runner.templateId}</p>
               </div>
             ))}

@@ -8,16 +8,16 @@ import { scenarioRow } from '@racer/domain/tiers'
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router'
 import { ArtViewer } from '../../ui/ArtViewer'
-import { useArt } from '../../ui/album/useArt'
+import { useArt } from '../../ui/useContentArt'
 import { DistanceTypeIcon, RunningStyleIcon } from '../../ui/CardFocusIcons'
 import { TypeIcon } from '../../ui/TypeIcon'
 import { useG2Content } from '../../app/content'
 import { useGame, useNow } from '../../app/game'
-import { useAlbumPrefs } from '../../ui/albumPrefs'
+import { useAlbumPrefs } from '@luismlorenzana/uma-kit/album'
 import { CardSquare } from '../../ui/ArtSquare'
 import { DISTANCE_LABEL, STAT_LABEL, STYLE_LABEL } from '../../ui/labels'
 import { PlacePageHeader } from '../PlacePageHeader'
-import { UmaPicker } from '../../ui/UmaPicker'
+import { RacerUmaPicker as UmaPicker } from '../../ui/racerAlbum'
 import { umaName } from '../../ui/words'
 import type { PageProps } from '../registry'
 import {
@@ -173,6 +173,7 @@ export default function CardPage({ place, rest, cardId }: PageProps & { cardId: 
         open={bonding}
         onClose={() => setBonding(false)}
         title={`Bond ${card.charName}`}
+        work
         disabledReason={(entry) => choices.get(entry.id)?.reason ?? null}
         describe={(entry) => choices.get(entry.id)?.line ?? null}
         action={(entry) => {

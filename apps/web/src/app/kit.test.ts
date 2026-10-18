@@ -7,7 +7,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { memoryStorage } from '../__fixtures__/testing'
 import { WIPED_KEY, wipeOnce } from '../save/wipe'
 import { RACE_SPEED_KEY } from '../ui/devicePrefs'
-import { ALBUM_KEY_PREFIX } from '../ui/albumPrefs'
 import { LAST_PAGE_KEY } from './start'
 import { APPEARANCE_KEY, configureRacerKit, DEVICE_PREFIX, REDUCED_MOTION_KEY, setupKit } from './kit'
 
@@ -25,7 +24,7 @@ describe("uma-kit's storage prefix", () => {
     expect(DEVICE_PREFIX).toBe('uma-racer:g2:')
     expect(kitKey('reducedMotion')).toBe(REDUCED_MOTION_KEY)
     expect(kitKey('appearance')).toBe(APPEARANCE_KEY)
-    for (const key of [REDUCED_MOTION_KEY, APPEARANCE_KEY, RACE_SPEED_KEY, LAST_PAGE_KEY, ALBUM_KEY_PREFIX, WIPED_KEY]) expect(key.startsWith(DEVICE_PREFIX), key).toBe(true)
+    for (const key of [REDUCED_MOTION_KEY, APPEARANCE_KEY, RACE_SPEED_KEY, LAST_PAGE_KEY, kitKey('album:'), WIPED_KEY]) expect(key.startsWith(DEVICE_PREFIX), key).toBe(true)
   })
 
   it("keeps Account's Reduce motion where T138 stored it, so no phone's switch resets", () => {

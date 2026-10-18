@@ -34,7 +34,7 @@ vi.mock('../../scenes/race/RaceScene', () => ({
     seek() {}
     skipToEnd() { this.onFinish() }
     setSpeed(rate: number) { scene.rates.push(rate) }
-    setFaces() { return Promise.resolve() }
+    setBusts() { return Promise.resolve() }
     destroy() {}
     get position() { return 0 }
   },

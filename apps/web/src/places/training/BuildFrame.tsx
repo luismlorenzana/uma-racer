@@ -13,7 +13,7 @@ import type { WorkState } from '@racer/domain/work'
 import { useMemo, type ReactNode } from 'react'
 import { Link, useLocation, useSearchParams } from 'react-router'
 import { useGame } from '../../app/game'
-import { UmaSquare } from '../../ui/ArtSquare'
+import { FaceTile } from '@luismlorenzana/uma-kit/album'
 import { amount, DISTANCE_LABEL, DISTANCES, STAT_KEYS, STAT_LABEL } from '../../ui/labels'
 import { PlacePageHeader } from '../PlacePageHeader'
 import { TapNoteLine } from '../../ui/work/TapNote'
@@ -86,7 +86,7 @@ export function BuildFrame({ place, umaId, title, lines = [], fullScreen = false
       <PlacePageHeader place={place} rest={umaId} title={title(name)} lines={lines} />
       <section aria-label={name} className="space-y-2 border-b border-hairline px-4 py-3" data-g2="build-header">
         <div className="flex items-center gap-3">
-          <span className="w-12 shrink-0"><UmaSquare outfitId={umaId} name={name} tight /></span>
+          <span className="w-12 shrink-0"><FaceTile outfitId={umaId} label={name} size={48} /></span>
           <span className="min-w-0 flex-1">
             <span className="block truncate text-[15px] font-semibold">{name}</span>
             <span className="block text-[12px] text-ink-soft">{header.tierLine}</span>

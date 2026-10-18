@@ -185,8 +185,9 @@ describe('upgrades and empty stock (07 §7, §11)', () => {
     const sheet = await screen.findByRole('dialog', { name: 'Start a job · Pantry' })
     expect(within(sheet).getByRole('button', { name: /^Chopped Carrot, grade 1/ }).getAttribute('aria-pressed')).toBe('true')
     // Amber suits Vegetables (Front Runner A), so she is preselected; the owner picks Bluebell instead.
-    expect(within(sheet).getByRole('radio', { name: /^Amber Sprint, Farm Lv 1, suited/ }).getAttribute('aria-checked')).toBe('true')
-    fireEvent.click(within(sheet).getByRole('radio', { name: new RegExp(`^${BLUEBELL}`) }))
+    expect(sheet.querySelector('[data-g2="farm-uma-control"]')?.textContent).toContain('Amber Sprint · Farm Lv 1')
+    fireEvent.click(within(sheet).getByRole('button', { name: 'Free Umas' }))
+    fireEvent.click(await within(await screen.findByRole('dialog', { name: 'Free Umas' })).findByRole('button', { name: BLUEBELL }))
     fireEvent.click(within(sheet).getByRole('button', { name: /^Start · / }))
     await waitFor(() => expect(where()).toBe('/town/warehouse'))
     expect(state(game).work[uma(2)]!.entries[0]!.request).toMatchObject({ kind: 'craft', item: 'chopped-carrot' })
@@ -205,10 +206,16 @@ describe('the job sheet, one screen (D366)', () => {
     const { where } = renderG2('/farm/orchard', game)
     fireEvent.click(await screen.findByRole('link', { name: 'Start a job in slot 1' }))
     const sheet = await screen.findByRole('dialog', { name: 'Start a job · Orchard' })
-    const umas = within(sheet).getAllByRole('radio').filter((radio) => radio.hasAttribute('data-uma')).map((radio) => radio.getAttribute('data-uma'))
-    expect(umas.sort()).toEqual([uma(1), uma(2)])
+    fireEvent.click(within(sheet).getByRole('button', { name: 'Free Umas' }))
+    const picker = await screen.findByRole('dialog', { name: 'Free Umas' })
+    const umas = within(picker).getAllByRole('button').filter((button) => [AMBER, BLUEBELL].includes(button.getAttribute('aria-label') ?? ''))
+    expect(umas.map((button) => button.getAttribute('aria-label'))).toEqual([BLUEBELL, AMBER])
+    expect(within(picker).queryByRole('button', { name: /^Cinder Gale/ })).toBeNull()
+    expect(within(picker).queryByRole('button', { name: /^Dawn Meadow/ })).toBeNull()
+    fireEvent.click(within(picker).getByRole('button', { name: 'Close' }))
     // One is chosen, one item is chosen, and one size is chosen: Start is one tap away.
-    expect(within(sheet).getAllByRole('radio', { checked: true }).length).toBe(2)
+    expect(within(sheet).getAllByRole('radio', { checked: true }).length).toBe(1)
+    expect(sheet.querySelector('[data-g2="farm-uma-control"]')?.textContent).toContain('Bluebell Dash · Farm Lv 9')
     expect(sheet.querySelectorAll('[data-item][aria-pressed="true"]')).toHaveLength(1)
     const chips = within(sheet).getAllByRole('radio').filter((radio) => radio.hasAttribute('data-size'))
     expect(chips.length).toBeGreaterThan(1)
@@ -241,7 +248,7 @@ describe('the job sheet, one screen (D366)', () => {
     fireEvent.click(within(sheet).getByRole('button', { name: 'Collect here' }))
     await waitFor(() => expect(state(game).items['wheat']).toBe(1))
     // Collected, she is Free: the sheet preselects her.
-    await waitFor(() => expect(within(sheet).getByRole('radio', { name: new RegExp(`^${AMBER}`) }).getAttribute('aria-checked')).toBe('true'))
+    await waitFor(() => expect(sheet.querySelector('[data-g2="farm-uma-control"]')?.textContent).toContain(`${AMBER} · Farm Lv 1`))
   })
 
   it("a target's icon opens the sheet filled in with its item, the planner's Uma and size: one more tap starts it", async () => {

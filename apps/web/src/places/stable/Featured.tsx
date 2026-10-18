@@ -11,8 +11,8 @@ import { useMemo, useState } from 'react'
 import { Link, useLocation } from 'react-router'
 import { useGame, useHub, useNow } from '../../app/game'
 import { TapNoteLine, useTap } from '../../ui/work'
-import { UmaArt } from '../../ui/UmaArt'
-import { UmaPicker } from '../../ui/UmaPicker'
+import { UmaBust, UmaChibi } from '@luismlorenzana/uma-kit/album'
+import { RacerUmaPicker as UmaPicker } from '../../ui/racerAlbum'
 import type { FeaturedSheetProps, PlazaFigureProps, PlazaProps } from '../registry'
 import { doingNow, doingWords } from './model'
 
@@ -31,7 +31,7 @@ export function FeaturedUmaCard({ umaId }: PlazaProps) {
       className="flex min-h-24 min-w-24 flex-col items-center justify-center gap-1 rounded-md p-1 active:bg-ink/5"
     >
       <span className="relative">
-        <UmaArt outfitId={umaId} size={72} />
+        <UmaBust outfitId={umaId} label={name} size={72} className="size-18 overflow-hidden rounded-sm" />
         {tier !== null && <TierCrest tier={tier} className="absolute -right-2 -bottom-1" />}
       </span>
       <span aria-hidden className="max-w-28 truncate rounded-full border border-accent/40 bg-accent-wash px-2 py-0.5 text-[11px] leading-4 font-semibold text-ink">{name}</span>
@@ -58,7 +58,7 @@ export function PlazaFigure({ umaId, front }: PlazaFigureProps) {
       data-uma={umaId}
       className="flex size-11 items-end justify-center rounded-md active:bg-ink/5"
     >
-      <UmaArt outfitId={umaId} size={44} />
+      <UmaChibi outfitId={umaId} label={name} size={44} className="size-11" />
     </Link>
   )
 }
@@ -87,7 +87,7 @@ export function FeaturedSheet({ umaId, onClose }: FeaturedSheetProps) {
   return (
     <div data-g2="featured-sheet">
       <div className="flex items-center gap-3 pb-3">
-        <UmaArt outfitId={uma.outfitId} size={64} />
+        <UmaBust outfitId={uma.outfitId} label={name} size={64} className="size-16 shrink-0 overflow-hidden rounded-sm" />
         <div className="min-w-0">
           <h2 data-sheet-heading tabIndex={-1} className="flex items-center gap-2 text-lg outline-none">
             <span className="truncate">{name}</span>

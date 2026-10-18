@@ -15,10 +15,10 @@ import { useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router'
 import { TypeIcon } from '../../../ui/TypeIcon'
 import { useGame, useRuntime } from '../../../app/game'
-import { UmaSquare } from '../../../ui/ArtSquare'
+import { FaceTile } from '@luismlorenzana/uma-kit/album'
 import { ItemIcon } from '../../../ui/ItemIcon'
 import { duration } from '../../../ui/labels'
-import { UmaPicker } from '../../../ui/UmaPicker'
+import { RacerUmaPicker as UmaPicker } from '../../../ui/racerAlbum'
 import { RecallSheet } from '../../../ui/work/RecallSheet'
 import { TapNoteLine } from '../../../ui/work/TapNote'
 import { useTap, useWordsContext } from '../../../ui/work/useTap'
@@ -197,7 +197,7 @@ export default function SessionSheet({ place, facility, query, onClose }: {
               </button>
             ) : (
               <div className="flex items-center gap-3 rounded-sm bg-sunken/50 p-2" data-chosen-uma={uma}>
-                <span className="w-11 shrink-0"><UmaSquare outfitId={uma} name={name} tight /></span>
+                <FaceTile round outfitId={uma} label={name} size={44} className="shrink-0" />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-[15px] font-semibold">{name}</span>
                   <span className="block text-[12px] text-ink-soft">{rows.get(uma)?.line ?? ''}</span>
@@ -277,7 +277,7 @@ export default function SessionSheet({ place, facility, query, onClose }: {
           value: (entry) => rows.get(entry.id)?.order ?? 0,
           describe: (entry) => rows.get(entry.id)?.line ?? null,
         }]}
-        defaultSort="level"
+        work
         describe={(entry) => rows.get(entry.id)?.line ?? null}
         disabledReason={(entry) => rows.get(entry.id)?.reason ?? null}
         action={(entry) => {

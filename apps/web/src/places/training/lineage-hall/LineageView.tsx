@@ -6,8 +6,8 @@
 import { LockedIcon } from '@luismlorenzana/uma-kit/ui'
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router'
-import { UmaSquare } from '../../../ui/ArtSquare'
-import { UmaPicker } from '../../../ui/UmaPicker'
+import { FaceTile } from '@luismlorenzana/uma-kit/album'
+import { RacerUmaPicker as UmaPicker } from '../../../ui/racerAlbum'
 import { TapNoteLine } from '../../../ui/work/TapNote'
 import { useTap } from '../../../ui/work/useTap'
 import { BuildFrame, type BuildContext } from '../BuildFrame'
@@ -45,7 +45,7 @@ function SlotCard({ slot, build, onFill }: { slot: LineageSlotView; build: Build
         <>
           {slot.filler === null ? <p className="text-[12px] text-ink-soft">{trainingWords('slot-empty')}</p> : (
             <div className="flex items-center gap-2">
-              <span className="w-9 shrink-0"><UmaSquare outfitId={slot.filler} name={name!} tight /></span>
+              <FaceTile round outfitId={slot.filler} label={name!} size={36} className="shrink-0" />
               <span className="min-w-0 flex-1 truncate text-[13px] font-semibold">{name}</span>
             </div>
           )}
@@ -127,7 +127,6 @@ function Lineage({ build }: { build: BuildContext }) {
           },
           describe: (entry) => picks.get(entry.id)?.line ?? null,
         }]}
-        defaultSort="level"
         describe={(entry) => picks.get(entry.id)?.line ?? null}
         disabledReason={(entry) => picks.get(entry.id)?.refusal ?? null}
         onPick={pick}

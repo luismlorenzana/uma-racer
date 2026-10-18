@@ -1,24 +1,21 @@
 // The Stable (docs/game/11-hub-and-places.md §3.1; docs/game/04-tiers-and-promotion.md §6; ux "Albums",
 // D176, D181): the roster in the shared album chrome, Owned and Locked tabs with counts, the ticket note with the Shard
-// exchange, one Uma's Unlock in uma-kit's confirm (`UnlockConfirm`, SD4), and the Locked tab's multi-select that unlocks
-// up to the tickets in hand, then reveals them in turn (the multi-unlock and the reveal stay this game's). Each profile (`outfit/:umaId`, `/skills`, `/needs`) is its own chunk.
+// exchange, Unlock in a sheet, and the Locked tab's multi-select that unlocks up to the tickets in hand, then reveals
+// them in turn. Each profile (`outfit/:umaId`, `/skills`, `/needs`) is its own chunk.
+import { Button, Tabs, UiMark } from '@luismlorenzana/uma-kit/ui'
 import { UnlockConfirm } from '@luismlorenzana/uma-kit/places'
-import { Button, CheckIcon, LockedIcon, Tabs, TargetIcon, TierCrest, UiMark } from '@luismlorenzana/uma-kit/ui'
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router'
-import { VirtualGrid } from '../../ui/album/VirtualGrid'
-import { AlbumChrome } from '../../ui/album/AlbumChrome'
-import { Crest } from '../../ui/Crest'
-import { runAlbumQuery } from '../../ui/album/query'
+import { useNavigate, useSearchParams } from 'react-router'
+import { AlbumChrome, AlbumGrid, useAlbumPrefs } from '@luismlorenzana/uma-kit/album'
+import { runAlbumQuery } from '@luismlorenzana/uma-kit/roster'
 import { useGame } from '../../app/game'
-import { useAlbumPrefs } from '../../ui/albumPrefs'
-import { UmaSquare } from '../../ui/ArtSquare'
+import { racerAlbumRows, racerBadges } from '../../ui/racerAlbum'
 import { PlacePageHeader } from '../PlacePageHeader'
 import { doneOrThrow, TapNoteLine, useTap, useWordsContext } from '../../ui/work'
 import type { PageProps } from '../registry'
 import {
   buildStableAlbum, openingTab, queryStable, STABLE_ALBUM, STABLE_DEFAULT_QUERY, STABLE_FACETS, STABLE_SORTS, ticketNote, unlockBlocked,
-  type StableEntry, type StableTab,
+  profilePath, type StableEntry, type StableTab,
 } from './model'
 import { revealPath } from '../reveal/path'
 
@@ -46,83 +43,7 @@ const PRESETS = [
   { key: 'targets', label: 'Planner targets', apply: (query: typeof STABLE_DEFAULT_QUERY) => ({ ...query, filters: { target: true } }) },
 ]
 
-/** The tile's words for VoiceOver: her name, tier and level, and its state (11 §12). */
-function tileLabel(entry: StableEntry): string {
-  if (!entry.owned) return `${entry.name}, locked`
-  const parts = [entry.name, entry.level!]
-  if (entry.ready === 'advance') parts.push('ready to advance')
-  if (entry.ready === 'promote') parts.push('ready to promote')
-  if (entry.target) parts.push('planner target')
-  if (entry.hallOfFame) parts.push('Hall of Fame')
-  if (entry.isNew) parts.push('new')
-  return parts.join(', ')
-}
-
-function Tile({ entry, list, picking, picked, full, onOpen }: {
-  entry: StableEntry
-  list: boolean
-  picking: boolean
-  picked: boolean
-  /** No ticket left for another pick. */
-  full: boolean
-  onOpen: () => void
-}) {
-  const marks = (
-    <span className="flex items-center gap-1">
-      {entry.ready !== null && <span aria-hidden data-ready-dot className="size-2.5 rounded-full bg-success shadow-1" />}
-      {entry.target && <span aria-hidden className="rounded-full bg-panel/90 text-accent-strong shadow-1"><TargetIcon size={16} /></span>}
-    </span>
-  )
-  const art = (
-    <UmaSquare
-      outfitId={entry.id}
-      name={entry.name}
-      dimmed={!entry.owned}
-      tight={list}
-      className={`${entry.hallOfFame ? 'border-2 border-tier-gold' : ''} ${picked ? 'outline outline-2 outline-offset-1 outline-accent' : ''}`}
-      overlay={list ? undefined : entry.owned
-        ? <><TierCrest tier={entry.uma!.tier} />{entry.isNew && <Crest tone="accent">NEW</Crest>}</>
-        : <Crest><LockedIcon size={16} title="Locked" /></Crest>}
-      corner={list ? undefined : picking ? <Crest tone={picked ? 'accent' : 'neutral'}>{picked ? <CheckIcon size={16} title="Picked" /> : <span className="size-4" />}</Crest> : marks}
-    />
-  )
-  const label = tileLabel(entry)
-  const body = list ? (
-    <span className="flex min-h-14 w-full items-center gap-3 rounded-sm border border-hairline bg-panel p-2 text-left">
-      <span className="w-12 shrink-0">{art}</span>
-      <span className="min-w-0 flex-1">
-        <span className="flex items-center gap-1.5">
-          <span className="truncate text-[14px] font-semibold">{entry.name}</span>
-          {entry.isNew && <Crest tone="accent">NEW</Crest>}
-        </span>
-        <span className="block truncate text-[12px] text-ink-soft">{entry.owned ? entry.scenario : 'Locked'}</span>
-      </span>
-      <span className="shrink-0 text-right text-[12px] font-semibold">{entry.level ?? ''}</span>
-      {!picking && marks}
-    </span>
-  ) : (
-    <span className="block w-full min-w-0 text-left">
-      {art}
-      <span className="font-display block truncate px-0.5 pt-1 text-[12px] font-semibold">{entry.name}</span>
-      <span className="block truncate px-0.5 text-[11px] text-ink-soft">{entry.level ?? 'Locked'}</span>
-    </span>
-  )
-  if (entry.owned && !picking) {
-    return (
-      <Link to={`/town/stable/outfit/${encodeURIComponent(entry.id)}`} state={{ back: true }} aria-label={label} className="block" data-uma={entry.id}>
-        {body}
-      </Link>
-    )
-  }
-  return (
-    <button type="button" aria-label={label} aria-pressed={picking ? picked : undefined} disabled={picking && !picked && full} onClick={onOpen}
-      className="block w-full disabled:opacity-60" data-uma={entry.id}>
-      {body}
-    </button>
-  )
-}
-
-/** One Uma's Unlock in uma-kit's confirm: her Uma Tickets N → N−1, then Unlock, or why not (04 §6). */
+/** SD4's shared UnlockConfirm, with racer-owned refusal and operation. */
 function UnlockSheet({ entry, onClose, onUnlocked }: { entry: StableEntry | null; onClose: () => void; onUnlocked: (id: string) => void }) {
   const profile = useGame((snapshot) => snapshot.state?.profile ?? null)
   const tap = useTap()
@@ -173,6 +94,7 @@ function Roster({ place, rest }: PageProps) {
   if (state === null || album === null) return <PlacePageHeader place={place} rest={rest} />
   const note = ticketNote(state.profile)
   const { result, entries, emptyHint } = queryStable(album, tab, prefs.query)
+  const byId = new Map(racerAlbumRows(album).map((row) => [row.id, row]))
   const tabRowsOf = album.rows.filter((row) => (row.facets['ownership'] as string[])[0] === tab)
   const full = picked.length >= note.tickets
   const setTab = (next: StableTab) => setParams((current) => {
@@ -218,23 +140,6 @@ function Roster({ place, rest }: PageProps) {
               )}
             </span>
           }
-          segment={
-            <div className="flex items-center gap-2">
-              <Tabs
-                className="flex-1"
-                label="Stable tabs"
-                value={tab}
-                onChange={setTab}
-                options={[{ value: 'owned', label: `Owned · ${album.owned}` }, { value: 'locked', label: `Locked · ${album.locked}` }]}
-              />
-              {tab === 'locked' && (
-                <button type="button" aria-pressed={picking} onClick={() => { setPicking((on) => !on); setPicked([]) }}
-                  className={`min-h-11 shrink-0 rounded-sm px-3 text-[13px] font-semibold ${picking ? 'bg-accent-wash text-accent-strong' : 'text-ink-soft'}`}>
-                  {picking ? 'Cancel' : 'Select'}
-                </button>
-              )}
-            </div>
-          }
           facets={STABLE_FACETS}
           sorts={STABLE_SORTS}
           presets={PRESETS}
@@ -250,25 +155,34 @@ function Roster({ place, rest }: PageProps) {
           onSaveView={prefs.saveView}
           onDeleteView={prefs.deleteView}
         >
-          <TapNoteLine tap={tap} />
-          <VirtualGrid
-            items={entries}
-            columns={prefs.query.view === 'list' ? 1 : prefs.query.view === 'icons' ? 3 : 2}
-            rowHeight={prefs.query.view === 'list' ? 68 : prefs.query.view === 'icons' ? 160 : 220}
-            keyOf={(entry) => entry.id}
-            renderItem={(entry) => (
-              <Tile
-                entry={entry}
-                list={prefs.query.view === 'list'}
-                picking={picking}
-                picked={picked.includes(entry.id)}
-                full={full}
-                onOpen={() => {
-                  if (!picking) setUnlocking(entry)
-                  else setPicked((ids) => (ids.includes(entry.id) ? ids.filter((id) => id !== entry.id) : full ? ids : [...ids, entry.id]))
-                }}
+            <div className="flex items-center gap-2">
+              <Tabs
+                className="flex-1"
+                label="Stable tabs"
+                value={tab}
+                onChange={setTab}
+                options={[{ value: 'owned', label: `Owned · ${album.owned}` }, { value: 'locked', label: `Locked · ${album.locked}` }]}
               />
-            )}
+              {tab === 'locked' && (
+                <button type="button" aria-pressed={picking} onClick={() => { setPicking((on) => !on); setPicked([]) }}
+                  className={`min-h-11 shrink-0 rounded-sm px-3 text-[13px] font-semibold ${picking ? 'bg-accent-wash text-accent-strong' : 'text-ink-soft'}`}>
+                  {picking ? 'Cancel' : 'Select'}
+                </button>
+              )}
+            </div>
+          <TapNoteLine tap={tap} />
+          <AlbumGrid
+            rows={entries.map((entry) => byId.get(entry.id)!)} view={prefs.query.view} columns={5}
+            selected={(row) => picked.includes(row.id)} renderBadges={racerBadges}
+            renderChips={(row) => <span className="text-[11px] text-ink-soft">
+              {picking ? picked.includes(row.id) ? 'Picked' : full ? 'No ticket left' : 'Pick to unlock' : row.entry.scenario ?? 'Locked'}
+              {row.entry.hallOfFame && <span className="sr-only"> · Hall of Fame</span>}
+            </span>}
+            onOpen={(row) => {
+              if (picking) setPicked((ids) => ids.includes(row.id) ? ids.filter((id) => id !== row.id) : full ? ids : [...ids, row.id])
+              else if (row.entry.owned) navigate(profilePath(row.id), { state: { back: true } })
+              else setUnlocking(row.entry)
+            }}
           />
         </AlbumChrome>
       </div>
