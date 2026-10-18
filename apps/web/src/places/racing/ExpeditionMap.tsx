@@ -7,7 +7,7 @@ import { Link, Navigate } from 'react-router'
 import { useGame } from '../../app/game'
 import { BuildingSprite } from '../../ui/BuildingSprite'
 import { PlacePageHeader } from '../PlacePageHeader'
-import { UmaFace } from '../../ui/UmaArt'
+import { UmaBust } from './UmaBust'
 import type { PageProps } from '../registry'
 import { useRaceContent } from './content'
 import { mapRows } from './gate'
@@ -30,7 +30,7 @@ export default function ExpeditionMap({ place, rest }: PageProps) {
           {rows.map((row) => (
             <li key={row.umaId} className="rounded-md border border-hairline bg-panel p-3 shadow-1" data-map-uma={row.umaId}>
               <div className="flex items-center gap-3">
-                <UmaFace outfitId={row.umaId} size={40} />
+                <UmaBust outfitId={row.umaId} size={40} />
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-semibold">{row.name}</p>
                   <p className="text-[12px] text-ink-soft">{row.distance}</p>

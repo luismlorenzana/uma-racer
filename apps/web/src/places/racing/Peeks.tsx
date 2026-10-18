@@ -3,7 +3,7 @@
 // Trophy Hall's (recent flair). The Racecourse is `direct` and has none: its header carries what a Peek would.
 import { Link } from 'react-router'
 import { useGame, useHub } from '../../app/game'
-import { UmaFace } from '../../ui/UmaArt'
+import { UmaBust } from './UmaBust'
 import { useRaceContent } from './content'
 import { careerRow, careerRows, mapRows } from './gate'
 import { useRecords } from './records'
@@ -38,7 +38,7 @@ export function GatePeek() {
             {ready.map((entry) => (
               <li key={entry.umaId}>
                 <Link to={`/racing/scenario-gate/${encodeURIComponent(entry.umaId)}?sheet=advance`} state={{ back: true }} className="flex min-h-11 items-center gap-2 rounded-full border border-accent bg-accent-wash pr-3 pl-1 text-[13px] font-semibold">
-                  <UmaFace outfitId={entry.umaId} size={32} />{entry.name}
+                  <UmaBust outfitId={entry.umaId} size={32} />{entry.name}
                 </Link>
               </li>
             ))}

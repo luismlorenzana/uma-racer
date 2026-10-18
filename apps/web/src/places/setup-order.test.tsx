@@ -2,7 +2,7 @@
 // A03's real routes over invented in-memory accounts: level-first sessions/lineage, context sorts one tap away,
 // unavailable Umas last with their reasons, and Racing's optional Open goals filter (never a race restriction).
 import { layerUnlocks } from '@racer/domain/training'
-import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderG2, stubStorage } from '../__fixtures__/testing'
 import { createMemoryGame } from '../dev/memory'
@@ -37,25 +37,34 @@ function account() {
   return farmSeed(working, at, { env: { ...env, content } })
 }
 
-const pickerTiles = () => [...document.querySelectorAll<HTMLButtonElement>('[data-g2="uma-picker"] button[aria-label]')]
-  .filter(button => /, T\d+ · Lv /.test(button.getAttribute('aria-label') ?? ''))
-const pickerNames = () => pickerTiles().map(button => button.getAttribute('aria-label')!.split(', T')[0])
-const raceIds = () => [...document.querySelectorAll('[data-g2="uma-strip"] [role="radio"]')].map(button => button.getAttribute('data-uma'))
+const pickerTiles = () => [...document.querySelectorAll<HTMLButtonElement>('[role="dialog"] button[aria-label]')]
+  .filter(button => /^(Low|Zulu|Alpha|Busy|Beta)(\.|$)/.test(button.getAttribute('aria-label') ?? ''))
+const pickerNames = () => pickerTiles().map(button => button.getAttribute('aria-label')!.split('.')[0])
+const selectedRaceUma = () => document.querySelector('[data-g2="race-uma-control"]')?.getAttribute('data-uma')
+async function racingOrder() {
+  fireEvent.click(await screen.findByRole('button', { name: 'Who races' }))
+  const dialog = await screen.findByRole('dialog', { name: 'Who races' })
+  const names = pickerNames()
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Close' }))
+  await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Who races' })).toBeNull())
+  return names
+}
 
 describe('level-first setup (A03)', () => {
-  it('opens a session on lifetime level, newest release and name; busy last with her reason; Left here stays available', async () => {
+  it('opens work on Free first and Farm Level, keeps busy reasons and Recall options; Left here stays available', async () => {
     const game = createMemoryGame(account(), () => 0)
     renderG2('/training/observatory?session=', game)
     await screen.findByRole('dialog', { name: 'Who trains at the Observatory?' })
-    await screen.findByRole('button', { name: 'Sort: Level' })
+    await screen.findByRole('button', { name: 'Sort: Farm Level' })
     expect(pickerNames()).toEqual(['Beta', 'Zulu', 'Alpha', 'Low', 'Busy'])
-    expect(pickerTiles().at(-1)!.disabled).toBe(true)
-    expect(pickerTiles().at(-1)!.getAttribute('aria-label')).toMatch(/Busy.*left/)
-    fireEvent.click(screen.getByRole('button', { name: 'Sort: Level' }))
+    expect(pickerTiles().at(-1)!.textContent).toMatch(/Busy.*left/)
+    expect(pickerTiles().at(-1)!.textContent).toContain('Options')
+    fireEvent.click(screen.getByRole('button', { name: 'Sort: Farm Level' }))
     fireEvent.click(await screen.findByRole('button', { name: 'Left here' }))
     await screen.findByRole('button', { name: 'Sort: Left here' })
     expect(pickerNames()[0]).toBe('Low')
     expect(pickerNames().at(-1)).toBe('Busy')
+    // Actionable busy Umas can be chosen for Recall, but this still hasn't recalled or spent anything.
     expect(Object.keys(game.getSnapshot().receipts)).toHaveLength(0)
   })
 
@@ -83,19 +92,19 @@ describe('level-first setup (A03)', () => {
     const { where } = renderG2(`/racing/racecourse?uma=${uma(4)}&race=sim-g1-mile-a`, game)
     const chip = await screen.findByRole('button', { name: 'Open goals' })
     expect(chip.getAttribute('aria-pressed')).toBe('false')
-    expect(raceIds()).toEqual([uma(4), uma(5), uma(2), uma(3), uma(1)])
-    expect(document.querySelector('[data-uma="sim-uma-04"]')?.getAttribute('aria-checked')).toBe('true')
+    expect(selectedRaceUma()).toBe(uma(4))
+    expect(await racingOrder()).toEqual(['Busy', 'Beta', 'Zulu', 'Alpha', 'Low'])
     fireEvent.click(chip)
     await waitFor(() => expect(where()).toContain('goals=open'))
     expect(where()).not.toContain('race=')
-    expect(raceIds()).toEqual([uma(5), uma(2), uma(3), uma(1)])
-    expect(document.querySelector('[data-uma="sim-uma-05"]')?.getAttribute('aria-checked')).toBe('true')
+    expect(selectedRaceUma()).toBe(uma(5))
+    expect(await racingOrder()).toEqual(['Beta', 'Zulu', 'Alpha', 'Low'])
     const restore = where()
     cleanup(); const resumed = renderG2(restore, game)
     const reopened = await screen.findByRole('button', { name: 'Open goals' })
     expect(reopened.getAttribute('aria-pressed')).toBe('true')
     fireEvent.click(reopened)
-    await waitFor(() => expect(raceIds()).toHaveLength(5))
+    expect(await racingOrder()).toHaveLength(5)
     expect(resumed.where()).not.toContain('goals=')
     expect(Object.keys(game.getSnapshot().receipts)).toHaveLength(0)
   })
@@ -104,8 +113,8 @@ describe('level-first setup (A03)', () => {
     const source = account()
     const game = createMemoryGame(source, () => 0)
     renderG2(`/racing/racecourse?uma=${uma(1)}`, game)
-    await screen.findByRole('radiogroup', { name: 'Who races' })
-    expect(document.querySelector('[data-uma="sim-uma-01"]')?.getAttribute('aria-checked')).toBe('true')
+    await screen.findByRole('button', { name: 'Who races' })
+    expect(selectedRaceUma()).toBe(uma(1))
     cleanup()
     const complete = { ...source.state, umas: Object.fromEntries(Object.values(source.state.umas).map(one => [one.outfitId, {
       ...one, career: { ...one.career, goals: one.career.goals.map(goal => ({ ...goal, status: 'completed' as const })) },
@@ -114,7 +123,7 @@ describe('level-first setup (A03)', () => {
     await screen.findByText('Every career is complete. Turn off Open goals to race with any Uma.')
     expect(screen.queryByText('No Uma races yet. Unlock one at the Stable.')).toBeNull()
     fireEvent.click(screen.getByRole('button', { name: 'Open goals' }))
-    expect(await screen.findByRole('radiogroup', { name: 'Who races' })).toBeTruthy()
-    expect(raceIds()).toHaveLength(5)
+    expect(await screen.findByRole('button', { name: 'Who races' })).toBeTruthy()
+    expect(await racingOrder()).toHaveLength(5)
   })
 })

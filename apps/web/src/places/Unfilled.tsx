@@ -5,7 +5,7 @@ import { hubWords } from '@racer/domain/hub'
 import { Link } from 'react-router'
 import { BuildingSprite } from '../ui/BuildingSprite'
 import { PlacePageHeader } from './PlacePageHeader'
-import { UmaArt } from '../ui/UmaArt'
+import { UmaBust } from '@luismlorenzana/uma-kit/album'
 import { useUmaName } from '../ui/uma'
 import type { FlowProps, PageProps } from './registry'
 
@@ -25,7 +25,7 @@ export function UnfilledReveal({ params }: FlowProps) {
   const name = useUmaName(umaId)
   return (
     <div data-g2="unfilled-reveal" className="pt-safe pb-safe flex h-full flex-col items-center justify-center gap-4 bg-stage px-6 text-ink-on-dark">
-      <UmaArt outfitId={umaId} size={160} />
+      <UmaBust outfitId={umaId} label="" size={160} className="size-40 overflow-hidden rounded-sm" />
       <h1 className="font-display text-2xl font-bold">{name}</h1>
       <Link
         to={`/town/stable/outfit/${encodeURIComponent(umaId)}`}

@@ -19,7 +19,7 @@ import { RaceMarkIcon } from '../../ui/RaceMarkIcon'
 import { NO_RECORDS, useGame, useNow, useRuntime, type G2Applied } from '../../app/game'
 import { PlacePageHeader } from '../PlacePageHeader'
 import { placeName, TapNoteLine, useTap } from '../../ui/work'
-import { UmaArt, UmaFace } from '../../ui/UmaArt'
+import { UmaBust } from './UmaBust'
 import type { PageProps } from '../registry'
 import { useRaceContent } from './content'
 import { deviceRows, eventsOfCommit, leaveFlair } from './flair'
@@ -51,7 +51,7 @@ function CareerCard({ row, link }: { row: CareerRow; link: boolean }) {
   const body = (
     <>
       <div className="flex items-center gap-3">
-        <UmaFace outfitId={row.umaId} size={40} />
+        <UmaBust outfitId={row.umaId} size={40} />
         <div className="min-w-0 flex-1">
           <p className="truncate font-semibold text-ink">{row.name}</p>
           <p className="truncate text-[12px] text-ink-soft">{racingWords('gate-row', { tier: row.tier, scenario: row.scenarioName, level: row.level })}</p>
@@ -222,7 +222,7 @@ function PromotePanel({ uma, content, env, onClose }: { uma: UmaState; content: 
       <h2 className="font-display text-xl font-semibold">{racingWords('promote-title', { name: names.uma(uma.outfitId) })}</h2>
       {changed && <p role="status" className="rounded-sm bg-warning/15 px-3 py-2 text-[13px] font-semibold text-warning">{racingWords('her-build-changed')}</p>}
       <div className="flex items-center gap-3">
-        <UmaFace outfitId={uma.outfitId} size={48} />
+        <UmaBust outfitId={uma.outfitId} size={48} />
         <div className="min-w-0 flex-1">
           <p className="flex items-center gap-2"><Crest>T{sheet.from}</Crest><span className="text-[15px] font-semibold">{racingWords('promote-move', { from: sheet.from, to: sheet.to })}</span><Crest tone="accent">T{sheet.to}</Crest></p>
           <p className="text-[13px] text-ink-soft">{sheet.arrive}</p>
@@ -321,7 +321,7 @@ function Ceremony({ umaId }: { umaId: string }) {
           <m.span className="absolute" initial={reduced ? false : { opacity: 0, scale: 1.4 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: reduced ? 0 : 0.5, delay: reduced ? 0 : 0.9 }}><Crest tone="accent">T{toTier}</Crest></m.span>
         </div>
       )}
-      <UmaArt outfitId={umaId} size={140} />
+      <UmaBust outfitId={umaId} size={140} />
       {op && <m.h1 className="font-display text-center text-2xl font-bold" initial={reduced ? false : { y: 12, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: reduced ? 0 : 0.3 }}>{title}</m.h1>}
       <div className="w-full max-w-sm text-ink">
         {flair.length > 0 && <FlairCards title={racingWords('promoted-awards')} items={flair} animate={!reduced} />}

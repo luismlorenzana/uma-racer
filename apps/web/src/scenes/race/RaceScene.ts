@@ -47,7 +47,7 @@ interface Token {
   root: Container
   body: Graphics
   label: Text
-  /** The runner's face once it has loaded (T059); until then, or without one, the numbered dot. */
+  /** Her outfit bust once it has loaded (SB6); until then, or without one, the numbered dot. */
   face: Sprite | null
 }
 
@@ -184,10 +184,10 @@ export class RaceScene {
   }
 
   /**
-   * Puts each runner's face on her token (T059), by runner index; a null keeps her numbered dot. The images are the
+   * Puts each runner's outfit bust on her token (SB6), by runner index; a null keeps her numbered dot. The images are the
    * art loader's verified object URLs. Safe to call before the scene has mounted or after it is gone.
    */
-  async setFaces(urls: readonly (string | null)[]): Promise<void> {
+  async setBusts(urls: readonly (string | null)[]): Promise<void> {
     const textures = await Promise.all(urls.map(async (url) => {
       if (!url) return null
       try {

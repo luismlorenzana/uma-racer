@@ -5,10 +5,10 @@
 import { useReducedMotionSetting } from '@luismlorenzana/uma-kit/ui'
 import { m } from 'motion/react'
 import { Link, useLocation } from 'react-router'
-import { useArt } from '../../ui/album/useArt'
+import { useArt } from '../../ui/useContentArt'
 import { useG2Content } from '../../app/content'
 import { useGame } from '../../app/game'
-import { UmaArt } from '../../ui/UmaArt'
+import { UmaBust } from '@luismlorenzana/uma-kit/album'
 import type { FlowProps } from '../registry'
 import { profileLine } from '../stable/model'
 import { readRevealQueue, revealPath } from './path'
@@ -54,7 +54,7 @@ export default function Reveal({ params }: FlowProps) {
           <div className="relative flex aspect-square w-full items-center justify-center overflow-hidden rounded-md bg-gradient-to-b from-stage-soft to-stage">
             {portrait !== null
               ? <img src={portrait} alt={template?.name ?? ''} draggable={false} className="absolute inset-0 size-full object-contain object-top" />
-              : <UmaArt outfitId={umaId} size={160} />}
+              : <UmaBust outfitId={umaId} label={template?.name ?? ''} size={160} className="size-40" />}
           </div>
         </div>
         <h1 className="font-display mt-5 text-3xl font-bold">{template?.name}</h1>

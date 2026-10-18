@@ -5,7 +5,7 @@ import { ArrowDownIcon, ArrowUpIcon, BurstIcon, CrownIcon, GateIcon, type IconCo
 import type { RacePackCue, RaceCue } from '../../../scenes/race/presentation'
 import { TypeIcon, type TypeIconKind } from '../../../ui/TypeIcon'
 import type { LoadedContent } from '../../../content/runtime'
-import { UmaFace } from '../../../ui/UmaArt'
+import { UmaBust } from '../UmaBust'
 import type { RaceRunner } from '../prepare'
 import { effectLabel } from './labels'
 
@@ -96,7 +96,7 @@ export function RaceFeed({ cues, seconds, content, runners }: {
           >
             <div className={`race-toast-in flex h-8 max-w-full items-center gap-1.5 rounded-full py-1 pr-2.5 pl-1 shadow-2 ${tone.toast}`}>
               {view.face ? (
-                <span className="shrink-0 rounded-full ring-2 ring-white/80"><UmaFace outfitId={view.face} size={24} /></span>
+                <span className="shrink-0 rounded-full ring-2 ring-white/80"><UmaBust outfitId={view.face} size={24} /></span>
               ) : view.type ? (
                 <TypeIcon type={view.type} size={24} />
               ) : (

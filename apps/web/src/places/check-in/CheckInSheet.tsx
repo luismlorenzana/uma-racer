@@ -20,7 +20,7 @@ import { Link, useLocation, useNavigate } from 'react-router'
 import { useGame, useHub, useNow, useRuntime, type G2Answer } from '../../app/game'
 import type { G2NavState } from '../../hub/nav'
 import type { CheckInSheetProps } from '../registry'
-import { UmaFace } from '../../ui/UmaArt'
+import { FaceTile } from '@luismlorenzana/uma-kit/album'
 import { StoppedQueueCard } from '../../ui/work/StoppedQueueCard'
 import { TapNoteLine } from '../../ui/work/TapNote'
 import { useTaps, useWordsContext, type Taps } from '../../ui/work/useTap'
@@ -77,7 +77,7 @@ function Section({ kind, title, collapsed, onToggle, action, children }: {
 function Face({ outfitId }: { outfitId: string }) {
   return (
     <span className="block size-8 shrink-0 overflow-hidden rounded-full bg-sunken">
-      <UmaFace outfitId={outfitId} size={32} />
+      <FaceTile round label="" outfitId={outfitId} size={32} />
     </span>
   )
 }

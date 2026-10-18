@@ -14,7 +14,8 @@ import { createSaveApi } from '../save/api'
 import { createSaveGame } from '../save/index'
 import { FakeServer, fakeSignals, freshDb, memoryStorage, nextId, noWipe, ENV as SAVE_ENV } from '../save/__fixtures__/server'
 import { renderG2, seedGame, stubStorage } from '../__fixtures__/testing'
-import { ALBUM_KEY_PREFIX } from '../ui/albumPrefs'
+import { kitKey } from '@luismlorenzana/uma-kit/ui'
+const ALBUM_KEY_PREFIX = kitKey('album:')
 import { setReducedMotion } from '../ui/devicePrefs'
 
 afterEach(() => {
@@ -50,7 +51,7 @@ describe('the Stable (04 §6, 11 §2.4, §6)', () => {
     const { where } = renderG2('/', game)
     await waitFor(() => expect(where()).toBe('/town/stable?tab=locked'))
     expect((await screen.findByText(/^Uma Tickets 20 · 0\/5$/)).textContent).toBe('Uma Tickets 20 · 0/5')
-    click(await screen.findByRole('button', { name: 'Amber Sprint, locked' }))
+    click(await screen.findByRole('button', { name: 'Amber Sprint, Locked' }))
     const sheet = await screen.findByRole('dialog', { name: 'Unlock Amber Sprint?' })
     expect(within(sheet).getByLabelText('Uma Tickets: 20 to 19')).toBeTruthy()
     click(within(sheet).getByRole('button', { name: 'Unlock for 1 Ticket' }))
@@ -67,7 +68,7 @@ describe('the Stable (04 §6, 11 §2.4, §6)', () => {
     const game = seedGame('fresh')
     const { where } = renderG2('/town/stable?tab=locked', game)
     click(await screen.findByRole('button', { name: 'Select' }))
-    for (const name of ['Amber Sprint', 'Bluebell Dash', 'Cinder Gale']) click(screen.getByRole('button', { name: `${name}, locked` }))
+    for (const name of ['Amber Sprint', 'Bluebell Dash', 'Cinder Gale']) click(screen.getByRole('button', { name: `${name}, Locked` }))
     click(screen.getByRole('button', { name: 'Unlock 3 · 3 Uma Tickets' }))
     await waitFor(() => expect(where()).toBe('/collection/reveal/uma/sim-uma-01?then=sim-uma-02%2Csim-uma-03&of=3'))
     expect(ticketsOf(game)).toBe(17)
@@ -81,7 +82,7 @@ describe('the Stable (04 §6, 11 §2.4, §6)', () => {
     const game = await freshWith(3)
     // A phone that has opened the Stable before and hasn't seen these three since they arrived.
     localStorage.setItem(`${ALBUM_KEY_PREFIX}stable`, JSON.stringify({ seen: [] }))
-    const tile = (umaId: string) => document.querySelector(`[data-uma="${umaId}"]`) as HTMLElement | null
+    const tile = (umaId: string) => screen.queryByRole('button', { name: new RegExp(`^${game.getSnapshot().env!.content.umas.get(umaId)!.name}, Lv `) })
     const first = renderG2('/town/stable?tab=owned', game)
     await waitFor(() => expect(tile('sim-uma-01')).not.toBeNull())
     for (const umaId of ['sim-uma-01', 'sim-uma-02', 'sim-uma-03']) expect(within(tile(umaId)!).queryByText('NEW'), umaId).not.toBeNull()
@@ -101,7 +102,7 @@ describe('the Stable (04 §6, 11 §2.4, §6)', () => {
     await waitFor(() => expect(localStorage.getItem(`${ALBUM_KEY_PREFIX}stable`)).toContain('sim-uma-03'))
     unmount()
     renderG2('/town/stable?tab=owned', game)
-    await waitFor(() => expect(document.querySelectorAll('[data-uma]').length).toBe(3))
+    await waitFor(() => expect(screen.getAllByRole('button', { name: /, Lv 1$/ }).length).toBe(3))
     expect(screen.queryByText('NEW')).toBeNull()
   })
 
@@ -209,6 +210,8 @@ describe('the Card Library and the featured Uma (06 §6, 11 §5)', () => {
     click(await screen.findByRole('button', { name: 'Bond' }))
     const picker = await screen.findByRole('dialog', { name: /^Bond / })
     click(await within(picker).findByRole('button', { name: /^Amber Sprint/ }))
+    // The kit owns choosing her; racer keeps Cook as a follow-up rather than a nested button in the shared tile.
+    click(await screen.findByRole('button', { name: 'Choose Amber Sprint' }))
     await waitFor(() => expect(where()).toBe(
       `/training/dojo?session=sim-uma-01&room=speed&unlocks=bond%3Asim-card-speed-e1&back=${encodeURIComponent('/town/card-library/card/sim-card-speed-e1')}`,
     ))
@@ -320,7 +323,7 @@ describe('offline and after a reload (02 §9)', () => {
   it('applies every tap offline, as it does online', async () => {
     const game = seedGame('fresh', { sync: 'offline' })
     renderG2('/town/stable?tab=locked', game)
-    click(await screen.findByRole('button', { name: 'Amber Sprint, locked' }))
+    click(await screen.findByRole('button', { name: 'Amber Sprint, Locked' }))
     click(within(await screen.findByRole('dialog', { name: 'Unlock Amber Sprint?' })).getByRole('button', { name: 'Unlock for 1 Ticket' }))
     await waitFor(() => expect(ticketsOf(game)).toBe(19))
     expect(await screen.findByText("Saved on this phone. It'll sync when you're back online.")).toBeTruthy()
@@ -338,7 +341,7 @@ describe('offline and after a reload (02 §9)', () => {
     await first.session.opened
     const { unmount, where } = renderG2('/town/stable?tab=locked', first)
     const name = SAVE_ENV.content.umas.get('sim-uma-02')!.name
-    click(await screen.findByRole('button', { name: `${name}, locked` }))
+    click(await screen.findByRole('button', { name: `${name}, Locked` }))
     click(within(await screen.findByRole('dialog', { name: `Unlock ${name}?` })).getByRole('button', { name: 'Unlock for 1 Ticket' }))
     await waitFor(() => expect(where()).toBe('/collection/reveal/uma/sim-uma-02'))
     await act(async () => {
@@ -353,7 +356,8 @@ describe('offline and after a reload (02 §9)', () => {
     expect(Object.keys(again.getSnapshot().state!.umas)).toEqual(['sim-uma-02'])
     expect(again.getSnapshot().state!.profile).toMatchObject({ umaTickets: 19, featuredUmaId: 'sim-uma-02' })
     renderG2('/town/stable', again)
-    expect(await screen.findByRole('link', { name: `${name}, T1 · Lv 1, new` })).toBeTruthy()
+    expect(await screen.findByRole('button', { name: `${name}, Lv 1` })).toBeTruthy()
+    expect(screen.getByText('NEW')).toBeTruthy()
     again.stop()
   })
 })

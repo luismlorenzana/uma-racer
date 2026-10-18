@@ -19,8 +19,7 @@ import { Link, useLocation, useNavigate } from 'react-router'
 import { Crest } from '../../ui/Crest'
 import { Meter } from '../../ui/Meter'
 import { useGame, useHub, useNow, useRuntime } from '../../app/game'
-import { useAlbumPrefs } from '../../ui/albumPrefs'
-import { UmaSquare } from '../../ui/ArtSquare'
+import { useAlbumPrefs, UmaBust } from '@luismlorenzana/uma-kit/album'
 import {
   amount, DISTANCE_LABEL, DISTANCES, STAT_KEYS, STAT_LABEL, STYLE_LABEL, STYLES, SURFACE_KEYS, SURFACE_LABEL,
 } from '../../ui/labels'
@@ -141,7 +140,7 @@ export default function Profile({ place, rest, umaId, tab: routeTab }: PageProps
         <button type="button" className={arrow} disabled={at < 0 || at >= order.length - 1} onClick={() => step(1)} aria-label="Next Uma"><ChevronRightIcon /></button>
       </PlacePageHeader>
       <ProfileFrame
-        portrait={<UmaSquare outfitId={umaId} name={name} className={uma.hallOfFame !== null ? 'border-2 border-tier-gold' : ''} />}
+        portrait={<UmaBust outfitId={umaId} label={name} size={96} className={`aspect-square w-full rounded-sm ${uma.hallOfFame !== null ? 'border-2 border-tier-gold' : ''}`} />}
         name={name}
         title={profileTitle(uma)}
         level={formatLevel(uma.racing.level, uma.tier)}

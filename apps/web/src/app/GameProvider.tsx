@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { createClock } from './clock'
 import { BOOTING_GAME, errorGame, RuntimeContext, type G2Game, type G2Rules, type G2Runtime } from './game'
 import { hubWords } from '@racer/domain/hub'
+import { RacerAlbumArtProvider } from './albumArt'
 
 interface Loaded {
   readonly game: G2Game
@@ -41,5 +42,5 @@ export function GameProvider({ boot, game, rules = null, children }: {
   useEffect(() => clock.tick(), [loaded.game, clock])
 
   const runtime = useMemo<G2Runtime>(() => ({ game: loaded.game, rules: loaded.rules, clock }), [loaded, clock])
-  return <RuntimeContext.Provider value={runtime}>{children}</RuntimeContext.Provider>
+  return <RuntimeContext.Provider value={runtime}><RacerAlbumArtProvider>{children}</RacerAlbumArtProvider></RuntimeContext.Provider>
 }

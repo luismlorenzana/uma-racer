@@ -15,7 +15,7 @@ import {
 } from '@racer/domain/training'
 import { endsAt, freeAt, itemEnds, speedAt, statusOf, type WorkRow, type WorkState } from '@racer/domain/work'
 import type { DistanceCategory, SupportCardTemplate } from '@racer/domain'
-import type { AlbumQuery, AlbumRow, FacetDef, SortDef, SortDirection } from '../../ui/album/query'
+import type { AlbumQuery, AlbumRow, FacetDef, SortDef, SortDirection } from '@luismlorenzana/uma-kit/roster'
 import { DISTANCE_LABEL, duration, STAT_LABEL, STYLE_LABEL } from '../../ui/labels'
 import { titledCardName } from '../../ui/words'
 

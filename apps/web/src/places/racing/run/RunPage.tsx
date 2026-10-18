@@ -19,7 +19,7 @@ import { staminaStory, TURN_RACE_RATE, type RacePresentationStage } from '../../
 import { FlairCards } from '../../../ui/FlairCards'
 import { Meter } from '../../../ui/Meter'
 import { useGame, useRuntime } from '../../../app/game'
-import { UmaFace } from '../../../ui/UmaArt'
+import { UmaBust } from '../UmaBust'
 import { raceSpeed, startingSpeed } from '../../../ui/devicePrefs'
 import { useRaceContent } from '../content'
 import { eventsOfCommit } from '../flair'
@@ -30,6 +30,7 @@ import { recordOf, resultPath, rowsOf, umaSaveOf } from '../today'
 import { canAdvance, featuredView, finishLines, gradeWords, holdLine, localDayAt, nextUma, prizeLines, stripOrder } from '../view'
 import { amount, ordinal, racingWords } from '../words'
 import { RaceFeed } from './RaceFeed'
+import { holdRaceBusts } from './art'
 import { STRATEGY_LABEL } from './labels'
 
 const PHASES = ['phase-opening', 'phase-middle', 'phase-final', 'phase-spurt'] as const
@@ -81,6 +82,7 @@ export default function RunPage() {
   const [fresh] = useState(() => takeFanfare(resultId))
   const hostRef = useRef<HTMLDivElement>(null)
   const sceneRef = useRef<RaceScene | null>(null)
+  const [artScene, setArtScene] = useState<RaceScene | null>(null)
   // The playback rate now, for a scene that loads after the speed is set.
   const rateRef = useRef(1)
   const [hud, setHud] = useState<RaceHudState | null>(null)
@@ -113,6 +115,7 @@ export default function RunPage() {
       scene = new Scene(timeline, runners, replay.playerIndex, setHud, () => setShowResults(true), reducedMotion,
         replay.input.course.layout, replay.input.course.rotation ?? (race ? COURSE_ROTATION[race.direction] : undefined))
       sceneRef.current = scene
+      setArtScene(scene)
       scene.setSpeed(rateRef.current)
       if (!fresh) scene.seek(Number.POSITIVE_INFINITY)
       if (import.meta.env.DEV) (window as unknown as { __raceScene?: RaceScene }).__raceScene = scene
@@ -126,6 +129,14 @@ export default function RunPage() {
     // The scene is built once per committed race; content refreshes never rebuild it mid-race.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [replay, timeline, reducedMotion])
+
+  useEffect(() => {
+    if (artScene === null || replay === null || content === null) return
+    const art = holdRaceBusts(content.art, replay.runners.map((runner) => runner.templateId))
+    let live = true
+    void art.urls.then((urls) => { if (live) void artScene.setBusts(urls) })
+    return () => { live = false; art.release() }
+  }, [artScene, content, replay])
 
   const turnRace = timeline?.tickRate === 1
   const speeds = turnRace ? TURN_SPEEDS : TIME_SPEEDS
@@ -350,6 +361,7 @@ export default function RunPage() {
               >
                 {placement === 1 ? racingWords('winner') : ordinal(placement)}
               </m.p>
+              <div className="mt-2 flex justify-center"><UmaBust outfitId={row.umaId} size={96} /></div>
               <p className="mt-1 text-center text-sm font-semibold text-ink-soft">{racingWords('result-time', { name: template?.name ?? row.umaId, time: formatTime(her.finishTime) })}</p>
 
               <section aria-label={racingWords('finishing-order')} className="mt-3">
@@ -363,7 +375,7 @@ export default function RunPage() {
                       className={`flex min-h-11 items-center gap-3 border-b border-ink/5 px-3 py-1.5 ${runner.isPlayer ? 'bg-accent/20' : ''}`}
                     >
                       <span className="w-7 font-semibold tabular-nums">{runner.placement}</span>
-                      <UmaFace outfitId={runner.umaId} size={32} />
+                      <UmaBust outfitId={runner.umaId} size={32} />
                       <span className="min-w-0 flex-1 truncate font-semibold">{runner.isPlayer ? '★ ' : ''}{name(runner.umaId)}<span className="ml-2 text-xs text-ink-soft">{STRATEGY_LABEL[runner.strategy]}</span></span>
                       <span className="text-sm text-ink-soft">{formatMargin(runner.marginLengths)}</span>
                     </m.li>

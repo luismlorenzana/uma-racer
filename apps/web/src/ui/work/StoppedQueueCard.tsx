@@ -10,7 +10,7 @@
 import type { StoppedQueue } from '@racer/domain/check-in'
 import { useState } from 'react'
 import { useGame } from '../../app/game'
-import { UmaFace } from '../UmaArt'
+import { FaceTile } from '@luismlorenzana/uma-kit/album'
 import { stoppedCardView } from './stopped'
 import { TapNoteLine } from './TapNote'
 import { useTap, useWordsContext, type Tap } from './useTap'
@@ -73,7 +73,7 @@ export function StoppedQueueCard({ queue, tap: given, onDone }: {
     >
       <div className="flex items-center gap-3">
         <span className="block size-10 shrink-0 overflow-hidden rounded-full bg-sunken">
-          <UmaFace outfitId={outfitId} size={40} />
+          <FaceTile round label="" outfitId={outfitId} size={40} />
         </span>
         <span className="min-w-0 flex-1">
           <span className="block truncate text-[15px] font-semibold">{name}</span>

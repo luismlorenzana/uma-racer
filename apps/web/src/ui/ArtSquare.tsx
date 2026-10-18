@@ -4,7 +4,6 @@
 import type { ReactNode } from 'react'
 import { getContentAsset } from '../content/runtime'
 import { ArtTile } from './ArtTile'
-import { useArt } from './album/useArt'
 import { useG2Content } from '../app/content'
 
 interface Corners {
@@ -16,20 +15,6 @@ interface Corners {
   readonly footer?: ReactNode
   readonly tight?: boolean
   readonly className?: string
-}
-
-/** Her icon, then her bust once it arrives (D142). */
-export function UmaSquare({ outfitId, name, ...corners }: Corners & { outfitId: string; name: string }) {
-  const content = useG2Content()
-  const bust = useArt(content, 'bust', outfitId)
-  return (
-    <ArtTile
-      asset={content === null ? null : getContentAsset(content, 'uma-icons', outfitId)}
-      artUrl={bust}
-      alt={name}
-      {...corners}
-    />
-  )
 }
 
 /** The card's icon, its four corners as D238 lays them out. */

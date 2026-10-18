@@ -8,7 +8,7 @@ import { useMemo, type ReactNode } from 'react'
 import { Link } from 'react-router'
 import { useGame, useNow } from '../../app/game'
 import { PlacePageHeader } from '../PlacePageHeader'
-import { UmaFace } from '../../ui/UmaArt'
+import { FaceTile } from '@luismlorenzana/uma-kit/album'
 import { TapNoteLine } from '../../ui/work/TapNote'
 import { useTap, useWordsContext } from '../../ui/work/useTap'
 import { useWorkView } from '../../ui/work/view'
@@ -24,7 +24,7 @@ function Row({ outfitId, children, trailing }: { outfitId: string; children: Rea
   return (
     <li data-roster={outfitId} className="flex items-center gap-1 rounded-sm bg-sunken/60 pl-2">
       <Link to={needsLink(outfitId)} state={{ back: true }} className="flex min-h-11 min-w-0 flex-1 items-center gap-2 py-1">
-        <span className="block size-8 shrink-0 overflow-hidden rounded-full bg-panel"><UmaFace outfitId={outfitId} size={32} /></span>
+        <span className="block size-8 shrink-0 overflow-hidden rounded-full bg-panel"><FaceTile round label="" outfitId={outfitId} size={32} /></span>
         <span className="min-w-0 flex-1 text-[14px]">{children}</span>
       </Link>
       {trailing}
