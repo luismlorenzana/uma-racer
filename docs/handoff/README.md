@@ -33,7 +33,6 @@ uma-platform's [queue](https://github.com/luismlorenzana/uma-platform/blob/main/
 | Id | Task | Who | Size | Needs | State |
 |---|---|---|---|---|---|
 | [SE1](tasks/SE1-racer-phase-5.md) | Phase 5: uma-platform's master data and art; the GameTora pipeline goes | Claude | L | — | Ready |
-| [SB6](tasks/SB6-racer-album.md) | The Stable, every picker and every small Uma on the kit album; busts in races | Either | L | SB3 (SB1 + SE1 for faces) | Releasing ([PR #120](https://github.com/luismlorenzana/uma-racer/pull/120)): local acceptance; owner waived Simulator checks (P60); protected merge, deployment and closeout follow |
 | [SC5](tasks/SC5-racer-on-uma-work.md) | Work on `@luismlorenzana/uma-work` and `uma-kit/work` | Either | L | SC1, SC2 | Waiting |
 | [SE4](tasks/SE4-racer-content.md) | Data and art through `uma-kit/content` and `uma-server/content` | Either | M | SE1, SE2 | Waiting |
 
@@ -43,6 +42,7 @@ uma-platform's [queue](https://github.com/luismlorenzana/uma-platform/blob/main/
 |---|---|---|
 | SA7 | The plaza crowd: small chibis on Town Hall (uma-kit 0.3.0, D371) | `9723a23` |
 | SD4 | Getting in, Account, Warehouse, Exchange and the profile on uma-kit 0.6.0; the API's guard from uma-server 0.2.0 (D372) | `7d2b757` |
+| SB6 | Shared Stable and every Uma picker on uma-kit 0.7.1; faces when small, busts in races (D373). [Local acceptance and successful deployment](../research/sb6-album/README.md); phone edges are the owner's check (P60) | `4885baf` ([PR #120](https://github.com/luismlorenzana/uma-racer/pull/120)) |
 
 ## For ChatGPT, in order
 

@@ -20,7 +20,8 @@ owner checks physical-phone edges after deployment.
 ## Automated checks
 
 - `pnpm lint`, `pnpm test`, `pnpm test:ci`, `pnpm build`, `pnpm docs:update` pass.
-- Startup: **153.62 KB gzip / 180 KB**, including SD4's shared frames.
+- Startup locally: **153.62 KB gzip / 180 KB**, including SD4's shared frames. The release workflow measured
+  **154.07 KB** in CI and **154.11 KB** for the deployed build (production API URL), both below budget.
 - Compatibility fixtures read the old query, saved views and seen ids at `uma-racer:g2:album:stable`, and write back
   to that same key. No save migration or schema change.
 - Art tests cover per-character face ids, per-outfit bust/chibi ids, outfit-icon fallback after invalid art, hold
@@ -67,9 +68,18 @@ Stride, finish it through the dev UI, collect, open her profile and Lineage, the
 the proper contribution descriptions and excludes her; selecting Amber Sprint still runs `set-lineage`.
 [Lineage picker](lineage-picker-390.png).
 
-### Release policy and remaining work
+### Released, 2026-10-18
 
 The owner waived the unfinished Simulator Lineage/scrolling pass on 2026-10-18 and requested local validation only,
-then deployment confirmation. Browser coverage and the automated regressions above remain the acceptance evidence.
-Protected merge, a successful standard production deployment, and both packet-queue closeouts remain. Signed-in
-production UI, physical-iPhone edges, touch scrolling and VoiceOver feel are owner checks, not claimed here.
+then deployment confirmation (P60). Browser coverage and the automated regressions above remain the acceptance
+evidence. [Feature PR #120](https://github.com/luismlorenzana/uma-racer/pull/120) merged through protected main as
+`4885baf762ad5256f5af2fa394fed30beed3db96`.
+
+The standard [production workflow](https://github.com/luismlorenzana/uma-racer/actions/runs/39145322463) succeeded
+for that exact SHA: fresh lint/tests/build, API image and Cloud Run deployment, API readiness and auth checks, web
+build, Firebase Hosting deployment and hosted-app checks. Independent read-only smoke checks afterwards returned
+API health `ok`, unauthenticated `/api/save` **401**, and Hosting **200** with `cache-control: no-cache`.
+
+SB6 is Done under this acceptance policy. Its packet is removed and both queues record the feature merge hash.
+Signed-in production UI, physical-iPhone edges, touch scrolling and VoiceOver feel are owner checks, not claimed
+here. This change touches the album, picker sheets and race portraits; the owner should check those edges on phone.

@@ -11,7 +11,7 @@ Hub and primitives are uma-kit's, the app both Uma games share.
   Claude's production notes.
 - `docs/tasks/README.md` is the current plan: what shipped, what's open (T144's step 10, the sibling packets in
   `docs/handoff/` with phase 5 as SE1, and phase 9; phases 4, 7, 8 and the pixel-art question are archived, D370) and
-  the next free numbers (M035, T148, D373; **D362 is reserved for T144's release record**). A task spec is deleted once its work merges (D104), so that folder only holds work still ahead.
+  the next free numbers (M035, T148, D374; **D362 is reserved for T144's release record**). A task spec is deleted once its work merges (D104), so that folder only holds work still ahead.
 - **The docs are the source of truth:** [the manual](docs/game/README.md) (`docs/game/`) describes the game as it runs.
   Every screen, route and sheet is [11's menu tree](docs/game/11-hub-and-places.md#the-menu-tree-at-a-glance); the code
   by folder, the checks and the deploy are [the architecture](docs/game/architecture.md). Read the relevant page before
@@ -50,7 +50,7 @@ Hub and primitives are uma-kit's, the app both Uma games share.
 | `packages/domain` | Pure game rules, one subpath export per area (`@racer/domain/save`, `/state`, `/tiers`, `/items`, `/work`, `/farm`, `/training`, `/economy`, `/check-in`, `/planner`, `/sim`, `/builds`, `/hub`) beside the core. Vitest |
 | `packages/race` | Deterministic race engine (seeded, 15 Hz ticks, timeline + playback sampling). Vitest |
 | `apps/api` | NestJS 11: uma-server's `AuthGuard` on every route (`@luismlorenzana/uma-server/auth`: Firebase token + `ALLOWED_EMAIL`, 401 or 403), `/api/save`, `/api/sync` (generation 2, protocol 2), `/api/legacy/purge` (until T144's step 10), `/api/content/*`, `/api/health` |
-| `apps/web` | React 19 + Vite 7 + Tailwind 4 + Motion (`m.*` under `LazyMotion strict`) + PWA on uma-kit 0.6.0 (theme in light and dark, shell, Hub map on Phaser 4, primitives and icons, and since SD4 sign-in, the boot gates, the update prompt and the Account, Warehouse, Exchange, profile and unlock frames): `src/app` (routes, session, the `G2Game` port, the kit's setup `kit.ts` and art `art.ts`), `hub` (the racer's adapters to the kit's shell and map), `places`, `save` (Dexie `uma-racer-g2`, one sync lane), `ui` (the racer's own pieces), `content`; PixiJS 8 only for the race scene (`scenes/race`) until phase 8; dev-only seeds at `/dev/seeds/*` (`src/dev`) |
+| `apps/web` | React 19 + Vite 7 + Tailwind 4 + Motion (`m.*` under `LazyMotion strict`) + PWA on uma-kit 0.7.1 (theme, shell, Hub map on Phaser 4, primitives, places and auth frames, and since SB6 the shared album/picker): `src/app` (routes, session, the `G2Game` port, kit setup and art providers), `hub` (racer shell/map adapters), `places`, `save` (Dexie `uma-racer-g2`, one sync lane), `ui` (racer-only pieces), `content`; PixiJS 8 only for `scenes/race`; dev-only seeds at `/dev/seeds/*` (`src/dev`) |
 | `scripts/sim` | Headless balance runs (`pnpm sim:balance`, `sim:turns`, `sim:builds`, `sim:careers`, `sim:loop`) |
 | `scripts/data`, `scripts/assets` | Content pipeline (GameTora → private data packs and WebP icon atlases) |
 | `docs/handoff` | Packets for ChatGPT sessions and the master prompt |
@@ -100,7 +100,7 @@ pnpm assets:import  # image sources → private WebP atlases; run after data:imp
 | API | Cloud Run `racer-api` (us-central1), `https://racer-api-tmzkhylhfq-uc.a.run.app`; `/api/health` (not `/healthz`, which Cloud Run's front end reserves) |
 | GCP project | `uma-racer` (number 1026964321499), plus a private bucket `uma-racer-content` |
 | Deploy | `.github/workflows/deploy.yml`, keyless WIF. Repo variables: GCP_PROJECT_ID, WIF_PROVIDER, CONTENT_BUCKET, ALLOWED_EMAIL, DEPLOY_ENABLED |
-| Live on 2026-10-17 | `7d2b757` as racer-api-00196 (SD4, getting in, Account and the places on uma-kit 0.6.0 and the API guard on uma-server 0.2.0, D372), content `9ba4cdd37cca`, uma-art 2.7.0 |
+| Live on 2026-10-18 | `4885baf` (SB6, shared album/picker and race busts on uma-kit 0.7.1, D373), [deployment green](https://github.com/luismlorenzana/uma-racer/actions/runs/39145322463); API health/auth and Hosting smoke checks pass. Content unchanged (`9ba4cdd37cca`), uma-art 2.7.0. Local-only acceptance (P60); the owner checks phone edges |
 
 - **Local gcloud has two accounts, and the active one is the owner's work account. Never change it.** Scope every uma-racer
   command with environment variables only:
