@@ -30,7 +30,7 @@ panel (`/:page?peek=:place`, §2.6) and **Enter** opens its Page; the Racecourse
 │  │  │  ├─ …/outfit/:umaId/needs    her Needs tab: the planner's lines, each with its Start
 │  │  │  └─ …/outfit/:umaId/skills   her Skills tab
 │  │  └─ …/needs                     Needs of every Uma: the planner's roster view
-│  ├─ Warehouse            Peek; shelves Raw, Crafted, Dishes, Tickets; a row's stock sheet (Make more, Sell)
+│  ├─ Warehouse            Peek; shelves Raw, Crafted, Meals, Tonics, Tickets; a row's stock sheet (Make more, Sell)
 │  ├─ Exchange             Peek; ?row=speed-tickets; ?family= picks a raw family, &grade= opens its quantity sheet
 │  ├─ Card Library         Peek; the album; …/card/:cardId a card's page; Bond opens the Uma picker, then the Dojo
 │  └─ Account (hidden)     no Peek, not on the map; the trainer chip and the menu open it; ?row=sync
@@ -278,7 +278,7 @@ for two rows of pips.
 | Place (id) | Opens | Peek | Counter | Lock | Replaces |
 |---|---|---|---|---|---|
 | **Stable** (`stable`) | The roster: Owned and Locked tabs with counts, a tier crest on every owned tile (uma-art's bronze, silver and gold, §10.3), a tier filter, the shared picker's sorts and filters (D181). An Uma's profile in uma-kit's profile frame (SD4): her portrait, name, scenario and Farm Level, the shared level label ("Lv 13", "T2 · Lv 13"), her tier crest, what she's doing, then the Overview (her build per facility), **Needs** ([02](02-check-ins-and-notifications.md) §6), Skills and Racing tabs. A locked Uma: uma-kit's unlock confirm (Uma Tickets N → N−1, **Unlock for 1 Ticket**; tier 1, [04](04-tiers-and-promotion.md)), then the collection reveal; the Locked tab's multi-select and the reveal stay this game's | The featured Uma; "23 Umas · T1 21 · T2 2"; Umas ready to advance or promote; Uma Tickets in hand | Uma Tickets in hand | Open | `/stable`, Uma profile, skills; Home's featured hero |
-| **Warehouse** (`warehouse`) | uma-kit's shelves (SD4): every stack held on the Raw, Crafted, Dishes and Tickets shelves; grade chips (every grade, one grade, or the highest held per family); each row's reserved, coming and needed counts; the stock sheet with what it is, what's free, the recipes that use it, **Make more** and **Sell** ×1, ×10 or All ([07](07-farm.md) §10, [09](09-racing-rewards-and-exchange.md) §6) | The biggest stacks; what the planner is short of; "Surplus worth 1,240" | — | Open | `/farm/items` |
+| **Warehouse** (`warehouse`) | uma-kit's shelves (SD4): every stack held on the Raw, Crafted, Meals, Tonics and Tickets shelves; grade chips (every grade, one grade, or the highest held per family); each row's reserved, coming and needed counts; the stock sheet with what it is, what's free, the recipes that use it, **Make more** and **Sell** ×1, ×10 or All ([07](07-farm.md) §10, [09](09-racing-rewards-and-exchange.md) §6) | The biggest stacks; what the planner is short of; "Surplus worth 1,240" | — | Open | `/farm/items` |
 | **Exchange** (`exchange`) | Prize Money, Speed Tickets held and the Daily Purse, then uma-kit's buy rows (SD4): Speed Tickets, and raw ingredients by family tab; each row's sheet takes how many and shows the total ([09](09-racing-rewards-and-exchange.md) §5) | Prize Money, Speed Tickets held, the planner's top shortage with its price | — (its currencies are in the account bar) | Open | Nothing (new) |
 | **Card Library** (`card-library`) | Every SSR, open (D329): lens and Uma controls, sorts, filters, the card page with its bond cost and bonded Umas, **Bond** into the Dojo's session sheet ([06](06-cards-and-bonds.md) §6) | The newest cards; bonds made this tier; cards the featured Uma could bond now | — | Open | `/cards`, `/cards/:cardId` |
 | **Account** (`account`, hidden) | uma-kit's Account frame (SD4): the trainer's name, which can be changed (1–32 characters, saved on the trainer badge row); the wallet (Prize Money, Speed Tickets, Uma Tickets); this phone's **Appearance** (System, Light or Dark, kept in `uma-racer:g2:appearance`, T147); then this game's sections: check-in times ([02](02-check-ins-and-notifications.md); no notifications, D336), sync status and Sync now (D157), reduced motion and default race speed; app build and content (02 §9 keeps "id" and "version" off the screen); Sign out; in dev builds only, a dev section that runs `dev-grant` (grants, Finish her work, Jump to her gate) and, on the seeds' mount, loads another synthetic seed | — | — | Open; reached from the trainer button and the menu, not drawn on the map, so it has no Peek | `/settings` |
@@ -319,9 +319,9 @@ Farm's compact slot rows, grouped by room; **Needs here**; Collect here. Each al
 
 | Place (id) | Opens | Peek | Counter | Lock | Replaces |
 |---|---|---|---|---|---|
-| **Observatory** (`observatory`) | Constellation node sessions; per Uma, her tree: open nodes, card assignments (lineage picks are the Lineage Hall's), the next node and its Vegetables dish | Its slots as the Farm's rows: faces in their rings, the dish, how long is left or Done with Collect; Umas with nodes left in their layer; Vegetables dishes in stock | Umas with a finished session here | Open | `/constellation/:umaId` |
-| **Lineage Hall** (`lineage-hall`) | Inspiration sessions; per Uma, her parents and grandparents (any Uma ever owned) and their golds | Same, with Mushrooms dishes | Same | Open | `/constellation/:umaId/inspiration` |
-| **Gym** (`gym`) | Five stat rooms of Extra Stats sessions; per Uma, her Extra Stats map and active nodes per preset | Rooms with faces; Umas with nodes left by stat; stat, Duo and Feast dishes in stock | Same | Open | `/constellation/:umaId/extra-stats` |
+| **Observatory** (`observatory`) | Constellation node sessions; per Uma, her tree: open nodes, card assignments (lineage picks are the Lineage Hall's), the next node and its tonic | Its slots as the Farm's rows: faces in their rings, the tonic, how long is left or Done with Collect; Umas with nodes left in their layer; tonics (and the salads and soups standing in) in stock | Umas with a finished session here | Open | `/constellation/:umaId` |
+| **Lineage Hall** (`lineage-hall`) | Inspiration sessions; per Uma, her parents and grandparents (any Uma ever owned) and their golds | Same, with tonics (a slot takes one; uniques and golds none) | Same | Open | `/constellation/:umaId/inspiration` |
+| **Gym** (`gym`) | Five stat rooms of Extra Stats sessions; per Uma, her Extra Stats map and active nodes per preset | Rooms with faces; Umas with nodes left by stat; stat meals, Duos and Feasts in stock | Same | Open | `/constellation/:umaId/extra-stats` |
 | **Dojo** (`dojo`) | Six card-type rooms of bond sessions; per Uma, her bonds and her card set per preset ([06](06-cards-and-bonds.md) §3) | Rooms with faces; bonds left this layer | Same | Open | `/constellation/:umaId/cards`, `/stable/:umaId/deck` |
 
 ### 3.3 Racing (`/racing`)
@@ -382,14 +382,14 @@ at a glance.
 | **Free** | A small dark dot, as uma-rpg draws an open slot |
 | **Room** (Gym, Dojo) | The ring tinted by its room's stat or card type |
 
-- **Up to 8 pips**, in two rows of four: busy first, then ready, then free. That fits the Kitchen at Lv 2 and 3 (8 slots,
-  [07](07-farm.md) §6). Beyond 8 (the Gym at Lv 2 has 10, the Dojo 12, [05](05-training-hub.md) §7), the eighth pip
-  becomes "+N".
+- **Up to 8 pips**, in two rows of four: busy first, then ready, then free. That fits the Kitchen at Lv 1 (6 slots,
+  [07](07-farm.md) §6). Beyond 8 (the Kitchen at Lv 2 and 3 has 9, the Gym at Lv 2 10, the Dojo 12,
+  [05](05-training-hub.md) §7), the eighth pip becomes "+N".
 - **Pips are display only.** The place link is the target; a pip at 20 pt would be under 44. On the map they sit straight on
   the ground under the name pill, with no backing, as in uma-rpg: faces in their rings, open slots as dots.
 - **Progress is computed from start times** with the shared idle math, redrawn every 30 seconds and on foreground,
   never animated per frame.
-- **VoiceOver** reads the button as one line: "Kitchen. 6 of 8 slots busy, 2 ready, 1 queued."
+- **VoiceOver** reads the button as one line: "Kitchen. 6 of 9 slots busy, 2 ready, 1 queued."
 
 ## 5. The featured Uma
 
@@ -613,6 +613,10 @@ and uma-art published it as two minor releases (uma-platform P45, P46). The race
 | Tier crests (2.7.0) | `tier/1`, `tier/2`, `tier/3` in `ui` (bronze, silver, gold) | 12×12, drawn at 24 pt | Uma tiles, the featured Uma, her profile (`TierCrest`, read as "Tier N") |
 | Speed Ticket item (2.7.0) | `speed-ticket` in `items`, `kind: 'ticket'` | 32×32 | The Warehouse, job cards and prices (`ui/ItemIcon` takes the release's frame; the catalogue keeps no art for it) |
 
+**Not drawn yet: the ten tonics** (`tonic-1` … `tonic-10`, D374), one 32×32 frame each in `items` under its id, as the
+Speed Ticket is. Until a release ships them, `ui/ItemIcon` draws a tonic as its name on a plain tile; it takes a frame of
+the tonic's id as soon as the pinned `items` index has one. Their packet is next in `docs/handoff/tasks/`.
+
 **Not drawn yet (phase 9):** the Expedition world map (a composition like `world`'s islands: seven regions with pin
 spots) and its seven region crests (United States, South Korea, Dubai, Hong Kong, Australia, Britain, France/Europe, at
 16 and 32 px) for [10](../rework/10-expeditions.md)'s Map. Their packet is written when phase 9 is specified.
@@ -747,9 +751,9 @@ interiors are.
 | Her latest results read the save's `raceResults` log through the port's `logs`; her title, Prestige frame and showcase pins are the Trophy Hall's, linked from the Racing tab (T138) | Badge state is the Trophy Hall's (T141) and isn't in the rework state |
 | The Exchange's header shows T141's purse bar, drawn from its `purseBar` view at the device's day (T138) | The purse bar's words and bands are T141's; the Exchange only shows them (09 §5.5) |
 | Deep links: Exchange `?row=speed-tickets` and `?family=&grade=` (the grade opens its quantity sheet); Account `?row=sync`. Counters hide at 0 (T138) | §2.1's chips open "at the row", and the planner's "Buy at the Exchange" needs one; §2.2 keeps the bar quiet |
-| Bond opens the Uma picker: Umas who can bond it now first, each with the dish, its stock and the real time; a busy Uma reads "Busy · 2h 10m left" (D366) and shows Queue only when her running session is in that card's Dojo room; the rest follow with their reason. A pick goes to T139's `/training/dojo?session=&room=&unlocks=bond:<cardId>&back=`, `&queue=1` for Queue; "0 in Warehouse" offers Cook, T140's Kitchen job sheet (T138) | [06](06-cards-and-bonds.md) §6, §10; the session sheet is T139's |
+| Bond opens the Uma picker: Umas who can bond it now first, each with the real time and no item ("No item · 5h 24m", D374); a busy Uma reads "Busy · 2h 10m left" (D366) and shows Queue only when her running session is in that card's Dojo room; the rest follow with their reason. A pick goes to T139's `/training/dojo?session=&room=&unlocks=bond:<cardId>&back=`, `&queue=1` for Queue (T138) | [06](06-cards-and-bonds.md) §6, §10; the session sheet is T139's |
 | Times on screen are real (× *k*), e.g. "4 h 48 m" (T138) | [05](05-training-hub.md) §2: the pages' examples are base minutes, the game multiplies by *k* |
-| Every Uma picker is `uma-kit/album`'s `UmaPicker` through `ui/racerAlbum.tsx` (SB6): candidates, order, eligibility and descriptions stay racer-owned; Queue, Recall and Cook open a follow-up Options sheet | One shared compact five-face album; no local picker or album fork |
+| Every Uma picker is `uma-kit/album`'s `UmaPicker` through `ui/racerAlbum.tsx` (SB6): candidates, order, eligibility and descriptions stay racer-owned; Queue and Recall open a follow-up Options sheet | One shared compact five-face album; no local picker or album fork |
 | Taps and their words use T140's `ui/work` (`useTap`, `TapNoteLine`) and `ui/ItemIcon`; a 44 pt tab row (`ui/Tabs`) stands in for today's 32 pt SegmentedControl (T138) | One set of pieces (M034); 44 pt targets |
 | The dev seeds carry invented skills and card names and run `dev-grant`; Account's dev section loads a seed in place through the port's `fixtures` and `loadFixture` (T138) | A profile's Skills tab needs a library to equip and the Library names to search; M034's rehearsal reaches a gate in one tap |
 | The session sheet opens over a facility page from its query (`?session=:umaId&room=:room&unlocks=<kind>:<target>,…&back=<path>`, plus `&queue=1` and a slot row's `&slot=n`); `back` is an in-app path only, `session=` empty opens T138's picker, and only the facility's own unlocks are read (T139) | Every place is a link (§1); the Library's Bond, the planner, a Needs line and the build views reach it without importing it |
@@ -757,7 +761,7 @@ interiors are.
 | The Observatory's and the Gym's build views are full screen, with their own back; the Lineage Hall's and the Dojo's stay in the shell (T139) | §6 names only the tree and the Extra Stats map |
 | `ui/TreeGraph` is new, on `training/trees`' `Tree`: the 0–100 canvas on the validator's 351 × 525 pt box scaled to the screen's width, 36 pt nodes at its 40 pt spacing, pinch zoom and a drag once zoomed; a **List** of 44 pt rows carries every node's action and the next layer's nodes, which the tree can't draw (T139) | §12's 44 pt rule over [05](05-training-hub.md) §4's spacing; today's `ConstellationGraph` reads Constellation Level and today's templates |
 | The Dojo's card choices mount T138's `CardLibrary` in pick mode: the session sheet's **Add a card** (the room's cards she can bond now), each set slot (her bonded cards) and **Bond more** (cards she can bond now, into the sheet with the card's room) (T139) | [06](06-cards-and-bonds.md) §6: no weaker parallel picker |
-| A facility's Peek: its slots as the Farm's rows, with how long is left (D366); how many Umas have unlocks left here (`layerProgress`) with the first three; its dishes in the Warehouse (Vegetables, Mushrooms, or the Gym's stat, Duo and Feast dishes), or at the Dojo the bonds left this layer (T139) | §3.2's Peek column |
+| A facility's Peek: its slots as the Farm's rows, with how long is left (D366); how many Umas have unlocks left here (`layerProgress`) with the first three; what it takes in the Warehouse ("Tonics in the Warehouse" with their stand-ins, or the Gym's "Meals": stat meals, Duos and Feasts), or at the Dojo the bonds left this layer (T139, D374) | §3.2's Peek column |
 | No Umas yet: free slots, and Needs here and the sheet read "No Umas yet · unlock them in the Stable" with the Stable's link; an id the Stable doesn't hold reads `unknown-uma`'s words (T139) | A locked place shows no placeholder (§1); the empty state says what opens it |
 | The Hub is uma-rpg's, copied into `hub/` (`HubCanvas`, `scene/createHubGame`, `HubScene`, `terrain`, `markers`, `grid`, `swipe`, `PlaceTargets`, `OverlayHost`), each file crediting it; a shared uma-platform package comes later (T145, D363). That package is uma-kit since T147 (D367) | The owner's choice (c): lift and shift now, extract once both games run the same Hub |
 | Phaser 4.2.1, pinned exactly as uma-rpg's, imported only by the Hub's lazy scene chunk (uma-kit's since T147); Scale NONE at zoom 1/dpr (dpr capped at 2) with a ResizeObserver, audio off; `?canvas` forces the Canvas renderer and `window.__hub` is exposed, in dev builds only (T145) | uma-rpg's engine and settings; the entry stays under budget; preview screenshots can't capture WebGL |

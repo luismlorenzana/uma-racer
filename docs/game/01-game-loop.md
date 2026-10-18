@@ -20,7 +20,8 @@ This page tells the story and owns the **activity rule** (D328). The pages it li
 ```
  1 Farm site ──▶ 2 Pantry ──▶ 3 Kitchen ──▶ 4 Training Hub ──▶ 5 unlock ──────▶ 6 race
    gather          craft         cook          session            lasts the        any time,
-   raw items       1 for 1       a dish        (her own)          whole tier       never blocked
+   raw items       1 for 1       a meal or     (her own)          whole tier       never blocked
+                                 a tonic
       ▲                                                                                │
       │  Farm EXP → Farm Level (steps 1–3)                 Racing EXP → Racing Level   │
       │                                                                                ▼
@@ -29,30 +30,32 @@ This page tells the story and owns the **activity rule** (D328). The pages it li
                                    surplus items ─────────────────┘ (a third of their work value)
 ```
 
-| Step | Where | Who | Time at grade 1 (grade 10) | In → out |
+| Step | Where | Who | Base time at grade 1 (grade 10), × *k* = 1.8 in play | In → out |
 |---|---|---|---|---|
 | **1 Gather** | One of the eight Farm sites ([07](07-farm.md)) | Any free Uma whose Farm Level opens the grade (Lv 5*g* − 4) | 90 min an item (135) | Nothing → 1 raw ingredient |
 | **2 Craft** | Pantry | Same rule | 22.5 min an item (33.75) | 1 raw → 1 crafted item |
-| **3 Cook** | Kitchen | Same rule | 240 min a dish (330) | 4 crafted of the dish's family + 1 crafted side → 1 dish ([08](08-item-catalogue-and-recipes.md)) |
-| **4 Session** | The Training Hub facility the dish's family goes to ([05](05-training-hub.md)) | **The Uma who gets the unlock**, and only her | 180 min an unlock (315) | 1 dish → 1 unlock |
+| **3 Cook** | Kitchen | Same rule | 240 min a meal or tonic (330) | 4 crafted of a stat family + 1 crafted side → 1 meal; 1 crafted Vegetables, Mushrooms and Grains → 1 tonic ([08](08-item-catalogue-and-recipes.md)) |
+| **4 Session** | The Training Hub facility the unlock belongs to ([05](05-training-hub.md)) | **The Uma who gets the unlock**, and only her | 180 min an unlock (315) | A meal, a tonic or nothing → 1 unlock (D374) |
 | **5 Unlock** | Her build, for the rest of the tier (D328) | — | At Collect | A constellation node, an Inspiration slot, inherited unique or gold, an Extra Stats node, or a card bond |
 | **6 Race** | The Racing page | Any Uma, at any time | ~1–2 minutes of the owner's time with skip | Racing EXP and Prize Money ([09](09-racing-rewards-and-exchange.md)) |
 | **7–8 Spend** | The Exchange | The owner | — | Prize Money → Speed Tickets (30 each), raw items, upgrades |
 
 - **A job or session runs 1–10 items or unlocks one after another**, so one tap can cover the gap to the next
   check-in or the night ([02](02-check-ins-and-notifications.md) §3).
-- **Steps 1–3 are anybody's work and step 4 is hers.** Dishes go to the account's one Warehouse, and any Uma's
-  session can use any dish of the right family and grade. Her own sessions are the only work nobody else can do for her.
-- **One unlock costs about 20 Uma-hours at grade 1 and 30 at grade 10** (*k* = 1.2, D338): five raw gathered, five
-  crafted, one dish cooked and one session ([12](12-economy-and-pacing.md) §4).
-- **Which facility a dish feeds** follows its family (README table): Vegetables → Observatory, Mushrooms → Lineage
-  Hall, the five stat families → that stat's Gym room and card bonds, Grains → Friend and Group bonds.
+- **Steps 1–3 are anybody's work and step 4 is hers.** Meals and tonics go to the account's one Warehouse, and any
+  Uma's session can use any of the right kind and grade. Her own sessions are the only work nobody else can do for her.
+- **A meal-paid unlock costs about 30 Uma-hours at grade 1 and 44 at grade 10** (*k* = 1.8, D374): five raw gathered,
+  five crafted, one meal cooked and one session; **a tonic-paid one about 23 and 35**, from three of each; **a bond,
+  inherited unique or gold skill only its session**, 5½ to 9½ hours ([12](12-economy-and-pacing.md) §4).
+- **What each unlock takes** ([08](08-item-catalogue-and-recipes.md) §6): a tonic for a constellation node or an
+  Inspiration slot, its stat's meal (or a Duo or a Feast) for an Extra Stats node, and nothing for a card bond, an
+  inherited unique or a gold skill.
 
 The loop closes in two places:
 - **Prize Money buys time.** Each Speed Ticket takes 30 minutes off one running job or session, so racing speeds up
   every passive step (§5).
 - **Unlocks make her win.** A stronger build wins her career goals. Winning them lets her advance to the next
-  scenario, whose layer asks for higher-grade dishes ([03](03-uma-progression.md)).
+  scenario, whose layer asks for higher-grade meals and tonics ([03](03-uma-progression.md)).
 
 ## 2. The activity rule (D328)
 
@@ -73,7 +76,7 @@ Every Uma is in exactly one of three work states. Racing is never one of them.
 | **An Uma mid-session wants to race** | **Allowed.** The race reads her build at race start. Unlocks the session has already finished are collected first, in the same tap. The unlock still in progress counts only once it finishes | Racing is never blocked, and she should never race without an unlock she has already earned |
 | An Uma mid-job (Farm) wants to race | Allowed, as above. The job runs on | Same rule |
 | **An Uma mid-job is assigned to a session** | **Refused until the job is collected or recalled.** The sheet says how long until she is free ("Busy · 2h 10m left", D366) and offers **Recall** in the same place. Recall pays what she has finished and returns the inputs of what she hasn't ([07](07-farm.md)) | One passive thing at a time. Recall makes the choice explicit and loses only time |
-| An Uma mid-session is assigned to a Farm job | Refused the same way, with **Recall** for the session: finished unlocks stay, unused dishes go back to the Warehouse ([05](05-training-hub.md)) | Same rule |
+| An Uma mid-session is assigned to a Farm job | Refused the same way, with **Recall** for the session: finished unlocks stay, unused items go back to the Warehouse ([05](05-training-hub.md)) | Same rule |
 | A Ready Uma is assigned elsewhere | Her finished work is **collected first, in the same tap**, then the new work starts | Nothing is lost, so refusing would only add a tap |
 | Queue a session behind a Farm job | **Not possible.** A queue stays in one slot at one place ([02](02-check-ins-and-notifications.md) §3) | A queue that moved her between buildings would need a second slot held for her |
 | She advances to the next scenario mid-job or mid-session | **Allowed; running work continues.** A session making a previous-layer unlock still pays it, because layers last the whole tier | Advancing changes her career, not her work |
@@ -94,21 +97,22 @@ needs the owner to play at set times.
 
 Scenario 1's layer is **27 unlocks** (README), 19 at grade 1 and 8 at grade 2:
 
-| Unlock | Count | Facility | Dish family |
+| Unlock | Count | Facility | Takes (D374) |
 |---|---|---|---|
-| Constellation nodes (tree of 12) | 12 | Observatory | Vegetables |
-| Inspiration: both parent slots, then both parents' inherited uniques | 4 | Lineage Hall | Mushrooms |
-| Extra Stats singles | 5 | Gym, one room per stat | One single per stat at grade 1 (README map, D338): one dish from each of Sweets, Fruits, Fish, Nuts & Seeds and Herbs & Spices |
-| Card bonds | 6 | Dojo | Each card's family: e.g. 2 Speed (Sweets), 2 Stamina (Fruits), 1 Wit (Herbs & Spices), 1 Friend (Grains) |
+| Constellation nodes (tree of 12) | 12 | Observatory | A tonic: 6 at grade 1, 6 at grade 2 |
+| Inspiration: both parent slots, then both parents' inherited uniques | 4 | Lineage Hall | A tonic for each slot; nothing for the uniques |
+| Extra Stats singles | 5 | Gym, one room per stat | One single per stat at grade 1 (README map, D338): one meal from each of Sweets, Fruits, Fish, Nuts & Seeds and Herbs & Spices |
+| Card bonds | 6 | Dojo, one room per card type | Nothing: the session alone |
 
-Her layer needs 27 dishes: 135 crafted items from 135 raw. That's about **539 Uma-hours** of somebody's work at
-*k* = 1.2: about 439 hours of Farm work and **100 hours of her own sessions** ([12](12-economy-and-pacing.md) §5).
+Her layer takes 19 items, 14 tonics and 5 meals: 67 crafted items from 67 raw. That's about **518 Uma-hours** of
+somebody's work at *k* = 1.8: about 368 hours of Farm work and **149 hours of her own sessions**
+([12](12-economy-and-pacing.md) §5).
 
 ### Her month
 
-She works about 18 hours a day (75%), so the 539 hours her layer costs take about four weeks. She spends about a fifth
-of it in her own sessions and the rest on the Farm, mostly on dishes for other Umas. Her own dishes come from whoever
-is free.
+She works about 18 hours a day (75%), so the 518 hours her layer costs take about four weeks. She spends about 30% of
+it in her own sessions and the rest on the Farm, mostly on meals and tonics for other Umas. Hers come from whoever is
+free.
 
 | Roughly | What happens |
 |---|---|
@@ -128,12 +132,12 @@ is free.
 
 | When | What happens |
 |---|---|
-| The night before | She started **Gather Vegetables ×6** at the Vegetable Garden: about 9 hours, done by morning |
-| Morning check-in | **Collect all** takes her 6 Vegetables and her Farm EXP. Another Uma cooked a Vegetable dish overnight, so the summary lists her under "Dish ready". One tap starts an **Observatory** session sized to end before the next check-in |
-| Midday check-in | Collect the node. The planner's top suggestion for her is Fruits for a Stamina dish, so **Gather ×6**, sized to end by the evening |
-| Evening check-in | Collect the Fruits. **Cook ×2** at the Kitchen overnight, inputs reserved from the Warehouse at the start |
+| The night before | She started **Gather Vegetables ×3** at the Vegetable Garden: about 8 hours, done by morning |
+| Morning check-in | **Collect all** takes her 3 Vegetables and her Farm EXP. Another Uma brewed a Warm-Up Tonic overnight, so the planner's first suggestion for her is her own session. One tap starts an **Observatory** session: one node, about 5½ hours |
+| Midday check-in | Nothing of hers to collect: her node lands mid-afternoon |
+| Evening check-in | Collect the node. The planner's top suggestion for her is a Stamina meal, so **Cook ×1** at the Kitchen overnight (about 7 hours), inputs reserved from the Warehouse at the start |
 
-Her day: working most of it, waiting a little for check-ins, one unlock and two dishes started for whoever needs them.
+Her day: working most of it, waiting a little for check-ins, one unlock and one meal started for whoever needs it.
 
 ### Advancing
 
@@ -154,20 +158,21 @@ On an average moment at the target ([12](12-economy-and-pacing.md) §3, §7):
 
 | Doing | Umas (of 25) | Notes |
 |---|---|---|
-| Gathering | ~8.5 | Vegetable Garden the busiest site (Constellation dishes) |
-| Crafting at the Pantry | ~2 | Short items; batches of 10 and queues bridge the gaps |
-| Cooking at the Kitchen | ~4.5 | The Kitchen is the game's bottleneck building |
-| In her own session | ~4 | 20% of roster time |
-| Free until the next check-in | ~6 | The 25% that queues and Repeat shrink (and push, if the owner adopts it) |
+| Gathering | ~6 | Fields and the Mushroom Cave the busiest sites in a tier's first scenario (tonics) |
+| Crafting at the Pantry | ~1.5 | Short items; batches of 10 and queues bridge the gaps |
+| Cooking at the Kitchen | ~3.5 | The Kitchen is the game's bottleneck building |
+| In her own session | ~4 | About 27% of the roster's work |
+| Free until the next check-in | ~10 | The third that queues and Repeat shrink (and push, if the owner adopts it) |
 | **Racing** | any of them | About 12–13 races a day, none of which takes an Uma off her work |
 
-Per day that's **450 Uma-hours** of work and about **19 unlocks** finished roster-wide (more in scenario 1's cheap
-layer, fewer in scenario 5's) ([12](12-economy-and-pacing.md) §3, §5).
+Per day that's about **350 Uma-hours** of work and about **20 unlocks** finished roster-wide (more in scenario 1's
+cheap layer, fewer in scenario 5's) ([12](12-economy-and-pacing.md) §3, §5).
 
 ### How an Uma's next job is chosen
 
 The owner chooses; the planner suggests ([02](02-check-ins-and-notifications.md) §6). Its suggestion for a free Uma:
-1. **Her own session**, when a dish for one of her remaining unlocks is in the Warehouse. Only she can do it.
+1. **Her own session**, when the item for one of her remaining unlocks is in the Warehouse, or it takes none. Only
+   she can do it.
 2. Otherwise **the scarcest input for the first planner target she can work for**, at a grade her Farm Level opens.
    Until the owner marks targets, they are the five Umas furthest behind. That's the sim's policy
    ([12](12-economy-and-pacing.md) §12), so the advice is the one the pacing was proved with.
@@ -177,11 +182,11 @@ The owner chooses; the planner suggests ([02](02-check-ins-and-notifications.md)
 
 | Uma | What changes |
 |---|---|
-| **Unlocked mid-tier** (tier 1, an Uma Ticket from Uma Shards) | She starts at scenario 1, Racing Level 1, Farm Level 1. Her Farm Level climbs fast (grade 2 in two or three days), and the shared Warehouse often already holds her grade 1–2 dishes. Her floor is her own sessions: ~100 hours, about 6 days at 18 a day. A late Uma catches up fast while the roster cooks for her |
+| **Unlocked mid-tier** (tier 1, an Uma Ticket from Uma Shards) | She starts at scenario 1, Racing Level 1, Farm Level 1. Her Farm Level climbs fast (grade 2 in two or three days), and the shared Warehouse often already holds her grade 1–2 meals and tonics. Her floor is her own sessions: ~150 hours, about 8 days at 18 a day. A late Uma catches up fast while the roster cooks for her |
 | **Promoted to tier 2** | She starts over at Racing Level 1 and Farm Level 1, grade 1 again ([04](04-tiers-and-promotion.md)). The Farm, the Warehouse and the buildings carry, and grades are the same in every tier, so tier-1 Umas' cooking feeds her too ([12](12-economy-and-pacing.md) §9) |
 | **Far ahead** | She can advance early (§3). Her next layer's grades are usually open already, since Farm Levels come fast; if not, others cook for her |
-| **Far behind** | The planner's automatic targets put her first (above), so the roster's free hands drift toward her dishes |
-| **On an empty Warehouse** (a fresh account) | All twenty Umas gather at once. The first grade-1 dish is ready about six hours in, and **the first unlock lands on the first evening** ([12](12-economy-and-pacing.md) §5). Racing is open from minute one |
+| **Far behind** | The planner's automatic targets put her first (above), so the roster's free hands drift toward her meals and tonics |
+| **On an empty Warehouse** (a fresh account) | All twenty Umas gather at once. **The first unlock, a bond, lands about 5½ hours in**, since it takes no item; the first meal or tonic comes out of the Kitchen that evening ([12](12-economy-and-pacing.md) §5). Racing is open from minute one |
 
 ## 5. A week of play
 
@@ -257,7 +262,7 @@ one time factor to change if it feels too long.
 | Who works where, what she makes and how many (1–10) | Queues: the next entry starts when the last one ends if the Warehouse covers it; otherwise the queue drops and the summary says why |
 | Which unlock a session makes: which node, which Inspiration pick, which Extra Stats node, **which card to bond** | **Collect all**: one tap claims every finished item and unlock |
 | Card sets, presets, active Extra Stats nodes ([05](05-training-hub.md), [06](06-cards-and-bonds.md)) | **Repeat**: one tap restarts every finished job and session with the same recipe and size, where the inputs allow |
-| Which races to run, and when | The **planner**: what each target still needs, cascaded to dishes, crafted and raw items, with stock and running work counted first |
+| Which races to run, and when | The **planner**: what each target still needs, cascaded to meals and tonics, crafted and raw items, with stock and running work counted first |
 | How to spend Prize Money: Speed Tickets, raw items, upgrades | **Suggestions** for free Umas, which the owner starts with one tap |
 | What to sell | Collecting an Uma's finished unlocks before she races, or before she's moved |
 | When to advance a scenario, which Expedition to run, when to promote | **Push notifications** when Umas fall free, if the owner adopts uma-rpg's (phase 4, not built: [02](02-check-ins-and-notifications.md) §7) |

@@ -202,11 +202,11 @@ Money; it doesn't buy (selling happens in the Warehouse, §6).
 | Goods | Price (Prize Money) | Limit |
 |---|---|---|
 | **Speed Ticket** | 30 | None |
-| **Raw ingredient**, grade *g*, any family | (90 + 5(*g*−1)) × *k*: its real gathering minutes (*k* = 1.2, D338) | Grades up to the stock rule (§5.3); up to 99 a purchase |
+| **Raw ingredient**, grade *g*, any family | (90 + 5(*g*−1)) × *k*: its real gathering minutes (*k* = 1.8, D374) | Grades up to the stock rule (§5.3); up to 99 a purchase |
 | Building and facility upgrades | Bought at each building, priced in Prize Money (and items) by [05](05-training-hub.md) and [07](07-farm.md) | — |
 
-**Not sold, by decision:** Uma Tickets (§5.4), crafted items, dishes, Racing EXP, bonds and unlocks. The Farm makes crafted items and
-dishes, and selling them would let racing skip the whole Farm chain, not just speed it up. Raw ingredients buy back
+**Not sold, by decision:** Uma Tickets (§5.4), crafted items, meals, tonics, Racing EXP, bonds and unlocks. The Farm makes
+crafted items, meals and tonics, and selling them would let racing skip the whole Farm chain, not just speed it up. Raw ingredients buy back
 gathering time only; crafting and cooking still take an Uma, and still pay her Farm EXP.
 
 ### 5.1 Speed Tickets
@@ -258,9 +258,9 @@ reaches Farm Lv 6.
   progress is Farm Level, so the gate follows it.
 - **Planner hints:** each family's row badges the grades the planner says the roster is short of ("Vegetables G3 ·
   short 6", [02](02-check-ins-and-notifications.md)), so a free evening's money goes where the Farm is behind.
-- **Raw Vegetables are the usual buy.** Every constellation node takes a Vegetables dish, so the Vegetable Garden is
-  the hottest site, and buying its raw items is the relief valve when it falls behind
-  ([08](08-item-catalogue-and-recipes.md) §7, [07](07-farm.md) §6).
+- **The tonic families are the usual buy in a tier's first scenario.** Its layer is mostly constellation nodes and
+  Inspiration slots, which take tonics, so Fields and the Mushroom Cave run hottest then, and buying their raw items is
+  the relief valve when they fall behind ([08](08-item-catalogue-and-recipes.md) §7, [07](07-farm.md) §6).
 
 ### 5.4 Uma Tickets are not sold
 
@@ -310,7 +310,7 @@ The one-off sinks, all bought with Prize Money (upgrades also take crafted items
 ## 6. Selling surplus ("fodder")
 
 Any Warehouse item sells for **a third of its work value**, rounded down, at least 1. An item's work value is the
-real Uma minutes in it at *k* = 1.2, inputs included, whatever the building speed or Speed Tickets
+real Uma minutes in it at *k* = 1.8, inputs included, whatever the building speed or Speed Tickets
 ([08](08-item-catalogue-and-recipes.md) §8):
 
 <!-- live:sell-values -->
@@ -329,12 +329,14 @@ real Uma minutes in it at *k* = 1.2, inputs included, whatever the building spee
 <!-- /live -->
 
 A crafted item is its raw item plus a quarter of the gathering time. A planet dish is four crafted items of its grade,
-one crafted side at max(1, *g*−2) and the cook. A Duo sells like a planet dish of its grade; Feasts sell for 418, 456,
-494 and 532 at grades 4, 6, 8 and 10. Speed Tickets and Uma Tickets can't be sold.
+one crafted side at max(1, *g*−2) and the cook. A Duo sells like a planet dish of its grade; Feasts sell for 627, 684,
+741 and 798 at grades 4, 6, 8 and 10. A tonic, three crafted items and the cook, sells for 346 at grade 1 up to 501 at
+grade 10; a retired salad, soup or bread keeps its planet dish's price (D374). Speed Tickets and Uma Tickets can't be
+sold.
 
 **Why a third:** the Exchange sells raw at full work value, so buying and selling back loses two thirds, and no loop
-mints time. Buying a grade-1 raw for 108 and selling it back pays 36; crafting it first adds 27 minutes of an Uma's
-work and pays 45. Selling is for real surplus: the side families a scenario overproduced, old grades after a
+mints time. Buying a grade-1 raw for 162 and selling it back pays 54; crafting it first adds 40.5 minutes of an Uma's
+work and pays 67. Selling is for real surplus: the side families a scenario overproduced, old grades after a
 scenario, or a Warehouse full after promotion.
 
 ### 6.1 Reserved items and confirmations
@@ -349,7 +351,7 @@ Each stack in the Warehouse shows three counts:
 
 The stock sheet (uma-kit's, SD4) offers **Sell ×1**, **×10** and **All** of what's held, with the unit price and the
 total. It asks once when the sale:
-- includes any **dish** ("Sell 2 grade-3 Vegetable dishes for 698? Each took about 17 hours of work.");
+- includes any **meal or tonic** ("Sell 2 Warm-Up Tonic (grade 1) for 692? Each took about 17 hours of work.");
 - dips into **needed** stock ("This leaves the planner 4 short for Hishi Akebono's Observatory layer.");
 - is worth **1,000 or more**.
 
@@ -358,9 +360,10 @@ No undo: a confirmed sale is final, and buying back costs three times as much, s
 **As built (T138, SD4).** Reserved is `reservedStock` (`work`), what Recall would return, and isn't held. The sizes are
 the kit's (`sellOptions`): ×1 and ×10 where that many are held, and All, each priced by `sellPrice` with its total.
 `sellConfirmations` decides the one question,
-which reads all that apply in one sentence at live prices: "Sell 2 Cabbage Salad (grade 3) for 698? Each took about 17
-hours of work. This leaves the planner 4 short for Hishi Akebono's Observatory layer." (hours from `workValueSeconds`; the
-target is the first in the plan's order whose unlocks take the stack, as a dish or inside one). The sale carries the
+which reads all that apply in one sentence at live prices: "Sell 2 Warm-Up Tonic (grade 1) for 692? Each took about 17
+hours of work. This leaves the planner 2 short for Hishi Akebono's Observatory layer." (hours from `workValueSeconds`;
+the target is the first in the plan's order whose unlocks take the stack, as a meal or tonic, a stand-in for one, or
+inside one). The sale carries the
 price shown, so a stale one reads `price-changed`'s "Price changed." and the sheet reads the live price again. The
 Exchange's Buy is off with "Need 120 more" when short; its sheet is the confirmation.
 
@@ -453,11 +456,11 @@ result, the operation, the building.
 | **Anti-grind is an account-wide Daily Purse in Prize Money**: full to 4,500 (D348, from 6,000), a quarter to 12,000, a twentieth beyond | The loop simulation measures 8% / 22% / flat; robust to G1-only days; never zero; one bar to read. Per-Uma, per-race and first-win rules either punish career bursts or don't bound |
 | The purse touches Prize Money only, and sales don't fill it | EXP and goals are progression, never taxed; sales are already time-bounded |
 | Featured races ship in v1: 3 a day, first win pays the prize again, outside the purse | A daily goal for the racing mode, cheap to build, bounded at 600 |
-| The Exchange sells Speed Tickets and raw ingredients; not Uma Tickets, crafted items or dishes | Racing speeds the Farm up but never skips it; Umas come from progress (D336) |
+| The Exchange sells Speed Tickets and raw ingredients; not Uma Tickets, crafted items, meals or tonics | Racing speeds the Farm up but never skips it; Umas come from progress (D336) |
 | Raw stock: grades up to the highest any Uma has ever opened | Never sells the unusable; never shrinks at promotion |
 | Speed Tickets: running timers only; Finish rounds up; skipped minutes still pay Farm EXP | uma-rpg's rules, which the owner already knows; a skip buys time, not less progress |
 | "Buy and finish" in one tap, with one confirmation | A free evening's money should reach the jobs without a trip to the Exchange |
-| Selling: a third of work value, rounded down; reserved stock never offered; dishes, needed stock and sales of 1,000+ confirm | No money pump; the planner protects what the roster still needs |
+| Selling: a third of work value, rounded down; reserved stock never offered; meals, tonics, needed stock and sales of 1,000+ confirm | No money pump; the planner protects what the roster still needs |
 | The purse day is the device's local date at race start, and never goes backwards | Today's day rule; a time-zone hop can't reopen a spent purse |
 | The rules lived in `@racer/domain/rework/exchange` until T143 moved them to §9 and §11's `@racer/domain/economy` (D345, D361) | [M033](architecture.md#the-rework-modules) kept every rework area under `rework/` until phase 3, when the old `economy.ts` went |
 | The profile carries §9's `purse` and `exchangeGrade` (listed in [13](../rework/13-removals-and-plan-changes.md) §6), and phase 3's save carries them. A new account's purse is empty on 1970-01-01, which every race day is later than, and the Exchange stocks grade 1 (D345) | Grade 1 is stocked before the first Uma exists (D323); the first race starts a fresh purse |
@@ -494,7 +497,7 @@ result, the operation, the building.
   account bar's chip changes by the same amount.
 - A retried `buy`, `sell` or `speed-up` returns its first receipt, and the balance moves once. A `buy` at a stale price
   is refused with nothing charged.
-- The Warehouse never offers reserved stock for sale, and selling a dish or needed stock asks first.
+- The Warehouse never offers reserved stock for sale, and selling a meal, a tonic or needed stock asks first.
 - A Speed Ticket on a three-item job moves all three ends by 30 minutes; Finish spends ⌈minutes ÷ 30⌉ and the job pays
   its full Farm EXP.
 - The ledger audit (deltas sum to balances) passes on a simulated month and on the owner's save.

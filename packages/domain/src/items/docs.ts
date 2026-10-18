@@ -1,11 +1,11 @@
 // The item rules' live blocks in docs/game/08-item-catalogue-and-recipes.md (M033): the catalogue counts (§1), the
-// grade ladder and each family's table (§3), the side rotation, Duos and Feasts (§4.2–§4.4) and the work values (§8),
+// grade ladder and each family's table (§3), the side rotation, Duos, Feasts and tonics (§4.2–§4.5) and the work values (§8),
 // rendered from the code so the page can't drift. §8's third is the Exchange's `SELL_DIVISOR` (T130, D331), unrounded:
 // 09 §6 owns the rounding. Joined into `docs/render.ts`'s `AREA_BLOCKS`. Pure.
 import { SELL_DIVISOR } from '../economy/selling'
 import {
-  craftedItem, DUO_GRADES, DUO_PAIRS, DUOS, FEAST_GRADES, FEASTS, ITEM_GRADE_LIST, ITEM_GRADES, itemById, ITEMS, planetDish,
-  rawItem, SPEED_TICKET_ID, type DishDef, type ItemDef, type ItemGrade, type ItemId,
+  craftedItem, DUO_GRADES, DUO_PAIRS, DUOS, FEAST_GRADES, FEASTS, isRetired, ITEM_GRADE_LIST, ITEM_GRADES, itemById, ITEMS, planetDish,
+  rawItem, SPEED_TICKET_ID, TONICS, tonicItem, type DishDef, type ItemDef, type ItemGrade, type ItemId,
 } from './catalogue'
 import { FAMILIES, FAMILY_IDS, type FamilyId } from './families'
 import { gradeOpensAtFarmLevel } from './grades'
@@ -48,11 +48,13 @@ function catalogue(): string {
   return table(['Kind', 'Count', 'Ids'], [
     ['Raw ingredients', `${count('raw')} (${families})`, `uma-art \`items\` frames with \`refined: false\`, e.g. ${code(rawItem(first, 1).id)}`],
     ['Crafted ingredients', count('crafted'), `uma-art \`items\` frames with \`refined: true\`, e.g. ${code(craftedItem(first, 1).id)}`],
-    ['Planet dishes', `${count('dish', 'planet')} (${families})`, 'uma-art `dishes`: `dish-<family>-<grade>`'],
+    ['Planet dishes', `${count('dish', 'planet')} (${families}; ${ITEMS.filter(isRetired).length} retired, D374)`,
+      'uma-art `dishes`: `dish-<family>-<grade>`'],
     ['Duo dishes', `${count('dish', 'duo')} (${DUO_PAIRS.length} stat Duos × grades ${DUO_GRADES.join(' and ')})`,
       '`duo-<stat>-<stat>-<grade>`, drawn with uma-art `duo-…` frames (§4.3)'],
     ['Feasts', `${count('dish', 'feast')} (grades ${FEAST_GRADES.join(', ')})`,
       `uma-art ${code(FEASTS[0]!.id)} … ${code(FEASTS[FEASTS.length - 1]!.id)}`],
+    ['Tonics', `${count('tonic')} (grades 1–${ITEM_GRADES})`, `${code(TONICS[0]!.id)} … ${code(TONICS[TONICS.length - 1]!.id)}, no art yet (§4.5)`],
     ['Speed Ticket', count('ticket'), `${code(SPEED_TICKET_ID)} (§9)`],
     ['**Total**', `**${ITEMS.length} definitions**`, ''],
   ])
@@ -62,11 +64,11 @@ function catalogue(): string {
 
 function ladder(): string {
   return table(['*g*', 'Farm Lv', 'Gather (min)', 'Craft (min)', 'Work in one crafted item', 'Cook (min)',
-    'Planet or Duo dish, whole chain', 'Feast, whole chain'],
+    'Planet or Duo dish, whole chain', 'Feast, whole chain', 'Tonic, whole chain'],
   ITEM_GRADE_LIST.map((g) => {
     const feast = feastAt(g)
     return [g, gradeOpensAtFarmLevel(g), num(gatherBaseMinutes(g)), num(craftBaseMinutes(g)), num(baseMinutes(craftedItem(FAMILY_IDS[0], g).id)),
-      num(cookBaseMinutes(g)), num(baseMinutes(anyPlanet(g).id)), feast ? num(baseMinutes(feast.id)) : '']
+      num(cookBaseMinutes(g)), num(baseMinutes(anyPlanet(g).id)), feast ? num(baseMinutes(feast.id)) : '', num(baseMinutes(tonicItem(g).id))]
   }))
 }
 
@@ -75,7 +77,7 @@ function familyItems(family: FamilyId): string {
     const raw = rawItem(family, g), crafted = craftedItem(family, g), dish = planetDish(family, g)
     const side = itemById(dishSide(dish.id)!)!
     if (side.kind !== 'crafted') throw new Error(`${dish.id}'s side is not crafted`)
-    return [g, `${raw.name} ${code(raw.id)}`, `${crafted.name} ${code(crafted.id)}`, `${dish.name} ${code(dish.id)}`,
+    return [g, `${raw.name} ${code(raw.id)}`, `${crafted.name} ${code(crafted.id)}`, `${dish.name} ${code(dish.id)}${isRetired(dish) ? ' (retired)' : ''}`,
       `${side.name} (${FAMILIES[side.family].name} ${side.grade})`]
   }))
 }
@@ -107,14 +109,19 @@ function feasts(): string {
   }))
 }
 
+function tonics(): string {
+  return table(['Id', 'Name', 'Grade', 'Recipe'], TONICS.map((tonic) =>
+    [code(tonic.id), tonic.name, tonic.grade, inputs(tonic.id).map(({ item, qty }) => (qty === 1 ? nameOf(item) : `${qty} ${nameOf(item)}`)).join(' + ')]))
+}
+
 // --- §8 -------------------------------------------------------------------------------------------------------------
 
 function workValues(): string {
-  return table(['*g*', 'Raw', 'Crafted', 'Planet or Duo dish', 'Feast', 'A third: raw / crafted / dish'], ITEM_GRADE_LIST.map((g) => {
+  return table(['*g*', 'Raw', 'Crafted', 'Planet or Duo dish', 'Feast', 'Tonic', 'A third: raw / crafted / dish / tonic'], ITEM_GRADE_LIST.map((g) => {
     const raw = realMinutes(rawItem(FAMILY_IDS[0], g).id), crafted = realMinutes(craftedItem(FAMILY_IDS[0], g).id)
-    const dish = realMinutes(anyPlanet(g).id), feast = feastAt(g)
-    const third = [raw, crafted, dish].map((value) => num(value / SELL_DIVISOR)).join(' / ')
-    return [g, num(raw), num(crafted), num(dish), feast ? num(realMinutes(feast.id)) : '',
+    const dish = realMinutes(anyPlanet(g).id), feast = feastAt(g), tonic = realMinutes(tonicItem(g).id)
+    const third = [raw, crafted, dish, tonic].map((value) => num(value / SELL_DIVISOR)).join(' / ')
+    return [g, num(raw), num(crafted), num(dish), feast ? num(realMinutes(feast.id)) : '', num(tonic),
       feast ? `${third} (Feast ${num(realMinutes(feast.id) / SELL_DIVISOR)})` : third]
   }))
 }
@@ -127,5 +134,6 @@ export const LIVE_BLOCKS: Readonly<Record<string, () => string>> = Object.freeze
   'dish-sides': sides,
   'duo-recipes': duos,
   'feast-recipes': feasts,
+  'tonic-recipes': tonics,
   'work-values': workValues,
 })

@@ -4,7 +4,7 @@
 // packages/domain/src/docs/render.ts. Pure: no I/O.
 import type { Grade } from '../types'
 import { ITEM_GRADES, ITEM_GRADE_LIST } from '../items/catalogue'
-import { FAMILIES, type Destination, type FamilyId } from '../items/families'
+import { FAMILIES, type FamilyId, type Feeds } from '../items/families'
 import { gradeOpensAtFarmLevel } from '../items/grades'
 import {
   COOK_BASE_MINUTES, COOK_MINUTES_PER_GRADE, cookBaseMinutes, CRAFT_SHARE_OF_GATHER, craftBaseMinutes, GATHER_BASE_MINUTES, GATHER_MINUTES_PER_GRADE,
@@ -40,15 +40,15 @@ function jobTimes(): string {
     [`Gather one raw item (${word(sites)} sites)`, `${GATHER_BASE_MINUTES} + ${GATHER_MINUTES_PER_GRADE}(*g*−1)`, num(gatherBaseMinutes(1)), num(gatherBaseMinutes(top))],
     [`Craft one item (${BUILDINGS.pantry.name})`, `${FRACTION_WORDS[CRAFT_SHARE_OF_GATHER] ?? `×${CRAFT_SHARE_OF_GATHER}`} of gathering`,
       num(craftBaseMinutes(1)), num(craftBaseMinutes(top))],
-    [`Cook one dish (${BUILDINGS.kitchen.name}, every kind)`, `${COOK_BASE_MINUTES} + ${COOK_MINUTES_PER_GRADE}(*g*−1)`, num(cookBaseMinutes(1)), num(cookBaseMinutes(top))],
+    [`Cook one meal or tonic (${BUILDINGS.kitchen.name}, every kind)`, `${COOK_BASE_MINUTES} + ${COOK_MINUTES_PER_GRADE}(*g*−1)`, num(cookBaseMinutes(1)), num(cookBaseMinutes(top))],
   ])
 }
 
 // --- 07 §3 ----------------------------------------------------------------------------------------------------------
 
-const DESTINATION_LABEL: Readonly<Record<Destination, string>> = {
-  speed: 'Speed', stamina: 'Stamina', power: 'Power', guts: 'Guts', wit: 'Wit', skill: 'Skill: Friend and Group',
-  constellation: 'Constellation', inspiration: 'Inspiration',
+/** What a family's crafted items go to since D374: its stat's meals, or the tonics. */
+const FEEDS_LABEL: Readonly<Record<Feeds, string>> = {
+  speed: 'Speed', stamina: 'Stamina', power: 'Power', guts: 'Guts', wit: 'Wit', tonic: 'Tonics',
 }
 const APTITUDE_LABEL: Readonly<Record<FarmAptitude['key'], string>> = {
   sprint: 'Sprint', mile: 'Mile', medium: 'Medium', long: 'Long', front: 'Front Runner', pace: 'Pace Chaser', late: 'Late Surger', end: 'End Closer',
@@ -67,7 +67,7 @@ const WHY: Readonly<Record<FamilyId, string>> = {
 
 function aptitudes(): string {
   return table(['Family', 'Aptitude that suits it', 'Why the pair'], (Object.keys(FAMILY_APTITUDE) as FamilyId[]).map((family) => [
-    `${FAMILIES[family].name} (${DESTINATION_LABEL[FAMILIES[family].destination]})`, APTITUDE_LABEL[FAMILY_APTITUDE[family].key], WHY[family],
+    `${FAMILIES[family].name} (${FEEDS_LABEL[FAMILIES[family].feeds]})`, APTITUDE_LABEL[FAMILY_APTITUDE[family].key], WHY[family],
   ]))
 }
 

@@ -404,7 +404,7 @@ changed from today's buffs:
 - **Encore** is new, a placeholder for the 15th: Wit is the one stat card type no buff favours. Replaced if the real
   scenario's theme suggests a better rule.
 - The rest are unchanged: Climax, Genres, Research, Construction and Soak; Performance (the cards are bonded ones); and
-  Orders (Friend and Group cards stay, bonded with Grains dishes).
+  Orders (Friend and Group cards stay, bonded at the Dojo like any card).
 
 **Fragments in detail.** Grand Masters is tier 1's last scenario, about the pieces gathered along the way:
 - **It rewards the cards she has carried through the tier.** A card bonds only in a scenario its era allows

@@ -12,12 +12,11 @@ the end).
 
 Uma Racer is a **racing game with a passive Farm**. Each Uma climbs a **tier** of five scenarios. In each scenario she
 races her career (Racing Level), while the roster works the Farm on timers (Farm Level). The Farm grows ingredients,
-the Pantry crafts them and the Kitchen cooks them into dishes. A dish is the entry ticket to a **Training Hub
-session**, which unlocks one piece of an Uma's build:
-- a constellation node;
-- an Inspiration slot, inherited unique or gold skill;
-- an Extra Stats node;
-- a bond with one support card.
+the Pantry crafts them and the Kitchen cooks them into **meals** and **tonics**. A **Training Hub session** unlocks
+one piece of an Uma's build, and takes at most one of them (D374):
+- a constellation node or an Inspiration slot, for a tonic;
+- an Extra Stats node, for a meal;
+- an inherited unique or gold skill, or a bond with one support card, for nothing but its time.
 
 Races pay **Prize Money**, which the Exchange turns into **Speed Tickets** (timer skips) and other goods. So a free
 evening spent racing speeds up everything passive. A tier ends with a **World Expedition**: an international racing
@@ -28,7 +27,7 @@ her tier's last career waits at its gate with racing open.
 ```
              ┌──────────────────────── Prize Money · Exchange · Speed Tickets ◀──────────────────────┐
              ▼                                                                                        │
-Farm: ingredients ──▶ Pantry: crafted ──▶ Kitchen: dishes ──▶ Training Hub sessions ──▶ unlocks ──▶ Racing
+Farm: ingredients ──▶ Pantry: crafted ──▶ Kitchen: meals, tonics ──▶ Training Hub sessions ──▶ unlocks ──▶ Racing
  (Farm Level 1–50)                                            (Observatory, Lineage Hall, Gym, Dojo)  (Racing Level 1–50)
                                                                                                         │
                                        scenario 1 → 2 → 3 → 4 → 5 → World Expedition → promotion ◀─────┘
@@ -66,7 +65,7 @@ The owner plays in two modes, and the game serves both:
 | [05 · Training Hub](05-training-hub.md) | Observatory, Lineage Hall, Gym and Dojo: sessions, slots, layers per scenario, constellation sizes, Inspiration and Extra Stats maps |
 | [06 · Cards and bonds](06-cards-and-bonds.md) | Every SSR open from the start, no stars, bonding a card to an Uma, era and bond cost, card sets and presets, card focus, the Card Library |
 | [07 · Farm](07-farm.md) | Sites, Pantry and Kitchen; Farm Level 1–50; jobs, queues and Repeat; slots and building upgrades; worker rules |
-| [08 · Item catalogue and recipes](08-item-catalogue-and-recipes.md) | uma-rpg's farming half reused: 8 families × 10 grades, crafted items, every dish recipe, destinations, art ids |
+| [08 · Item catalogue and recipes](08-item-catalogue-and-recipes.md) | uma-rpg's farming half reused: 8 families × 10 grades, crafted items, every meal and tonic recipe, destinations, art ids |
 | [09 · Racing rewards and the Exchange](09-racing-rewards-and-exchange.md) | Racing EXP, Prize Money, the Daily Purse, featured races, the Exchange, Speed Tickets, selling surplus |
 | [11 · Hub and places](11-hub-and-places.md) | The menu tree at a glance; the shell (account bar, bottom bar, pill, menu, side panel); Town Hall, Training, Racing and Farm pages and every place; routes, queries, redirects and the dev mount; the art |
 | [12 · Economy and pacing](12-economy-and-pacing.md) | Currencies, sources and sinks, the 25-Uma pacing target, the time model, the loop simulation |
@@ -132,21 +131,25 @@ A tier has 10 grades and 5 scenarios, so **scenario *s* of a tier uses grades 2*
 half at grade 2*s*−1 and its second half at grade 2*s*. That's a rule of the layers, not of Farm Level. Farm Levels
 come fast, and every grade is open within about a month of a tier ([07](07-farm.md) §4).
 
-### The eight families and where their dishes go
+### The eight families and where they go
 
 uma-art's Duo dishes join neighbouring families on a fixed ring, so the five stats take five neighbours. Then
 every stat-to-stat Duo already has art.
 
-| Family (uma-art id) | Farm site (uma-art building) | Dish goes to | Aptitude that speeds its Farm Level |
+| Family (uma-art id) | Farm site (uma-art building) | Its crafted items go to (D374) | Aptitude that speeds its Farm Level |
 |---|---|---|---|
-| Sweets (`sweets`) | Sugar Grove (`sugar-grove`) | **Speed**: Gym room, Speed card bonds | Sprint |
-| Fruits (`fruits`) | Orchard (`orchard`) | **Stamina**: Gym room, Stamina card bonds | Long |
-| Fish (`fish`) | Fishery (`fishery`) | **Power**: Gym room, Power card bonds | Mile |
-| Nuts & Seeds (`nuts-seeds`) | Nut Grove (`nut-grove`) | **Guts**: Gym room, Guts card bonds | End Closer |
-| Herbs & Spices (`herbs-spices`) | Herb Garden (`herb-garden`) | **Wit**: Gym room, Wit card bonds | Medium |
-| Grains (`grains`) | Fields (`fields`) | **Skill**: Friend and Group card bonds | Pace Chaser |
-| Vegetables (`vegetables`) | Vegetable Garden (`vegetable-garden`) | **Constellation**: Observatory node unlocks | Front Runner |
-| Mushrooms (`mushrooms`) | Mushroom Cave (`mushroom-cave`) | **Inspiration**: Lineage Hall slots, uniques and gold skills | Late Surger |
+| Sweets (`sweets`) | Sugar Grove (`sugar-grove`) | **Speed** meals: the Gym's Speed room | Sprint |
+| Fruits (`fruits`) | Orchard (`orchard`) | **Stamina** meals: the Gym's Stamina room | Long |
+| Fish (`fish`) | Fishery (`fishery`) | **Power** meals: the Gym's Power room | Mile |
+| Nuts & Seeds (`nuts-seeds`) | Nut Grove (`nut-grove`) | **Guts** meals: the Gym's Guts room | End Closer |
+| Herbs & Spices (`herbs-spices`) | Herb Garden (`herb-garden`) | **Wit** meals: the Gym's Wit room | Medium |
+| Grains (`grains`) | Fields (`fields`) | **Tonics** (Observatory nodes, Lineage Hall slots), and the Feasts' side | Pace Chaser |
+| Vegetables (`vegetables`) | Vegetable Garden (`vegetable-garden`) | **Tonics** | Front Runner |
+| Mushrooms (`mushrooms`) | Mushroom Cave (`mushroom-cave`) | **Tonics** | Late Surger |
+
+Card bonds, inherited uniques and gold skills take no item. The Grains, Vegetables and Mushrooms planet dishes
+(breads, salads and soups) are retired: never cooked again, though one already cooked still sells, and a salad or soup
+stands in for the tonic of its grade ([08](08-item-catalogue-and-recipes.md) §6).
 
 Ring order (uma-art's Duos): Grains – Vegetables – Mushrooms – Fruits – Herbs & Spices – Fish – Sweets – Nuts & Seeds –
 Grains. The stat neighbours are Stamina–Wit, Wit–Power, Power–Speed and Speed–Guts. That gives **4 stat Duos**;
@@ -178,19 +181,21 @@ Guts–Stamina has no Duo.
 
 ### Time model
 
-Every duration is a base formula below **× the time factor *k* = 1.2** (D338). The domain holds *k* as one constant
+Every duration is a base formula below **× the time factor *k* = 1.8** (D374; 1.2 from D338). The domain holds *k* as one constant
 (`TIME_FACTOR` in `state/time.ts`), and pages that quote minutes quote the base formula.
 
 | Step | Base minutes for grade *g* | Grade 1 | Grade 10 |
 |---|---|---|---|
 | Gather one raw ingredient | 90 + 5(*g*−1) | 90 | 135 |
 | Craft one (Pantry) | a quarter of gathering | 22.5 | 33.75 |
-| Cook one dish (Kitchen) | 240 + 10(*g*−1) | 240 | 330 |
+| Cook one meal or tonic (Kitchen) | 240 + 10(*g*−1) | 240 | 330 |
 | One Training Hub session (one unlock) | 180 + 15(*g*−1) | 180 | 315 |
-| A planet dish's inputs | 4 crafted of its family at *g*, 1 crafted side of another family at max(1, *g*−2) | | |
+| A meal's inputs | 4 crafted of its family at *g*, 1 crafted side of another family at max(1, *g*−2) | | |
+| A tonic's inputs | 1 crafted Vegetables, 1 Mushrooms and 1 Grains at *g* | | |
 
-One unlock is about 20 Uma-hours at grade 1 and 30 at grade 10 at *k* = 1.2: its dish chain plus its session. With
-25 Umas each working 75% of the day, every scenario takes the roster **27–30 days** ([12](12-economy-and-pacing.md) §5).
+A meal-paid unlock is about 30 Uma-hours at grade 1 and 44 at grade 10 at *k* = 1.8, a tonic-paid one about 23 and 35,
+and a bond, inherited unique or gold only its session. The loop simulation measures a tier at about 21 weeks
+([12](12-economy-and-pacing.md) §5).
 
 ### Money
 
@@ -207,9 +212,11 @@ One unlock is about 20 Uma-hours at grade 1 and 30 at grade 10 at *k* = 1.2: its
 |---|---|
 | **Tier** | Five scenarios and an Expedition. Each Uma is in exactly one tier |
 | **Scenario layer** | What a scenario adds to an Uma's build: nodes, slots, Extra Stats and bonds to unlock |
-| **Session** | Timed unlocks at one Training Hub facility for one Uma: 1–10 of them one after another, each paid for with one dish |
+| **Session** | Timed unlocks at one Training Hub facility for one Uma: 1–10 of them one after another, each paid for with one meal or tonic, or with nothing |
 | **Job** | One timed Farm task: gather, craft or cook 1–10 items one after another |
-| **Bond** | A card unlocked for one Uma, for the rest of her tier |
+| **Meal** | A Kitchen dish for Extra Stats: a stat family's planet dish, a Duo or a Feast |
+| **Tonic** | A Kitchen item for a constellation node or an Inspiration slot: one crafted Vegetables, Mushrooms and Grains item of its grade (D374) |
+| **Bond** | A card unlocked for one Uma, for the rest of her tier; it takes no item, only its session |
 | **Racing Level / Farm Level** | An Uma's two levels inside a tier, each 1–50 |
 | **Promotion** | Completing the tier's World Expedition; the Uma moves to the next tier and starts over |
 | **Prize Money** | What races pay; spent at the Exchange |

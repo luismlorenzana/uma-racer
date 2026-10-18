@@ -3,10 +3,12 @@
 > **Status: as built, phase 3 (generation 2, D361); first written 2026-10-13 (D326, D327, D328, D330, D331, D334).**
 > The rules are phase 2's (D343), measured by the loop simulation ([12](12-economy-and-pacing.md) §12, D348), whose
 > tables here are live. §10's screens are T146's compact ones (D366, superseding T140's of D358), with §14's last rows.
+> Since D374 (2026-10-18) the Kitchen cooks meals and tonics, and every step is × *k* = 1.8.
 
 The Farm is where the roster spends most of its time. Umas gather ingredients at eight family sites, the **Pantry**
-crafts them and the **Kitchen** cooks them into dishes, all on timers that run while the app is closed. A dish is the
-entry ticket to a Training Hub session ([05](05-training-hub.md)). The Farm reuses uma-rpg's farming half and
+crafts them and the **Kitchen** cooks them into meals and tonics, all on timers that run while the app is closed. A
+meal pays an Extra Stats session and a tonic a constellation node or an Inspiration slot ([05](05-training-hub.md));
+bonds, inherited uniques and gold skills take nothing from the Farm (D374). The Farm reuses uma-rpg's farming half and
 uma-art's buildings, items and dishes (D330); the item catalogue and every recipe are in [08](08-item-catalogue-and-recipes.md).
 
 This page owns the buildings, jobs, Farm Level, worker rules, slots and upgrades. Collect all, Repeat, queues as UX,
@@ -25,11 +27,11 @@ page (checked against `packages/art/buildings/atlas.json`).
 | Fishery | `fishery` | Gather | Fish, raw | Power |
 | Nut Grove | `nut-grove` | Gather | Nuts & Seeds, raw | Guts |
 | Herb Garden | `herb-garden` | Gather | Herbs & Spices, raw | Wit |
-| Fields | `fields` | Gather | Grains, raw | Skill: Friend and Group bonds |
-| Vegetable Garden | `vegetable-garden` | Gather | Vegetables, raw | Constellation |
-| Mushroom Cave | `mushroom-cave` | Gather | Mushrooms, raw | Inspiration |
+| Fields | `fields` | Gather | Grains, raw | Tonics, Feast sides |
+| Vegetable Garden | `vegetable-garden` | Gather | Vegetables, raw | Tonics |
+| Mushroom Cave | `mushroom-cave` | Gather | Mushrooms, raw | Tonics |
 | Pantry | `pantry` | Craft | One raw item into one crafted item of the same family and grade | Every family |
-| Kitchen | `kitchen` | Cook | Dishes: 80 planet dishes, 8 Duos, 4 Feasts | Training Hub sessions |
+| Kitchen | `kitchen` | Cook | Meals (the 50 stat planet dishes, 8 Duos, 4 Feasts) and 10 tonics; never a retired salad, soup or bread | Training Hub sessions |
 
 There is no other Farm building. The Farmhouse, the Workshop, the Barnyard and the five districts of today's Farm go
 (§12). uma-rpg's Wilds sites, Workbench and Forge are not used (D330).
@@ -49,14 +51,14 @@ A **job** is one Uma making 1–10 outputs of one thing at one building, **one a
 | **Speed Ticket** | Takes 30 minutes off the running job ([09](09-racing-rewards-and-exchange.md) owns the price) (§8) |
 | **Timers** | Derived from the start timestamp, never a running count: closed and offline time counts |
 
-**Per-output times** come from the README's time model ([12](12-economy-and-pacing.md) §4), for grade *g*, in base minutes; in play each is × *k* = 1.2 (D338):
+**Per-output times** come from the README's time model ([12](12-economy-and-pacing.md) §4), for grade *g*, in base minutes; in play each is × *k* = 1.8 (D374):
 
 <!-- live:farm-job-times -->
 | Job | Minutes per output | Grade 1 | Grade 10 |
 |---|---|---|---|
 | Gather one raw item (eight sites) | 90 + 5(*g*−1) | 90 | 135 |
 | Craft one item (Pantry) | a quarter of gathering | 22.5 | 33.75 |
-| Cook one dish (Kitchen, every kind) | 240 + 10(*g*−1) | 240 | 330 |
+| Cook one meal or tonic (Kitchen, every kind) | 240 + 10(*g*−1) | 240 | 330 |
 <!-- /live -->
 
 A building at Lv 3 divides these by 1.25 (§7). The speed is frozen into the job when it starts.
@@ -69,15 +71,17 @@ wait longer, never negative.
 **Worked example.** At 08:00 Special Week (Farm Lv 7) starts **Gather Potato × 10** at the Vegetable Garden: 95 minutes
 each, so outputs land at 09:35, 11:10 … and the last at 23:50. Behind it the owner queues **Gather Carrot × 6**.
 - 13:00 check-in: three Potatoes are done. Collect pays 3 Potatoes and 285 Farm EXP (base minutes, as every worked
-  example; in play each Potato takes 114 minutes and pays 114 EXP at *k* = 1.2). The owner spends one Speed Ticket:
-  the job now ends at 23:20.
+  example; in play each Potato takes 171 minutes and pays 171 EXP at *k* = 1.8, so the same three are done by a 17:00
+  check-in and the ticketed job ends at 12:00 the next day). The owner spends one Speed Ticket: the job now ends at
+  23:20.
 - 23:20: the tenth Potato finishes and the Carrot job starts at once (gathering needs no inputs), ending 08:20.
 - If the owner had recalled her at 22:30 instead: nine Potatoes paid, the tenth's 45 minutes of progress lost, the
   Carrot job dropped.
 
-A Kitchen job reserves more: **Cook Carrot Salad × 3** takes 12 Chopped Carrot and 3 Wheat Flour at the start
-([08](08-item-catalogue-and-recipes.md) §4). Recalled after one and a half salads, it pays one salad and returns 8
-Chopped Carrot and 2 Wheat Flour.
+A Kitchen job reserves more: **Cook Apple Tart × 3** takes 12 Apple Preserve and 3 Dried Basil at the start
+([08](08-item-catalogue-and-recipes.md) §4). Recalled after one and a half tarts, it pays one tart and returns 8 Apple
+Preserve and 2 Dried Basil. A tonic is lighter: **Brew Warm-Up Tonic × 3** takes 3 Chopped Carrot, 3 Dried Button
+Mushroom and 3 Wheat Flour.
 
 **Which queue starts first.** When several queued jobs would start while the app is closed, they start in time order
 (ties by building order in §1, then slot), each checking the free stock left by the ones before it. Outputs that are
@@ -115,14 +119,14 @@ running styles, so every Uma is good at something:
 | Herbs & Spices (Wit) | Medium | Wit for the tactical middle distances |
 | Fruits (Stamina) | Long | Stamina for the long races |
 | Nuts & Seeds (Guts) | End Closer | Guts to come from the back |
-| Grains (Skill: Friend and Group) | Pace Chaser | Runs with the pack, like a team card |
-| Vegetables (Constellation) | Front Runner | Leads the way, as the tree grows out from its root |
-| Mushrooms (Inspiration) | Late Surger | Grows in the shade and comes late, like a lineage |
+| Grains (Tonics) | Pace Chaser | Runs with the pack, like a team card |
+| Vegetables (Tonics) | Front Runner | Leads the way, as the tree grows out from its root |
+| Mushrooms (Tonics) | Late Surger | Grows in the shade and comes late, like a lineage |
 <!-- /live -->
 
 **Which aptitude counts:**
 - **Gathering** uses the site's family. The Pantry uses the family of the item being crafted.
-- **The Kitchen** uses the dish's family. A Duo or a Feast uses the best of its families.
+- **The Kitchen** uses the meal's family. A Duo, a Feast or a tonic uses the best of its families.
 - Surface aptitudes (Turf, Dirt) aren't used. Most Umas are strong on one surface, which would split the roster in two
   rather than give each Uma her own specialty.
 
@@ -227,7 +231,8 @@ shared Warehouse and higher-level Umas cover anything she can't make yet.
 
 A slot sits idle between an Uma's last output and the next check-in, just as she does, so the slots an activity needs
 are its hours a day ÷ (24 × 0.75) ([12](12-economy-and-pacing.md) §7). Work isn't spread evenly over the ten
-buildings: cooking is 30% of all Farm work, and Vegetables feed every constellation node. So slots aren't uniform.
+buildings: cooking is about a third of all Farm work, and the tonic families carry scenario 1's nodes and slots. So
+slots aren't uniform.
 
 <!-- live:farm-slots -->
 | Building | Lv 1 | Lv 2 | Lv 3 |
@@ -262,18 +267,17 @@ tier-1 scenario's window (the cohort's median entry to its median finish):
 <!-- /live -->
 
 How to read it:
-- **About 17 Farm slots are held at any moment over tier 1, 13 of them working**, and the 27 slots of Lv 1 hold the
-  20-Uma start.
-- **The Kitchen is the busiest building**, about 130 slot-hours a day: cooking is the longest step, and a 4.8–5.4-hour
-  dish fills only half of a 9.5-hour gap between check-ins. Six slots carry the 20-Uma start; the eight of Lv 2 carry
-  25 at about 80%.
-- **The Pantry is the fullest.** The planner fills its slots at nearly every check-in, and the owner queues more crafts
-  behind one that ends early, so it has five slots at Lv 2 and 3, not four (D351): with four it ran at the 90% ceiling,
-  with five it peaks at about 80%.
-- **The Vegetable Garden is the hot site in scenario 1**, where 12 of the 27 unlocks are constellation nodes, and the
-  **Mushroom Cave** in the scenarios with six Inspiration unlocks. Fields carries 63 of a tier's 107 sides.
+- **About 14 Farm slots are held at any moment over tier 1**, and the 27 slots of Lv 1 hold the 20-Uma start.
+- **The Kitchen is the busiest building**, about 110 slot-hours a day: cooking is the longest step, and a 7.2–9.9-hour
+  meal or tonic at *k* = 1.8 nearly fills a 9.5-hour gap between check-ins, or runs past it. Six slots carry the 20-Uma
+  start; the nine of Lv 2 (D374) carry 25 at about 80% at their busiest.
+- **The Pantry is busy but not full.** The planner fills its slots at most check-ins, and the owner queues more crafts
+  behind one that ends early, so it has five slots at Lv 2 and 3, not four (D351); since D374 it peaks at about
+  two-thirds.
+- **Fields and the Mushroom Cave are the hot sites in scenario 1**, where 14 of the 27 unlocks take a tonic; the
+  Vegetable Garden's extra slots keep it at about a third.
 - **The stat sites run under half full** since D338 halved the Gym's singles ([08](08-item-catalogue-and-recipes.md)
-  §7). Their third slot at Lv 2 is headroom for a Speed-heavy deck.
+  §7). Their third slot at Lv 2 is headroom.
 - Upgrades buy headroom above these averages, so the owner can catch up after a missed day.
 
 ## 7. Building upgrades
@@ -293,10 +297,9 @@ family, so they take one or two of each.
 
 - **Lv 2 needs only grade-1 items and Prize Money**, so it comes with tier 1's first careers: the sim's account buys
   every Lv 2 between days 31 and 34, as the roster starts growing past 20. Lv 1 carries the 20-Uma start.
-- **Lv 3 opens once someone reaches Farm Lv 11** (grade 3, about day 4 of a tier); the sim's account has every Lv 3 by
-  about day 65, busiest building first. It pays back in six to ten days of the time
-  it saves: ×1.25 saves a fifth of a building's work, which is ~21 Uma-hours a day at the Kitchen (~1,260 PM a day),
-  ~10 at the Pantry, ~7 at the Vegetable Garden and ~5 at a stat site.
+- **Lv 3 opens once someone reaches Farm Lv 11** (grade 3, about day 4 of a tier); the sim's account buys each Lv 3
+  as its Prize Money allows, busiest building first. It pays back within about ten days of the time it saves: ×1.25
+  saves a fifth of a building's work, most at the Kitchen, then the Pantry.
 - **All twenty upgrades cost 51,300 PM**, about four weeks of the target's racing (about 1,850 PM a day,
   [12](12-economy-and-pacing.md) §3). Racing bunches at the end of each layer (D336), so they arrive in two waves, after
   the first and second scenarios.
@@ -338,12 +341,12 @@ Today's **Energy** becomes the **Speed Ticket**: an item in the Warehouse, bough
 The Hub's **Farm page** ([11](11-hub-and-places.md)) shows the ten buildings, each with slot pips (the worker's face
 ringed by her output's progress) and a **Ready** badge. Tapping one opens its quick look in the side panel; **Enter**
 opens its page. Every Farm screen follows four rules the owner set after playing T140's (D366):
-- **Durations, never clock end times.** A job reads how long it has left ("1h 20m") or will take ("×4 · 7h 12m"), and
+- **Durations, never clock end times.** A job reads how long it has left ("1h 20m") or will take ("×4 · 10h 48m"), and
   **Done** once it has ended (`durationText`, 02 §3).
 - **Icons with a number beat words:** item icons, Uma faces and small badges. Explanations sit behind (i) and in
   VoiceOver's labels ("Collect 2 Carrot").
 - **The obvious choice is preselected**, so most actions are one tap.
-- **Nothing scrolls** at 390 × 844 for a building of up to four slots; only the Kitchen's eight do. Compactness comes
+- **Nothing scrolls** at 390 × 844 for a building of up to four slots; only the Kitchen's six and nine do. Compactness comes
   from layout: every target stays 44 pt.
 
 ### The quick look
@@ -396,17 +399,17 @@ One screen, everything preselected:
    that she can make (else her highest grade) is preselected, sized to the check-in.
 2. **What:** an icon grid, five to a row, so a site's ten grades fit in two rows. Each cell holds the 32 pt icon, its
    grade in the corner, the stock, the plan's "×N" needed, and a lock with "Lv16" above her Farm Level; the chosen one
-   is ringed, and one line under the grid names it with its stock (a dish also its destination and the Umas whose
-   unlocks want it). The Pantry's families and the Kitchen's tabs (Speed · Stamina · Power · Guts · Wit · Skill bonds ·
-   Constellation · Inspiration · Duos · Feasts · Can cook now) are icon chips: the stat and bond type icons, a star, a
-   spark, a Duo's and a Feast's dish, a check; a family's first crafted item.
-3. **How many:** a chip per size the stock covers, each with how long it takes ("×1 · 1h 48m", "×4 · 7h 12m" for a
+   is ringed, and one line under the grid names it with its stock (a meal or tonic also what it opens and the Umas
+   whose unlocks want it). The Pantry's families and the Kitchen's tabs (Speed · Stamina · Power · Guts · Wit · Tonics
+   · Duos · Feasts · Can cook now, D374) are icon chips: the stat type icons, a star for the tonics, a Duo's and a
+   Feast's dish, a check; a family's first crafted item. The retired salads, soups and breads are on no tab.
+3. **How many:** a chip per size the stock covers, each with how long it takes ("×1 · 2h 42m", "×4 · 10h 48m" for a
    grade-1 gather). The size that fits until the next check-in ([02](02-check-ins-and-notifications.md) §3) carries a
    check-in mark (a moon when that check-in is the morning's) and is preselected.
 4. **Inputs:** one line of input icons with have/need, red when short, and the Farm EXP. A shortfall links to the
    building that makes it, and to the Exchange's row for stocked raw; a raw grade above her Farm Level links to the
    Exchange too.
-5. **Start · ×4 · 7h 12m** (or **Queue · ×4 · 7h 12m**), one footer button; when it can't run it says why in the
+5. **Start · ×4 · 10h 48m** (or **Queue · ×4 · 10h 48m**), one footer button; when it can't run it says why in the
    rule's own words.
 
 **What's preselected (D368):** the first Free Uma by Farm Level, then suited, release and name. If the planner suggests
@@ -422,8 +425,8 @@ Queue next live on the slot's row.
 
 The Warehouse is in Town Hall ([11](11-hub-and-places.md)). It is the one inventory, and it doesn't reset at promotion.
 It is uma-kit's shelf frame (`ShelfView`, SD4), filled with this game's stock:
-- **Shelves:** Raw · Crafted · Dishes · Tickets. Grade chips: every grade, one grade, or **Highest** (the highest grade
-  held in each family).
+- **Shelves:** Raw · Crafted · Meals · Tonics · Tickets (D374; the Meals shelf also holds any retired salad, soup or
+  bread). Grade chips: every grade, one grade, or **Highest** (the highest grade held in each family).
 - **A row** for each stack held: icon, name, count, then **reserved** (inside running jobs), **coming** (unfinished
   outputs) and **needed** (the planner's open needs).
 - **A stock sheet:** what's held; family, grade and destination; what's reserved, coming, needed and free; the recipes
@@ -437,8 +440,10 @@ made in a started entry, which is exactly what Recall would hand back; **coming*
 **needed** is `neededFromStock` over the plan for `targetsOf`. The shelves list what's held (a stack only reserved,
 coming or needed shows in the Peek's shortfalls and the planner, not on a shelf), and an empty Warehouse reads
 [09](09-racing-rewards-and-exchange.md) §8's "Nothing to sell yet: the Farm's first harvest lands here".
-A dish reads its destination ("Carrot Salad · Constellation · grade 1"), an ingredient its family; **Make more** opens T140's
-job sheet at the building that makes it (`/farm/:building?job=&back=`).
+A meal reads its stat ("Honeycomb Cake · Speed · grade 1"), a tonic what it opens ("Warm-Up Tonic · Nodes & Inspiration
+slots · grade 1"), a retired salad or soup "Stands in for a tonic" and a bread "Retired · sell it", an ingredient its
+family; **Make more** opens T140's job sheet at the building that makes it (`/farm/:building?job=&back=`), never for a
+retired dish, and the recipes that use a stack leave the retired ones out.
 
 ## 11. Edge cases
 
@@ -449,7 +454,7 @@ job sheet at the building that makes it (`/farm/:building?job=&back=`).
 | **A stale screen** | Start, queue and recall carry what the screen showed. If the stock or the slot changed (another device, a queue that started), the API refuses and the screen reloads with the new state; nothing is half applied |
 | **A retried tap** | Every operation has an id; a retry returns the first receipt and is never applied twice |
 | **An Uma in a session** | Not in the job sheet, which lists Free Umas only (§10) |
-| **An Uma bought mid-tier** | Farm Lv 1, grade 1 only, any building; her scenario-1 dishes are grade 1 and 2 |
+| **An Uma bought mid-tier** | Farm Lv 1, grade 1 only, any building; her scenario-1 meals and tonics are grade 1 and 2 |
 | **A promoted Uma** | Farm Lv 1 again in the new tier ([04](04-tiers-and-promotion.md)); the items she made stay in the Warehouse |
 | **Upgrade mid-job** | New slots appear at once; running jobs keep their frozen speed |
 | **Clock moved** | Forward: outputs finish early (trusted device). Backward: the wait grows; no output is taken back |
@@ -502,10 +507,11 @@ The old Farm, the Stable Kitchen (M031, D304–D320; deleted with the cutover, r
 |---|---|
 | **Running aptitudes speed Farm Levels, not jobs** (§3): S ×1.8 … E–G ×0.8, one distance or style per family | The owner's 2–3 levels a day, 4–5 when suited (D336), while every job's timer stays the same for every Uma |
 | **Farm EXP per listed minute, paid at collection, in quarter points** | Farm Level measures work done; building speed and tickets bring it sooner without changing its meaning |
-| **Grade gate on every step; a dish gated by its own grade** | One rule; sides of lower grade never block a cook |
+| **Grade gate on every step; a meal or tonic gated by its own grade** | One rule; sides of lower grade never block a cook |
 | **Lv 47–50 open nothing; EXP stops at Lv 50** | Grade 10 opens at 46 by the README's formula; the last levels close the tier's track |
-| **Slots: Kitchen 6/8, Pantry 3/5 (D351), Vegetable Garden 4/5, other sites 2/3; Lv 3 ×1.25** | Sized to the slot demand (§6): Lv 1 carries 20 Umas, Lv 2 carries 25 under 90% |
-| **Upgrade prices** (§7): sites 1,200 / 2,400, Pantry 1,500 / 6,000, Kitchen 3,000 / 12,000 PM, plus items | Six to ten days' payback on the Uma-time saved; Lv 2 with the first racing, Lv 3 from grade 3 |
+| **Slots: Kitchen 6/9 (D374), Pantry 3/5 (D351), Vegetable Garden 4/5, other sites 2/3; Lv 3 ×1.25** | Sized to the slot demand (§6): Lv 1 carries 20 Umas, Lv 2 carries 25 under 90%; at *k* = 1.8 a cook outlasts most gaps between check-ins, so the Kitchen's Lv 2 adds three |
+| **The Kitchen cooks meals and tonics, never a retired dish** (D374) | [08](08-item-catalogue-and-recipes.md) §4.5; a retired dish already cooked still sells and stands in |
+| **Upgrade prices** (§7): sites 1,200 / 2,400, Pantry 1,500 / 6,000, Kitchen 3,000 / 12,000 PM, plus items | About ten days' payback on the Uma-time saved; Lv 2 with the first racing, Lv 3 from grade 3 |
 | **A slot is held by a job, not an Uma** | One passive thing at a time stays simple, and sessions never fight a standing Farm seat |
 | **Repeat restarts each free Uma's last job** | Matches "Repeat to restart every job and session"; no hidden reservations |
 | **A queue checks collected free stock, in time order** | Deterministic offline and across devices |
@@ -513,14 +519,14 @@ The old Farm, the Stable Kitchen (M031, D304–D320; deleted with the cutover, r
 | **Sending a done Uma to a session collects her first** | Saves a tap on the most common move |
 | **Promotion needs her free** (decided in [04](04-tiers-and-promotion.md) §5) | No job spans two tiers' Farm Levels, and no job runs at a grade her new Farm Level can't start |
 | **No Farmhouse, cookbook or account recipe milestones** | Their jobs move to the planner, the job sheet and the Warehouse |
-| **Farm EXP is per real listed minute:** base × `TIME_FACTOR`, before building speed (T127) | It's the only reading that keeps §4's "8 hours of work at Lv 1", §3's levels a day, [12](12-economy-and-pacing.md) §6's day table and [08](08-item-catalogue-and-recipes.md) §5's "× *k*" true at *k* = 1.2. §2's "285 Farm EXP" is a base-minute example |
+| **Farm EXP is per real listed minute:** base × `TIME_FACTOR`, before building speed (T127) | It's the only reading that keeps §4's "8 hours of work at Lv 1", §3's levels a day, [12](12-economy-and-pacing.md) §6's day table and [08](08-item-catalogue-and-recipes.md) §5's "× *k*" true at any *k* (1.8 since D374). §2's "285 Farm EXP" is a base-minute example |
 | **Farm EXP is rounded to quarter points once per item**, then multiplied by the items collected | ×0.9 and ×1.8 aren't exact in quarter points, and split collects must pay the same as one |
 | **Ticket time is kept in whole milliseconds and clamped to the time remaining** | Finish then ends exactly when it's used, so nothing starts in the past |
 | **A Speed Ticket count above what finishes the job spends only what finishes it** | A screen that is a minute old still does what the owner meant ([02](02-check-ins-and-notifications.md) §9) |
 | **A queued job takes its speed and inputs when it starts, and its grade gate when it's added** | [05](05-training-hub.md) §7 applies speed to work "started after it", and Farm Level never drops within a tier |
 | **A queue edit is refused if any queued job would no longer start in order** (its place, its grade, a session's unlock order) | Nothing in a queue is left to fail at night for a reason the sheet could have said |
 | **Ties go by §1's order, then the facilities, rooms and slot** | §2 orders only the Farm buildings, but sessions queue too |
-| **A Duo or Feast earns Farm EXP by its main families, not its side** | A planet dish's family excludes its side (§3, [08](08-item-catalogue-and-recipes.md) §4) |
+| **A Duo or Feast earns Farm EXP by its main families, not its side; a tonic by its three** | A planet dish's family excludes its side (§3, [08](08-item-catalogue-and-recipes.md) §4) |
 | **There is no `assign` operation:** work rows hold slots, and building rows hold levels only | §5 has no standing assignment, and a slot read from the job in it can never disagree with that job |
 | **Collect never refuses, and Recall with nothing running acts as Collect** | [02](02-check-ins-and-notifications.md) §9: an action already done shows its result |
 | **An upgrade's only gate is its cost** | Its grade-3 items are §7's "from Farm Lv 11" |
@@ -542,7 +548,7 @@ The old Farm, the Stable Kitchen (M031, D304–D320; deleted with the cutover, r
 | The quick look's stock by open grade runs up to the highest grade any current Uma has open; every building shows its targets as icons (T140, D366) | [11](11-hub-and-places.md) §3.4 says "by open grade"; the same reading as the Exchange's stock ([09](09-racing-rewards-and-exchange.md) §5.3) |
 | Collect here and Repeat here sit in the page's thumb zone; off, each says why on itself ("Nothing to collect", "Nobody to repeat"); their receipt lists each line and each skip in the rule's words, a restart with how long it takes (T140, D366) | §10 puts them beside the global ones; [02](02-check-ins-and-notifications.md) §5's "Kitchen full", "4 Honey short" |
 | `ui/work/` (SlotRow and PeekRow, PlaceStats, UpgradeButton, SpeedUpControls, RecallSheet, QueueChips, SizeChips) and `ui/ItemIcon` are shared with Training and the check-in; the job sheet's selected-Uma control opens the kit's picker (SB6) | One look for every timed thing and every item; the Farm makes the items |
-| **Every Farm screen shows how long work takes or has left, never the clock time it ends:** rows ("1h 20m", **Done**), size chips ("×4 · 7h 12m"), Start ("Start · ×4 · 7h 12m"), queue chips ("then Carrot ×4 · 7h 12m"), no-slot words and Repeat's receipt, all through the domain's `durationText` (D366) | The owner: "I don't like that you show the hour the job finishes instead of the time the job is going to take" |
+| **Every Farm screen shows how long work takes or has left, never the clock time it ends:** rows ("1h 20m", **Done**), size chips ("×4 · 10h 48m"), Start ("Start · ×4 · 10h 48m"), queue chips ("then Carrot ×4 · 10h 48m"), no-slot words and Repeat's receipt, all through the domain's `durationText` (D366) | The owner: "I don't like that you show the hour the job finishes instead of the time the job is going to take" |
 | **The sheet preselects everything:** the first Free Uma in level order unless a link names her; the planner's item and size when they belong to her, else `bestItem` and the fitted size; a link's item and count are kept (D368) | "Less clicks": a free slot's job is one tap from the open sheet, with its Uma matching the new order |
 | **Repeat on a finished row** is `collect`, then `repeat { outfitIds: [her] }`, two operations; the profile's Repeat sizing (same or fit, [02](02-check-ins-and-notifications.md) §5) applies as it does to Repeat here (D366) | The domain's Repeat, for one Uma; nothing restarts outside it (§9) |
 | A suited Uma has an S or A letter for what she'd make (`suits`, `SUITED_LETTERS`) (D366) | §3's "4–5 levels a day when suited" |
@@ -559,6 +565,6 @@ The old Farm, the Stable Kitchen (M031, D304–D320; deleted with the cutover, r
   Umas, and the Kitchen at Lv 1 stays under 90% with 20.
 - The sim's average Uma reaches Farm Lv 10*s* − 9 (grade 2*s*−1) within ±5 days of scenario *s*'s start.
 - At 390 × 844 the building page shows every slot row of a building of up to four slots without scrolling (the
-  Kitchen's eight scroll inside the page), every action is at least 44 pt, every disabled button states its reason, and
+  Kitchen's six and nine scroll inside the page), every action is at least 44 pt, every disabled button states its reason, and
   no Farm screen shows the clock time a job ends.
 - No Farm code reads a Training Level, a token, Energy, a district or a station id.

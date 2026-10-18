@@ -1,13 +1,15 @@
 # 06 · Cards and bonds
 
-> **Status: as built, phase 3 (generation 2, D361); first written 2026-10-13 (D329).** Every SSR open from the start, no
-> stars and no card levels, bonding a card to an Uma at the Dojo, what a bond costs by era, card sets and presets, Race
+> **Status: as built, phase 3 (generation 2, D361); first written 2026-10-13 (D329); bonds take no item since D374
+> (2026-10-18).** Every SSR open from the start, no stars and no card levels, bonding a card to an Uma at the Dojo, how
+> long a bond takes by era, card sets and presets, Race
 > Bonus, and the Card Library (T138, D356). The tables marked live are rendered from the rules, and the loop
 > simulation's checks ([12](12-economy-and-pacing.md) §12) pin the pace.
 
 Today a card has to be **owned** (a Card Select Coupon, D198) and **starred** (0–3★ from Friendship Training, D200,
 D255) before it pays in full. Both go. Every card is open and pays its maximum, and the one thing that stands between a
-card and an Uma's set is a **bond**: a passive Dojo session that ties that card to that Uma for the rest of her tier.
+card and an Uma's set is a **bond**: a passive Dojo session, paid in time alone, that ties that card to that Uma for the
+rest of her tier.
 The collection stops being "which cards do I have" and becomes "which cards has each Uma trained with".
 
 ## 1. Every card open, at full value
@@ -44,15 +46,15 @@ A **bond** is one card unlocked for one Uma. The rules:
 - **A card goes in an Uma's card set only once it is bonded to her** (D329). Unbonded cards can be browsed, compared
   and planned with, never slotted.
 - **One Dojo session unlock per bond.** The Dojo, its rooms and how sessions run are [05](05-training-hub.md)'s.
-  A bond is one unlock in a session: one exact dish, (180 + 15(*g*−1)) × *k* minutes. No substitutions: a higher-grade dish
-  never pays for a lower-grade bond ([08](08-item-catalogue-and-recipes.md)).
+  A bond is one unlock in a session: (180 + 15(*g*−1)) × *k* minutes, and **no item** (D374). The card itself is the
+  cost: choosing it for her set means not choosing another, and its session holds her for hours.
 - **The bond lasts her whole tier** and **resets at promotion** with everything else on the Uma (D327).
 - **Per Uma.** Bonding a card to five Umas takes five sessions.
 - **She can bond any card her current scenario allows**: era ≤ *T*, her scenario's position in the 15 (§3). A card of a
   later era shows "Opens in scenario 3 · Trackblazer" and cannot be bonded ahead.
 - **A bond is never undone or refunded.** There is no reason to: bonds have no limit.
 
-### The dish: family by card type
+### The room by card type
 
 <!-- live:bond-rooms -->
 | Card type | Dojo room | Takes |
@@ -65,17 +67,18 @@ A **bond** is one card unlocked for one Uma. The rules:
 | Friend, Group | Friend & Group | Nothing: the session alone |
 <!-- /live -->
 
-### The dish: grade by era
+### The grade by era
 
-**A card first eligible in the tier's scenario *p* needs grade 2*p*−1.** Cards from before the tier count as *p* = 1:
+**A card first eligible in the tier's scenario *p* bonds at grade 2*p*−1.** Cards from before the tier count as *p* = 1.
+The grade sets the session's length only:
 
 ```
 p     = max(1, era − 5 × (tier − 1))
 grade = 2p − 1                       (1, 3, 5, 7 or 9)
 ```
 
-So the newest cards of each scenario cost the most, and every older card costs grade 1. The table is the Training Hub's
-rules (`bondGrade` in `@racer/domain/training`, D344).
+So the newest cards of each scenario take the longest, and every older card bonds at grade 1. The table is the
+Training Hub's rules (`bondGrade` in `@racer/domain/training`, D344).
 
 <!-- live:bond-grades -->
 | Card era (JP scenario) | Tier 1 grade | Tier 2 grade | Tier 3 grade |
@@ -99,13 +102,13 @@ rules (`bondGrade` in `@racer/domain/training`, D344).
 
 "—" means the card is not eligible anywhere in that tier. Today's pack (2026-10-02, aggregates only) holds 52, 24, 27,
 27 and 24 cards of eras 1–5, then 28, 19, 19, 15 and 16 of eras 6–10, and 18, 14, 15 and 14 of eras 11–14; none is era 15
-yet. The code may not read the private pack, so the counts stay in this sentence. The odd grade is the scenario's lower one, which an average
-Uma's Farm Level opens as that scenario starts ([12](12-economy-and-pacing.md) §6), so a new era's cards are bondable
-from the scenario's first day. Session time follows the grade: 180, 210, 240, 270 or 300 minutes.
+yet. The code may not read the private pack, so the counts stay in this sentence. A new era's cards are bondable
+from the scenario's first day. Session time follows the grade: 180, 210, 240, 270 or 300 base minutes, × *k* = 1.8 in
+play (5h 24m, 6h 18m, 7h 12m, 8h 6m or 9h).
 
-Examples in tier 1: Kitasan Black [Fire at My Heels] (Speed, era 1) takes `dish-sweets-1` and 3 hours. Riko Kashimoto
-[Planned Perfection] (Friend, era 2) takes `dish-grains-3` and 3½ hours. Satono Diamond [Special Dreamers!] (Wit,
-era 3) takes `dish-herbs-spices-5` and 4 hours. In tier 2 all three are grade 1.
+Examples in tier 1: Kitasan Black [Fire at My Heels] (Speed, era 1) takes 5h 24m. Riko Kashimoto [Planned Perfection]
+(Friend, era 2) takes 6h 18m. Satono Diamond [Special Dreamers!] (Wit, era 3) takes 7h 12m. In tier 2 all three are
+grade 1. None takes an item.
 
 ### How many bonds
 
@@ -118,30 +121,30 @@ era 3) takes `dish-herbs-spices-5` and 4 hours. In tier 2 all three are grade 1.
 
 - **The 18 is the pacing assumption, not a cap.** The owner may bond **any number** of cards to an Uma. The planner and
   [12](12-economy-and-pacing.md)'s model count 18, and "[Scenario] Fully Trained" counts 6, 9, 12, 15 and 18
-  ([05](05-training-hub.md) §11). More bonds only cost more dishes and Uma-time, which the anchor already prices.
+  ([05](05-training-hub.md) §11). More bonds only cost more Uma-time, which the anchor already prices.
 - **What a typical build needs.** A set is six cards per distance preset, and a typical Uma races two distances. The
   stamina ladder's Mile and Medium sets share five cards (two Speed, Stamina, Wit, Friend) and differ in one (a second
   Wit or a Power), so **two presets take 7–12 bonds**: 7 when they share, 12 when they share nothing.
 - **What the 18 buys.** Scenario 1's six fill her first preset. The next three give her second preset its own cards.
   The last nine follow the eras: each scenario of tier 1 brings 24–27 newer cards, which pay 5% more a node for every
   era they are newer, so swapping two or three of them in each scenario is worth a bond.
-- **Dish demand.** [08](08-item-catalogue-and-recipes.md) counts a representative 3 bonds of each card type a tier,
-  each at its layer's lower grade. Real decks lean Speed and Wit, carry one Friend (so Grains stays light), and most
-  bonds are grade 1 by the era rule, so 08's bond grades are an upper bound.
+- **No Farm demand.** A bond takes no item (D374), so a deck changes nothing at the Farm
+  ([08](08-item-catalogue-and-recipes.md) §7); only its sessions' hours differ.
 
 ### Worked example: a Mile Uma's first week
 
-In scenario 1 of tier 1 only era-1 cards are eligible, so every bond is grade 1 and 3 hours. She needs two Speed cards,
-a Stamina, two Wit and a Friend (the ladder's Mile set):
+In scenario 1 of tier 1 only era-1 cards are eligible, so every bond is grade 1: 3 base hours, 5h 24m in play. She
+needs two Speed cards, a Stamina, two Wit and a Friend (the ladder's Mile set):
 
-| Session | Room | Bonds | Dishes | Time |
+| Session | Room | Bonds | Items | Time (base) |
 |---|---|---|---|---|
-| 1 | Speed | Kitasan Black [Fire at My Heels], Sakura Bakushin O [Eat Fast! Yum Fast!] | 2 × `dish-sweets-1` | 6 h |
-| 2 | Wit | Fine Motion [Wave of Gratitude], a second Wit card | 2 × `dish-herbs-spices-1` | 6 h |
-| 3 | Stamina | Super Creek [Piece of Mind] | `dish-fruits-1` | 3 h |
-| 4 | Friend & Group | Tazuna Hayakawa [Tracen Reception] | `dish-grains-1` | 3 h |
+| 1 | Speed | Kitasan Black [Fire at My Heels], Sakura Bakushin O [Eat Fast! Yum Fast!] | none | 6 h |
+| 2 | Wit | Fine Motion [Wave of Gratitude], a second Wit card | none | 6 h |
+| 3 | Stamina | Super Creek [Piece of Mind] | none | 3 h |
+| 4 | Friend & Group | Tazuna Hayakawa [Tracen Reception] | none | 3 h |
 
-18 hours of sessions, one at a time (an Uma holds one session, [05](05-training-hub.md) §2). She can race throughout.
+18 base hours of sessions (32h 24m in play), one at a time (an Uma holds one session, [05](05-training-hub.md) §2),
+and nothing from the Warehouse. She can race throughout.
 Until she has six bonds her set has empty slots, which pay nothing, and her tree's per-card cap (3 nodes on 12) leaves
 nodes empty, which is the visible reason to finish bonding.
 
@@ -230,8 +233,8 @@ featured Uma.
 **Tiles** use the four corners as today (D238): distance top left, running style top right, type bottom left. The
 bottom-right pill, which held stars, now shows:
 - with no Uma chosen, **how many Umas are bonded** to the card in their current tier (hidden at 0);
-- with an Uma chosen, a **bond mark** if she is bonded, or **the dish grade she needs** ("G5" on the family's colour),
-  or a lock if the card's era is past her scenario.
+- with an Uma chosen, a **bond mark** if she is bonded, or **the grade she bonds at** ("G5"), or a lock if the card's
+  era is past her scenario.
 
 **NEW** marks a card a content update added since the owner last opened it (device-local, as today).
 
@@ -241,23 +244,22 @@ bottom-right pill, which held stars, now shows:
 3. **What it pays:** its split with the stat icons; its per-node pay in the lens scenario, and the `eraPct` it keeps in
    each later scenario of the tier; Skill Points per node for Friend and Group; its Race Bonus ("+4.9% Racing EXP").
 4. **Skills:** its golds first, highlighted, then its whites, each marked with the node that pays it ("2nd node").
-5. **Bond cost:** the dish and time per tier ("Tier 1: `dish-herbs-spices-5`, 4 h · Tiers 2–3: `dish-herbs-spices-1`,
-   3 h").
+5. **Bond cost:** the time per tier, and no item ("Tier 1: No item · 7h 12m · Tiers 2–3: No item · 5h 24m").
 6. **Bonded to:** each Uma bonded in her current tier, with her tier and scenario, the presets that hold the card and
    its nodes; then the Umas who could bond it now.
 7. **Bond**, in the thumb zone.
 
 **Bonding from the card page:**
 1. **Bond** opens the Uma picker, filtered to Umas who can bond this card now: its era is open in her scenario and she is
-   not bonded to it. Each row shows the dish, the Warehouse stock and the minutes. A busy Uma shows "Busy · 2h 10m
+   not bonded to it. Each row shows the time it takes ("No item · 5h 24m"). A busy Uma shows "Busy · 2h 10m
    left" (D366) and offers **Queue** where [02](02-check-ins-and-notifications.md)'s queues allow it. Umas who cannot bond it are
    listed below with the reason ("Already bonded", "Opens in scenario 3").
 2. Picking an Uma opens the **Dojo session sheet** ([05](05-training-hub.md) §8) with her, this card and the card type's
    room chosen. The owner can add more bonds of the same type to the same session.
-3. **Start** returns to the card page, where the card shows "In session · bonds in 3h 36m".
+3. **Start** returns to the card page, where the card shows "In session · bonds in 5h 24m".
 
 **The card set tab** of an Uma's build uses the same Library, with the lens on her scenario and "bonded to her" on.
-Below her bonded cards, a **Bond more** section lists eligible unbonded cards, each with its dish and a Bond button.
+Below her bonded cards, a **Bond more** section lists eligible unbonded cards, each with a Bond button.
 There is no weaker parallel picker.
 
 **As built (T138).** What a card pays on screen is **`cardPay(card, T)`** (`training/derive.ts`): the type's
@@ -269,7 +271,7 @@ distance focus pass through `training` from today's `card-focus` (§5). The Libr
 `places/card-library/` with `mode: 'browse' | 'pick'`: pick mode fixes the lens on the Uma it is given, offers only
 the caller's `eligible` cards and calls `onPick(cardId)`, for T139's card set tab and session sheet. Its lens and its
 saved views are device preferences (`uma-racer:g2:album:card-library`). With no Uma chosen the "her bond" filters rest.
-A pending bond reads "In session · bonds in 3h 36m" (how long until the bond's own unlock ends, D366), "Bond ready to collect" once it has
+A pending bond reads "In session · bonds in 5h 24m" (how long until the bond's own unlock ends, D366), "Bond ready to collect" once it has
 finished, or "Queued to bond".
 
 ## 7. Badges and achievements
@@ -314,11 +316,10 @@ and collect with the session operations; a set edit is one ordinary Uma write.
 - **A stale screen.** Start re-checks that she is not already bonded and not already bonding this card; a second device's
   bond shows as a refusal naming the session, never a second bond.
 - **The same card twice in one session**, or in two sessions for one Uma, is refused.
-- **A 0-stock Warehouse.** The Bond button still opens the picker; each row shows "0 in Warehouse · Cook" and links to the
-  Kitchen recipe.
+- **A 0-stock Warehouse** changes nothing: a bond takes no item (D374).
 - **Promotion.** Bonds, sets and assignments reset with the rest of the Uma ([04](04-tiers-and-promotion.md)). A running
-  Dojo session is recalled first and its dishes return.
-- **An Uma bought mid-tier** starts with no bonds; her first set takes six grade-1 bonds, about 18 hours.
+  Dojo session is recalled first; it reserved nothing, so nothing returns.
+- **An Uma bought mid-tier** starts with no bonds; her first set takes six grade-1 bonds, 18 base hours (32h 24m).
 - **Racing with an incomplete set** is allowed. An empty slot pays nothing; Race Bonus counts only the cards present.
 - **A card a content update removes** keeps its bond as a diagnostic, never counted in Library totals, and its set slot
   shows empty.
@@ -328,9 +329,10 @@ and collect with the session operations; a set edit is one ordinary Uma write.
 | Choice | Why |
 |---|---|
 | Every card pays 3★ values: node 100%, full Race Bonus, unique-effect bonus | D329; the owner considers every card max limit broken |
-| A bond can only be made for a card her current scenario allows | Bonds follow the layers; the grade then always matches dishes the Farm can make |
-| Bond grade = 2*p*−1 with *p* = max(1, era − 5(tier − 1)) | Newer cards cost more; older ones cost grade 1 in every later tier |
-| Any number of bonds; 18 a tier is the pacing assumption | Bonds already cost dishes and time; a cap would only add a rule |
+| A bond can only be made for a card her current scenario allows | Bonds follow the layers |
+| Bond grade = 2*p*−1 with *p* = max(1, era − 5(tier − 1)) | Newer cards take longer; older ones bond at grade 1 in every later tier |
+| **A bond takes no item, only its session's time** (D374) | The card and the hours are the cost; a dish per bond was dozens of cooked items a tier for no build of its own |
+| Any number of bonds; 18 a tier is the pacing assumption | Bonds already cost time; a cap would only add a rule |
 | Bonds are never undone or refunded | Unlimited bonds leave nothing to recover |
 | Race Bonus pays Racing EXP only, never Prize Money | Keeps the anchor currency clean and set-swapping pointless |
 | The Card Library keeps today's lens chips, adds an Uma control, and replaces the stars pill with bond state | One browsing chrome; the tile answers "can she use it" |
@@ -340,7 +342,7 @@ and collect with the session operations; a set edit is one ordinary Uma write.
 | `remainingUnlocks` takes the cards the owner has chosen to bond; the rest of each layer's pacing count shows as "pick cards", oldest layer first, with bonds made or pending counted toward it (D344) | [02](02-check-ins-and-notifications.md) §6 cascades only chosen bonds; the caller (a screen, or the loop simulation's deck) supplies the choice |
 | The card buff applies to a Friend or Group card's SP, as today (D344) | 03 §8 and §1 omit it from the SP formula, but 03 §8 calls Friend and Group "unchanged" and D165 buffs every card node |
 | A bond's layer is its card's first eligible scenario *p*; a card past her scenario refuses with the scenario that opens it, a card past her tier with its own tier's scenario (D344) | One rule for the grade and the lock; 18 a tier stays a count, not a cap |
-| A Dojo session reads each bonded card's type and era from the content (`cards`), never from the request (D344) | The dish and grade follow the card; a request can't name a cheaper one |
+| A Dojo session reads each bonded card's type and era from the content (`cards`), never from the request (D344) | The room and grade follow the card; a request can't name a shorter one |
 | A card set refuses an unbonded card, a card twice, a character twice, a card past her scenario and a seventh card; replacing a card in its slot hands its nodes over, removing one empties them, exactly as today's `withCardSet` (D129, D344) | §3's rules; the hand-over is today's, proven by a parity test |
 | Lineage picks go only in open slots, from Umas the account owns, never herself, under D250's repeat rules and Legends (D344) | [05](05-training-hub.md) §5 pays "a filled open slot" |
 | A loadout keeps her unique first and checks the rest against the preset's derived library and SP; one over her SP is refused unless it costs no more than the one it replaces (D196, D344) | Today's rules; the unique is always equipped and costs nothing |
@@ -357,8 +359,8 @@ and collect with the session operations; a set edit is one ordinary Uma write.
 - The domain has no card ownership, stars, coupons or Friendship Training; every card node pays `nodeValue × eraPct ×
   buffPct`, and tests pin the type splits, era decay and Race Bonus at full value.
 - A card set refuses a card not bonded to that Uma, a duplicate card or character, and a card past the scenario's era.
-- A Dojo session bonds a card with its family's dish at grade 2*p*−1, and tests pin the era-to-grade table for all
-  three tiers.
+- A Dojo session bonds a card in its type's room at grade 2*p*−1 with no item, and tests pin the era-to-grade table
+  for all three tiers.
 - Bonds survive scenario advances, reset at promotion, and an Uma can hold more than 18.
 - Race EXP uses the race preset's full Race Bonus; Prize Money ignores it.
 - The Card Library browses all cards with the sorts and filters in §6; with an Uma chosen every tile shows her bond

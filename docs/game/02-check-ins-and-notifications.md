@@ -161,7 +161,7 @@ to spend them:
 - **Speed up all**, which takes 1 h, 2 h or "to the next check-in" off every running job and session in one tap.
   Its confirmation shows the ticket count.
 - **Best use** marks: the planner (§6) flags running jobs whose finish unblocks the most work, such as a Kitchen job
-  three sessions wait on, each with how long until it lands ("Kitchen · Carrot Salad ×3 → in 2h 10m"). These are the first to speed up after a free evening of racing ([01](01-game-loop.md) §5).
+  three sessions wait on, each with how long until it lands ("Kitchen · Warm-Up Tonic ×3 → in 2h 10m"). These are the first to speed up after a free evening of racing ([01](01-game-loop.md) §5).
 
 ## 5. Repeat
 
@@ -207,14 +207,15 @@ Wishlist.
 ### What counts as a need
 
 1. **Her remaining unlocks**, oldest layer first: anything left from earlier layers of this tier (under "from scenario
-   1"), then the current layer. Older layers take cheaper dishes and lift her most per hour
+   1"), then the current layer. Older layers take cheaper items and lift her most per hour
    ([03](03-uma-progression.md) §10).
-2. **The dish each one takes** ([05](05-training-hub.md), [08](08-item-catalogue-and-recipes.md)): a Vegetables dish
-   for a node, a Mushrooms dish for Inspiration, a stat dish for a single Extra node or a bond, a Duo dish for a Duo
-   node, a Feast for a Sun node.
-   - A bond with no card chosen yet has no family, so it isn't cascaded. It shows as "3 bonds: pick cards".
-3. **Each short dish's inputs:** 4 crafted of its family and grade, plus 1 crafted side
-   ([08](08-item-catalogue-and-recipes.md)).
+2. **The item each one takes** ([05](05-training-hub.md), [08](08-item-catalogue-and-recipes.md) §6, D374): a tonic
+   for a node or an Inspiration slot, a stat meal for a single Extra node, a Duo for a Duo node, a Feast for a Sun
+   node; nothing for a bond, an inherited unique or a gold, which are ready as soon as their order allows. A retired
+   salad or soup in stock counts as the tonic of its grade.
+   - A bond with no card chosen yet shows as "3 bonds: pick cards": it takes no item, but it needs a card.
+3. **Each short item's inputs:** a meal's 4 crafted of its family and grade plus 1 crafted side, a tonic's 1 crafted
+   Vegetables, Mushrooms and Grains ([08](08-item-catalogue-and-recipes.md)).
 4. **Each short crafted item's raw item**, one for one.
 
 ### What counts first
@@ -222,7 +223,7 @@ Wishlist.
 At every step, before anything is "short":
 1. **Warehouse stock**, less what queued entries will take when they start.
 2. **Outputs coming** from running and queued work, including finished work not yet collected, in finish order.
-3. Stock and outputs are **allocated once, in target order**: target 1 takes first. One dish is never promised to two
+3. Stock and outputs are **allocated once, in target order**: target 1 takes first. One item is never promised to two
    Umas.
 
 Reserved inputs of running work are already spent; the planner never counts them twice.
@@ -231,11 +232,11 @@ Reserved inputs of running work are already spent; the planner never counts them
 
 | Where | Shows |
 |---|---|
-| **Her Needs tab** | Layer progress (Observatory 8/12, Lineage Hall 1/2, Gym 4/10, Dojo 3/6), then the cascade: dishes short → crafted short → raw short. Then an estimate, "about 120 Uma-hours of work", and the three jobs that unblock her most, each with **Start** |
+| **Her Needs tab** | Layer progress (Observatory 8/12, Lineage Hall 1/2, Gym 4/10, Dojo 3/6), then the cascade: meals and tonics short → crafted short → raw short. Then an estimate, "about 120 Uma-hours of work", and the three jobs that unblock her most, each with **Start** |
 | **Each Farm site, the Pantry and the Kitchen** | **For your targets:** what the targets need from this place, lowest grade first. Each line is its item's icon with "×6" short; VoiceOver reads "Vegetables G3 · short 6 · Warehouse 4 · coming 2 (Gold Ship, in 1h 20m)". Tapping one opens the job sheet with it filled in ([07](07-farm.md) §10). The recipe picker badges target lines ("Target ×3") |
-| **Each Training facility** | Per target: unlocks left here, dishes ready, dishes coming. **Start** when she's free and a dish is in stock |
+| **Each Training facility** | Per target: unlocks left here, how many are ready (their item in stock, or none needed), items coming. **Start** when she's free and one is ready |
 | **The check-in summary** | Its suggestions for free Umas (§4) |
-| **Roster view** | The planner's totals for every Uma's layer at once: unlocks left, dishes short by family and grade. Big-picture only; place lists stay with the targets |
+| **Roster view** | The planner's totals for every Uma's layer at once: unlocks left, meals and tonics short by kind and grade. Big-picture only; place lists stay with the targets |
 
 **Grade gates and empty stock:**
 - A line no free Uma can work says so: "Grade 4 needs Farm Lv 16 · highest free Uma: Lv 14". It offers **Buy at the
@@ -246,7 +247,7 @@ Reserved inputs of running work are already spent; the planner never counts them
 ### Suggestions for free Umas
 
 For each free Uma, in order ([01](01-game-loop.md) §4):
-1. **Her own session**, if a dish for one of her unlocks is in stock.
+1. **Her own session**, if the item for one of her unlocks is in stock, or it takes none.
 2. Otherwise **the scarcest line for the first target she can work**: her Farm Level must open the grade and a slot
    must be free.
 3. **The size is fitted** to the next check-in (§3).
@@ -398,8 +399,9 @@ The planner, suggestions, finish times and the badge count are **derived on read
 | Default check-in times 08:00, 13:00 and 22:30, editable, up to four | The sim's policy ([12](12-economy-and-pacing.md) §12) |
 | The size picker preselects the size that fits the next check-in, and shows the wait after each size | Overshooting a visit usually costs the most idle time |
 | Planner targets: up to 5, in order; automatic (five furthest behind) until the owner marks one | uma-rpg's D100 limit; the automatic choice matches the sim |
-| Unchosen bonds aren't cascaded; the planner asks for cards | A bond's dish depends on its card |
-| Stock and outputs coming are allocated once, in target order; finished-but-uncollected output counts as coming | Never promise one dish twice, or spend what isn't collected |
+| Unchosen bonds aren't cascaded; the planner asks for cards | A bond takes no item (D374), but its room and time depend on its card |
+| Stock and outputs coming are allocated once, in target order; finished-but-uncollected output counts as coming | Never promise one item twice, or spend what isn't collected |
+| An unlock that takes no item counts as ready; a tonic draws its stand-ins (a retired salad, then soup, of its grade) before the tonic itself (D374) | A session reserves them in that order, so the planner promises what Start will take |
 | Push is optional and only a port of uma-rpg's D63/D65, built if the owner asks after playing (D336) | The owner's rule: nothing outside what uma-rpg already set up |
 | The racer's changes are limited to sessions, counting Umas, reading per-entity rows, quiet hours and silence while the app is open | What the racer's rules need, and no more |
 | A stale screen re-checks and runs, shows the earlier result, or re-asks with new numbers; never an error | D320 |
@@ -411,18 +413,18 @@ The planner, suggestions, finish times and the badge count are **derived on read
 | Clock times are cut to the minute, so §3's 12:52:30 reads 12:52 | The same table shows 22:22:30 and 07:52:30 as 22:22 and 07:52 |
 | Repeat with no Umas named takes every Free Uma with a last job or session, in her last slot's order, each at the lowest free slot there | §5 says "collected in this check-in", [07](07-farm.md) §9 says "each free Uma", and the screen passes the Umas it collected |
 | Repeat skips an Uma with a stopped queue | Queue stopped's fixes put back what she was meant to do next |
-| A repeated session takes the next unlocks in order and stops at the first missing dish | An unlock may depend on the one before ([05](05-training-hub.md) §2) |
+| A repeated session takes the next unlocks in order and stops at the first missing item (one that takes none never stops it) | An unlock may depend on the one before ([05](05-training-hub.md) §2) |
 | **Switch** is offered for raw, crafted and planet-dish jobs; a Duo or a Feast keeps its node's grade | Duos and Feasts exist only at their nodes' grades |
 | A stopped queue clears on its restart, on Dismiss, or on any other start for her. A restart takes her old slot, or the lowest free one at the same place | §10 keeps it "until the owner restarts or dismisses it", and a new start is acting on it; the slot may have been taken since |
 | Make them is sized to the shortfall, 10 at most, by the first Free Uma in suggestion order who can start it | §4's example is "Garden ×2" for 2 short |
 | **Buy and restart** prices the shortfall at today's stock with the Exchange's own prices and stock rule ([09](09-racing-rewards-and-exchange.md) §5), and is offered only when every short item is a stocked raw item | The Exchange landed first (T130), so its prices are read where they live, not passed in |
 | Speed up all: "to the next check-in" is the time until it, each entry is clamped to Finish, and short tickets refuse it all | One confirmation shows one count (§4), with nothing half applied |
-| Best use counts an unlock or a dish as 1 and a crafted or raw item as ⅕, only for outputs still to finish, and marks three | A dish takes five crafted items ([08](08-item-catalogue-and-recipes.md) §4); speeding a finished output gains nothing |
+| Best use counts an unlock or a meal or tonic as 1 and a crafted or raw item as ⅕, only for outputs still to finish, and marks three | A meal takes five crafted items ([08](08-item-catalogue-and-recipes.md) §4); speeding a finished output gains nothing |
 | Automatic targets need unlocks left; ties go by outfit | It's deterministic and matches "furthest behind" ([12](12-economy-and-pacing.md) §12) |
 | Suggestions go by Farm Level, highest first; "scarcest" is the largest shortfall that can start now; the size is capped by stock, not need | [01](01-game-loop.md) §4 gives higher grades to higher levels, and idle time costs more than surplus |
 | Projected drops count neither as takes nor as coming | The planner and the queue warnings agree with settle |
 | A line names its grade gate only when some Uma is Free | With nobody Free nothing can start, so no level is in the way |
-| The Needs estimate uses today's building speeds and leaves out bonds still waiting for a card; its "three jobs" are her first three startable lines, dishes first | §6 names both without a rule, and an unchosen bond has no dish yet |
+| The Needs estimate uses today's building speeds and leaves out bonds still waiting for a card; its "three jobs" are her first three startable lines, meals and tonics first | §6 names both without a rule, and an unchosen bond has no card yet |
 | Training done lists an Uma whose current layer is complete and who isn't ready to advance; one who is shows under Ready to advance only | One line per Uma |
 | **Repeat all (N)** counts the Umas Repeat takes by default, those with a stopped queue included | They show under Couldn't repeat with Queue stopped's fixes |
 | Collect all raises the Exchange's stock mark to the highest grade a Farm Level now opens | D345: the collect raises it, so the sim and phase 3 get it from one operation |
@@ -470,7 +472,7 @@ The planner, suggestions, finish times and the badge count are **derived on read
 | Training done's **Race** opens `/racing/racecourse?uma=`; Ready to advance's **Advance** opens T141's Advance sheet (`/racing/scenario-gate/:umaId?sheet=advance`) (T142) | "Advance, with its usual confirmation" (§4) is that sheet |
 | Her Needs tab is the body of T138's profile tab (`PROFILE_UI.Needs`) under her header and its target toggle (`PROFILE_UI.TargetToggle`); the roster view is the Stable's `needs` sub-page (T142) | A full-page sub-page would drop her header and tabs; [11](11-hub-and-places.md) §7.1 calls both the profile's sub-pages |
 | Each of her three startable lines takes its own Free Uma (T142, a gap in `needsFor`) | One slot per Uma ([01](01-game-loop.md) §2): every Start must be able to run |
-| The roster view lists the marked targets with up, down and remove, or the automatic five read-only; unlocks left per Uma with any left; dishes short by family and grade (T142) | §6: big-picture only; marking is the profile's |
+| The roster view lists the marked targets with up, down and remove, or the automatic five read-only; unlocks left per Uma with any left; meals and tonics short by kind and grade (T142) | §6: big-picture only; marking is the profile's |
 | The seeds' mount adds the `stopped` seed and `?at=HH:MM`, and a DEV-only proof, now at `/dev/seeds/dev/check-in` (T142, T143) | The check-in's checks need dropped queues and a clock at 09:00 or 23:00 (11 §7.2's rule for proofs) |
 
 ## 12. Done when
@@ -489,8 +491,8 @@ The planner, suggestions, finish times and the badge count are **derived on read
   - a queued entry the Warehouse wouldn't cover shows its warning before it starts.
 - **Repeat** restarts every collected job at the same size; shrinks and flags when short; skips with a reason and a
   fix when empty; takes the next unlocks for a session; asks for cards at the Dojo; never repeats a recalled Uma.
-- **Planner:** for synthetic targets, the need lines equal a brute-force recount, layer by dish by crafted by raw,
-  less stock and outputs coming. No dish is allocated twice across five targets.
+- **Planner:** for synthetic targets, the need lines equal a brute-force recount, layer by item by crafted by raw,
+  less stock and outputs coming. No item is allocated twice across five targets.
 - **Push, if the owner asks for it (phase 4):** uma-rpg's tests pass on the ported code; a session ending with the app closed
   gives one notice within about five minutes; nothing arrives in quiet hours or while the app is open; the badge
   matches the summary's count; and the billing report shows the push pieces at $0, or $0.10 at most.

@@ -81,7 +81,7 @@ globals. Time comes in as `now`, integer milliseconds; randomness from the race 
 | `@racer/domain/save` | The generation-2 save: rows, strict parsers, `initialSave`, operation envelopes and receipts, `commitOperation`, sync v2's wire types ([rework/13](../rework/13-removals-and-plan-changes.md) §6) | `src/save/index.ts`; `dist/cjs/save/…` |
 | `@racer/domain/state` | The shared state shapes and the one time factor (`types.ts`, `time.ts`): the only path to them | `src/state/index.ts` |
 | `@racer/domain/tiers` | The tier map, Racing Level, careers, advancing, promotion, Uma Tickets and Shards, tier scaling, rivals, the stand-in Expedition | `src/tiers/index.ts` |
-| `@racer/domain/items` | The 8 × 10 catalogue, crafted items, planet dishes, Duos and Feasts, recipes, grade gates, work values | `src/items/index.ts` |
+| `@racer/domain/items` | The 8 × 10 catalogue, crafted items, planet dishes (30 retired), Duos, Feasts and tonics, recipes, stand-ins, grade gates, work values | `src/items/index.ts` |
 | `@racer/domain/work` | The one-after-another work engine: jobs and sessions, queues, collect, recall, Speed Tickets, the clock | `src/work/index.ts` |
 | `@racer/domain/farm` | The Farm's buildings and slots, Farm Level, Farm jobs | `src/farm/index.ts` |
 | `@racer/domain/training` | The Training Hub's facilities, layers and unlock order, the Extra Stats map, bonds, presets, buffs, derived stats, and the re-authored trees (`training/trees/`) | `src/training/index.ts` |
@@ -111,7 +111,7 @@ operations and queries; no screen or API handler restates a rule or a number.
 |---|---|
 | `state` | The shared state (`ReworkState`, the profile, `UmaState`, work rows) and `TIME_FACTOR` |
 | `tiers` | The tier map, Racing Level per tier, careers, advancing, promotion, Uma Tickets and Shards, tier scaling, rivals |
-| `items` | The 8 × 10 catalogue, crafted items, planet dishes, Duos and Feasts, recipes, grade gates, work values |
+| `items` | The 8 × 10 catalogue, crafted items, planet dishes (30 retired), Duos, Feasts and tonics, recipes, stand-ins, grade gates, work values |
 | `work`, `farm` | The one-after-another work engine (jobs and sessions, queues, collect, recall, Speed Tickets), buildings, Farm Level |
 | `training` | The Training Hub's facilities, layers and unlock order, the Extra Stats map, bonds, presets, buffs, derived stats; `training/trees/` the re-authored trees, their sizes and the validator |
 | `economy` | Prize Money, the Daily Purse, featured races, the Exchange and selling |
@@ -122,8 +122,8 @@ operations and queries; no screen or API handler restates a rule or a number.
 
 The rules every area follows:
 - **Pure**, as above.
-- **Whole seconds through one time factor.** Every duration is a base formula in minutes × `TIME_FACTOR` (1.2,
-  D338) × 60, rounded once, then divided by a building's speed and rounded once more (`state/time.ts`).
+- **Whole seconds through one time factor.** Every duration is a base formula in minutes × `TIME_FACTOR` (1.8,
+  D374; 1.2 from D338) × 60, rounded once, then divided by a building's speed and rounded once more (`state/time.ts`).
 - **Reuse, don't copy.** Where the rework keeps a rule as it was, the area imports the core's (`progression.ts`,
   `scenario-goals.ts`, `constellation.ts`, `lineage.ts`, `opponents.ts` …). Where it changed a formula, the new one
   lives in the area.
@@ -405,7 +405,7 @@ Two sources, kept apart:
 | `buildings` (48×48, ground line at 44) | uma-kit's Hub scene on the map (through `KitArtProvider`, `app/art.ts`); `ui/BuildingSprite.tsx` in the DOM at 2× (96 pt) | Every place's building ([11](11-hub-and-places.md) §10.1) |
 | `tiles` (16 px) | uma-kit's `layTerrain` and Hub scene, on each page's tile page (`hub/racerHub.ts`) | Each page's ground, paths and props: `town`, `learning` (Training), `racing`, `farmlands` (Farm) |
 | `ui` | uma-kit's `UiMark` and `TierCrest` | The currency marks at 16 pt and the tier crests at 24 pt |
-| `items`, `dishes` (32 px) | `ui/ItemIcon.tsx` | Every catalogue item, dish and the Speed Ticket |
+| `items`, `dishes` (32 px) | `ui/ItemIcon.tsx` | Every catalogue item, dish and the Speed Ticket; a tonic once `items` holds a frame of its id (D374), its name on a plain tile until then |
 
 **How a frame reaches the Hub.** Each place in the registry (`@racer/domain/hub`) names its `buildings` frame and its
 `at` position. `HubPage` passes them to uma-kit's map, whose scene loads the atlases `app/art.ts` hands it, snaps each

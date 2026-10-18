@@ -13,7 +13,7 @@ This folder holds **only work that is planned or in progress**. A task spec is a
 
 **The game rework (D326–D336, D338) on the re-architecture's revised phases** ([08](../rearchitecture/08-phases.md),
 [rework/13](../rework/13-removals-and-plan-changes.md) §4). [The rework](../rework/README.md) turned Uma Racer into
-Race, Farm, Train: three tiers of five scenarios, one Training Hub unlock model paid with cooked dishes, every card open
+Race, Farm, Train: three tiers of five scenarios, one Training Hub unlock model paid with meals and tonics, or nothing (D374), every card open
 and bonded per Uma, uma-rpg's farming catalogue, Prize Money and the Exchange, and World Expeditions (phase 9).
 [The re-architecture](../rearchitecture/README.md) rebuilds the code underneath it on uma-platform's shared foundation.
 
@@ -29,7 +29,7 @@ and bonded per Uma, uma-rpg's farming catalogue, Prize Money and the Exchange, a
 | 8 | The race on Phaser; PixiJS leaves the repo | **Archived 2026-10-16** (D370). PixiJS stays for the race scene |
 | 9 | World Expeditions | **Kept through the 2026-10-16 cleanup** (D370): without it the first Uma to finish tier 1's last career has nowhere to go. Not specified yet. It must land within about 16–20 weeks of 2026-10-15 (by about 2027-02-04 to 2027-03-04), before the first Uma finishes tier 1's last career |
 
-**Still open, as of 2026-10-16:**
+**Still open, as of 2026-10-18:**
 1. **T144's step 10, the follow-up release.** Once the owner confirms in chat that the new account is theirs, it
    removes `POST /api/legacy/purge` and the boot's purge call with their tests, deletes this folder's M034 and T144
    specs (D104), moves phase 3 to "Completed and removed", and writes the release decision. **D362 is reserved for that
@@ -38,6 +38,8 @@ and bonded per Uma, uma-rpg's farming catalogue, Prize Money and the Exchange, a
    wait on their dependencies. The queue and its states are in [handoff](../handoff/README.md). The
    redirects and the first-boot wipe leave with SE1, phase 5 (D365, D370).
 3. **Phase 9, World Expeditions,** due by about 2027-02-04 to 2027-03-04 and specified when it starts.
+4. **[A04](../handoff/tasks/A04-tonic-icons.md), the ten tonics' item icons** (D374, 2026-10-18), ready for ChatGPT;
+   until uma-art ships them, a tonic draws as its name on a plain tile.
 
 **Archived 2026-10-16 (D370), the owner's cleanup of open items unrelated to the sibling work:**
 
@@ -55,7 +57,7 @@ The `pre-split` tag marks the old game.
 **Retired unbuilt (D339):** M024 (T081), M010 (T035) and M011 (T036–T039). The rework removes what they built on.
 Game feel and device acceptance for the new game are planned after phase 3.
 
-**Next free numbers: M035, T148 and D374** (D362 is reserved for T144's release record). Numbers are never reused, so
+**Next free numbers: M035, T148 and D375** (D362 is reserved for T144's release record). Numbers are never reused, so
 a decision that mentions T014 always means the same work. T057 was consumed by the per-scenario limit-break branch and
 is not reused.
 

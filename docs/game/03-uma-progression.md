@@ -130,7 +130,7 @@ Racing Levels **10(*s* − 1) + 1 … 10*s*** of the tier. The full map, with th
 | **Rivals** | The typical Uma of T | §9 |
 
 She can't train ahead: scenario *s* + 1's layer opens only when she advances into it. The next tree doesn't exist for
-her yet, and its unlocks need the next scenario's dish grades ([README](README.md#grades-follow-scenarios)).
+her yet, and its unlocks need the next scenario's grades ([README](README.md#grades-follow-scenarios)).
 
 ## 4. Her career in each scenario
 
@@ -461,7 +461,7 @@ running style's:
 
 1. **An Uma bought mid-tier.** Every new Uma starts at tier 1, scenario 1, Racing Level 1, Farm Level 1, whenever she's
    bought. The roster's progress doesn't matter. What helps her catch up:
-   - Her first layer is the tier's cheapest (grade 1–2 dishes, [12](12-economy-and-pacing.md) §5), and the shared
+   - Her first layer is the tier's cheapest (grade 1–2 meals and tonics, [12](12-economy-and-pacing.md) §5), and the shared
      Warehouse often already holds them.
    - Her Inspiration slots take any Uma ever owned, so her parents are strong from the start.
    - She can race at once, though she mostly loses until her first unlocks land (§9).
@@ -472,7 +472,7 @@ running style's:
    - Holds and goals already tie her career to her strength: a G1 against a full-layer field is hard on a half layer.
    - If she wins anyway (skills, a good draw), she may advance.
    - Every unfinished unlock of every earlier layer stays open.
-   - The planner lists them oldest layer first: they use cheaper dishes and lift her most per hour
+   - The planner lists them oldest layer first: they use cheaper meals and tonics and lift her most per hour
      ([02](02-check-ins-and-notifications.md)).
 3. **At the gate with an incomplete layer: she may advance.** Decided, because:
    - racing is never blocked (D328);
@@ -515,7 +515,7 @@ running style's:
 | The advance supplies the scenario's tenth level; the gate banks 100 | Today's rule; README's "180 a level" is the average |
 | Level-ups pay nothing of their own, except the gate's Uma Shard (D336) | Training Tickets are gone; races pay Prize Money; Shards stay the normal unlock |
 | Lifetime level = 50 × (tier − 1) + Racing Level for lists and level badges | Keeps D181's "highest first" and the level badges meaningful across tiers |
-| Scenario *s* + 1's layer opens only on advancing | Its tree and dish grades belong to that scenario |
+| Scenario *s* + 1's layer opens only on advancing | Its tree and item grades belong to that scenario |
 | Advancing is explicit and free, and allowed with an incomplete layer | D328; nothing is lost, and the career already proves her strength |
 | Carry by position in the unlock order (node *k* → node *k*), all four presets, automatically | Same open count; per-card caps never fall; D288's proportional spread would drop cards |
 | A newly opened node takes the set's card with the fewest nodes under its cap | A finished session needs no constellation visit (recommendation to [05](05-training-hub.md)) |
