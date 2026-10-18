@@ -59,7 +59,7 @@ The owner's decisions of 2026-10-16 apply here too:
    from race code.
 5. Delete the retired files. Keep each game-specific helper in this repo.
 6. **Docs:** the manual's pages on the Stable, pickers and the race; run `pnpm docs:update`; log a D-decision.
-7. **Check it** in the iOS Simulator's Home Screen app, light and dark:
+7. **Check it** locally, in the game's dev server (a desktop browser at phone width; no iOS Simulator, P60):
    - the Stable at 5 columns, with search, filters, sorts, saved views and New;
    - every picker;
    - faces in pips and strips;
@@ -69,7 +69,7 @@ The owner's decisions of 2026-10-16 apply here too:
 
 - [ ] `pnpm lint && pnpm test && pnpm build` pass; the startup budget holds.
 - [ ] `ui/album/`, `ui/albumPrefs.ts` and `ui/UmaPicker.tsx` are gone, and no race code requests `chibi`.
-- [ ] The Simulator check was done and described. The docs and D-decision are in. Deployed and green.
+- [ ] The local check was done and described. The docs and D-decision are in. Deployed and green.
 
 ## Deliver
 

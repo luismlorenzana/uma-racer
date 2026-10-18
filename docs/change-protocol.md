@@ -1,6 +1,6 @@
 # Asking for changes: one game or both
 
-> The owner's protocol (2026-10-16). The same text is in uma-rpg, uma-racer and uma-platform
+> The owner's protocol (2026-10-16; checks made local 2026-10-18, uma-platform P60). The same text is in uma-rpg, uma-racer and uma-platform
 > (`docs/change-protocol.md`). Change all three together.
 
 ## Where to ask
@@ -46,7 +46,7 @@ No other repo is needed: uma-platform already holds everything the games share.
 
 1. **Change and test.** The uma-platform session changes the kit and tests it inside both games before releasing:
    - their checks pass;
-   - anything visible is checked in the iOS Simulator's Home Screen app, in light and dark.
+   - anything visible is looked at in each game's local dev server (a desktop browser at phone width).
 2. **Release.** It releases a kit version: a patch for a fix, a minor for anything you can see.
 3. **Pin and deploy.** Each game pins the exact version and deploys:
    - the platform session messages each game's session with the version and what changed;
@@ -59,9 +59,10 @@ No other repo is needed: uma-platform already holds everything the games share.
   uma-platform session as a diff or a "Both apps:" request.
 - **Options, not copies.** The kit takes values, words and links as props. Behaviour only one game needs becomes an
   option in the kit, not a copy in that game.
-- **Check the edges on the iPhone.** Anything at the screen's edges (the notch, the home indicator, the bars) is checked
-  in the iOS Simulator's Home Screen app, not only in a desktop browser. iOS 26 sizes a Home Screen app differently from
-  Safari (uma-rpg D149).
+- **Check locally; the phone is the owner's.** Sessions check their work with the repo's checks and the local dev
+  server, never the iOS Simulator (owner, 2026-10-18: it burns tokens, and the phone is the real test). The owner looks
+  at anything at the screen's edges (the notch, the home indicator, the bars) on the phone after the deploy, so say in
+  the delivery when a change touches them. iOS 26 sizes a Home Screen app differently from Safari (uma-rpg D149).
 
 ## Starters
 

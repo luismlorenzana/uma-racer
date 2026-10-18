@@ -49,7 +49,7 @@ own.
 3. Swap the screens on the Farm's buildings, the job sheet, the side panel's rows and Training's rows.
 4. **Docs:** `docs/game/architecture.md` (the packages), `07-farm.md` and `05-training-hub.md` where code paths are
    named; run `pnpm docs:update`; log a D-decision.
-5. **Check it** in the iOS Simulator's Home Screen app:
+5. **Check it** locally, in the game's dev server (a desktop browser at phone width; no iOS Simulator, P60):
    - every Farm building and Training: start, queue 3, collect, repeat, speed up, finish, recall, upgrade;
    - a stopped queue;
    - check-ins and Speed Up All, unchanged.
@@ -60,7 +60,7 @@ own.
       holds.
 - [ ] `packages/domain/src/work/` holds only the adapter and kinds, and `apps/web/src/ui/work/` only uma-racer-only
       helpers.
-- [ ] The Simulator check was done and described. The docs and D-decision are in. Deployed and green.
+- [ ] The local check was done and described. The docs and D-decision are in. Deployed and green.
 
 ## Deliver
 

@@ -63,7 +63,7 @@ uma-racer onto the same releases and art families and deletes its pipeline. Then
    - `docs/rearchitecture/08-phases.md` (phase 5 done);
    - `docs/tasks/README.md` (the phase table);
    - uma-platform's `docs/racer-mapping.md`, if any mapping changed (a one-line note through the queue).
-7. **Check it** in the iOS Simulator's Home Screen app:
+7. **Check it** locally, in the game's dev server (a desktop browser at phone width; no iOS Simulator, P60):
    - the Stable's art;
    - the plaza's chibis;
    - the profile's bust;
@@ -76,7 +76,7 @@ uma-racer onto the same releases and art families and deletes its pipeline. Then
 - [ ] `pnpm lint && pnpm test && pnpm build` pass; the startup budget holds.
 - [ ] No code reads the GameTora pipeline's output. `scripts/`' importer is gone.
 - [ ] Production reads uma-platform's release: `/api/master/` serves the `latest` channel, checked on the deployed API.
-- [ ] The Simulator check was done and described. The docs and D-decisions are in. Deployed and green.
+- [ ] The local check was done and described. The docs and D-decisions are in. Deployed and green.
 
 ## Deliver
 

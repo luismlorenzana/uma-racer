@@ -31,7 +31,7 @@ data and art with one codebase.
 2. Run the API's tests, plus local requests to `/api/master/…` and `/api/content/…`, including a non-allowlisted path
    (404).
 3. **Docs:** `docs/game/architecture.md`; run `pnpm docs:update`; log a D-decision.
-4. **Check it** in the iOS Simulator's Home Screen app:
+4. **Check it** locally, in the game's dev server (a desktop browser at phone width; no iOS Simulator, P60):
    - the Stable;
    - the plaza;
    - a race;
@@ -41,7 +41,7 @@ data and art with one codebase.
 
 - [ ] `pnpm lint && pnpm test && pnpm build` pass; the startup budget holds.
 - [ ] `apps/web/src/content/` and `apps/api/src/content/` hold no loader or proxy code of their own.
-- [ ] The Simulator check was done. The docs and D-decision are in. Deployed and green.
+- [ ] The local check was done. The docs and D-decision are in. Deployed and green.
 
 ## Deliver
 
