@@ -34,8 +34,8 @@ and bonded per Uma, uma-rpg's farming catalogue, Prize Money and the Exchange, a
    removes `POST /api/legacy/purge` and the boot's purge call with their tests, deletes this folder's M034 and T144
    specs (D104), moves phase 3 to "Completed and removed", and writes the release decision. **D362 is reserved for that
    record.**
-2. **The sibling packets** (uma-platform P51): SA7, the plaza crowd, and SE1, phase 5, are ready. SB6, SC5, SD4 and
-   SE4 wait on their uma-platform packets. The queue and its states are in [handoff](../handoff/README.md). The
+2. **The sibling packets** (uma-platform P51): SA7, SD4 and SB6 are shipped; SE1, phase 5, is ready. SC5 and SE4
+   wait on their dependencies. The queue and its states are in [handoff](../handoff/README.md). The
    redirects and the first-boot wipe leave with SE1, phase 5 (D365, D370).
 3. **Phase 9, World Expeditions,** due by about 2027-02-04 to 2027-03-04 and specified when it starts.
 
@@ -66,6 +66,7 @@ are named by their old path (`design/uma-rpg.md` …); read them with `git show 
 
 | Work | Landed | Carried by | Last commit with the specs |
 |---|---|---|---|
+| SB6 (sibling handoff) — shared album and Uma pickers on uma-kit 0.7.1, faces when small and busts throughout races; saved preferences and racer operations preserved | 2026-10-18 | [game/11](../game/11-hub-and-places.md) §3.1, [architecture](../game/architecture.md#uma-kit), D373, [local acceptance and deployment](../research/sb6-album/README.md); `4885baf` | `4885baf` (`docs/handoff/tasks/`) |
 | A03 (ChatGPT handoff) — the four remaining Uma pickers open on level, with context sorts optional and Open goals as a Racing filter; the default Farm Uma follows the first row unless explicitly linked | 2026-10-16 | [game/07](../game/07-farm.md) §10, [game/05](../game/05-training-hub.md) §8, [game/11](../game/11-hub-and-places.md) §9.2, D368, [phone proof](../research/a03-level-rule/README.md) | `652cc58` (`docs/handoff/tasks/`) |
 | T147 — uma-racer on the shared uma-kit 0.1.2 (uma-platform P48, sibling step A6.2): the kit's theme, shell, Hub map and primitives with the racer's chips, tabs, sheets, ground and words passed in; the iPhone band fixed; dark mode and Appearance in Account | 2026-10-16 | [architecture](../game/architecture.md#uma-kit), [game/11](../game/11-hub-and-places.md) §1–§2, §12, [visual system](../design/visual-system.md#dark-mode), D367 | none (briefed in chat from uma-platform's sibling plan) |
 | T146 — the compact Farm: durations instead of clock end times, Free Umas only in a one-screen job sheet with everything preselected, icon-first 48–56 pt rows with Collect, Repeat, Speed Tickets and ⋯, and a side panel that acts (2 taps to collect or restart, 3 to start a job); Training shares the rows | 2026-10-16 | [game/07](../game/07-farm.md) §10, [game/02](../game/02-check-ins-and-notifications.md) §3, [game/11](../game/11-hub-and-places.md) §2.6, D366 | none (built from the owner's feedback in chat) |
