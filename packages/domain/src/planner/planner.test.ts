@@ -66,17 +66,17 @@ describe('targets', () => {
   })
 })
 
-/** Free stock and running work for the recount: a cook, a gather and a craft are running; reserved inputs have left. */
+/** Free stock and running work for the recount: a tonic, a gather and a craft are running; reserved inputs have left. */
 function busy(): WorkState {
-  let state = account(6, { 'dish-vegetables-1': 7, 'chopped-carrot': 10, 'wheat-flour': 1, carrot: 3, 'dried-button-mushroom': 2 })
-  state = ok(start(state, { outfitId: uma(3), slot: slot('kitchen'), request: cook('dish-vegetables-1', 1) }, clock('08:00'), ENV)).state
+  let state = account(6, { 'tonic-1': 9, 'chopped-carrot': 10, 'wheat-flour': 1, carrot: 3, 'dried-button-mushroom': 2 })
+  state = ok(start(state, { outfitId: uma(3), slot: slot('kitchen'), request: cook('tonic-1', 1) }, clock('08:00'), ENV)).state
   state = ok(start(state, { outfitId: uma(4), slot: slot('vegetable-garden'), request: gather('carrot', 2) }, clock('08:00'), ENV)).state
   return ok(start(state, { outfitId: uma(5), slot: slot('pantry'), request: craft('chopped-carrot', 2) }, clock('11:00'), ENV)).state
 }
 
 type Counts = { need: number; have: number; coming: number; short: number }
 
-/** The recount, written plainly: layer → dish → crafted → raw, each level for every target in order, stock then coming. */
+/** The recount, written plainly: layer → meal or tonic → crafted → raw, each level for every target in order, stock then coming. */
 function recount(targetDishes: readonly (readonly ItemId[])[], stock: Record<string, number>, coming: Record<string, number>) {
   const s = { ...stock }, c = { ...coming }
   const take = (item: ItemId, need: number): Counts => {
@@ -103,21 +103,23 @@ function recount(targetDishes: readonly (readonly ItemId[])[], stock: Record<str
 const byItem = (lines: readonly PlanLine[]) => Object.fromEntries(lines.map((l) => [l.item, { need: l.need, have: l.have, coming: l.coming, short: l.short }]))
 
 describe('the plan', () => {
-  it('equals a brute-force recount: layer, dish, crafted, raw, less stock and coming', () => {
+  it('equals a brute-force recount: layer, meal or tonic, crafted, raw, less stock and coming', () => {
     const state = busy()
     const planned = plan(state, [uma(1), uma(2)], NOW, {}, ENV)
-    const layer = layerUnlocks(1).map((u) => u.dishId)
+    // Uniques take no item (D374): they ask nothing of the Farm.
+    const layer = layerUnlocks(1).flatMap((u) => (u.dishId === null ? [] : [u.dishId]))
     const expected = recount([layer, layer],
-      { 'dish-vegetables-1': 7, 'chopped-carrot': 6, carrot: 1, 'dried-button-mushroom': 2 },
-      { 'dish-vegetables-1': 1, carrot: 2, 'chopped-carrot': 2 })
+      { 'tonic-1': 9, 'chopped-carrot': 9, carrot: 1, 'dried-button-mushroom': 1 },
+      { 'tonic-1': 1, carrot: 2, 'chopped-carrot': 2 })
     planned.targets.forEach((target, t) => {
       expect(byItem(target.dishes), `dishes of ${target.outfitId}`).toEqual(expected.dish[t])
       expect(byItem(target.crafted), `crafted of ${target.outfitId}`).toEqual(expected.crafted[t])
       expect(byItem(target.raw), `raw of ${target.outfitId}`).toEqual(expected.raw[t])
       expect(target.pickCards).toBe(6)
     })
-    expect(planned.targets[1]!.dishes.find((l) => l.item === 'dish-vegetables-1')).toMatchObject({
-      need: 6, have: 1, coming: 1, short: 4, comingFrom: [{ outfitId: uma(3), at: clock('08:00') + 288 * 60_000, count: 1 }],
+    // Six nodes and slots A and B take a Warm-Up Tonic each.
+    expect(planned.targets[1]!.dishes.find((l) => l.item === 'tonic-1')).toMatchObject({
+      need: 8, have: 1, coming: 1, short: 6, comingFrom: [{ outfitId: uma(3), at: clock('08:00') + 432 * 60_000, count: 1 }],
     })
     // Lines are lowest grade first.
     for (const lines of [planned.dishes, planned.crafted, planned.raw]) {
@@ -127,13 +129,13 @@ describe('the plan', () => {
   })
 
   it('allocates nothing twice across five targets, in target order', () => {
-    const state = account(6, { 'dish-vegetables-1': 10, 'chopped-carrot': 9 })
+    const state = account(6, { 'tonic-1': 10, 'chopped-carrot': 9 })
     const order = [uma(4), uma(2), uma(5), uma(1), uma(3)]
     const planned = plan(state, order, NOW, {}, ENV)
-    expect(planned.targets.map((t) => t.dishes.find((l) => l.item === 'dish-vegetables-1')!.have)).toEqual([6, 4, 0, 0, 0])
-    expect(planned.targets.map((t) => t.crafted.find((l) => l.item === 'chopped-carrot')?.have ?? 0)).toEqual([0, 8, 1, 0, 0])
-    const total = planned.dishes.find((l) => l.item === 'dish-vegetables-1')!
-    expect(total).toMatchObject({ need: 30, have: 10, short: 20 })
+    expect(planned.targets.map((t) => t.dishes.find((l) => l.item === 'tonic-1')!.have)).toEqual([8, 2, 0, 0, 0])
+    expect(planned.targets.map((t) => t.crafted.find((l) => l.item === 'chopped-carrot')?.have ?? 0)).toEqual([0, 6, 3, 0, 0])
+    const total = planned.dishes.find((l) => l.item === 'tonic-1')!
+    expect(total).toMatchObject({ need: 40, have: 10, short: 30 })
     for (const level of [planned.dishes, planned.crafted, planned.raw]) {
       for (const line of level) expect(line.have).toBeLessThanOrEqual(state.items[line.item] ?? 0)
     }
@@ -142,31 +144,32 @@ describe('the plan', () => {
 
   it("counts uncollected outputs as coming; reserved inputs and projected drops count neither way", () => {
     let state = busy()
-    // Uma 6 cooks one Carrot Salad with a second queued that will drop: the Warehouse has no Wheat Flour left for it.
+    // Uma 6 brews one Warm-Up Tonic with a second queued that will drop: the Warehouse has no Wheat Flour left for it.
     state = { ...state, items: { ...state.items, 'wheat-flour': 1 } }
-    state = ok(start(state, { outfitId: uma(6), slot: slot('kitchen', 1), request: cook('dish-vegetables-1', 1) }, clock('08:00'), ENV)).state
-    state = ok(queue(state, { outfitId: uma(6), add: { request: cook('dish-vegetables-1', 1), building: 'kitchen' } }, clock('08:01'), ENV)).state
-    // At 13:00 both first cooks are finished and uncollected.
-    const planned = plan(state, [uma(1)], clock('13:00'), {}, ENV)
-    expect(planned.freeStock).toMatchObject({ 'chopped-carrot': 2, 'dish-vegetables-1': 7 })
+    state = ok(start(state, { outfitId: uma(6), slot: slot('kitchen', 1), request: cook('tonic-1', 1) }, clock('08:00'), ENV)).state
+    state = ok(queue(state, { outfitId: uma(6), add: { request: cook('tonic-1', 1), building: 'kitchen' } }, clock('08:01'), ENV)).state
+    // At 15:30 both first tonics are finished and uncollected.
+    const planned = plan(state, [uma(1)], clock('15:30'), {}, ENV)
+    expect(planned.freeStock).toMatchObject({ 'chopped-carrot': 8, 'tonic-1': 9 })
     expect(planned.freeStock['wheat-flour']).toBeUndefined()
-    const salad = planned.targets[0]!.dishes.find((l) => l.item === 'dish-vegetables-1')!
-    expect(salad).toMatchObject({ need: 6, have: 6, coming: 0 })
-    const later = plan(state, [uma(2), uma(1)], clock('13:00'), {}, ENV).targets[1]!.dishes.find((l) => l.item === 'dish-vegetables-1')!
-    expect(later).toMatchObject({ have: 1, coming: 2, short: 3 })
+    const tonic = planned.targets[0]!.dishes.find((l) => l.item === 'tonic-1')!
+    expect(tonic).toMatchObject({ need: 8, have: 8, coming: 0 })
+    const later = plan(state, [uma(2), uma(1)], clock('15:30'), {}, ENV).targets[1]!.dishes.find((l) => l.item === 'tonic-1')!
+    expect(later).toMatchObject({ have: 1, coming: 2, short: 5 })
     expect(later.comingFrom.map((c) => c.outfitId)).toEqual([uma(3), uma(6)])
   })
 
-  it("lists bonds without a card as pick cards, cascades a chosen card's dish, and gates a grade no Free Uma can make", () => {
+  it("lists bonds without a card as pick cards, asks no item for a chosen card's bond, and gates a grade no Free Uma can make", () => {
     const state = atScenario2(account(3), uma(1))
     const chosen = { [uma(1)]: [cardOf('speed-e1'), cardOf('speed-e2')] }
     const planned = plan(state, [uma(1)], NOW, chosen, ENV)
     const target = planned.targets[0]!
     expect(target.pickCards).toBe(9 - 2)
     expect(target.unlocks.filter((u) => u.unlock.kind === 'bond').map((u) => [u.unlock.target, u.unlock.dishId])).toEqual([
-      ['speed-e1', 'dish-sweets-1'], ['speed-e2', 'dish-sweets-3'],
+      ['speed-e1', null], ['speed-e2', null],
     ])
-    expect(target.dishes.find((l) => l.item === 'dish-sweets-1')!.need).toBe(2)
+    // Only the layer's single takes a Speed meal; the bonds take none (D374).
+    expect(target.dishes.find((l) => l.item === 'dish-sweets-1')!.need).toBe(1)
     expect(planned.highestFree).toBe(1)
     expect(target.dishes.find((l) => l.item === 'dish-sweets-3')!.gate).toEqual({ needsLevel: 11, highestFree: 1 })
     expect(target.dishes.find((l) => l.item === 'dish-sweets-1')!.gate).toBeNull()
@@ -185,14 +188,15 @@ describe('the plan', () => {
 describe('the views', () => {
   it('give each Farm place the lines it makes while the targets need more than the Warehouse holds', () => {
     const planned = plan(busy(), [uma(1), uma(2)], NOW, {}, ENV)
-    expect(placeLines(planned, 'vegetable-garden').map((l) => l.item)).toEqual(['carrot', 'potato'])
+    // The Warehouse's chopped carrots cover the Warm-Up Tonics; the Practice Tonics need potatoes.
+    expect(placeLines(planned, 'vegetable-garden').map((l) => l.item)).toEqual(['potato'])
     expect(placeLines(planned, 'pantry').every((l) => l.level === 'crafted' && l.need > l.have)).toBe(true)
-    expect(placeLines(planned, 'kitchen').map((l) => l.item)).toContain('dish-vegetables-2')
-    expect(placeLines(planned, 'kitchen').map((l) => l.item)).toContain('dish-vegetables-1')
+    expect(placeLines(planned, 'kitchen').map((l) => l.item)).toContain('tonic-2')
+    expect(placeLines(planned, 'kitchen').map((l) => l.item)).toContain('tonic-1')
     expect(placeLines(planned, 'observatory')).toEqual([])
   })
 
-  it('give each Training facility, per target, the unlocks left, dishes ready and dishes coming', () => {
+  it('give each Training facility, per target, the unlocks left, items ready and items coming', () => {
     const state = busy()
     const planned = plan(state, [uma(1), uma(2)], NOW, {}, ENV)
     expect(facilityLines(planned, 'observatory')).toEqual([
@@ -203,23 +207,23 @@ describe('the views', () => {
   })
 
   it('mark Best use: the three running entries covering the most target need', () => {
-    let state = account(6, { 'dish-vegetables-1': 1, 'chopped-carrot': 8, 'wheat-flour': 2, carrot: 4 })
+    let state = account(6, { 'tonic-1': 1, 'chopped-carrot': 2, 'dried-button-mushroom': 2, 'wheat-flour': 2, carrot: 4 })
     const begin = (who: number, at: ReturnType<typeof slot>, request: Parameters<typeof start>[1]['request'], when: string) => {
       state = ok(start(state, { outfitId: uma(who), slot: at, request }, clock(when), ENV)).state
     }
-    begin(3, slot('kitchen'), cook('dish-vegetables-1', 2), '11:00')
+    begin(3, slot('kitchen'), cook('tonic-1', 2), '11:00')
     begin(4, slot('vegetable-garden'), gather('carrot', 3), '11:00')
-    begin(5, slot('pantry'), craft('chopped-carrot', 4), '11:30')
+    begin(5, slot('pantry'), craft('chopped-carrot', 4), '11:15')
     begin(6, slot('fields'), gather('wheat', 1), '11:00')
     begin(1, slot('observatory'), nodes(1), '11:30')
     const planned = plan(state, [uma(1), uma(2)], NOW, {}, ENV)
-    // Two dishes count 2, Uma 1's own node 1, three carrots ⅗ and one wheat ⅕. Of the four crafted carrots one is
+    // Two tonics count 2, Uma 1's own node 1, three carrots ⅗ and one wheat ⅕. Of the four crafted carrots one is
     // already finished, so speeding the craft brings three: ⅗, and it ends before the gather, so it wins the tie.
     expect(planned.uses.filter((u) => u.running).map((u) => [u.outfitId, u.covers]).sort()).toEqual([
       [uma(1), 1], [uma(3), 2], [uma(4), 0.6], [uma(5), 0.6], [uma(6), 0.2],
     ])
     expect(bestUse(planned).map((m) => [m.outfitId, m.covers, m.startedAt])).toEqual([
-      [uma(3), 2, clock('11:00')], [uma(1), 1, clock('11:30')], [uma(5), 0.6, clock('11:30')],
+      [uma(3), 2, clock('11:00')], [uma(1), 1, clock('11:30')], [uma(5), 0.6, clock('11:15')],
     ])
     // Not a target, her own session covers nothing.
     expect(plan(state, [uma(2)], NOW, {}, ENV).uses.find((u) => u.outfitId === uma(1))!.covers).toBe(0)
@@ -227,7 +231,7 @@ describe('the views', () => {
 
   it('tell the stock sheet how much of a stack the targets hold back', () => {
     const planned = plan(busy(), [uma(1)], NOW, {}, ENV)
-    expect(neededFromStock(planned, 'dish-vegetables-1')).toBe(6)
+    expect(neededFromStock(planned, 'tonic-1')).toBe(8)
     expect(neededFromStock(planned, 'speed-ticket')).toBe(0)
   })
 })

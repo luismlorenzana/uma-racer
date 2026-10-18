@@ -3,7 +3,7 @@
 // deck: T132 rewrote them from `tierDemand` (D348, bonds at their era's odd grade) and renders them live. This test only
 // checks the expansion, with both tables copied as T132 wrote them.
 import { describe, expect, it } from 'vitest'
-import { DUOS, FEASTS, planetDish, type ItemGrade } from './catalogue'
+import { DUOS, FEASTS, planetDish, tonicItem, type ItemGrade } from './catalogue'
 import { craftedDemand } from './demand'
 import { FAMILY_IDS, type FamilyId } from './families'
 
@@ -14,35 +14,33 @@ const FAMILY_BY_NAME: Readonly<Record<string, FamilyId>> = {
   'Herbs & Spices': 'herbs-spices', Grains: 'grains',
 }
 
-/** 08 §7 "Planet dishes, per Uma per tier": family, grades 1–10, total. */
+/** 08 §7 "Meals and tonics, per Uma per tier" (D374): row, grades 1–10, total. */
 const DISHES = [
-  '| Vegetables | 6 | 6 | 2 | 2 | 2 | 2 | 2 | 2 | 2 | 2 | **28** |',
-  '| Mushrooms | 2 | 2 | 4 | 2 | 2 | 2 | 3 | 3 | 2 | 2 | **24** |',
-  '| Sweets | 2 | 0 | 2 | 0 | 1 | 0 | 2 | 0 | 1 | 0 | **8** |',
-  '| Fruits | 2 | 0 | 2 | 0 | 1 | 0 | 2 | 0 | 1 | 0 | **8** |',
-  '| Fish | 2 | 0 | 2 | 0 | 1 | 0 | 2 | 0 | 1 | 0 | **8** |',
-  '| Nuts & Seeds | 2 | 0 | 1 | 0 | 2 | 0 | 1 | 0 | 2 | 0 | **8** |',
-  '| Herbs & Spices | 2 | 0 | 1 | 0 | 2 | 0 | 1 | 0 | 2 | 0 | **8** |',
-  '| Grains | 1 | 0 | 0 | 0 | 1 | 0 | 0 | 0 | 1 | 0 | **3** |',
+  '| Sweets meals | 1 | 0 | 1 | 0 | 1 | 0 | 1 | 0 | 1 | 0 | **5** |',
+  '| Fruits meals | 1 | 0 | 1 | 0 | 1 | 0 | 1 | 0 | 1 | 0 | **5** |',
+  '| Fish meals | 1 | 0 | 1 | 0 | 1 | 0 | 1 | 0 | 1 | 0 | **5** |',
+  '| Nuts & Seeds meals | 1 | 0 | 1 | 0 | 1 | 0 | 1 | 0 | 1 | 0 | **5** |',
+  '| Herbs & Spices meals | 1 | 0 | 1 | 0 | 1 | 0 | 1 | 0 | 1 | 0 | **5** |',
   '| Duos | | | 4 | | 4 | | | | | | **8** |',
   '| Feasts | | | | 1 | | 1 | | 1 | | 1 | **4** |',
-  '| **All** | | | | | | | | | | | **107** |',
+  '| Tonics | 8 | 6 | 2 | 4 | 4 | 2 | 2 | 2 | 2 | 2 | **34** |',
+  '| **All** | | | | | | | | | | | **71** |',
 ]
 
-/** 08 §7 "Crafted items, per Uma per tier": family, grades 1–10, total, own dishes/Duos/Feasts, sides. */
+/** 08 §7 "Crafted items, per Uma per tier": family, grades 1–10, total, own meals and tonics, sides. */
 const CRAFTED = [
-  '| Vegetables | 24 | 24 | 8 | 8 | 8 | 8 | 8 | 8 | 8 | 8 | **112** | 112 | 0 |',
-  '| Herbs & Spices | 12 | 0 | 8 | 1 | 13 | 1 | 5 | 1 | 8 | 1 | **50** | 44 | 6 |',
-  '| Sweets | 12 | 0 | 12 | 1 | 9 | 1 | 11 | 1 | 4 | 1 | **52** | 44 | 8 |',
-  '| Fruits | 15 | 0 | 12 | 1 | 8 | 1 | 10 | 1 | 4 | 1 | **53** | 40 | 13 |',
-  '| Fish | 11 | 0 | 12 | 1 | 10 | 1 | 9 | 1 | 4 | 1 | **50** | 44 | 6 |',
-  '| Nuts & Seeds | 13 | 0 | 9 | 1 | 12 | 1 | 5 | 1 | 8 | 1 | **51** | 40 | 11 |',
-  '| Grains | 26 | 5 | 11 | 5 | 9 | 6 | 4 | 5 | 4 | 0 | **75** | 12 | 63 |',
-  '| Mushrooms | 8 | 8 | 16 | 8 | 8 | 8 | 12 | 12 | 8 | 8 | **96** | 96 | 0 |',
-  '| **All** | | | | | | | | | | | **539** | 432 | 107 |',
+  '| Grains | 8 | 7 | 2 | 5 | 4 | 3 | 2 | 3 | 2 | 2 | **38** | 34 | 4 |',
+  '| Sweets | 6 | 0 | 9 | 1 | 9 | 1 | 5 | 1 | 4 | 1 | **37** | 32 | 5 |',
+  '| Fruits | 8 | 0 | 9 | 1 | 7 | 1 | 5 | 1 | 4 | 1 | **37** | 28 | 9 |',
+  '| Fish | 6 | 0 | 9 | 1 | 9 | 1 | 5 | 1 | 4 | 1 | **37** | 32 | 5 |',
+  '| Nuts & Seeds | 8 | 0 | 9 | 1 | 7 | 1 | 5 | 1 | 4 | 1 | **37** | 28 | 9 |',
+  '| Herbs & Spices | 6 | 0 | 9 | 1 | 9 | 1 | 5 | 1 | 4 | 1 | **37** | 32 | 5 |',
+  '| Vegetables | 8 | 6 | 2 | 4 | 4 | 2 | 2 | 2 | 2 | 2 | **34** | 34 | 0 |',
+  '| Mushrooms | 8 | 6 | 2 | 4 | 4 | 2 | 2 | 2 | 2 | 2 | **34** | 34 | 0 |',
+  '| **All** | | | | | | | | | | | **291** | 254 | 37 |',
 ]
 
-/** The representative deck's dish counts, from §7's dish table: one of each Duo per Duo grade, one Feast per grade. */
+/** The representative deck's meal and tonic counts, from §7's table: one of each Duo per Duo grade, one Feast per grade. */
 function representativeDishes(): Record<string, number> {
   const counts: Record<string, number> = {}
   let total = 0
@@ -61,8 +59,10 @@ function representativeDishes(): Record<string, number> {
         for (const duo of duos) counts[duo.id] = 1
       } else if (label === 'Feasts') {
         counts[FEASTS.find((feast) => feast.grade === g)!.id] = n
+      } else if (label === 'Tonics') {
+        counts[tonicItem(g).id] = n
       } else {
-        counts[planetDish(FAMILY_BY_NAME[label!]!, g).id] = n
+        counts[planetDish(FAMILY_BY_NAME[label!.replace(/ meals$/, '')]!, g).id] = n
       }
     })
   }
@@ -70,9 +70,9 @@ function representativeDishes(): Record<string, number> {
 }
 
 describe('crafted demand (08 §7)', () => {
-  it('turns the representative deck\'s 107 dishes into §7\'s 539 crafted items, cell for cell', () => {
+  it('turns the representative deck\'s 37 meals and 34 tonics into §7\'s 291 crafted items, cell for cell (D374)', () => {
     const dishes = representativeDishes()
-    expect(Object.values(dishes).reduce((a, b) => a + b, 0)).toBe(107)
+    expect(Object.values(dishes).reduce((a, b) => a + b, 0)).toBe(71)
     const demand = craftedDemand(dishes)
     for (const row of CRAFTED) {
       const [label, ...rest] = cells(row)
@@ -85,8 +85,8 @@ describe('crafted demand (08 §7)', () => {
       expect({ byGrade: family.byGrade, total: family.total, own: family.own, sides: family.sides }, label)
         .toEqual({ byGrade: rest.slice(0, 10).map(number), total, own, sides })
     }
-    expect(demand.total).toBe(539)
-    expect([demand.families.grains.own, demand.families.grains.sides]).toEqual([12, 63])
+    expect(demand.total).toBe(291)
+    expect([demand.families.grains.own, demand.families.grains.sides]).toEqual([34, 4])
   })
 
   it('lists each crafted item needed, and sums to the family totals', () => {
@@ -102,8 +102,9 @@ describe('crafted demand (08 §7)', () => {
     expect([demand.total, demand.own, demand.sides]).toEqual([21, 17, 4])
   })
 
-  it('takes no dish as nothing, and refuses ids that aren\'t dishes or counts that aren\'t whole', () => {
+  it('takes no dish as nothing, and refuses ids that aren\'t dishes or tonics, or counts that aren\'t whole', () => {
     expect(craftedDemand({}).total).toBe(0)
+    expect(craftedDemand({ 'tonic-2': 2 }).items).toEqual({ 'diced-potato': 2, 'dried-shiitake': 2, 'rolled-oats': 2 })
     expect(craftedDemand({ 'dish-fish-1': 0 }).items).toEqual({})
     expect(() => craftedDemand({ honey: 1 })).toThrow(RangeError)
     expect(() => craftedDemand({ nope: 1 })).toThrow(RangeError)

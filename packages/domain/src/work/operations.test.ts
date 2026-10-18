@@ -37,8 +37,8 @@ describe('start', () => {
     const row = next.work[PLAIN.id]!
     expect(row).toMatchObject({ slot: PANTRY, queue: [], last: null, dropped: null })
     expect(row.entries).toEqual([{
-      request: chopped(3), seconds: [1_620, 1_620, 1_620], inputs: Array(3).fill([{ item: 'carrot', qty: 1 }]),
-      outputs: Array(3).fill({ item: 'chopped-carrot' }), farmExp: [108, 108, 108], startedAt: T0, acceleratedMs: 0, collected: 0, speed: 1,
+      request: chopped(3), seconds: [2_430, 2_430, 2_430], inputs: Array(3).fill([{ item: 'carrot', qty: 1 }]),
+      outputs: Array(3).fill({ item: 'chopped-carrot' }), farmExp: [162, 162, 162], startedAt: T0, acceleratedMs: 0, collected: 0, speed: 1,
       fromQueue: false,
     }])
   })
@@ -81,7 +81,7 @@ describe('start', () => {
     const gathering = ok(start(state, { outfitId: PLAIN.id, slot: GARDEN, request: carrots(2) }, T0, ENV)).state
     const later = T0 + 2 * GATHER_MS
     const { state: next, receipt } = ok(start(gathering, { outfitId: PLAIN.id, slot: PANTRY, request: chopped(2) }, later, ENV))
-    expect(receipt.collected).toMatchObject({ outputs: [{ item: 'carrot' }, { item: 'carrot' }], farmExp: 864, freed: true })
+    expect(receipt.collected).toMatchObject({ outputs: [{ item: 'carrot' }, { item: 'carrot' }], farmExp: 1_296, freed: true })
     expect(receipt.movements).toEqual([
       { kind: 'output', item: 'carrot', qty: 2, outfitId: PLAIN.id, at: later },
       { kind: 'reserve', item: 'carrot', qty: 2, outfitId: PLAIN.id, at: later },
@@ -135,16 +135,16 @@ describe('collect', () => {
   it('pays each finished item once, partial then full, with its Farm EXP', () => {
     const state = ok(start(farmAccount(), { outfitId: PLAIN.id, slot: GARDEN, request: carrots(4) }, T0, ENV)).state
     const first = collect(state, { outfitId: PLAIN.id }, T0 + 2 * GATHER_MS + 1, ENV)
-    expect(first.receipt).toMatchObject({ outputs: [{ item: 'carrot' }, { item: 'carrot' }], farmExp: 864, freed: false })
+    expect(first.receipt).toMatchObject({ outputs: [{ item: 'carrot' }, { item: 'carrot' }], farmExp: 1_296, freed: false })
     expect(first.state.items).toEqual({ carrot: 2 })
     expect(first.state.work[PLAIN.id]!.entries[0]!.collected).toBe(2)
     const again = collect(first.state, { outfitId: PLAIN.id }, T0 + 2 * GATHER_MS + 2, ENV)
     expect(again.receipt).toMatchObject({ outputs: [], farmExp: 0, freed: false, movements: [] })
     expect(again.state).toEqual(first.state)
     const all = collect(first.state, { outfitId: PLAIN.id }, T0 + 9 * GATHER_MS, ENV)
-    expect(all.receipt).toMatchObject({ outputs: [{ item: 'carrot' }, { item: 'carrot' }], farmExp: 864, freed: true })
+    expect(all.receipt).toMatchObject({ outputs: [{ item: 'carrot' }, { item: 'carrot' }], farmExp: 1_296, freed: true })
     expect(all.state.items).toEqual({ carrot: 4 })
-    expect(all.state.umas[PLAIN.id]!.farm).toEqual({ level: 1, exp: 4 * 432 })
+    expect(all.state.umas[PLAIN.id]!.farm).toEqual({ level: 2, exp: 4 * 648 })
     expect(all.state.work[PLAIN.id]).toEqual({ outfitId: PLAIN.id, slot: null, entries: [], queue: [], last: { slot: GARDEN, request: carrots(4) }, dropped: null })
     // One collect of all four pays the same.
     const once = collect(state, { outfitId: PLAIN.id }, T0 + 9 * GATHER_MS, ENV)
@@ -164,10 +164,10 @@ describe('collect', () => {
     const state = atFarmLevel(farmAccount(), STRONG.id, 5, 4 * 400)
     const working = ok(start(state, { outfitId: STRONG.id, slot: GARDEN, request: carrots(10) }, T0, ENV)).state
     const { state: next, receipt } = collect(working, { outfitId: STRONG.id }, T0 + 10 * GATHER_MS, ENV)
-    expect(receipt.farmExp).toBe(10 * 691)
-    expect(receipt.farmLevel).toEqual({ from: 5, to: 9 })
+    expect(receipt.farmExp).toBe(10 * 1_037)
+    expect(receipt.farmLevel).toEqual({ from: 5, to: 10 })
     expect(receipt.gradesOpened).toEqual([2])
-    expect(next.umas[STRONG.id]!.farm.level).toBe(9)
+    expect(next.umas[STRONG.id]!.farm.level).toBe(10)
   })
 })
 
@@ -177,7 +177,7 @@ describe('recall', () => {
     const crafting = ok(start(state, { outfitId: PLAIN.id, slot: PANTRY, request: chopped(4) }, T0, ENV)).state
     const at = T0 + CRAFT_MS + CRAFT_MS / 2
     const { state: next, receipt } = recall(crafting, { outfitId: PLAIN.id }, at, ENV)
-    expect(receipt).toMatchObject({ recalled: true, outputs: [{ item: 'chopped-carrot' }], returned: [{ item: 'carrot', qty: 3 }], droppedQueue: [], lostMinutes: 13.5 })
+    expect(receipt).toMatchObject({ recalled: true, outputs: [{ item: 'chopped-carrot' }], returned: [{ item: 'carrot', qty: 3 }], droppedQueue: [], lostMinutes: 20.25 })
     expect(receipt.movements).toEqual([
       { kind: 'output', item: 'chopped-carrot', qty: 1, outfitId: PLAIN.id, at },
       { kind: 'return', item: 'carrot', qty: 3, outfitId: PLAIN.id, at },
@@ -245,7 +245,7 @@ describe('speed-up and finish (07 §8)', () => {
     expect(speedUp(state, { outfitId: PLAIN.id, startedAt: T0, tickets: 1 }, T0 + 3 * GATHER_MS, ENV)).toMatchObject({ code: 'finished' })
     expect(speedUp(state, { outfitId: HELPER.id, startedAt: T0, tickets: 1 }, T0, ENV)).toMatchObject({ code: 'finished' })
     expect(finish(state, { outfitId: PLAIN.id, startedAt: T0 }, T0, ENV)).toEqual({
-      refused: true, code: 'tickets', reason: 'Needs {n} Speed Tickets.', data: { n: 11, have: 1 },
+      refused: true, code: 'tickets', reason: 'Needs {n} Speed Tickets.', data: { n: 17, have: 1 },
     })
     expect(() => speedUp(state, { outfitId: PLAIN.id, startedAt: T0, tickets: 0 }, T0, ENV)).toThrow(RangeError)
   })
@@ -255,9 +255,9 @@ describe('speed-up and finish (07 §8)', () => {
     const plain = exp(running(), T0 + 3 * GATHER_MS)
     const finished = ok(finish(running(20), { outfitId: PLAIN.id, startedAt: T0 }, T0 + 1, ENV)).state
     const fast = ok(start(withLevel(farmAccount(), 'vegetable-garden', 3), { outfitId: PLAIN.id, slot: GARDEN, request: carrots(3) }, T0, ENV)).state
-    expect(fast.work[PLAIN.id]!.entries[0]!.seconds).toEqual([5_184, 5_184, 5_184])
-    expect([exp(finished, T0 + 1), exp(fast, T0 + 3 * 5_184_000)]).toEqual([plain, plain])
-    expect(plain).toBe(3 * 432)
+    expect(fast.work[PLAIN.id]!.entries[0]!.seconds).toEqual([7_776, 7_776, 7_776])
+    expect([exp(finished, T0 + 1), exp(fast, T0 + 3 * 7_776_000)]).toEqual([plain, plain])
+    expect(plain).toBe(3 * 648)
   })
 })
 
@@ -307,9 +307,9 @@ describe('upgrade (07 §7, 05 §7)', () => {
     const working = ok(start(rich(farmAccount()), { outfitId: PLAIN.id, slot: GARDEN, request: carrots(2) }, T0, ENV)).state
     const raised = ok(upgrade(ok(upgrade(working, { building: 'vegetable-garden' }, T0 + 1, ENV)).state, { building: 'vegetable-garden' }, T0 + 2, ENV)).state
     const entry = raised.work[PLAIN.id]!.entries[0]!
-    expect(entry).toMatchObject({ speed: 1, seconds: [6_480, 6_480] })
+    expect(entry).toMatchObject({ speed: 1, seconds: [9_720, 9_720] })
     expect(endsAt(entry)).toBe(T0 + 2 * GATHER_MS)
     const next = ok(start(raised, { outfitId: HELPER.id, slot: { building: 'vegetable-garden', slot: 1 }, request: carrots(1) }, T0 + 3, ENV)).state
-    expect(next.work[HELPER.id]!.entries[0]).toMatchObject({ speed: 1.25, seconds: [5_184] })
+    expect(next.work[HELPER.id]!.entries[0]).toMatchObject({ speed: 1.25, seconds: [7_776] })
   })
 })

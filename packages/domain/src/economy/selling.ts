@@ -3,7 +3,7 @@
 // buy and a sale lose two thirds and no loop mints time. Speed Tickets can't be sold, and reserved inputs have left the
 // Warehouse count. `sell` is 13 §6's operation; `stackCounts` and `sellConfirmations` are the sheet's queries: the
 // screen asks before it sends, so the operation takes no "confirmed" flag. Sales never touch the Daily Purse (§3.3).
-import { itemById, SPEED_TICKET_ID, type ItemId } from '../items/catalogue'
+import { isKitchenItem, itemById, SPEED_TICKET_ID, type ItemId } from '../items/catalogue'
 import { workValueSeconds } from '../items/work'
 import { SECONDS_PER_MINUTE } from '../state/time'
 import { assertNow, writeLedger } from '../tiers/ledger'
@@ -71,7 +71,10 @@ export function stackCounts(input: { readonly held: number; readonly reserved: n
   }
 }
 
-/** Why a sale asks once (09 §6.1): a dish; needed stock, with how many the planner is left short; or 1,000 or more. */
+/**
+ * Why a sale asks once (09 §6.1): a dish or a tonic (D374); needed stock, with how many the planner is left short; or
+ * 1,000 or more.
+ */
 export type SellConfirmation =
   | { readonly kind: 'dish' }
   | { readonly kind: 'needed'; readonly short: number }
@@ -89,7 +92,7 @@ export function sellConfirmations(input: {
   assertCount('A quantity', input.qty)
   const { free } = stackCounts({ held: input.held, reserved: 0, needed: input.needed })
   const asks: SellConfirmation[] = []
-  if (itemById(input.itemId)!.kind === 'dish') asks.push({ kind: 'dish' })
+  if (isKitchenItem(itemById(input.itemId)!)) asks.push({ kind: 'dish' })
   if (input.qty > free) asks.push({ kind: 'needed', short: input.needed - Math.max(0, input.held - input.qty) })
   const total = input.qty * price
   if (total >= CONFIRM_FROM) asks.push({ kind: 'large', total })

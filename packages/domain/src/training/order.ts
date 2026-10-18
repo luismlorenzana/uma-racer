@@ -10,7 +10,7 @@ import type { FacilityId, RoomId } from '../farm/buildings'
 import { cardNodeId, nodeOrder } from './trees/tree'
 import { scenarioNumber, scenarioRow } from '../tiers/map'
 import { isRefusal, type Refusal, type ScenarioAt, type ScenarioOfTier, type UmaBuild } from '../state/types'
-import { bondStatus, type BondCard } from './bonds'
+import { bondStatus, type BondCard, type CardTypeOf } from './bonds'
 import { EXTRA_STATS, extraNode, extraSingleId } from './extra'
 import { isRoomOf, roomAccepts, roomsFor } from './facilities'
 import { trainingRefusal } from './refusals'
@@ -125,7 +125,7 @@ export function nextUnlocks(
   return taken
 }
 
-/** One thing left in her layers: an unlock with where it is done and its dish, or bonds still to pick cards for. */
+/** One thing left in her layers: an unlock with where it is done and its item, or bonds still to pick cards for. */
 export type RemainingUnlock =
   | {
     readonly kind: 'unlock'
@@ -140,8 +140,8 @@ export type RemainingUnlock =
   }
   | { readonly kind: 'pick-cards'; readonly layer: ScenarioOfTier; readonly facility: 'dojo'; readonly count: number }
 
-const remaining = (entry: Unlock): RemainingUnlock => {
-  const rooms = roomsFor(entry)
+const remaining = (entry: Unlock, cardTypeOf?: CardTypeOf): RemainingUnlock => {
+  const rooms = roomsFor(entry, cardTypeOf)
   return {
     kind: 'unlock', unlock: entry, layer: entry.layer, facility: facilityOf(entry.kind), room: rooms[0] ?? null, rooms,
     grade: entry.grade, dishId: entry.dishId,
@@ -163,6 +163,7 @@ export function remainingUnlocks(
   const T = scenarioNumber(at)
   const seen = new Set<string>()
   const bonds: Unlock[] = []
+  const cardTypeOf: CardTypeOf = (cardId) => chosen.find((card) => card.id === cardId)?.type
   for (const card of chosen) {
     if (seen.has(card.id)) continue
     seen.add(card.id)
@@ -177,7 +178,7 @@ export function remainingUnlocks(
   const result: RemainingUnlock[] = []
   for (let s = 1 as ScenarioOfTier; s <= at.scenario; s = (s + 1) as ScenarioOfTier) {
     for (const entry of layerUnlocks(s)) if (!isOpen(build, entry) && !made.has(unlockKey(entry))) result.push(remaining(entry))
-    for (const entry of bonds) if (entry.layer === s) result.push(remaining(entry))
+    for (const entry of bonds) if (entry.layer === s) result.push(remaining(entry, cardTypeOf))
     const share = BONDS_BY_SCENARIO[s - 1]!
     const count = share - Math.min(share, covered)
     covered = Math.max(0, covered - share)

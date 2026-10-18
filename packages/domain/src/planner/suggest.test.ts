@@ -19,8 +19,8 @@ const ten = (seconds: number) => Array.from({ length: 10 }, () => seconds)
 const unlockTargets = (s: Suggestion) => (s.request.kind === SESSION_KIND ? s.request.unlocks.map((u) => u.target) : [])
 
 describe('suggest', () => {
-  it('gives her own session first when a dish for her unlocks is in stock, Umas by Farm Level, highest first', () => {
-    let state = account(4, { 'dish-vegetables-1': 3, 'dish-mushrooms-1': 1 })
+  it('gives her own session first when a tonic for her unlocks is in stock, Umas by Farm Level, highest first', () => {
+    let state = account(4, { 'tonic-1': 3 })
     state = atFarmLevel(atFarmLevel(state, uma(1), 10), uma(3), 5)
     expect(freeUmas(state).map((u) => u.outfitId)).toEqual([uma(1), uma(3), uma(2), uma(4)])
     const { suggestions, idle } = suggest(state, NOW, { env: ENV })
@@ -29,11 +29,12 @@ describe('suggest', () => {
       [uma(1), 'session', slot('observatory', 0)],
       [uma(3), 'session', slot('observatory', 1)],
       [uma(2), 'session', slot('lineage-hall', 0)],
-      [uma(4), 'job', slot('vegetable-garden', 0)],
+      [uma(4), 'job', slot('orchard', 0)],
     ])
-    // From 12:00 even one 216-minute unlock overruns 13:00, so she fits 22:30: two of her three nodes.
-    expect(fitSize(NOW, ten(sessionSeconds(1)), DEFAULT_CHECK_INS, 0)).toBe(2)
-    expect(unlockTargets(suggestions[0]!)).toEqual(['n1', 'n2'])
+    // From 12:00 even one 324-minute unlock overruns 13:00, so she fits 22:30: one node, and the next two Umas take
+    // the other two tonics.
+    expect(fitSize(NOW, ten(sessionSeconds(1)), DEFAULT_CHECK_INS, 0)).toBe(1)
+    expect(unlockTargets(suggestions[0]!)).toEqual(['n1'])
     expect(unlockTargets(suggestions[1]!)).toEqual(['n1'])
     expect(unlockTargets(suggestions[2]!)).toEqual(['parent0'])
     expect(suggestions[0]!.forTarget).toBe(uma(1))
@@ -45,38 +46,42 @@ describe('suggest', () => {
     expect(suggestions).toHaveLength(5)
     expect(suggestions.every((s) => s.kind === 'job' && s.request.kind === 'gather')).toBe(true)
     const fitted = fitSize(NOW, ten(farmItemSeconds('gather', 1)), DEFAULT_CHECK_INS, 0)
-    expect(fitted).toBe(5)
+    expect(fitted).toBe(3)
     expect(suggestions.every((s) => s.size === fitted)).toBe(true)
-    // The first target's largest raw shortfalls she can gather at grade 1: carrots and wheat tie at 24, carrot first.
-    expect(suggestions[0]).toMatchObject({ outfitId: uma(1), forTarget: uma(1), request: gather('carrot', 5) })
+    // The first target's largest raw shortfalls she can gather at grade 1: the eight Warm-Up Tonics' mushrooms, carrots
+    // and wheat tie at 8, Button Mushroom first.
+    expect(suggestions[0]).toMatchObject({ outfitId: uma(1), forTarget: uma(1), request: gather('button-mushroom', 3) })
     expect(suggestions.map((s) => s.slot.building)).toContain('fields')
   })
 
   it('promises no slot, input or output twice', () => {
-    let state = account(8, { carrot: 5, 'dish-vegetables-1': 3 })
+    let state = account(8, { carrot: 5, 'tonic-1': 3 })
     for (const n of [1, 2, 3]) state = atFarmLevel(state, uma(n), 3)
-    const { suggestions } = suggest(state, NOW, { env: ENV })
+    const at = clock('13:00')
+    const { suggestions } = suggest(state, at, { env: ENV })
     const slots = suggestions.map((s) => JSON.stringify(s.slot))
     expect(new Set(slots).size).toBe(slots.length)
-    // The Observatory's two slots go to the first two; the third's dish waits for a slot.
+    // The Observatory's two slots go to the first two; the third takes the last tonic to the Lineage Hall.
     expect(suggestions.filter((s) => s.slot.building === 'observatory').map((s) => s.outfitId)).toEqual([uma(1), uma(2)])
+    expect(suggestions.filter((s) => s.slot.building === 'lineage-hall').map((s) => s.outfitId)).toEqual([uma(3)])
     const used = new Map<string, number>()
     for (const s of suggestions) {
+      // Each suggested session is grade 1 nodes or slots: a Warm-Up Tonic an unlock.
       const inputs = s.request.kind === SESSION_KIND
-        ? s.request.unlocks.map(() => ({ item: 'dish-vegetables-1', qty: 1 }))
+        ? s.request.unlocks.map(() => ({ item: 'tonic-1', qty: 1 }))
         : (recipeOf(s.request.item)?.inputs ?? []).map(({ item, qty }) => ({ item, qty: qty * s.size }))
       for (const { item, qty } of inputs) used.set(item, (used.get(item) ?? 0) + qty)
     }
-    expect(used.get('dish-vegetables-1')).toBeLessThanOrEqual(3)
-    expect(used.get('carrot') ?? 0).toBeLessThanOrEqual(5)
-    // A 27-minute craft fits ×2 before 13:00, so the five carrots go ×2, ×2 and ×1 to three Umas.
-    expect(suggestions.filter((s) => s.request.kind === 'craft').map((s) => [s.slot.slot, s.size])).toEqual([[0, 2], [1, 2], [2, 1]])
+    expect(used.get('tonic-1')).toBe(3)
+    // From 13:00 a 40.5-minute craft fits ×10 before 22:30, so one Uma takes all five carrots and no
+    // other craft is promised them.
+    expect(suggestions.filter((s) => s.request.kind === 'craft').map((s) => [s.slot.slot, s.size])).toEqual([[0, 5]])
     expect(used.get('carrot')).toBe(5)
   })
 
   it('caps a size by stock, not by need', () => {
     const state = account(1, { carrot: 2 })
-    const { suggestions } = suggest(state, NOW, { env: ENV })
+    const { suggestions } = suggest(state, clock('13:00'), { env: ENV })
     // Chopped Carrot is the largest crafted shortfall she can start; two carrots cap it at ×2.
     expect(suggestions).toMatchObject([{ request: { kind: 'craft', item: 'chopped-carrot', count: 2 }, size: 2 }])
   })
@@ -115,7 +120,7 @@ describe('suggest', () => {
 
 describe('Start suggestions', () => {
   it('runs one start per line, in order', () => {
-    let state = account(4, { 'dish-vegetables-1': 3, 'dish-mushrooms-1': 1 })
+    let state = account(4, { 'tonic-1': 4 })
     state = atFarmLevel(state, uma(1), 10)
     const { suggestions } = suggest(state, NOW, { env: ENV })
     const { state: after, started, refused } = startSuggestions(state, suggestions, NOW, ENV)

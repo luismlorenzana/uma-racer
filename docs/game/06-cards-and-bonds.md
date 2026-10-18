@@ -54,15 +54,15 @@ A **bond** is one card unlocked for one Uma. The rules:
 
 ### The dish: family by card type
 
-<!-- live:bond-dishes -->
-| Card type | Dojo room | Dish family | Dish id at grade *g* (grade 1 name) |
-|---|---|---|---|
-| Speed | Speed | Sweets | `dish-sweets-<g>` (Honeycomb Cake) |
-| Stamina | Stamina | Fruits | `dish-fruits-<g>` (Apple Tart) |
-| Power | Power | Fish | `dish-fish-<g>` (Carp Grill) |
-| Guts | Guts | Nuts & Seeds | `dish-nuts-seeds-<g>` (Peanut Cookies) |
-| Wit | Wit | Herbs & Spices | `dish-herbs-spices-<g>` (Basil Curry) |
-| Friend, Group | Friend & Group | Grains | `dish-grains-<g>` (Wheat Bread) |
+<!-- live:bond-rooms -->
+| Card type | Dojo room | Takes |
+|---|---|---|
+| Speed | Speed | Nothing: the session alone |
+| Stamina | Stamina | Nothing: the session alone |
+| Power | Power | Nothing: the session alone |
+| Guts | Guts | Nothing: the session alone |
+| Wit | Wit | Nothing: the session alone |
+| Friend, Group | Friend & Group | Nothing: the session alone |
 <!-- /live -->
 
 ### The dish: grade by era

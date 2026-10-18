@@ -1,8 +1,9 @@
 // Suggestions for Free Umas and her Needs tab (docs/game/02-check-ins-and-notifications.md §4, §6 "Suggestions for
 // free Umas", "What it shows"; docs/game/01-game-loop.md §4). Free Umas go by Farm Level, highest first (01 §4: the
 // higher grades are theirs), ties by outfit id. Each takes, in order:
-// 1. her own session, when a dish for one of her open unlocks is in the projected free stock: her oldest such unlock
-//    picks the facility and room, and she takes the next unlocks there while their dishes last, up to the fitted size;
+// 1. her own session, when the item one of her open unlocks takes is in the projected free stock, or it takes none
+//    (D374): her oldest such unlock picks the facility and room, and she takes the next unlocks there while their
+//    items last, up to the fitted size;
 // 2. otherwise the largest shortfall she can start for the first target she can work for: her Farm Level opens the
 //    grade, a slot is free and the inputs are in stock. Ties go to a dish, then crafted, then raw, then the lower grade,
 //    then the item id; the size fits the next check-in, capped by stock, not by need.
@@ -10,7 +11,7 @@
 // written: Start suggestions runs one T127 `start` per line, in order.
 import { FACILITY_IDS, type BuildingId, type FacilityId, type RoomId } from '../farm/buildings'
 import { FAMILY_SITE, farmItemSeconds } from '../farm/jobs'
-import { itemById, type ItemGrade, type ItemId } from '../items/catalogue'
+import { itemById, standInsOf, takeFor, type ItemGrade, type ItemId } from '../items/catalogue'
 import { canWorkGrade } from '../items/grades'
 import { recipeOf, type RecipeInput } from '../items/recipes'
 import { assertNow } from '../tiers/ledger'
@@ -20,7 +21,7 @@ import { isRefusal, type Refusal, type UmaState } from '../state/types'
 import { isFree } from '../work/activity'
 import type { WorkEnv } from '../work/kinds'
 import { MAX_ITEMS_PER_ENTRY, slotsOf, start, type StartReceipt } from '../work/operations'
-import { slotHolder, speedAt, sumInputs } from '../work/state'
+import { slotHolder, speedAt } from '../work/state'
 import { SESSION_KIND, type FarmKind, type ItemStock, type SlotRef, type WorkRequest, type WorkState } from '../work/types'
 import { fitSize } from '../check-in/schedule'
 import { planFrom, type LineLevel, type Plan, type PlanLine } from './needs'
@@ -81,6 +82,11 @@ export class Bench {
     return this.stock.get(item) ?? 0
   }
 
+  /** Stock that can pay for `item`: it and its stand-ins (D374). */
+  held(item: ItemId): number {
+    return [...standInsOf(item), item].reduce((sum, id) => sum + this.has(id), 0)
+  }
+
   /** The lowest slot at a place nobody holds and no earlier suggestion took. */
   freeSlot(building: BuildingId, room: RoomId | null): SlotRef | undefined {
     return slotsOf(this.state, building).find((slot) => (slot.room ?? null) === room && slotHolder(this.state, slot) === undefined && !this.taken.has(slotKey(slot)))
@@ -94,6 +100,12 @@ export class Bench {
   claim(slot: SlotRef, inputs: readonly RecipeInput[]): void {
     this.taken.add(slotKey(slot))
     for (const { item, qty } of inputs) this.stock.set(item, this.has(item) - qty)
+  }
+
+  /** Claims a session's slot and the items its unlocks take, stand-ins first, as its plan will (`sessionInputs`). */
+  claimSession(slot: SlotRef, unlocks: readonly Unlock[]): void {
+    this.taken.add(slotKey(slot))
+    for (const unlock of unlocks) if (unlock.dishId !== null) takeFor(this.stock, unlock.dishId)
   }
 }
 
@@ -142,7 +154,7 @@ function ownSession(state: WorkState, bench: Bench, uma: UmaState, chosen: Chose
   const unlocks = remainingUnlocks(uma.build, uma, chosen[uma.outfitId] ?? [], pending).flatMap((entry) => (entry.kind === 'unlock' ? [entry] : []))
   const tried = new Set<string>()
   for (const entry of unlocks) {
-    if (bench.has(entry.dishId) < 1) continue
+    if (entry.dishId !== null && bench.held(entry.dishId) < 1) continue
     const place = `${entry.facility}/${entry.room ?? ''}`
     if (tried.has(place)) continue
     tried.add(place)
@@ -154,7 +166,12 @@ function ownSession(state: WorkState, bench: Bench, uma: UmaState, chosen: Chose
     const left = new Map<ItemId, number>()
     const taken: Unlock[] = []
     for (const unlock of candidates) {
-      const have = left.get(unlock.dishId) ?? bench.has(unlock.dishId)
+      // An unlock that takes no item is always paid (D374).
+      if (unlock.dishId === null) {
+        taken.push(unlock)
+        continue
+      }
+      const have = left.get(unlock.dishId) ?? bench.held(unlock.dishId)
       if (have < 1) {
         // The Dojo has no order, so a bond whose dish is missing doesn't hold up the next; elsewhere an unlock may
         // depend on the one before (05 §2).
@@ -169,7 +186,7 @@ function ownSession(state: WorkState, bench: Bench, uma: UmaState, chosen: Chose
     const size = fitSize(timing.now, taken.map((u) => sessionSeconds(u.grade, speed)), timing.times, timing.utcOffsetMin)
     const unlocksTaken = taken.slice(0, size)
     const seconds = unlocksTaken.reduce((sum, u) => sum + sessionSeconds(u.grade, speed), 0)
-    bench.claim(slot, sumInputs(unlocksTaken.map((u) => [{ item: u.dishId, qty: 1 }])))
+    bench.claimSession(slot, unlocksTaken)
     return {
       outfitId: uma.outfitId, kind: 'session', slot, request: { kind: SESSION_KIND, unlocks: unlocksTaken }, size: unlocksTaken.length,
       endsAt: timing.now + seconds * 1000, forTarget: uma.outfitId, item: null,

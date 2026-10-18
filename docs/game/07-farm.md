@@ -187,19 +187,19 @@ founding cohort measured in tier 1 (T132):
 | Grade | Farm Lv | EXP | Day at C (×1.0) | Mixed (×1.3) | Always suited (×1.6) | Founding cohort, measured (median day) |
 |---|---|---|---|---|---|---|
 | 1 | 1 | 0 | 0 | 0 | 0 | 0.0 |
-| 2 | 6 | 2,450 | 3 | 2 | 2 | 2.0 |
-| 3 | 11 | 5,025 | 6 | 4 | 4 | 4.0 |
-| 4 | 16 | 7,725 | 9 | 7 | 6 | 6.0 |
-| 5 | 21 | 10,550 | 12 | 9 | 8 | 8.2 |
-| 6 | 26 | 13,500 | 16 | 12 | 10 | 10.6 |
-| 7 | 31 | 16,575 | 19 | 15 | 12 | 13.0 |
-| 8 | 36 | 19,775 | 23 | 18 | 14 | 15.6 |
-| 9 | 41 | 23,100 | 27 | 21 | 17 | 19.2 |
-| 10 | 46 | 26,550 | 31 | 24 | 19 | 22.2 |
+| 2 | 6 | 2,450 | 3 | 2 | 2 | 2.6 |
+| 3 | 11 | 5,025 | 6 | 4 | 4 | 4.6 |
+| 4 | 16 | 7,725 | 9 | 7 | 6 | 7.0 |
+| 5 | 21 | 10,550 | 12 | 9 | 8 | 10.6 |
+| 6 | 26 | 13,500 | 16 | 12 | 10 | 12.6 |
+| 7 | 31 | 16,575 | 19 | 15 | 12 | 17.6 |
+| 8 | 36 | 19,775 | 23 | 18 | 14 | 19.0 |
+| 9 | 41 | 23,100 | 27 | 21 | 17 | 23.6 |
+| 10 | 46 | 26,550 | 31 | 24 | 19 | 32.0 |
 | (Lv 50) | 50 | 29,400 | 34 | 26 | 21 | |
 
 The day columns are 864 Farm minutes a day. Working without a break, from Farm Lv 1 to 21 at a Lv 1
-building, an Uma gains 2.71 levels a day at C, 4.32 at A and 4.83 at S (the probe).
+building, an Uma gains 2.69 levels a day at C, 4.32 at A and 4.83 at S (the probe).
 <!-- /live -->
 
 **Every grade is open within about a month of a tier** (about three weeks for the cohort), while the tier runs about
@@ -232,11 +232,11 @@ buildings: cooking is 30% of all Farm work, and Vegetables feed every constellat
 <!-- live:farm-slots -->
 | Building | Lv 1 | Lv 2 | Lv 3 |
 |---|---|---|---|
-| **Kitchen** | 6 | 8 | 8, speed ×1.25 |
+| **Kitchen** | 6 | 9 | 9, speed ×1.25 |
 | **Pantry** | 3 | 5 | 5, speed ×1.25 |
 | **Vegetable Garden** | 4 | 5 | 5, speed ×1.25 |
 | **Each of the other seven sites** | 2 | 3 | 3, speed ×1.25 |
-| **All ten** | **27** | **39** | 39 (48.75 slot-equivalents) |
+| **All ten** | **27** | **40** | 40 (50 slot-equivalents) |
 <!-- /live -->
 
 ### Slot demand at the target
@@ -249,16 +249,16 @@ tier-1 scenario's window (the cohort's median entry to its median finish):
 <!-- live:loop-farm-slots -->
 | Building | Slots Lv 1 / 2 / 3 | Hours a day held, tier 1 | Slots needed (÷ 18) | Use in 1·1 | Use in 1·2 | Use in 1·3 | Use in 1·4 | Use in 1·5 | Peak, all tiers |
 |---|---|---|---|---|---|---|---|---|---|
-| Sugar Grove | 2 / 3 / 3 | 20.8 | 1.2 | 31% | 33% | 32% | 30% | 28% | 40% (2·2) |
-| Orchard | 2 / 3 / 3 | 20.8 | 1.2 | 32% | 36% | 27% | 34% | 23% | 40% (3·2) |
-| Fishery | 2 / 3 / 3 | 19.9 | 1.1 | 33% | 34% | 31% | 35% | 20% | 39% (2·2) |
-| Nut Grove | 2 / 3 / 3 | 20.5 | 1.1 | 22% | 32% | 41% | 22% | 34% | 41% (1·3) |
-| Herb Garden | 2 / 3 / 3 | 19.6 | 1.1 | 29% | 27% | 43% | 19% | 34% | 43% (1·3) |
-| Fields | 2 / 3 / 3 | 27.3 | 1.5 | 50% | 27% | 54% | 31% | 43% | 57% (2·3) |
-| Vegetable Garden | 4 / 5 / 5 | 44.0 | 2.4 | 58% | 34% | 31% | 30% | 33% | 63% (2·1) |
-| Mushroom Cave | 2 / 3 / 3 | 38.0 | 2.1 | 51% | 58% | 52% | 74% | 54% | 76% (3·4) |
-| Pantry | 3 / 5 / 5 | 67.6 | 3.8 | 56% | 55% | 65% | 76% | 63% | 80% (2·3) |
-| Kitchen | 6 / 8 / 8 | 124.2 | 6.9 | 74% | 63% | 65% | 77% | 74% | 79% (2·5) |
+| Sugar Grove | 2 / 3 / 3 | 22.1 | 1.2 | 31% | 31% | 41% | 32% | 35% | 45% (2·2) |
+| Orchard | 2 / 3 / 3 | 21.4 | 1.2 | 31% | 28% | 41% | 35% | 29% | 42% (2·3) |
+| Fishery | 2 / 3 / 3 | 22.1 | 1.2 | 33% | 29% | 42% | 35% | 30% | 42% (2·3) |
+| Nut Grove | 2 / 3 / 3 | 22.1 | 1.2 | 31% | 33% | 37% | 34% | 34% | 45% (3·3) |
+| Herb Garden | 2 / 3 / 3 | 22.1 | 1.2 | 25% | 37% | 42% | 35% | 29% | 47% (3·3) |
+| Fields | 2 / 3 / 3 | 23.5 | 1.3 | 60% | 27% | 30% | 28% | 33% | 60% (1·1) |
+| Vegetable Garden | 4 / 5 / 5 | 21.9 | 1.2 | 32% | 17% | 16% | 13% | 16% | 32% (1·1) |
+| Mushroom Cave | 2 / 3 / 3 | 21.6 | 1.2 | 63% | 27% | 26% | 22% | 27% | 63% (1·1) |
+| Pantry | 3 / 5 / 5 | 55.6 | 3.1 | 59% | 49% | 48% | 44% | 62% | 64% (3·2) |
+| Kitchen | 6 / 9 / 9 | 112.3 | 6.2 | 62% | 58% | 55% | 51% | 58% | 81% (2·1) |
 <!-- /live -->
 
 How to read it:
@@ -283,7 +283,7 @@ minute of Uma work** (D331), plus crafted items of the building's own family. Th
 family, so they take one or two of each.
 
 <!-- live:farm-upgrades -->
-| Building | To Lv 2 (one more slot; two for the Pantry; two for the Kitchen) | To Lv 3 (speed ×1.25) |
+| Building | To Lv 2 (one more slot; two for the Pantry; three for the Kitchen) | To Lv 3 (speed ×1.25) |
 |---|---|---|
 | Each site | 1,200 PM + 4 crafted grade 1 of its family | 2,400 PM + 4 crafted grade 3 of its family |
 | Pantry | 1,500 PM + 1 crafted grade 1 of each of the eight families | 6,000 PM + 1 crafted grade 3 of each family |

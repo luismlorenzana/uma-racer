@@ -6,7 +6,7 @@
 // starts, buys, sells or spends a Speed Ticket: restarting is Repeat.
 import { raiseExchangeGrade } from '../economy/exchange'
 import type { BuildingId } from '../farm/buildings'
-import { itemById, type ItemGrade } from '../items/catalogue'
+import { isKitchenItem, itemById, type ItemGrade } from '../items/catalogue'
 import type { RecipeInput } from '../items/recipes'
 import { assertNow } from '../tiers/ledger'
 import { isFree } from '../work/activity'
@@ -53,6 +53,7 @@ export interface CollectAllLine {
 export interface CollectAllTotals {
   /** Raw and crafted items. */
   readonly items: number
+  /** What the Kitchen made: dishes and tonics. */
   readonly dishes: number
   readonly unlocks: number
   /** Farm EXP in quarter points. */
@@ -151,8 +152,12 @@ export function collectAll<S extends WorkState>(state: S, input: CollectAllInput
   const levels = Object.values(next.umas).map((uma) => uma.farm.level)
   const from = next.profile.exchangeGrade
   if (levels.length > 0) next = { ...next, profile: raiseExchangeGrade(next.profile, Math.max(...levels)) }
+  const fromKitchen = (item: string) => {
+    const def = itemById(item)
+    return def !== undefined && isKitchenItem(def)
+  }
   const count = (kind: 'dish' | 'ingredient') => lines.reduce((sum, line) => sum + line.items
-    .filter(({ item }) => (itemById(item)?.kind === 'dish') === (kind === 'dish'))
+    .filter(({ item }) => fromKitchen(item) === (kind === 'dish'))
     .reduce((n, { qty }) => n + qty, 0), 0)
   return {
     state: next,

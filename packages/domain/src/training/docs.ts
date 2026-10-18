@@ -1,19 +1,21 @@
 // The Training Hub's live blocks (docs/game/architecture.md#the-rework-modules "The live manual"): the tables of game/README,
 // /04 §8, /05 §1–§3 and §6, and /06 §2 that these rules own, rendered from the code so the design can't drift from it.
 // Registered in packages/domain/src/docs/render.ts. Pure: no I/O, and nothing from the private packs.
+import type { SupportCardType } from '../content'
 import type { InspirationSlot } from '../inspiration'
+import { STATS } from '../types'
 import { BUILDINGS, BUILDING_LEVELS, BUILDING_SPEED, DOJO_ROOMS, FACILITY_IDS, GYM_ROOMS, type FacilityId } from '../farm/buildings'
-import { DUO_GRADES, FEAST_GRADES, feastDish, planetDish, type FeastGrade, type ItemGrade } from '../items/catalogue'
+import { DUO_GRADES, FEAST_GRADES, feastDish, type FeastGrade, type ItemGrade } from '../items/catalogue'
 import { FAMILIES } from '../items/families'
 import { TREE_CARD_NODES } from './trees/sizes'
 import { LAST_SCENARIO_NUMBER, TIERS, scenarioRow, tierOf } from '../tiers/map'
 import { NODES_THAT_CAN_PAY, TIER_MULTIPLIER_PCT, extraNodeValues } from '../tiers/scaling'
 import { TIME_FACTOR } from '../state/time'
 import type { ScenarioOfTier, Tier } from '../state/types'
-import { BOND_FAMILY, bondGrade } from './bonds'
+import { bondGrade, dojoRoomOf } from './bonds'
 import { REWORK_BUFFS, buffScenarioName } from './buffs'
 import { EXTRA_CAPACITY, EXTRA_HELD, EXTRA_NODES, EXTRA_SINGLE_GRADES, EXTRA_STATS, LAYERS, higherGrade, lowerGrade } from './extra'
-import { FACILITY_DISH_FAMILY, ROOM_NAMES } from './facilities'
+import { GYM_ROOM_FAMILY, ROOM_NAMES } from './facilities'
 import {
   BONDS_BY_SCENARIO, FIXED_UNLOCKS, LAYER_SIZES, SLOT_LETTER, UNLOCKS_PER_TIER, bondsThrough, facilityOf, goldPosition, isGrandparentSlot,
   layerUnlocks, sessionBaseMinutes, sessionSeconds, type Unlock,
@@ -34,6 +36,8 @@ const list = (items: readonly string[]): string => (items.length <= 1 ? items.jo
 const GRADES = Array.from({ length: 10 }, (_, i) => (i + 1) as ItemGrade)
 const at = (facility: FacilityId) => (entry: Unlock) => facilityOf(entry.kind) === facility
 const multiplier = (pct: number): string => `×${pct / 100}`
+/** Every card type, stats in their order, then Friend and Group. */
+const CARD_TYPES: readonly SupportCardType[] = [...STATS, 'friend', 'group']
 
 /** The slot an Inspiration unlock belongs to. */
 const slotOf = (entry: Unlock): InspirationSlot => (entry.kind === 'gold' ? goldPosition(entry.target)!.slot : (entry.target as InspirationSlot))
@@ -96,18 +100,18 @@ function trainingFacilities(): string {
   const hall = FIXED_UNLOCKS.filter(at('lineage-hall'))
   const familyName = (family: keyof typeof FAMILIES) => FAMILIES[family].name
   const rows: Record<FacilityId, readonly Cell[]> = {
-    observatory: ['Constellation card nodes', familyName(FACILITY_DISH_FAMILY.observatory)],
+    observatory: ['Constellation card nodes', 'A tonic'],
     'lineage-hall': [`Inspiration: ${inspirationCounts(hall.filter((entry) => entry.kind === 'slot'))}, ${plural(hall.filter((entry) => entry.kind === 'unique').length, 'inherited unique skill')}, ${plural(hall.filter((entry) => entry.kind === 'gold').length, 'gold skill')}`,
-      familyName(FACILITY_DISH_FAMILY['lineage-hall'])],
-    gym: ['Extra Stats nodes', `${GYM_ROOMS.map((room) => `${familyName(FACILITY_DISH_FAMILY.gym[room])} (${ROOM_NAMES[room]})`).join(', ')}; Duos; Feasts`],
-    dojo: ['Card bonds ([06](06-cards-and-bonds.md) owns the rules)', `By card type: the five stat families, and ${familyName(FACILITY_DISH_FAMILY.dojo['friend-group'])} for Friend and Group`],
+      'A tonic for a slot; nothing for a unique or a gold'],
+    gym: ['Extra Stats nodes', `A meal: ${GYM_ROOMS.map((room) => `${familyName(GYM_ROOM_FAMILY[room])} (${ROOM_NAMES[room]})`).join(', ')}; Duos; Feasts`],
+    dojo: ['Card bonds ([06](06-cards-and-bonds.md) owns the rules)', 'Nothing'],
   }
   const rooms = (facility: FacilityId) => {
     const list = BUILDINGS[facility].rooms
     if (list.length === 0) return 'None'
     return `${list.length}, one per ${facility === 'gym' ? 'stat' : 'card type'}: ${list.map((room) => ROOM_NAMES[room]).join(', ')}`
   }
-  return table(['Facility', 'Unlocks', 'Dish family', 'Rooms', 'Unlocks per Uma per tier'], [
+  return table(['Facility', 'Unlocks', 'Takes', 'Rooms', 'Unlocks per Uma per tier'], [
     ...FACILITY_IDS.map((facility) => [bold(BUILDINGS[facility].name), ...rows[facility], rooms(facility),
       facility === 'dojo' ? `${tier(facility)} (a pacing assumption, not a cap)` : tier(facility)]),
     [bold('Tier'), '', '', '', bold(UNLOCKS_PER_TIER)],
@@ -164,7 +168,10 @@ function trainingLayerGrades(): string {
 }
 
 const span = (entries: readonly Unlock[]): string => `${entries[0]!.target}–${entries.at(-1)!.target}`
-const gradeCell = (entries: readonly Unlock[], name: string): string => `${name} at ${bold(`g${entries[0]!.grade}`)} (${code(entries[0]!.dishId)})`
+const gradeCell = (entries: readonly Unlock[], name: string): string => {
+  const item = entries[0]!.dishId
+  return `${name} at ${bold(`g${entries[0]!.grade}`)} (${item === null ? 'no item' : code(item)})`
+}
 
 function trainingNodeGrades(): string {
   return table(['Scenario', 'Nodes', 'Lower grade', 'Higher grade'], LAYERS.map((s) => {
@@ -190,7 +197,7 @@ function trainingExtraGrades(): string {
     const sun = gym.find((entry) => entry.kind === 'sun')
     return [s, `Each stat at ${bold(`g${lowerGrade(s)}`)}`,
       duos.length === 0 ? '—' : `${duos.map((node) => node.stats.map(capital).join('–')).join(', ')} at ${bold(`g${duos[0]!.grade}`)}`,
-      sun ? `${feastDish(sun.grade as FeastGrade).name} (${code(sun.dishId)}) at ${bold(`g${sun.grade}`)}` : '—']
+      sun ? `${feastDish(sun.grade as FeastGrade).name} (${code(sun.dishId!)}) at ${bold(`g${sun.grade}`)}` : '—']
   }))
 }
 
@@ -219,12 +226,10 @@ function trainingExtraCapacity(): string {
 
 // --- 06 §2 ----------------------------------------------------------------------------------------------------------
 
-function bondDishes(): string {
-  const types = (room: (typeof DOJO_ROOMS)[number]) => (Object.keys(BOND_FAMILY) as (keyof typeof BOND_FAMILY)[])
-    .filter((type) => (room === 'friend-group' ? type === 'friend' || type === 'group' : type === room))
-  return table(['Card type', 'Dojo room', 'Dish family', 'Dish id at grade *g* (grade 1 name)'], DOJO_ROOMS.map((room) => {
-    const family = FACILITY_DISH_FAMILY.dojo[room]
-    return [types(room).map(capital).join(', '), ROOM_NAMES[room], FAMILIES[family].name, `${code(`dish-${family}-<g>`)} (${planetDish(family, 1).name})`]
+function bondRooms(): string {
+  return table(['Card type', 'Dojo room', 'Takes'], DOJO_ROOMS.map((room) => {
+    const types = CARD_TYPES.filter((type) => dojoRoomOf(type) === room)
+    return [types.map(capital).join(', '), ROOM_NAMES[room], 'Nothing: the session alone']
   }))
 }
 
@@ -262,7 +267,7 @@ export const LIVE_BLOCKS: Readonly<Record<string, () => string>> = {
   'training-extra-grades': trainingExtraGrades,
   'training-extra-nodes': trainingExtraNodes,
   'training-extra-capacity': trainingExtraCapacity,
-  'bond-dishes': bondDishes,
+  'bond-rooms': bondRooms,
   'bond-grades': bondGrades,
   'bond-counts': bondCounts,
   'rework-buffs': reworkBuffs,

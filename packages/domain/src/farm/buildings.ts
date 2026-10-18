@@ -88,7 +88,7 @@ export const SLOTS: Readonly<Record<BuildingId, Per<number>>> = Object.freeze({
   'vegetable-garden': [4, 5, 5],
   'mushroom-cave': [2, 3, 3],
   pantry: [3, 5, 5], // a fifth slot at Lv 2 and 3 (D351): crafting is the step with the most items
-  kitchen: [6, 8, 8],
+  kitchen: [6, 9, 9],
   observatory: [2, 3, 3],
   'lineage-hall': [2, 3, 3],
   gym: [1, 2, 2],

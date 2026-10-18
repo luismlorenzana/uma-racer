@@ -24,12 +24,12 @@ const NINE = clock('09:00')
 
 /**
  * Six Umas at 09:00: two gathering at a Lv 2 Vegetable Garden (one with a request queued), one whose gather finished
- * at 06:48, one whose Observatory session finished overnight, and two Free.
+ * at 06:42, one whose Observatory session finished at 05:24, and two Free.
  */
 function morning(): WorkState {
-  let state = withLevel(withStock(account(6), { 'dish-vegetables-1': 1 }), 'vegetable-garden', 2)
+  let state = withLevel(withStock(account(6), { 'tonic-1': 1 }), 'vegetable-garden', 2)
   state = ok(start(state, { outfitId: uma(4), slot: slot('observatory', 0), request: nodes(1) }, clock('00:00'), ENV)).state
-  state = ok(start(state, { outfitId: uma(2), slot: slot('vegetable-garden', 2), request: gather(CARROT, 1) }, clock('05:00'), ENV)).state
+  state = ok(start(state, { outfitId: uma(2), slot: slot('vegetable-garden', 2), request: gather(CARROT, 1) }, clock('04:00'), ENV)).state
   state = ok(start(state, { outfitId: uma(1), slot: slot('vegetable-garden', 0), request: gather(CARROT, 3) }, clock('08:00'), ENV)).state
   state = ok(start(state, { outfitId: uma(3), slot: slot('vegetable-garden', 4), request: gather(CARROT, 2) }, clock('08:30'), ENV)).state
   return ok(queue(state, { outfitId: uma(3), add: { request: gather(CARROT, 1), building: 'vegetable-garden' } }, clock('08:30'), ENV)).state
@@ -44,9 +44,9 @@ describe('the hub view', () => {
     expect(garden.pips.map((pip) => [pip.state, pip.outfitId, pip.queued])).toEqual([
       ['busy', uma(1), 0], ['busy', uma(3), 1], ['ready', uma(2), 0], ['free', null, 0], ['free', null, 0],
     ])
-    expect(garden.pips[0]!.progress).toBeCloseTo(60 / 108, 10)
+    expect(garden.pips[0]!.progress).toBeCloseTo(60 / 162, 10)
     expect(garden.pips[0]!.progress).toBe(itemProgress(state.work[uma(1)]!.entries[0]!, NINE))
-    expect(garden.pips[1]!.progress).toBeCloseTo(30 / 108, 10)
+    expect(garden.pips[1]!.progress).toBeCloseTo(30 / 162, 10)
     expect([garden.pips[2]!.progress, garden.pips[3]!.progress]).toEqual([1, 0])
     expect(view.buildings.observatory).toMatchObject({ slots: 2, busy: 0, ready: 1, free: 1 })
     expect(view.buildings.fields).toMatchObject({ slots: 2, free: 2, pips: [{ state: 'free' }, { state: 'free' }] })
@@ -67,22 +67,23 @@ describe('the hub view', () => {
     expect(view.readySlots).toHaveLength(2)
     expect(view.tabs).toEqual({ farm: 1, training: 1 })
     expect(view.umas).toBe(6)
-    // Earlier that morning only the session had finished; before midnight nobody had started.
-    expect(hubView(state, clock('04:00'), ENV)).toMatchObject({ ready: 1, tabs: { farm: 0, training: 1 } })
+    // Earlier that morning only the session had finished.
+    expect(hubView(state, clock('06:00'), ENV)).toMatchObject({ ready: 1, tabs: { farm: 0, training: 1 } })
     expect(hubView(account(0), NINE, ENV)).toMatchObject({ ready: 0, free: 0, needsATap: 0, umas: 0, featured: null })
   })
 
   it('counts a running batch with finished items as Ready, as Collect all does (02 §2)', () => {
-    const view = hubView(morning(), clock('10:00'), ENV)
+    const view = hubView(morning(), clock('11:00'), ENV)
     expect(view.buildings['vegetable-garden'].pips.find((pip) => pip.outfitId === uma(1))).toMatchObject({ state: 'ready', progress: 1 })
-    expect(view.ready).toBe(readyCount(morning(), clock('10:00'), ENV))
+    expect(view.ready).toBe(readyCount(morning(), clock('11:00'), ENV))
   })
 
-  it('shows the Kitchen at Lv 2 as eight pips, and the Gym at Lv 2 as seven and "+3" (§14)', () => {
+  it('shows the Kitchen at Lv 1 as six pips and at Lv 2 as seven and "+2", and the Gym at Lv 2 as seven and "+3" (§14)', () => {
+    expect(hubView(account(0), NINE, ENV).buildings.kitchen).toMatchObject({ slots: 6, free: 6, more: 0, pips: { length: 6 } })
     const state = withLevel(withLevel(withLevel(account(0), 'kitchen', 2), 'gym', 2), 'dojo', 2)
     const view = hubView(state, NINE, ENV)
-    expect(view.buildings.kitchen).toMatchObject({ slots: 8, free: 8, more: 0 })
-    expect(view.buildings.kitchen.pips).toHaveLength(MAX_PIPS)
+    expect(view.buildings.kitchen).toMatchObject({ slots: 9, free: 9, more: 2 })
+    expect(view.buildings.kitchen.pips).toHaveLength(MAX_PIPS - 1)
     expect(view.buildings.gym).toMatchObject({ slots: 10, free: 10, more: 3 })
     expect(view.buildings.gym.pips.map((pip) => pip.room)).toEqual([...GYM_ROOMS.flatMap((room) => [room, room])].slice(0, 7))
     expect(view.buildings.dojo).toMatchObject({ slots: 12, more: 5 })

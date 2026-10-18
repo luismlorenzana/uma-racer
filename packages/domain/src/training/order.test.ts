@@ -91,7 +91,7 @@ describe('nextUnlocks', () => {
   it("is the next N nodes at the Observatory: 05 §2's night is nodes 6, 7 and 8", () => {
     const next = nextUnlocks(opened(...nodes(5)), S(1), 'observatory', null, 3)
     expect(next.map((entry) => [entry.target, entry.grade, entry.dishId])).toEqual([
-      ['n6', 1, 'dish-vegetables-1'], ['n7', 2, 'dish-vegetables-2'], ['n8', 2, 'dish-vegetables-2'],
+      ['n6', 1, 'tonic-1'], ['n7', 2, 'tonic-2'], ['n8', 2, 'tonic-2'],
     ])
     expect(nextUnlocks(opened(...nodes(5)), S(1), 'observatory', null, 3, [{ kind: 'node', target: 'n6' }]).map((entry) => entry.target)).toEqual(['n7', 'n8', 'n9'])
     expect(nextUnlocks(opened(...nodes(12)), S(1), 'observatory', null, 3)).toEqual([])
@@ -127,7 +127,10 @@ describe('remainingUnlocks', () => {
       .toEqual(['speed-e1', 'wit-e1'])
     expect(fresh.at(-1)).toEqual({ kind: 'pick-cards', layer: 1, facility: 'dojo', count: 4 })
     const first = fresh[0]!
-    expect(first).toMatchObject({ kind: 'unlock', layer: 1, facility: 'observatory', room: null, grade: 1, dishId: 'dish-vegetables-1' })
+    expect(first).toMatchObject({ kind: 'unlock', layer: 1, facility: 'observatory', room: null, grade: 1, dishId: 'tonic-1' })
+    // A chosen card's bond takes no item, in its card type's room (D374).
+    const bond = fresh.find((entry) => entry.kind === 'unlock' && entry.unlock.target === 'wit-e1')
+    expect(bond).toMatchObject({ facility: 'dojo', room: 'wit', rooms: ['wit'], grade: 1, dishId: null })
     const duo = remainingUnlocks(emptyBuild(null), S(2), []).find((entry) => entry.kind === 'unlock' && entry.unlock.target === 'duo-power-speed-3')
     expect(duo).toMatchObject({ facility: 'gym', room: 'power', rooms: ['power', 'speed'] })
   })

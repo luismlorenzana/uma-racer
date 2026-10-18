@@ -20,7 +20,7 @@ gathering half, gear and the Forge are not used. How jobs, timers and Farm Level
 | Duo dishes | 8 (4 stat Duos × grades 3 and 5) | `duo-<stat>-<stat>-<grade>`, drawn with uma-art `duo-…` frames (§4.3) |
 | Feasts | 4 (grades 4, 6, 8, 10) | uma-art `feast-4` … `feast-10` |
 | Speed Ticket | 1 | `speed-ticket` (§9) |
-| **Total** | **253 definitions** | |
+| **Total** | **263 definitions** | |
 <!-- /live -->
 
 uma-rpg calls the middle step "refined". This game says **crafted** on screen and keeps uma-art's ids and its
@@ -89,12 +89,12 @@ that dish's side (§4.2). Names and ids are uma-art's, checked against `packages
 | 2 | Sugarcane `sugarcane` | Cane Sugar `cane-sugar` | Sugarcane Cake `dish-sweets-2` | Apple Preserve (Fruits 1) |
 | 3 | Sugar Beet `sugar-beet` | Beet Sugar `beet-sugar` | Sugar Beet Cake `dish-sweets-3` | Dried Basil (Herbs & Spices 1) |
 | 4 | Maple Sap `maple-sap` | Maple Syrup `maple-syrup` | Maple Sap Cake `dish-sweets-4` | Trout Fillet (Fish 2) |
-| 5 | Cacao Pod `cacao-pod` | Chocolate `chocolate` | Cacao Pod Cake `dish-sweets-5` | Pearl Barley (Grains 3) |
+| 5 | Cacao Pod `cacao-pod` | Chocolate `chocolate` | Cacao Pod Cake `dish-sweets-5` | Sesame Paste (Nuts & Seeds 3) |
 | 6 | Vanilla Pod `vanilla-pod` | Vanilla Extract `vanilla-extract` | Vanilla Pod Cake `dish-sweets-6` | Walnut Paste (Nuts & Seeds 4) |
 | 7 | Agave Heart `agave-heart` | Agave Syrup `agave-syrup` | Agave Heart Cake `dish-sweets-7` | Orange Marmalade (Fruits 5) |
 | 8 | Palm Sap `palm-sap` | Palm Sugar `palm-sugar` | Palm Sap Cake `dish-sweets-8` | Ground Pepper (Herbs & Spices 6) |
 | 9 | Fairy Honeycomb `fairy-honeycomb` | Fairy Honey `fairy-honey` | Fairy Honeycomb Cake `dish-sweets-9` | Eel Fillet (Fish 7) |
-| 10 | Ambrosia Blossom `ambrosia-blossom` | Ambrosia `ambrosia` | Ambrosia Blossom Cake `dish-sweets-10` | Hulled Wild Rice (Grains 8) |
+| 10 | Ambrosia Blossom `ambrosia-blossom` | Ambrosia `ambrosia` | Ambrosia Blossom Cake `dish-sweets-10` | Macadamia Butter (Nuts & Seeds 8) |
 <!-- /live -->
 
 #### Fruits (`fruits`) → Stamina
@@ -106,12 +106,12 @@ that dish's side (§4.2). Names and ids are uma-art's, checked against `packages
 | 2 | Pear `pear` | Pear Preserve `pear-preserve` | Pear Tart `dish-fruits-2` | Carp Fillet (Fish 1) |
 | 3 | Peach `peach` | Peach Preserve `peach-preserve` | Peach Tart `dish-fruits-3` | Honey (Sweets 1) |
 | 4 | Plum `plum` | Plum Preserve `plum-preserve` | Plum Tart `dish-fruits-4` | Sunflower Oil (Nuts & Seeds 2) |
-| 5 | Orange `orange` | Orange Marmalade `orange-marmalade` | Orange Tart `dish-fruits-5` | Pearl Barley (Grains 3) |
+| 5 | Orange `orange` | Orange Marmalade `orange-marmalade` | Orange Tart `dish-fruits-5` | Dried Rosemary (Herbs & Spices 3) |
 | 6 | Grape `grape` | Grape Jelly `grape-jelly` | Grape Tart `dish-fruits-6` | Dried Thyme (Herbs & Spices 4) |
 | 7 | Mango `mango` | Mango Pulp `mango-pulp` | Mango Tart `dish-fruits-7` | Salmon Fillet (Fish 5) |
 | 8 | Pomegranate `pomegranate` | Pomegranate Molasses `pomegranate-molasses` | Pomegranate Tart `dish-fruits-8` | Vanilla Extract (Sweets 6) |
 | 9 | Starpeach `starpeach` | Starpeach Nectar `starpeach-nectar` | Starpeach Tart `dish-fruits-9` | Pistachio Paste (Nuts & Seeds 7) |
-| 10 | Golden Apple `golden-apple` | Golden Apple Preserve `golden-apple-preserve` | Golden Apple Tart `dish-fruits-10` | Hulled Wild Rice (Grains 8) |
+| 10 | Golden Apple `golden-apple` | Golden Apple Preserve `golden-apple-preserve` | Golden Apple Tart `dish-fruits-10` | Saffron Threads (Herbs & Spices 8) |
 <!-- /live -->
 
 #### Fish (`fish`) → Power
@@ -123,12 +123,12 @@ that dish's side (§4.2). Names and ids are uma-art's, checked against `packages
 | 2 | Trout `trout` | Trout Fillet `trout-fillet` | Trout Grill `dish-fish-2` | Peanut Butter (Nuts & Seeds 1) |
 | 3 | Sardine `sardine` | Sardine Fillet `sardine-fillet` | Sardine Grill `dish-fish-3` | Apple Preserve (Fruits 1) |
 | 4 | Mackerel `mackerel` | Mackerel Fillet `mackerel-fillet` | Mackerel Grill `dish-fish-4` | Dried Mint (Herbs & Spices 2) |
-| 5 | Salmon `salmon` | Salmon Fillet `salmon-fillet` | Salmon Grill `dish-fish-5` | Pearl Barley (Grains 3) |
+| 5 | Salmon `salmon` | Salmon Fillet `salmon-fillet` | Salmon Grill `dish-fish-5` | Beet Sugar (Sweets 3) |
 | 6 | Sea Bream `sea-bream` | Sea Bream Fillet `sea-bream-fillet` | Sea Bream Grill `dish-fish-6` | Maple Syrup (Sweets 4) |
 | 7 | Eel `eel` | Eel Fillet `eel-fillet` | Eel Grill `dish-fish-7` | Chestnut Paste (Nuts & Seeds 5) |
 | 8 | Tuna `tuna` | Tuna Fillet `tuna-fillet` | Tuna Grill `dish-fish-8` | Grape Jelly (Fruits 6) |
 | 9 | Silverfin `silverfin` | Silverfin Fillet `silverfin-fillet` | Silverfin Grill `dish-fish-9` | Ground Cinnamon (Herbs & Spices 7) |
-| 10 | Rainbow Koi `rainbow-koi` | Rainbow Koi Fillet `rainbow-koi-fillet` | Rainbow Koi Grill `dish-fish-10` | Hulled Wild Rice (Grains 8) |
+| 10 | Rainbow Koi `rainbow-koi` | Rainbow Koi Fillet `rainbow-koi-fillet` | Rainbow Koi Grill `dish-fish-10` | Palm Sugar (Sweets 8) |
 <!-- /live -->
 
 #### Nuts & Seeds (`nuts-seeds`) → Guts
@@ -140,12 +140,12 @@ that dish's side (§4.2). Names and ids are uma-art's, checked against `packages
 | 2 | Sunflower Seed `sunflower-seed` | Sunflower Oil `sunflower-oil` | Sunflower Seed Cookies `dish-nuts-seeds-2` | Dried Basil (Herbs & Spices 1) |
 | 3 | Sesame `sesame` | Sesame Paste `sesame-paste` | Sesame Cookies `dish-nuts-seeds-3` | Carp Fillet (Fish 1) |
 | 4 | Walnut `walnut` | Walnut Paste `walnut-paste` | Walnut Cookies `dish-nuts-seeds-4` | Cane Sugar (Sweets 2) |
-| 5 | Chestnut `chestnut` | Chestnut Paste `chestnut-paste` | Chestnut Cookies `dish-nuts-seeds-5` | Pearl Barley (Grains 3) |
+| 5 | Chestnut `chestnut` | Chestnut Paste `chestnut-paste` | Chestnut Cookies `dish-nuts-seeds-5` | Peach Preserve (Fruits 3) |
 | 6 | Almond `almond` | Almond Paste `almond-paste` | Almond Cookies `dish-nuts-seeds-6` | Plum Preserve (Fruits 4) |
 | 7 | Pistachio `pistachio` | Pistachio Paste `pistachio-paste` | Pistachio Cookies `dish-nuts-seeds-7` | Ground Ginger (Herbs & Spices 5) |
 | 8 | Macadamia `macadamia` | Macadamia Butter `macadamia-butter` | Macadamia Cookies `dish-nuts-seeds-8` | Sea Bream Fillet (Fish 6) |
 | 9 | Thundernut `thundernut` | Thundernut Oil `thundernut-oil` | Thundernut Cookies `dish-nuts-seeds-9` | Agave Syrup (Sweets 7) |
-| 10 | Worldseed `worldseed` | Worldseed Oil `worldseed-oil` | Worldseed Cookies `dish-nuts-seeds-10` | Hulled Wild Rice (Grains 8) |
+| 10 | Worldseed `worldseed` | Worldseed Oil `worldseed-oil` | Worldseed Cookies `dish-nuts-seeds-10` | Pomegranate Molasses (Fruits 8) |
 <!-- /live -->
 
 #### Herbs & Spices (`herbs-spices`) → Wit
@@ -157,12 +157,12 @@ that dish's side (§4.2). Names and ids are uma-art's, checked against `packages
 | 2 | Mint `mint` | Dried Mint `dried-mint` | Mint Curry `dish-herbs-spices-2` | Honey (Sweets 1) |
 | 3 | Rosemary `rosemary` | Dried Rosemary `dried-rosemary` | Rosemary Curry `dish-herbs-spices-3` | Peanut Butter (Nuts & Seeds 1) |
 | 4 | Thyme `thyme` | Dried Thyme `dried-thyme` | Thyme Curry `dish-herbs-spices-4` | Pear Preserve (Fruits 2) |
-| 5 | Ginger `ginger` | Ground Ginger `ground-ginger` | Ginger Curry `dish-herbs-spices-5` | Pearl Barley (Grains 3) |
+| 5 | Ginger `ginger` | Ground Ginger `ground-ginger` | Ginger Curry `dish-herbs-spices-5` | Sardine Fillet (Fish 3) |
 | 6 | Peppercorn `peppercorn` | Ground Pepper `ground-pepper` | Peppercorn Curry `dish-herbs-spices-6` | Mackerel Fillet (Fish 4) |
 | 7 | Cinnamon `cinnamon` | Ground Cinnamon `ground-cinnamon` | Cinnamon Curry `dish-herbs-spices-7` | Chocolate (Sweets 5) |
 | 8 | Saffron `saffron` | Saffron Threads `saffron-threads` | Saffron Curry `dish-herbs-spices-8` | Almond Paste (Nuts & Seeds 6) |
 | 9 | Mandrake `mandrake` | Mandrake Powder `mandrake-powder` | Mandrake Curry `dish-herbs-spices-9` | Mango Pulp (Fruits 7) |
-| 10 | Phoenix Pepper `phoenix-pepper` | Phoenix Spice `phoenix-spice` | Phoenix Pepper Curry `dish-herbs-spices-10` | Hulled Wild Rice (Grains 8) |
+| 10 | Phoenix Pepper `phoenix-pepper` | Phoenix Spice `phoenix-spice` | Phoenix Pepper Curry `dish-herbs-spices-10` | Tuna Fillet (Fish 8) |
 <!-- /live -->
 
 #### Grains (`grains`) → Skill (Friend and Group bonds)
@@ -259,12 +259,12 @@ All 80 planet dishes' side families (the side's grade in brackets):
 | 2 (1) | Fruits | Fish | Nuts | Herbs | Sweets | Herbs | Grains | Grains |
 | 3 (1) | Herbs | Sweets | Fruits | Fish | Nuts | Fish | Grains | Grains |
 | 4 (2) | Fish | Nuts | Herbs | Sweets | Fruits | Sweets | Grains | Grains |
-| 5 (3) | Grains | Grains | Grains | Grains | Grains | Nuts | Grains | Grains |
+| 5 (3) | Nuts | Herbs | Sweets | Fruits | Fish | Nuts | Grains | Grains |
 | 6 (4) | Nuts | Herbs | Sweets | Fruits | Fish | Fruits | Grains | Grains |
 | 7 (5) | Fruits | Fish | Nuts | Herbs | Sweets | Herbs | Grains | Grains |
 | 8 (6) | Herbs | Sweets | Fruits | Fish | Nuts | Fish | Grains | Grains |
 | 9 (7) | Fish | Nuts | Herbs | Sweets | Fruits | Sweets | Grains | Grains |
-| 10 (8) | Grains | Grains | Grains | Grains | Grains | Nuts | Grains | Grains |
+| 10 (8) | Nuts | Herbs | Sweets | Fruits | Fish | Nuts | Grains | Grains |
 <!-- /live -->
 
 The exact side item is in each family's table in §3.
@@ -348,19 +348,17 @@ simulation's `tierDemand` lists every unlock's dish (T128) and expands them thro
 ### Planet dishes, per Uma per tier
 
 <!-- live:demand-dishes -->
-| Family | *g*1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | Total |
+| Meal or tonic | *g*1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | Total |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| Vegetables | 6 | 6 | 2 | 2 | 2 | 2 | 2 | 2 | 2 | 2 | **28** |
-| Mushrooms | 2 | 2 | 4 | 2 | 2 | 2 | 3 | 3 | 2 | 2 | **24** |
-| Sweets | 2 | 0 | 2 | 0 | 1 | 0 | 2 | 0 | 1 | 0 | **8** |
-| Fruits | 2 | 0 | 2 | 0 | 1 | 0 | 2 | 0 | 1 | 0 | **8** |
-| Fish | 2 | 0 | 2 | 0 | 1 | 0 | 2 | 0 | 1 | 0 | **8** |
-| Nuts & Seeds | 2 | 0 | 1 | 0 | 2 | 0 | 1 | 0 | 2 | 0 | **8** |
-| Herbs & Spices | 2 | 0 | 1 | 0 | 2 | 0 | 1 | 0 | 2 | 0 | **8** |
-| Grains | 1 | 0 | 0 | 0 | 1 | 0 | 0 | 0 | 1 | 0 | **3** |
+| Sweets meals | 1 | 0 | 1 | 0 | 1 | 0 | 1 | 0 | 1 | 0 | **5** |
+| Fruits meals | 1 | 0 | 1 | 0 | 1 | 0 | 1 | 0 | 1 | 0 | **5** |
+| Fish meals | 1 | 0 | 1 | 0 | 1 | 0 | 1 | 0 | 1 | 0 | **5** |
+| Nuts & Seeds meals | 1 | 0 | 1 | 0 | 1 | 0 | 1 | 0 | 1 | 0 | **5** |
+| Herbs & Spices meals | 1 | 0 | 1 | 0 | 1 | 0 | 1 | 0 | 1 | 0 | **5** |
 | Duos | | | 4 | | 4 | | | | | | **8** |
 | Feasts | | | | 1 | | 1 | | 1 | | 1 | **4** |
-| **All** | | | | | | | | | | | **107** |
+| Tonics | 8 | 6 | 2 | 4 | 4 | 2 | 2 | 2 | 2 | 2 | **34** |
+| **All** | | | | | | | | | | | **71** |
 <!-- /live -->
 
 Bonds follow 06's era rule, so they sit at odd grades only: 9 of the first draft's 18 bond dishes moved from an even
@@ -371,17 +369,17 @@ no longer exist in tier 1.
 ### Crafted items, per Uma per tier
 
 <!-- live:demand-crafted -->
-| Family | *g*1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | **Total** | Own dishes, Duos, Feasts | Sides |
+| Family | *g*1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | **Total** | Own meals and tonics | Sides |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Vegetables | 24 | 24 | 8 | 8 | 8 | 8 | 8 | 8 | 8 | 8 | **112** | 112 | 0 |
-| Mushrooms | 8 | 8 | 16 | 8 | 8 | 8 | 12 | 12 | 8 | 8 | **96** | 96 | 0 |
-| Grains | 26 | 5 | 11 | 5 | 9 | 6 | 4 | 5 | 4 | 0 | **75** | 12 | 63 |
-| Fruits | 15 | 0 | 12 | 1 | 8 | 1 | 10 | 1 | 4 | 1 | **53** | 40 | 13 |
-| Sweets | 12 | 0 | 12 | 1 | 9 | 1 | 11 | 1 | 4 | 1 | **52** | 44 | 8 |
-| Nuts & Seeds | 13 | 0 | 9 | 1 | 12 | 1 | 5 | 1 | 8 | 1 | **51** | 40 | 11 |
-| Fish | 11 | 0 | 12 | 1 | 10 | 1 | 9 | 1 | 4 | 1 | **50** | 44 | 6 |
-| Herbs & Spices | 12 | 0 | 8 | 1 | 13 | 1 | 5 | 1 | 8 | 1 | **50** | 44 | 6 |
-| **All** | | | | | | | | | | | **539** | 432 | 107 |
+| Grains | 8 | 7 | 2 | 5 | 4 | 3 | 2 | 3 | 2 | 2 | **38** | 34 | 4 |
+| Sweets | 6 | 0 | 9 | 1 | 9 | 1 | 5 | 1 | 4 | 1 | **37** | 32 | 5 |
+| Fruits | 8 | 0 | 9 | 1 | 7 | 1 | 5 | 1 | 4 | 1 | **37** | 28 | 9 |
+| Fish | 6 | 0 | 9 | 1 | 9 | 1 | 5 | 1 | 4 | 1 | **37** | 32 | 5 |
+| Nuts & Seeds | 8 | 0 | 9 | 1 | 7 | 1 | 5 | 1 | 4 | 1 | **37** | 28 | 9 |
+| Herbs & Spices | 6 | 0 | 9 | 1 | 9 | 1 | 5 | 1 | 4 | 1 | **37** | 32 | 5 |
+| Vegetables | 8 | 6 | 2 | 4 | 4 | 2 | 2 | 2 | 2 | 2 | **34** | 34 | 0 |
+| Mushrooms | 8 | 6 | 2 | 4 | 4 | 2 | 2 | 2 | 2 | 2 | **34** | 34 | 0 |
+| **All** | | | | | | | | | | | **291** | 254 | 37 |
 <!-- /live -->
 
 **What the rotation does.** With the obvious rule, "the side is the next family on the ring", Mushrooms would need
@@ -408,11 +406,11 @@ demand, and none goes to Vegetables. It is handled where it lands:
 <!-- live:demand-by-scenario -->
 | Scenario | Unlocks | Crafted items | Vegetables | Mushrooms | Grains | Each stat family |
 |---|---|---|---|---|---|---|
-| 1 | 27 | 135 | 36% | 12% | 15% | 7%–8% |
-| 2 | 23 | 116 | 14% | 21% | 9% | 9%–13% |
-| 3 | 21 | 106 | 15% | 15% | 19% | 8%–13% |
-| 4 | 19 | 96 | 17% | 25% | 11% | 6%–11% |
-| 5 | 17 | 86 | 19% | 19% | 15% | 7%–12% |
+| 1 | 27 | 67 | 21% | 21% | 21% | 7%–7% |
+| 2 | 23 | 69 | 9% | 9% | 10% | 14%–14% |
+| 3 | 21 | 69 | 9% | 9% | 10% | 14%–14% |
+| 4 | 19 | 43 | 9% | 9% | 12% | 14%–14% |
+| 5 | 17 | 43 | 9% | 9% | 12% | 14%–14% |
 <!-- /live -->
 
 **Other decks.** A Speed-heavy deck (6 Speed, 1 Guts, 2 Friend/Group bonds) moves about 12 crafted items a tier from
@@ -429,16 +427,16 @@ An item's **work value** is the real minutes of the work in it: the base minutes
 <!-- live:work-values -->
 | *g* | Raw | Crafted | Planet or Duo dish | Feast | A third: raw / crafted / dish |
 |---|---|---|---|---|---|
-| 1 | 108 | 135 | 963 | | 36 / 45 / 321 |
-| 2 | 114 | 142.5 | 1,005 | | 38 / 47.5 / 335 |
-| 3 | 120 | 150 | 1,047 | | 40 / 50 / 349 |
-| 4 | 126 | 157.5 | 1,096.5 | 1,254 | 42 / 52.5 / 365.5 (Feast 418) |
-| 5 | 132 | 165 | 1,146 | | 44 / 55 / 382 |
-| 6 | 138 | 172.5 | 1,195.5 | 1,368 | 46 / 57.5 / 398.5 (Feast 456) |
-| 7 | 144 | 180 | 1,245 | | 48 / 60 / 415 |
-| 8 | 150 | 187.5 | 1,294.5 | 1,482 | 50 / 62.5 / 431.5 (Feast 494) |
-| 9 | 156 | 195 | 1,344 | | 52 / 65 / 448 |
-| 10 | 162 | 202.5 | 1,393.5 | 1,596 | 54 / 67.5 / 464.5 (Feast 532) |
+| 1 | 162 | 202.5 | 1,444.5 | | 54 / 67.5 / 481.5 |
+| 2 | 171 | 213.75 | 1,507.5 | | 57 / 71.25 / 502.5 |
+| 3 | 180 | 225 | 1,570.5 | | 60 / 75 / 523.5 |
+| 4 | 189 | 236.25 | 1,644.75 | 1,881 | 63 / 78.75 / 548.25 (Feast 627) |
+| 5 | 198 | 247.5 | 1,719 | | 66 / 82.5 / 573 |
+| 6 | 207 | 258.75 | 1,793.25 | 2,052 | 69 / 86.25 / 597.75 (Feast 684) |
+| 7 | 216 | 270 | 1,867.5 | | 72 / 90 / 622.5 |
+| 8 | 225 | 281.25 | 1,941.75 | 2,223 | 75 / 93.75 / 647.25 (Feast 741) |
+| 9 | 234 | 292.5 | 2,016 | | 78 / 97.5 / 672 |
+| 10 | 243 | 303.75 | 2,090.25 | 2,394 | 81 / 101.25 / 696.75 (Feast 798) |
 <!-- /live -->
 
 The value is the same for every family at a grade. Building speed and Speed Tickets don't change it.

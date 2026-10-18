@@ -13,7 +13,7 @@ import { evaluateChecks, LOOP_CHECKS } from './checks'
 import { dayOf, LOOP_EPOCH, localDay, loopRng, MS_PER_DAY, MS_PER_HOUR, MS_PER_MINUTE } from './clock'
 import { representativeDeck, tierDemand } from './demand'
 import { deckCards, SIM_UMAS } from './fixtures'
-import { BASELINE, LOOP_VARIANTS, simulateLoop } from './loop'
+import { BASELINE, LOOP_VARIANTS, NO_ITEM, simulateLoop } from './loop'
 import {
   checkInsOn, EXPEDITION_RACES, expeditionRacesAt, expeditionWins, FOUNDING_ROSTER, HEAVY_RACES_PER_DAY, ROSTER_CAP, ticketPlan, upgradeOrder,
 } from './policies'
@@ -79,7 +79,7 @@ describe('conservation', () => {
     for (const [id, cooked] of Object.entries(logs.cooked)) expect(state.items[id] ?? 0, id).toBe(cooked - (logs.reservedDishes[id] ?? 0))
   })
 
-  it('pays every unlock with exactly one dish of its own', () => {
+  it('pays every unlock with exactly the one item it takes, or none (D374)', () => {
     const pending: Record<string, number> = {}
     for (const row of Object.values(state.work)) {
       for (const entry of row.entries) {
@@ -87,8 +87,9 @@ describe('conservation', () => {
         for (const inputs of entry.inputs.slice(entry.collected)) for (const { item } of inputs) pending[item] = (pending[item] ?? 0) + 1
       }
     }
-    const ids = new Set([...Object.keys(logs.reservedDishes), ...Object.keys(logs.unlockDishes)])
+    const ids = new Set([...Object.keys(logs.reservedDishes), ...Object.keys(logs.unlockDishes)].filter((id) => id !== NO_ITEM))
     for (const id of ids) expect((logs.unlockDishes[id] ?? 0) + (pending[id] ?? 0), id).toBe(logs.reservedDishes[id] ?? 0)
+    expect(logs.unlockDishes[NO_ITEM] ?? 0).toBeGreaterThan(0)
     expect(Object.values(logs.unlockDishes).reduce((a, b) => a + b, 0)).toBe(logs.unlocks)
   })
 
@@ -187,13 +188,15 @@ describe('the demand of a tier (cross-task acceptance #2, 08 §7)', () => {
   const demand = tierDemand(representativeDeck())
   const family = (id: FamilyId) => demand.dishTable[id].reduce((a, b) => a + b, 0)
 
-  it('takes 107 dishes and 539 crafted items for the representative deck', () => {
-    expect(Object.values(demand.dishes).reduce((a, b) => a + b, 0)).toBe(107)
-    expect([family('vegetables'), family('mushrooms'), family('grains')]).toEqual([28, 24, 3])
-    for (const id of ['sweets', 'fruits', 'fish', 'nuts-seeds', 'herbs-spices'] as const) expect(family(id), id).toBe(8)
+  it('takes 37 meals, 34 tonics and 291 crafted items for the representative deck (D374)', () => {
+    expect(Object.values(demand.dishes).reduce((a, b) => a + b, 0)).toBe(71)
+    expect([family('vegetables'), family('mushrooms'), family('grains')]).toEqual([0, 0, 0])
+    for (const id of ['sweets', 'fruits', 'fish', 'nuts-seeds', 'herbs-spices'] as const) expect(family(id), id).toBe(5)
     expect(demand.dishTable.duos.reduce((a, b) => a + b, 0)).toBe(8)
     expect(demand.dishTable.feasts.reduce((a, b) => a + b, 0)).toBe(4)
-    expect([demand.crafted.total, demand.crafted.own, demand.crafted.sides]).toEqual([539, 432, 107])
+    expect(demand.dishTable.tonics).toEqual([8, 6, 2, 4, 4, 2, 2, 2, 2, 2])
+    // A tonic is three crafted items and no side; a single four and a side, a Duo four and a side, a Feast five and a side.
+    expect([demand.crafted.total, demand.crafted.own, demand.crafted.sides]).toEqual([291, 254, 37])
     expect(demand.byScenario.map((entry) => entry.unlocks)).toEqual([27, 23, 21, 19, 17])
   })
 
@@ -204,18 +207,24 @@ describe('the demand of a tier (cross-task acceptance #2, 08 §7)', () => {
     expect(deckCards(1, 3).map((card) => card.era)).toEqual([3, 3, 3])
   })
 
-  it("gives the 89 fixed unlocks 08 §7's cells", () => {
+  it("gives the 89 fixed unlocks 08 §7's cells: 71 take a meal or tonic, the 18 uniques and golds nothing", () => {
     const fixed: Record<string, number> = {}
-    for (const entry of FIXED_UNLOCKS) fixed[entry.dishId] = (fixed[entry.dishId] ?? 0) + 1
-    expect(Object.values(fixed).reduce((a, b) => a + b, 0)).toBe(89)
-    const cells = (id: FamilyId) => [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((g) => fixed[planetDish(id, g as 1).id] ?? 0)
-    expect(cells('vegetables')).toEqual([6, 6, 2, 2, 2, 2, 2, 2, 2, 2])
-    expect(cells('mushrooms')).toEqual([2, 2, 4, 2, 2, 2, 3, 3, 2, 2])
+    for (const entry of FIXED_UNLOCKS) if (entry.dishId !== null) fixed[entry.dishId] = (fixed[entry.dishId] ?? 0) + 1
+    expect(FIXED_UNLOCKS).toHaveLength(89)
+    expect(Object.values(fixed).reduce((a, b) => a + b, 0)).toBe(71)
+    expect(FIXED_UNLOCKS.filter((entry) => entry.dishId === null).map((entry) => entry.kind).sort()).toEqual(
+      FIXED_UNLOCKS.filter((entry) => entry.kind === 'unique' || entry.kind === 'gold').map((entry) => entry.kind).sort())
+    const grades = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as const
+    const cells = (id: FamilyId) => grades.map((g) => fixed[planetDish(id, g).id] ?? 0)
+    expect(grades.map((g) => fixed[`tonic-${g}`] ?? 0)).toEqual([8, 6, 2, 4, 4, 2, 2, 2, 2, 2])
     for (const id of FAMILY_IDS.filter((f) => !['vegetables', 'mushrooms', 'grains'].includes(f))) expect(cells(id), id).toEqual([1, 0, 1, 0, 1, 0, 1, 0, 1, 0])
-    expect(cells('grains')).toEqual([0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+    for (const id of ['vegetables', 'mushrooms', 'grains'] as const) expect(cells(id), id).toEqual(Array(10).fill(0))
     expect(DUOS.map((duo) => fixed[duo.id] ?? 0)).toEqual(Array(8).fill(1))
     expect(FEASTS.map((feast) => fixed[feast.id] ?? 0)).toEqual([1, 1, 1, 1])
-    for (const [id, n] of Object.entries(fixed)) expect(demand.dishes[id]! - n, id).toBe(demand.unlocks.filter((entry) => entry.kind === 'bond' && entry.dishId === id).length)
-    expect(itemById('dish-grains-1')?.kind).toBe('dish')
+    // The deck's bonds add nothing: the tier's items are the fixed unlocks' alone.
+    expect(demand.dishes).toEqual(fixed)
+    expect(demand.unlocks.filter((entry) => entry.kind === 'bond').every((entry) => entry.dishId === null)).toBe(true)
+    // A retired dish stays a valid id, so a salad or soup already cooked keeps paying.
+    expect(itemById('dish-grains-1')).toMatchObject({ kind: 'dish', retired: true })
   })
 })

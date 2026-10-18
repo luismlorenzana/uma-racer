@@ -1,15 +1,15 @@
-// Crafted demand (docs/game/08-item-catalogue-and-recipes.md §7): any dish counts expanded through the recipes into
-// the crafted items they need, with each family split into its own recipes' use and its use as other dishes' sides.
-// The dish counts come from the layers and a deck (T128, T132); this module only expands them.
+// Crafted demand (docs/game/08-item-catalogue-and-recipes.md §7): any dish and tonic counts expanded through the
+// recipes into the crafted items they need, with each family split into its own recipes' use and its use as other
+// dishes' sides. The counts come from the layers and a deck (T128, T132); this module only expands them.
 import { FAMILY_IDS, type FamilyId } from './families'
-import { ITEM_GRADES, itemById, type ItemId } from './catalogue'
+import { ITEM_GRADES, isKitchenItem, itemById, type ItemId } from './catalogue'
 import { dishSide, recipeOf } from './recipes'
 
 export interface FamilyDemand {
   /** Crafted items of the family by grade: index g − 1. */
   readonly byGrade: readonly number[]
   readonly total: number
-  /** Used as its own dishes', Duos' and Feasts' main inputs. */
+  /** Used as its own dishes', Duos', Feasts' and tonics' main inputs. */
   readonly own: number
   /** Used as other dishes' sides. */
   readonly sides: number
@@ -25,8 +25,8 @@ export interface CraftedDemand {
 }
 
 /**
- * The crafted items `dishCounts` (dish id → how many) need. Every key must be a dish of the catalogue and every count a
- * whole number ≥ 0.
+ * The crafted items `dishCounts` (dish or tonic id → how many) need. Every key must be a Kitchen item of the catalogue
+ * and every count a whole number ≥ 0.
  */
 export function craftedDemand(dishCounts: Readonly<Record<ItemId, number>>): CraftedDemand {
   const own = new Map<ItemId, number>()
@@ -35,7 +35,7 @@ export function craftedDemand(dishCounts: Readonly<Record<ItemId, number>>): Cra
 
   for (const [id, count] of Object.entries(dishCounts)) {
     const dish = itemById(id)
-    if (dish?.kind !== 'dish') throw new RangeError(`Not a dish: ${id}`)
+    if (dish === undefined || !isKitchenItem(dish)) throw new RangeError(`Not a dish or tonic: ${id}`)
     if (!Number.isInteger(count) || count < 0) throw new RangeError(`Dish count must be a whole number ≥ 0: ${id} × ${count}`)
     if (count === 0) continue
     const side = dishSide(id)

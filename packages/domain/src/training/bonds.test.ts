@@ -1,17 +1,20 @@
-// Pins bonds (docs/game/06-cards-and-bonds.md §2): the family by card type, 06 §2's era-to-grade table in all three
-// tiers, and a bond's status.
+// Pins bonds (docs/game/06-cards-and-bonds.md §2, D374): the Dojo room by card type, 06 §2's era-to-grade table in all
+// three tiers, and a bond's status. A bond takes no item.
 import { describe, expect, it } from 'vitest'
 import { cardOf } from '../__fixtures__/training'
 import { emptyBuild } from '../state/types'
-import { BOND_FAMILY, bondDishId, bondGrade, bondStatus, dojoRoomOf } from './bonds'
+import { bondGrade, bondStatus, cardTypesIn, dojoRoomOf } from './bonds'
 
-describe('the dish family by card type', () => {
-  it('is each stat type\'s family, and Grains for Friend and Group', () => {
-    expect(BOND_FAMILY).toEqual({
-      speed: 'sweets', stamina: 'fruits', power: 'fish', guts: 'nuts-seeds', wit: 'herbs-spices', friend: 'grains', group: 'grains',
-    })
+describe('the Dojo room by card type', () => {
+  it('is each stat type\'s own room, and one room for Friend and Group', () => {
     expect((['speed', 'stamina', 'power', 'guts', 'wit', 'friend', 'group'] as const).map(dojoRoomOf))
       .toEqual(['speed', 'stamina', 'power', 'guts', 'wit', 'friend-group', 'friend-group'])
+  })
+
+  it('reads a card\'s type from the content, or none for a card it lacks', () => {
+    const typeOf = cardTypesIn(new Map([['wit-e3', cardOf('wit-e3')]]))
+    expect([typeOf('wit-e3'), typeOf('nope')]).toEqual(['wit', undefined])
+    expect(cardTypesIn(undefined)('wit-e3')).toBeUndefined()
   })
 })
 
@@ -26,12 +29,10 @@ describe('the grade by era (06 §2)', () => {
     expect(() => bondGrade(0, 1)).toThrow(RangeError)
   })
 
-  it('names the dish: Speed era 1 Sweets 1, Friend era 2 Grains 3, Wit era 3 Herbs & Spices 5, all grade 1 in tier 2', () => {
-    expect(bondDishId(cardOf('speed-e1'), 1)).toBe('dish-sweets-1')
-    expect(bondDishId(cardOf('friend-e2'), 1)).toBe('dish-grains-3')
-    expect(bondDishId(cardOf('wit-e3'), 1)).toBe('dish-herbs-spices-5')
-    expect(['speed-e1', 'friend-e2', 'wit-e3'].map((id) => bondDishId(cardOf(id), 2))).toEqual(['dish-sweets-1', 'dish-grains-1', 'dish-herbs-spices-1'])
-    expect(bondDishId(cardOf('speed-e6'), 1)).toBeNull()
+  it('sets the session\'s grade: Speed era 1 grade 1, Friend era 2 grade 3, Wit era 3 grade 5, all grade 1 in tier 2', () => {
+    expect(['speed-e1', 'friend-e2', 'wit-e3'].map((id) => bondGrade(cardOf(id).era, 1))).toEqual([1, 3, 5])
+    expect(['speed-e1', 'friend-e2', 'wit-e3'].map((id) => bondGrade(cardOf(id).era, 2))).toEqual([1, 1, 1])
+    expect(bondGrade(cardOf('speed-e6').era, 1)).toBeNull()
   })
 })
 

@@ -12,7 +12,7 @@ import { LAYER_SIZES, sessionSeconds } from '../training/unlocks'
 import { higherGrade, lowerGrade } from '../training/extra'
 import type { ScenarioOfTier } from '../state/types'
 import { daysSince, MS_PER_DAY } from './clock'
-import { representativeDeck, tierDemand, type TierDemand } from './demand'
+import { representativeDeck, tierDemand, type DishRow, type TierDemand } from './demand'
 import type { LoopResult } from './loop'
 import { median, type ScenarioRow } from './metrics'
 import { loopReport } from './report'
@@ -35,10 +35,13 @@ const spread = (entry: ScenarioRow | undefined) => (entry ? `${fixed(entry.days.
 
 // ---- 12 §5: the scenarios -------------------------------------------------------------------------------------------
 
-/** One Uma's listed work in a scenario (rules, at a Lv 1 building): her dishes' whole chains and her sessions, in hours. */
+/**
+ * One Uma's listed work in a scenario (rules, at a Lv 1 building): the whole chains of her meals and tonics (none for
+ * an unlock that takes nothing, D374) and her sessions, in hours.
+ */
 function umaHours(demand: TierDemand, s: ScenarioOfTier): { farm: number; sessions: number } {
   const here = demand.unlocks.filter((entry) => entry.layer === s)
-  const farm = here.reduce((sum, entry) => sum + workValueSeconds(entry.dishId)!, 0) / 3600
+  const farm = here.reduce((sum, entry) => sum + (entry.dishId === null ? 0 : workValueSeconds(entry.dishId)!), 0) / 3600
   const sessions = here.reduce((sum, entry) => sum + sessionSeconds(entry.grade), 0) / 3600
   return { farm, sessions }
 }
@@ -201,15 +204,17 @@ function checks(): string {
 
 // ---- 08 §7: demand ---------------------------------------------------------------------------------------------------
 
-const DISH_ROWS: readonly (FamilyId | 'duos' | 'feasts')[] = ['vegetables', 'mushrooms', 'sweets', 'fruits', 'fish', 'nuts-seeds', 'herbs-spices', 'grains', 'duos', 'feasts']
-const label = (key: FamilyId | 'duos' | 'feasts') => (key === 'duos' ? 'Duos' : key === 'feasts' ? 'Feasts' : FAMILIES[key].name)
+/** 08 §7's rows: each stat family's meals, then Duos, Feasts and tonics (the salads, soups and breads are retired, D374). */
+const DISH_ROWS: readonly DishRow[] = ['sweets', 'fruits', 'fish', 'nuts-seeds', 'herbs-spices', 'duos', 'feasts', 'tonics']
+const ROW_LABELS: Readonly<Record<'duos' | 'feasts' | 'tonics', string>> = { duos: 'Duos', feasts: 'Feasts', tonics: 'Tonics' }
+const label = (key: DishRow) => (key === 'duos' || key === 'feasts' || key === 'tonics' ? ROW_LABELS[key] : `${FAMILIES[key].name} meals`)
 const GRADE_HEAD = ['*g*1', ...ITEM_GRADE_LIST.slice(1).map(String)]
 
 function demandDishes(): string {
   const demand = tierDemand(representativeDeck())
-  const sparse = (key: FamilyId | 'duos' | 'feasts', n: number) => (n === 0 && (key === 'duos' || key === 'feasts') ? '' : n)
+  const sparse = (key: DishRow, n: number) => (n === 0 && (key === 'duos' || key === 'feasts' || key === 'tonics') ? '' : n)
   const total = Object.values(demand.dishes).reduce((a, b) => a + b, 0)
-  return table(['Family', ...GRADE_HEAD, 'Total'], [
+  return table(['Meal or tonic', ...GRADE_HEAD, 'Total'], [
     ...DISH_ROWS.map((key) => [label(key), ...demand.dishTable[key].map((n) => sparse(key, n)), bold(demand.dishTable[key].reduce((a, b) => a + b, 0))]),
     [bold('All'), ...Array.from({ length: ITEM_GRADES }, () => ''), bold(total)],
   ])
@@ -218,7 +223,7 @@ function demandDishes(): string {
 function demandCrafted(): string {
   const { crafted } = tierDemand(representativeDeck())
   const order = [...FAMILY_IDS].sort((a, b) => crafted.families[b].total - crafted.families[a].total)
-  return table(['Family', ...GRADE_HEAD, bold('Total'), 'Own dishes, Duos, Feasts', 'Sides'], [
+  return table(['Family', ...GRADE_HEAD, bold('Total'), 'Own meals and tonics', 'Sides'], [
     ...order.map((family) => {
       const row = crafted.families[family]
       return [FAMILIES[family].name, ...row.byGrade, bold(row.total), row.own, row.sides]

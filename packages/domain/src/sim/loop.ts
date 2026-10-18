@@ -13,7 +13,7 @@ import { payFromPurse, PURSE_BANDS, PURSE_SHARE_DENOMINATOR } from '../economy/p
 import { settleRacePrize } from '../economy/race-prize'
 import { FAMILY_SITE, farmItemSeconds } from '../farm/jobs'
 import { upgradeCost, type BuildingId } from '../farm/buildings'
-import { itemById, SPEED_TICKET_ID, type ItemId } from '../items/catalogue'
+import { heldFor, isKitchenItem, itemById, SPEED_TICKET_ID, type ItemId } from '../items/catalogue'
 import { canWorkGrade } from '../items/grades'
 import { recipeOf } from '../items/recipes'
 import { planFrom, type Plan } from '../planner/needs'
@@ -59,6 +59,14 @@ export const ENV: WorkEnv = Object.freeze({ content: SIM_CONTENT })
 const TIER_ENV = Object.freeze({ content: SIM_CONTENT })
 /** The Expedition the placeholder runs (10, phase 9 replaces it). */
 const expeditionId = (tier: Tier): string => `sim-expedition-t${tier}`
+
+/** The conservation logs' key for unlocks that take no item (D374). */
+export const NO_ITEM = 'none'
+/** Whether the Kitchen made `item`: a meal or a tonic. */
+const fromKitchen = (item: ItemId): boolean => {
+  const def = itemById(item)
+  return def !== undefined && isKitchenItem(def)
+}
 /** The founding cohort's share that must leave the last tier before the run stops: 90%, so p90 is measured. */
 const HORIZON_SHARE = 0.9
 
@@ -416,7 +424,7 @@ export function createLoop(config: LoopConfig, rng: LoopRng): LoopEngine {
       if (full(building, null)) return { reason: 'no-slot', building }
     }
     for (const entry of remainingFor(state, uma.outfitId, chosen)) {
-      if (entry.kind !== 'unlock' || (state.items[entry.dishId] ?? 0) < 1) continue
+      if (entry.kind !== 'unlock' || (entry.dishId !== null && heldFor(state.items, entry.dishId) < 1)) continue
       if (entry.rooms.length > 0 ? entry.rooms.every((room) => full(entry.facility, room)) : full(entry.facility, null)) {
         return { reason: 'no-slot', building: entry.facility }
       }
@@ -458,7 +466,7 @@ export function createLoop(config: LoopConfig, rng: LoopRng): LoopEngine {
         const entry = row.entries[row.entries.length - 1]!
         started.push({ outfitId: line.outfitId, slot: line.slot, request: line.request, startedAt: entry.startedAt, endsAt: line.endsAt, collected: null, movements: [], settled: { started: [], dropped: [], movements: [] } })
       }
-      for (const movement of repeated.receipt.movements) if (movement.kind === 'reserve' && itemById(movement.item)?.kind === 'dish') {
+      for (const movement of repeated.receipt.movements) if (movement.kind === 'reserve' && fromKitchen(movement.item)) {
         logs.reservedDishes[movement.item] = (logs.reservedDishes[movement.item] ?? 0) + movement.qty
       }
     }
@@ -473,7 +481,7 @@ export function createLoop(config: LoopConfig, rng: LoopRng): LoopEngine {
       state = ran.state
       started.push(...ran.started)
       for (const receipt of ran.started) for (const movement of receipt.movements) {
-        if (movement.kind === 'reserve' && itemById(movement.item)?.kind === 'dish') logs.reservedDishes[movement.item] = (logs.reservedDishes[movement.item] ?? 0) + movement.qty
+        if (movement.kind === 'reserve' && fromKitchen(movement.item)) logs.reservedDishes[movement.item] = (logs.reservedDishes[movement.item] ?? 0) + movement.qty
       }
       if (suggestions.idle.every((id) => excluded.has(id))) break
     }
@@ -539,14 +547,17 @@ export function createLoop(config: LoopConfig, rng: LoopRng): LoopEngine {
     state = collected.state
     const paid: SessionPaid[] = []
     for (const receipt of collected.receipt.collected) {
-      for (const output of receipt.outputs) if ('item' in output && itemById(output.item)?.kind === 'dish') logs.cooked[output.item] = (logs.cooked[output.item] ?? 0) + 1
+      for (const output of receipt.outputs) if ('item' in output && fromKitchen(output.item)) logs.cooked[output.item] = (logs.cooked[output.item] ?? 0) + 1
       if (receipt.gradesOpened.length > 0) { const opened = tierLog(state.umas[receipt.outfitId]!).gradeOpenedAt; for (const g of receipt.gradesOpened) opened[g - 1] ??= now }
       for (const detail of receipt.paid) {
         const session = detail as SessionPaid
         paid.push(session)
         logs.unlocks += session.opened.length
         countUnlocks(logs, now, session.opened.length)
-        for (const unlock of session.opened) logs.unlockDishes[unlock.dishId] = (logs.unlockDishes[unlock.dishId] ?? 0) + 1
+        for (const unlock of session.opened) {
+          const key = unlock.dishId ?? NO_ITEM
+          logs.unlockDishes[key] = (logs.unlockDishes[key] ?? 0) + 1
+        }
       }
     }
     fillPresets(paid, now)

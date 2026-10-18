@@ -15,12 +15,12 @@ family they take. Nothing here needs tokens, Constellation Level or a minigame, 
 ## 1. The four facilities
 
 <!-- live:training-facilities -->
-| Facility | Unlocks | Dish family | Rooms | Unlocks per Uma per tier |
+| Facility | Unlocks | Takes | Rooms | Unlocks per Uma per tier |
 |---|---|---|---|---|
-| **Observatory** | Constellation card nodes | Vegetables | None | 28 |
-| **Lineage Hall** | Inspiration: 2 parent slots, 4 grandparent slots, 6 inherited unique skills, 12 gold skills | Mushrooms | None | 24 |
-| **Gym** | Extra Stats nodes | Fruits (Stamina), Herbs & Spices (Wit), Fish (Power), Sweets (Speed), Nuts & Seeds (Guts); Duos; Feasts | 5, one per stat: Stamina, Wit, Power, Speed, Guts | 37 |
-| **Dojo** | Card bonds ([06](06-cards-and-bonds.md) owns the rules) | By card type: the five stat families, and Grains for Friend and Group | 6, one per card type: Speed, Stamina, Power, Guts, Wit, Friend & Group | 18 (a pacing assumption, not a cap) |
+| **Observatory** | Constellation card nodes | A tonic | None | 28 |
+| **Lineage Hall** | Inspiration: 2 parent slots, 4 grandparent slots, 6 inherited unique skills, 12 gold skills | A tonic for a slot; nothing for a unique or a gold | None | 24 |
+| **Gym** | Extra Stats nodes | A meal: Fruits (Stamina), Herbs & Spices (Wit), Fish (Power), Sweets (Speed), Nuts & Seeds (Guts); Duos; Feasts | 5, one per stat: Stamina, Wit, Power, Speed, Guts | 37 |
+| **Dojo** | Card bonds ([06](06-cards-and-bonds.md) owns the rules) | Nothing | 6, one per card type: Speed, Stamina, Power, Guts, Wit, Friend & Group | 18 (a pacing assumption, not a cap) |
 | **Tier** | | | | **107** |
 <!-- /live -->
 
@@ -62,7 +62,7 @@ Hub's version of a Farm job ([07](07-farm.md)).
 |---|---|---|---|---|---|---|---|---|---|---|
 | Base minutes, Lv 1–2 facility | 180 | 195 | 210 | 225 | 240 | 255 | 270 | 285 | 300 | 315 |
 | Base minutes, Lv 3 facility (×1.25 speed) | 144 | 156 | 168 | 180 | 192 | 204 | 216 | 228 | 240 | 252 |
-| Real minutes at *k* = 1.2, Lv 1–2 | 216 | 234 | 252 | 270 | 288 | 306 | 324 | 342 | 360 | 378 |
+| Real minutes at *k* = 1.8, Lv 1–2 | 324 | 351 | 378 | 405 | 432 | 459 | 486 | 513 | 540 | 567 |
 <!-- /live -->
 
 The worked examples on these pages use the base minutes; the game multiplies every duration by *k*.
@@ -132,11 +132,11 @@ Nodes are numbered breadth-first from the root, `n1` … `n28` (the root `n0` is
 <!-- live:training-node-grades -->
 | Scenario | Nodes | Lower grade | Higher grade |
 |---|---|---|---|
-| 1 | n1–n12 | n1–n6 at **g1** (`dish-vegetables-1`) | n7–n12 at **g2** (`dish-vegetables-2`) |
-| 2 | n13–n16 | n13–n14 at **g3** (`dish-vegetables-3`) | n15–n16 at **g4** (`dish-vegetables-4`) |
-| 3 | n17–n20 | n17–n18 at **g5** (`dish-vegetables-5`) | n19–n20 at **g6** (`dish-vegetables-6`) |
-| 4 | n21–n24 | n21–n22 at **g7** (`dish-vegetables-7`) | n23–n24 at **g8** (`dish-vegetables-8`) |
-| 5 | n25–n28 | n25–n26 at **g9** (`dish-vegetables-9`) | n27–n28 at **g10** (`dish-vegetables-10`) |
+| 1 | n1–n12 | n1–n6 at **g1** (`tonic-1`) | n7–n12 at **g2** (`tonic-2`) |
+| 2 | n13–n16 | n13–n14 at **g3** (`tonic-3`) | n15–n16 at **g4** (`tonic-4`) |
+| 3 | n17–n20 | n17–n18 at **g5** (`tonic-5`) | n19–n20 at **g6** (`tonic-6`) |
+| 4 | n21–n24 | n21–n22 at **g7** (`tonic-7`) | n23–n24 at **g8** (`tonic-8`) |
+| 5 | n25–n28 | n25–n26 at **g9** (`tonic-9`) | n27–n28 at **g10** (`tonic-10`) |
 <!-- /live -->
 
 **Order:** strictly breadth-first. The next node is always the lowest-numbered locked one, so an Observatory session
@@ -150,11 +150,11 @@ Each slot has two natural-gold positions, **gold 1** and **gold 2**, in awakenin
 <!-- live:training-inspiration-grades -->
 | Scenario | Lower grade | Higher grade |
 |---|---|---|
-| 1 | Slots A and B at **g1** (`dish-mushrooms-1`) | A's and B's uniques at **g2** (`dish-mushrooms-2`) |
-| 2 | A gold 1, A gold 2, B gold 1, B gold 2 at **g3** (`dish-mushrooms-3`) | Slots A1 and B1 at **g4** (`dish-mushrooms-4`) |
-| 3 | Slots A2 and B2 at **g5** (`dish-mushrooms-5`) | A1's and B1's uniques at **g6** (`dish-mushrooms-6`) |
-| 4 | A2's and B2's uniques, A1 gold 1 at **g7** (`dish-mushrooms-7`) | B1 gold 1, A2 gold 1, B2 gold 1 at **g8** (`dish-mushrooms-8`) |
-| 5 | A1 gold 2, B1 gold 2 at **g9** (`dish-mushrooms-9`) | A2 gold 2, B2 gold 2 at **g10** (`dish-mushrooms-10`) |
+| 1 | Slots A and B at **g1** (`tonic-1`) | A's and B's uniques at **g2** (no item) |
+| 2 | A gold 1, A gold 2, B gold 1, B gold 2 at **g3** (no item) | Slots A1 and B1 at **g4** (`tonic-4`) |
+| 3 | Slots A2 and B2 at **g5** (`tonic-5`) | A1's and B1's uniques at **g6** (no item) |
+| 4 | A2's and B2's uniques, A1 gold 1 at **g7** (no item) | B1 gold 1, A2 gold 1, B2 gold 1 at **g8** (no item) |
+| 5 | A1 gold 2, B1 gold 2 at **g9** (no item) | A2 gold 2, B2 gold 2 at **g10** (no item) |
 <!-- /live -->
 
 That's **24 unlocks**: 6 slots, 6 inherited uniques (one per slot) and 12 gold positions (two per slot). The split
@@ -672,10 +672,10 @@ held over a tier-1 scenario's window:
 <!-- live:loop-hub-slots -->
 | Building | Slots Lv 1 / 2 / 3 | Hours a day held, tier 1 | Slots needed (÷ 18) | Use in 1·1 | Use in 1·2 | Use in 1·3 | Use in 1·4 | Use in 1·5 | Peak, all tiers |
 |---|---|---|---|---|---|---|---|---|---|
-| Observatory | 2 / 3 / 3 | 29.1 | 1.6 | 62% | 44% | 35% | 31% | 48% | 76% (3·1) |
-| Lineage Hall | 2 / 3 / 3 | 26.3 | 1.5 | 26% | 48% | 38% | 48% | 48% | 54% (2·2) |
-| Gym | 5 rooms × 1 / 2 / 2 | 45.6 | 2.5 | 13% | 24% | 30% | 20% | 20% | 31% (3·3) |
-| Dojo | 6 rooms × 1 / 2 / 2 | 25.4 | 1.4 | 13% | 12% | 9% | 9% | 8% | 17% (2·1) |
+| Observatory | 2 / 3 / 3 | 40.4 | 2.2 | 88% | 56% | 48% | 52% | 69% | 88% (1·1) |
+| Lineage Hall | 2 / 3 / 3 | 34.2 | 1.9 | 51% | 48% | 49% | 78% | 44% | 78% (1·4) |
+| Gym | 5 rooms × 1 / 2 / 2 | 66.3 | 3.7 | 21% | 34% | 36% | 36% | 28% | 44% (2·3) |
+| Dojo | 6 rooms × 1 / 2 / 2 | 34.4 | 1.9 | 30% | 14% | 7% | 14% | 9% | 30% (1·1) |
 <!-- /live -->
 
 - **Lv 1 carries the 20-Uma start and Lv 2 carries 25**, the same rule as the Farm's buildings ([07](07-farm.md) §6).

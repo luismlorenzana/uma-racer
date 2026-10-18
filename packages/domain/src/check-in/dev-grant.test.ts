@@ -74,7 +74,7 @@ describe('dev-grant', () => {
   })
 
   it('treats a malformed grant as a caller bug, and an unknown Uma as a refusal', () => {
-    const state = ok(start(account(1, { 'dish-vegetables-1': 1 }), { outfitId: uma(1), slot: slot('observatory'), request: nodes(1) }, NOW, ENV)).state
+    const state = ok(start(account(1, { 'tonic-1': 1 }), { outfitId: uma(1), slot: slot('observatory'), request: nodes(1) }, NOW, ENV)).state
     expect(() => devGrant(state, { prizeMoney: 0 }, NOW, DEV, 'grant-007')).toThrow(RangeError)
     expect(() => devGrant(state, { items: { 'no-such-item': 1 } }, NOW, DEV, 'grant-008')).toThrow(RangeError)
     expect(() => devGrant(state, { items: { [CHOPPED]: 1.5 } }, NOW, DEV, 'grant-009')).toThrow(RangeError)

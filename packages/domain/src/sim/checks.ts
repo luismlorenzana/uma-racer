@@ -43,17 +43,13 @@ export const LOOP_CHECKS: readonly LoopCheck[] = Object.freeze([
     read: ({ baseline }) => [scenarioDays(baseline, [1])[0] ?? null],
   },
   {
-    id: 'tier-1-scenarios', label: 'Days in each later scenario of tier 1', run: 'baseline', min: 24, max: 32, unit: 'days',
+    // One band for every scenario but a new account's first, in every tier (D374): a guard of about 2½ to 5 weeks
+    // around the four-week target, not a target per scenario. The owner keeps the layers symmetric rather than tuning
+    // each one to a day count.
+    id: 'scenarios', label: "Days in each scenario after a new account's first", run: 'baseline', min: 18, max: 35, unit: 'days',
     read: ({ baseline }) => {
-      const days = scenarioDays(baseline, [1]).slice(1)
-      return days.length === 4 ? days : [...days, null]
-    },
-  },
-  {
-    id: 'later-scenarios', label: 'Days in each scenario of tiers 2 and 3 (buildings at Lv 3)', run: 'baseline', min: 18, max: 28, unit: 'days',
-    read: ({ baseline }) => {
-      const days = scenarioDays(baseline, [2, 3])
-      return days.length === 9 ? days : [...days, null]
+      const days = [...scenarioDays(baseline, [1]).slice(1), ...scenarioDays(baseline, [2, 3])]
+      return days.length === 13 ? days : [...days, null]
     },
     also: {
       label: 'every building and facility at Lv 3 when the cohort entered tiers 2 and 3',

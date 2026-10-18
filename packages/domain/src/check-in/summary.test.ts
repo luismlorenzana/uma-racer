@@ -24,7 +24,7 @@ const MORNING = clock('08:00', 1)
 /** A night of 8 Umas: a queue that moves on, a level-up, an unlock, a stopped queue, a job running past 08:00, a free
  * Uma, a trained one and one ready to advance, with Prize Money and tickets. */
 function night(): WorkState {
-  let state = account(8, { carrot: 9, 'dish-vegetables-1': 1, 'chopped-carrot': 4, 'wheat-flour': 1, [SPEED_TICKET_ID]: 18 })
+  let state = account(8, { carrot: 9, 'tonic-1': 1, 'chopped-carrot': 1, 'dried-button-mushroom': 1, 'wheat-flour': 1, [SPEED_TICKET_ID]: 18 })
   state = { ...state, profile: { ...state.profile, prizeMoney: 1_240 } }
   const go = (who: number, at: ReturnType<typeof slot>, request: WorkRequest, when: number) => {
     state = ok(start(state, { outfitId: uma(who), slot: at, request }, when, ENV)).state
@@ -39,7 +39,7 @@ function night(): WorkState {
   go(3, slot('observatory'), nodes(1), clock('22:30'))
   go(4, slot('pantry', 1), craft('chopped-carrot', 1), clock('22:30'))
   add(4, craft('chopped-carrot', 5), 'pantry')
-  go(5, slot('kitchen'), cook('dish-vegetables-1', 1), clock('07:00', 1))
+  go(5, slot('kitchen'), cook('tonic-1', 1), clock('07:00', 1))
   const seven = state.umas[uma(7)]!
   const trained = { ...seven, build: { ...commitUnlocks(seven.build, seven, layerUnlocks(1)).build, bonds: ['a', 'b', 'c', 'd', 'e', 'f'] } }
   const eight = placeUma(state.umas[uma(8)]!, { tier: 1, scenario: 1, level: 10, careerWon: true }, CHECK_IN_CONTENT)
@@ -67,18 +67,18 @@ describe('the check-in summary', () => {
     expect(repeated.receipt.started.map((s) => [s.outfitId, s.from, s.to])).toEqual([[uma(2), 2, 2], [uma(1), 4, 2]])
     expect(section('free').umas.map((u) => u.outfitId)).toEqual([3, 4, 6, 7, 8].map(uma))
     expect(section('free').umas.every((u) => u.suggestion !== null && u.suggestion.outfitId === u.outfitId)).toBe(true)
-    // Uma 4's ×5 craft found 4 carrots at 22:57; at 08:00 none are left, so Buy and restart buys all five.
+    // Uma 4's ×5 craft found 4 carrots at 23:10:30; at 08:00 none are left, so Buy and restart buys all five.
     const [stopped] = section('queue-stopped').queues
     expect(stopped).toMatchObject({
-      outfitId: uma(4), dropped: { at: clock('22:30') + 27 * MINUTE, short: [{ item: 'carrot', qty: 1 }] },
-      short: [{ item: 'carrot', qty: 5 }], buy: { items: [{ sku: 'carrot', qty: 5, unitPrice: 108 }], total: 540 }, startSmaller: null,
+      outfitId: uma(4), dropped: { at: clock('22:30') + 40.5 * MINUTE, short: [{ item: 'carrot', qty: 1 }] },
+      short: [{ item: 'carrot', qty: 5 }], buy: { items: [{ sku: 'carrot', qty: 5, unitPrice: 162 }], total: 810 }, startSmaller: null,
       makeThem: { outfitId: uma(3), request: gather('carrot', 5) },
     })
     expect(section('couldnt-repeat').skipped.map((s) => [s.outfitId, s.code, s.suggestion])).toEqual([[uma(4), 'queue-stopped', null], [uma(3), 'short', null]])
     expect(section('training-done').umas).toEqual([{ outfitId: uma(7), scenario: 1 }])
     expect(section('ready-to-advance').umas).toEqual([{ outfitId: uma(8), from: { tier: 1, scenario: 1 }, to: { tier: 1, scenario: 2 } }])
-    // Next: Uma 1's ×2 craft at 08:54; everything is done when Uma 5's cook ends at 11:48.
-    expect(section('next')).toMatchObject({ next: { at: MORNING + 54 * MINUTE, outfitId: uma(1), request: craft('chopped-carrot', 2) }, allDoneAt: clock('11:48', 1) })
+    // Next: Uma 1's ×2 craft at 09:21; everything is done when Uma 5's tonic ends at 14:12.
+    expect(section('next')).toMatchObject({ next: { at: MORNING + 81 * MINUTE, outfitId: uma(1), request: craft('chopped-carrot', 2) }, allDoneAt: clock('14:12', 1) })
     expect(section('money')).toEqual({ kind: 'money', prizeMoney: 1_240, speedTickets: 18 })
     expect(summary).toMatchObject({ since: clock('22:30'), repeatAll: 2, startSuggestions: 5 })
   })
@@ -97,7 +97,7 @@ describe('the check-in summary', () => {
     let busy = account(2)
     for (const who of [1, 2]) busy = ok(start(busy, { outfitId: uma(who), slot: slot('fields', who - 1), request: gather('wheat', 2) }, clock('07:00'), ENV)).state
     const summary = checkInSummary(busy, { since: clock('09:00', 3) }, clock('08:00'), { env: ENV })
-    expect(summary.sections).toEqual([{ kind: 'next', next: expect.objectContaining({ outfitId: uma(1), at: clock('07:00') + 216 * MINUTE }), allDoneAt: clock('07:00') + 216 * MINUTE }])
+    expect(summary.sections).toEqual([{ kind: 'next', next: expect.objectContaining({ outfitId: uma(1), at: clock('07:00') + 324 * MINUTE }), allDoneAt: clock('07:00') + 324 * MINUTE }])
     expect(summary.since).toBe(clock('08:00'))
     expect(checkInSummary(account(0), { since: 0 }, clock('08:00'), { env: ENV }).sections).toEqual([])
   })
@@ -105,7 +105,7 @@ describe('the check-in summary', () => {
   it('counts queues that moved on since the last visit, not before it', () => {
     const state = night()
     const collected = collectAll(state, {}, MORNING, ENV)
-    const late = checkInSummary(collected.state, { since: clock('01:00', 1), collect: collected.receipt }, MORNING, { env: ENV })
+    const late = checkInSummary(collected.state, { since: clock('01:30', 1), collect: collected.receipt }, MORNING, { env: ENV })
     expect(late.sections.find((s) => s.kind === 'collected')).toMatchObject({ queuesMovedOn: 0 })
   })
 })
@@ -113,9 +113,9 @@ describe('the check-in summary', () => {
 /** Three running entries at 12:00: 50 minutes, 3 hours and 10 minutes left. */
 function running(tickets: number): WorkState {
   let state = account(3, { carrot: 10, [SPEED_TICKET_ID]: tickets })
-  state = ok(start(state, { outfitId: uma(1), slot: slot('fields'), request: gather('wheat', 1) }, clock('12:00') - 58 * MINUTE, ENV)).state
-  state = ok(start(state, { outfitId: uma(2), slot: slot('vegetable-garden'), request: gather('carrot', 2) }, clock('12:00') + 180 * MINUTE - 216 * MINUTE, ENV)).state
-  return ok(start(state, { outfitId: uma(3), slot: slot('pantry'), request: craft('chopped-carrot', 1) }, clock('12:00') - 17 * MINUTE, ENV)).state
+  state = ok(start(state, { outfitId: uma(1), slot: slot('fields'), request: gather('wheat', 1) }, clock('12:00') - 112 * MINUTE, ENV)).state
+  state = ok(start(state, { outfitId: uma(2), slot: slot('vegetable-garden'), request: gather('carrot', 2) }, clock('12:00') + 180 * MINUTE - 324 * MINUTE, ENV)).state
+  return ok(start(state, { outfitId: uma(3), slot: slot('pantry'), request: craft('chopped-carrot', 1) }, clock('12:00') - 30.5 * MINUTE, ENV)).state
 }
 
 describe('Speed up all', () => {

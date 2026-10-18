@@ -23,7 +23,7 @@ const carrots = (count: number): FarmRequest => ({ kind: 'gather', item: 'carrot
 
 /** Student in 05 §2's night at the Observatory from 22:30, in base minutes: nodes 6–8 end 01:30, 04:45 and 08:00. */
 function inSession(): WorkState {
-  const state = withNodes(withStock(farmAccount(), { 'dish-vegetables-1': 1, 'dish-vegetables-2': 2 }), STUDENT.id, 5)
+  const state = withNodes(withStock(farmAccount(), { 'tonic-1': 1, 'tonic-2': 2 }), STUDENT.id, 5)
   return ok(start(state, { outfitId: STUDENT.id, slot: OBSERVATORY, request: { kind: 'session', unlocks: [node(6), node(7), node(8)] } }, clock('22:30'), SESSION_ENV)).state
 }
 
@@ -79,7 +79,7 @@ describe("01 §2's table", () => {
   })
 
   it('an Uma mid-job is refused a session with her free time, and Recall frees her', () => {
-    const state = withStock(ok(start(farmAccount(), { outfitId: PLAIN.id, slot: GARDEN, request: carrots(2) }, T0, ENV)).state, { 'dish-vegetables-1': 1 })
+    const state = withStock(ok(start(farmAccount(), { outfitId: PLAIN.id, slot: GARDEN, request: carrots(2) }, T0, ENV)).state, { 'tonic-1': 1 })
     const session = { outfitId: PLAIN.id, slot: OBSERVATORY, request: { kind: 'session' as const, unlocks: [node(1)] } }
     expect(start(state, session, T0 + 1, SESSION_ENV)).toMatchObject({ code: 'busy', data: { uma: PLAIN.id, time: T0 + 2 * G } })
     const recalled = recall(state, { outfitId: PLAIN.id }, T0 + 1, SESSION_ENV).state

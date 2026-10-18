@@ -76,7 +76,7 @@ describe('commitOperation', () => {
       ['dev-grant', { prizeMoney: 5_000, items: { [VEG]: 3, [CHOPPED]: 4 } }],
       ['buy', { sku: SPEED_TICKET_ID, qty: 2, unitPrice: buyPrice(SPEED_TICKET_ID) }],
       ['start', { outfitId: uma(1), slot: { building: 'pantry', slot: 0 }, request: { kind: 'craft', item: CHOPPED, count: 3 } }],
-      ['speed-up', { outfitId: uma(1), startedAt: T0 + 4 * 60_000, tickets: 1 }],
+      ['speed-up', { outfitId: uma(1), startedAt: T0 + 4 * 60_000, tickets: 2 }],
       ['recall', { outfitId: uma(1) }],
       ['upgrade', { building: 'vegetable-garden' }],
       ['sell', { itemId: VEG, qty: 1, unitPrice: sellPrice(VEG) }],
@@ -84,7 +84,7 @@ describe('commitOperation', () => {
     expect(run.commits.map((commit) => commit.status)).toEqual(Array(8).fill('applied'))
     const reasons = [...run.store.logs.values()].flatMap((row) => (row.kind === 'itemLedger' ? [[row.data.reason, Math.sign(row.data.delta)]] : []))
     expect(new Map(reasons as [string, number][])).toEqual(new Map([
-      // The ticket finished her first item, so Recall paid it before returning the rest.
+      // Two tickets finished her first 40.5-minute item, so Recall paid it before returning the rest.
       ['dev-grant', 1], ['buy', 1], ['reserve', -1], ['ticket', -1], ['output', 1], ['return', 1], ['cost', -1], ['sell', -1],
     ]))
     const movement = (kind: ItemMovement['kind']): ItemMovement => ({ kind, item: VEG, qty: 2, outfitId: kind === 'cost' ? null : uma(1), at: T0 })

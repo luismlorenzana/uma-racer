@@ -24,10 +24,10 @@ describe('a queue overnight', () => {
   it('runs a running entry and three queued ones from 22:30 with no operations, starting each on time', () => {
     let state = ok(start(account(2, { carrot: 16 }), { outfitId: uma(1), slot: PANTRY, request: craft('chopped-carrot', 4) }, clock('22:30'), ENV)).state
     state = queueUp(state, uma(1), [craft('chopped-carrot', 4), craft('chopped-carrot', 4), craft('chopped-carrot', 4)], clock('22:31'))
-    // Each ×4 craft is 4 × 27 minutes at k = 1.2.
+    // Each ×4 craft is 4 × 40.5 minutes at k = 1.8, so the last ends at 09:18.
     const projected = projectWork(state, clock('22:31'), ENV)
-    expect(projected.entries.map((entry) => entry.startsAt)).toEqual([1, 2, 3].map((k) => clock('22:30') + k * minutes(108)))
-    const { state: morning, receipt } = collectAll(state, {}, clock('08:00', 1), ENV)
+    expect(projected.entries.map((entry) => entry.startsAt)).toEqual([1, 2, 3].map((k) => clock('22:30') + k * minutes(162)))
+    const { state: morning, receipt } = collectAll(state, {}, clock('09:30', 1), ENV)
     expect(receipt.lines).toMatchObject([{ outfitId: uma(1), items: [{ item: 'chopped-carrot', qty: 16 }], freed: true, queueStarts: projected.entries.map((e) => e.startsAt) }])
     expect(receipt.settled.started.map((s) => s.at)).toEqual(projected.entries.map((e) => e.startsAt))
     expect(morning.items).toEqual({ 'chopped-carrot': 16 })
@@ -48,21 +48,21 @@ describe('a queue overnight', () => {
     expect(all.work).toEqual(oneThenTwo.work)
     expect(all.items).toEqual(oneThenTwo.items)
     expect(all.work[uma(1)]!.dropped).toBeNull()
-    expect(all.work[uma(2)]!.dropped).toMatchObject({ at: clock('22:30') + minutes(81), short: [{ item: 'carrot', qty: 1 }] })
+    expect(all.work[uma(2)]!.dropped).toMatchObject({ at: clock('22:30') + minutes(121.5), short: [{ item: 'carrot', qty: 1 }] })
   })
 })
 
-/** Uma 1 crafts ×10 from 01:30 to 06:00 with two more queued and no carrots left; Uma 2 gathers 2 carrots by 04:12. */
+/** Uma 1 crafts ×10 from 23:15 to 06:00 with two more queued and no carrots left; Uma 2 gathers 2 carrots by 04:12. */
 function stoppedAtSix(): WorkState {
   let state = account(4, { carrot: 10 })
-  state = ok(start(state, { outfitId: uma(1), slot: PANTRY, request: craft('chopped-carrot', 10) }, clock('01:30', 1), ENV)).state
-  state = queueUp(state, uma(1), [craft('chopped-carrot', 2), craft('wheat-flour', 1)], clock('01:31', 1))
-  return ok(start(state, { outfitId: uma(2), slot: slot('vegetable-garden'), request: gather('carrot', 2) }, clock('00:36', 1), ENV)).state
+  state = ok(start(state, { outfitId: uma(1), slot: PANTRY, request: craft('chopped-carrot', 10) }, clock('23:15'), ENV)).state
+  state = queueUp(state, uma(1), [craft('chopped-carrot', 2), craft('wheat-flour', 1)], clock('23:16'))
+  return ok(start(state, { outfitId: uma(2), slot: slot('vegetable-garden'), request: gather('carrot', 2) }, clock('22:48'), ENV)).state
 }
 
 describe('a queue that stops', () => {
   it('warns on the card before the night', () => {
-    const warnings = queueWarnings(stoppedAtSix(), clock('01:32', 1), ENV)
+    const warnings = queueWarnings(stoppedAtSix(), clock('23:17'), ENV)
     expect(warnings).toHaveLength(1)
     expect(warnings[0]).toMatchObject({ outfitId: uma(1), at: clock('06:00', 1), request: craft('chopped-carrot', 2), short: [{ item: 'carrot', qty: 2 }] })
     expect(fill(warnings[0]!.words)).toBe('Short 2 carrot.')
@@ -89,7 +89,7 @@ describe('a queue that stops', () => {
     expect(stopped.makeThem).toMatchObject({ outfitId: uma(2), kind: 'job', slot: slot('vegetable-garden'), request: gather('carrot', 2) })
     const summary = checkInSummary(state, { since: clock('22:30') }, clock('08:00', 1), { env: ENV })
     const section = summary.sections.find((s) => s.kind === 'queue-stopped')
-    expect(section).toMatchObject({ kind: 'queue-stopped', queues: [{ outfitId: uma(1), buy: { total: 216 } }] })
+    expect(section).toMatchObject({ kind: 'queue-stopped', queues: [{ outfitId: uma(1), buy: { total: 324 } }] })
   })
 
   it('goes back whole after a stock grant (standing in for the Exchange) and one restart', () => {

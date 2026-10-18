@@ -13,16 +13,16 @@ import { MIN_SELL_PRICE, SELL_DIVISOR, sell, sellConfirmations, sellPrice, sellV
 
 /** 09 §6, as written: grade, then work and sale for raw, crafted and planet dish. */
 const SECTION_6 = [
-  '| 1 | 108 | 36 | 135 | 45 | 963 | 321 |',
-  '| 2 | 114 | 38 | 142.5 | 47 | 1,005 | 335 |',
-  '| 3 | 120 | 40 | 150 | 50 | 1,047 | 349 |',
-  '| 4 | 126 | 42 | 157.5 | 52 | 1,096.5 | 365 |',
-  '| 5 | 132 | 44 | 165 | 55 | 1,146 | 382 |',
-  '| 6 | 138 | 46 | 172.5 | 57 | 1,195.5 | 398 |',
-  '| 7 | 144 | 48 | 180 | 60 | 1,245 | 415 |',
-  '| 8 | 150 | 50 | 187.5 | 62 | 1,294.5 | 431 |',
-  '| 9 | 156 | 52 | 195 | 65 | 1,344 | 448 |',
-  '| 10 | 162 | 54 | 202.5 | 67 | 1,393.5 | 464 |',
+  '| 1 | 162 | 54 | 202.5 | 67 | 1,444.5 | 481 |',
+  '| 2 | 171 | 57 | 213.75 | 71 | 1,507.5 | 502 |',
+  '| 3 | 180 | 60 | 225 | 75 | 1,570.5 | 523 |',
+  '| 4 | 189 | 63 | 236.25 | 78 | 1,644.75 | 548 |',
+  '| 5 | 198 | 66 | 247.5 | 82 | 1,719 | 573 |',
+  '| 6 | 207 | 69 | 258.75 | 86 | 1,793.25 | 597 |',
+  '| 7 | 216 | 72 | 270 | 90 | 1,867.5 | 622 |',
+  '| 8 | 225 | 75 | 281.25 | 93 | 1,941.75 | 647 |',
+  '| 9 | 234 | 78 | 292.5 | 97 | 2,016 | 672 |',
+  '| 10 | 243 | 81 | 303.75 | 101 | 2,090.25 | 696 |',
 ]
 const cells = (row: string) => row.split('|').slice(1, -1).map((cell) => Number(cell.trim().replace(/,/g, '')))
 const minutes = (id: string) => workValueSeconds(id)! / 60
@@ -45,7 +45,7 @@ describe('the numbers', () => {
 })
 
 describe('sellPrice (09 §6)', () => {
-  it('pays every cell of 09 §6 in every family: raw 36 … 54, crafted 45 … 67, planet 321 … 464', () => {
+  it('pays every cell of 09 §6 in every family: raw 54 … 81, crafted 67 … 101, planet 481 … 696', () => {
     for (const row of SECTION_6) {
       const [g, rawWork, rawSale, craftedWork, craftedSale, dishWork, dishSale] = cells(row) as [ItemGrade, ...number[]]
       for (const family of FAMILY_IDS) {
@@ -54,12 +54,12 @@ describe('sellPrice (09 §6)', () => {
         expect([sellPrice(raw), sellPrice(crafted), sellPrice(dish)], `${family} ${g}`).toEqual([rawSale, craftedSale, dishSale])
       }
     }
-    expect(sellPrice(craftedItem('fish', 5).id)).toBe(55)
+    expect(sellPrice(craftedItem('fish', 5).id)).toBe(82)
   })
 
-  it('sells a Duo as a planet dish of its grade, and the Feasts for 418, 456, 494 and 532', () => {
+  it('sells a Duo as a planet dish of its grade, and the Feasts for 627, 684, 741 and 798', () => {
     for (const duo of DUOS) expect(sellPrice(duo.id), duo.id).toBe(sellPrice(planetDish('vegetables', duo.grade).id))
-    expect(FEASTS.map((feast) => sellPrice(feast.id))).toEqual([418, 456, 494, 532])
+    expect(FEASTS.map((feast) => sellPrice(feast.id))).toEqual([627, 684, 741, 798])
   })
 
   it('rounds down and pays at least 1: a synthetic work value under 3 minutes sells for 1', () => {
@@ -100,17 +100,17 @@ describe('no loop mints time (09 §6, 12 §2)', () => {
 describe('sell (13 §6)', () => {
   it('takes qty from the Warehouse and pays qty × the price, leaving the purse alone (09 §3.3)', () => {
     const before = stocked({ [carrot]: 5, [salad]: 2 }, 10)
-    const { state, receipt } = ok(sell(before, { opId: 's1', itemId: carrot, qty: 4, unitPrice: 36 }, 9))
+    const { state, receipt } = ok(sell(before, { opId: 's1', itemId: carrot, qty: 4, unitPrice: 54 }, 9))
     expect(state.items).toEqual({ [carrot]: 1, [salad]: 2 })
-    expect(state.profile.prizeMoney).toBe(10 + 144)
+    expect(state.profile.prizeMoney).toBe(10 + 216)
     expect(state.profile.purse).toBe(before.profile.purse)
-    expect(state.ledger.at(-1)).toEqual({ id: 'sell:s1:pay', resource: 'prize-money', delta: 144, reason: 'sell', at: 9 })
+    expect(state.ledger.at(-1)).toEqual({ id: 'sell:s1:pay', resource: 'prize-money', delta: 216, reason: 'sell', at: 9 })
     expect(receipt).toEqual<SellReceipt>({
-      itemId: carrot, qty: 4, unitPrice: 36, total: 144,
-      ledger: [{ id: 'sell:s1:pay', resource: 'prize-money', delta: 144, reason: 'sell', at: 9 }],
+      itemId: carrot, qty: 4, unitPrice: 54, total: 216,
+      ledger: [{ id: 'sell:s1:pay', resource: 'prize-money', delta: 216, reason: 'sell', at: 9 }],
       itemLedger: [{ id: 'sell:s1:give', itemId: carrot, delta: -4, reason: 'sell', at: 9 }],
     })
-    expect(ok(sell(state, { opId: 's2', itemId: carrot, qty: 1, unitPrice: 36 }, 10)).state.items![carrot]).toBe(0)
+    expect(ok(sell(state, { opId: 's2', itemId: carrot, qty: 1, unitPrice: 54 }, 10)).state.items![carrot]).toBe(0)
   })
 
   it("refuses the Speed Ticket and an unknown id: Speed Tickets can't be sold", () => {
@@ -123,21 +123,21 @@ describe('sell (13 §6)', () => {
 
   it('refuses a quantity below 1 or not whole', () => {
     for (const qty of [0, -2, 1.5, Number.NaN]) {
-      expect(sell(stocked({ [carrot]: 5 }), { opId: 's', itemId: carrot, qty, unitPrice: 36 }, 1)).toEqual({
+      expect(sell(stocked({ [carrot]: 5 }), { opId: 's', itemId: carrot, qty, unitPrice: 54 }, 1)).toEqual({
         refused: true, code: 'quantity', reason: 'Sell at least one.',
       })
     }
   })
 
   it('refuses a quantity above the Warehouse count, saying how many can be sold', () => {
-    expect(sell(stocked({ [carrot]: 3 }), { opId: 's', itemId: carrot, qty: 4, unitPrice: 36 }, 1)).toEqual({
+    expect(sell(stocked({ [carrot]: 3 }), { opId: 's', itemId: carrot, qty: 4, unitPrice: 54 }, 1)).toEqual({
       refused: true, code: 'sell-short', reason: 'Only {n} can be sold now.', data: { n: 3 },
     })
-    expect(sell(newAccount(0), { opId: 's', itemId: carrot, qty: 1, unitPrice: 36 }, 1)).toMatchObject({ code: 'sell-short', data: { n: 0 } })
+    expect(sell(newAccount(0), { opId: 's', itemId: carrot, qty: 1, unitPrice: 54 }, 1)).toMatchObject({ code: 'sell-short', data: { n: 0 } })
   })
 
   it('refuses a price that is not the sell price', () => {
-    expect(sell(stocked({ [carrot]: 3 }), { opId: 's', itemId: carrot, qty: 1, unitPrice: 108 }, 1)).toEqual({
+    expect(sell(stocked({ [carrot]: 3 }), { opId: 's', itemId: carrot, qty: 1, unitPrice: 162 }, 1)).toEqual({
       refused: true, code: 'price-changed', reason: 'Price changed.',
     })
   })
@@ -165,16 +165,17 @@ describe('the stock sheet (09 §6.1)', () => {
     expect(() => stackCounts({ held: 1, reserved: 0.5, needed: 0 })).toThrow(RangeError)
   })
 
-  it('asks for a dish, for needed stock with how short it leaves the planner, and for 1,000 or more', () => {
+  it('asks for a meal or tonic, for needed stock with how short it leaves the planner, and for 1,000 or more', () => {
     expect(sellConfirmations({ itemId: carrot, qty: 5, held: 12, needed: 5 })).toEqual([])
     expect(sellConfirmations({ itemId: carrot, qty: 7, held: 12, needed: 5 })).toEqual([])
     expect(sellConfirmations({ itemId: carrot, qty: 11, held: 12, needed: 5 })).toEqual([{ kind: 'needed', short: 4 }])
     expect(sellConfirmations({ itemId: carrot, qty: 2, held: 6, needed: 10 })).toEqual([{ kind: 'needed', short: 6 }])
     expect(sellConfirmations({ itemId: salad, qty: 1, held: 4, needed: 0 })).toEqual([{ kind: 'dish' }])
-    expect(sellConfirmations({ itemId: carrot, qty: 28, held: 30, needed: 0 })).toEqual([{ kind: 'large', total: 1_008 }])
-    expect(sellConfirmations({ itemId: carrot, qty: 27, held: 30, needed: 0 })).toEqual([])
+    expect(sellConfirmations({ itemId: 'tonic-1', qty: 1, held: 2, needed: 0 })).toEqual([{ kind: 'dish' }])
+    expect(sellConfirmations({ itemId: carrot, qty: 19, held: 30, needed: 0 })).toEqual([{ kind: 'large', total: 1_026 }])
+    expect(sellConfirmations({ itemId: carrot, qty: 18, held: 30, needed: 0 })).toEqual([])
     expect(sellConfirmations({ itemId: salad, qty: 4, held: 4, needed: 2 })).toEqual([
-      { kind: 'dish' }, { kind: 'needed', short: 2 }, { kind: 'large', total: 1_396 },
+      { kind: 'dish' }, { kind: 'needed', short: 2 }, { kind: 'large', total: 2_092 },
     ])
   })
 

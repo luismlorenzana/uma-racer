@@ -1,17 +1,17 @@
 // What a Training Hub session unlocks (docs/game/05-training-hub.md §1–§3, docs/game/06-cards-and-bonds.md §2,
-// D328, D338): the layers of a tier, each unlock's fixed grade and its one exact dish, and the session time per grade.
-// Scenario s of a tier adds its layer: 89 fixed unlocks a tier (28 nodes, 24 Inspiration, 37 Extra Stats) and, at the
-// Dojo, bonds with cards the owner picks, counted at 6, 3, 3, 3, 3 for pacing. 107 a tier.
+// D328, D338, D374): the layers of a tier, each unlock's fixed grade and the one item it takes, and the session time
+// per grade. Scenario s of a tier adds its layer: 89 fixed unlocks a tier (28 nodes, 24 Inspiration, 37 Extra Stats)
+// and, at the Dojo, bonds with cards the owner picks, counted at 6, 3, 3, 3, 3 for pacing. 107 a tier. An Extra Stats
+// node takes a meal; a node or an Inspiration slot a tonic; a bond, an inherited unique or a gold nothing (D374).
 import { INSPIRATION_SLOTS, inspirationGoldKey, type InspirationSlot } from '../inspiration'
 import type { FacilityId } from '../farm/buildings'
-import { feastDish, planetDish, type FeastGrade, type ItemGrade, type ItemId } from '../items/catalogue'
-import { familyFor } from '../items/families'
+import { feastDish, tonicItem, type FeastGrade, type ItemGrade, type ItemId } from '../items/catalogue'
 import { TREE_CARD_NODES } from './trees/sizes'
 import { cardNodeId, nodeOrder } from './trees/tree'
 import { scenarioNumber } from '../tiers/map'
 import { workSeconds } from '../state/time'
 import type { Refusal, ScenarioOfTier, Tier } from '../state/types'
-import { BOND_FAMILY, bondLayer, cardEraRefusal, type BondCard } from './bonds'
+import { bondLayer, cardEraRefusal, type BondCard } from './bonds'
 import { EXTRA_NODES, LAYERS, extraNode, higherGrade, lowerGrade } from './extra'
 
 // ---- Unlocks -------------------------------------------------------------------------------------------------------
@@ -42,13 +42,23 @@ export interface UnlockRef {
   readonly target: string
 }
 
-/** One unlock as a session holds it (05 §9): its identity, its layer, its fixed grade and the one dish it takes. */
+/** One unlock as a session holds it (05 §9): its identity, its layer, its fixed grade and the one item it takes. */
 export interface Unlock extends UnlockRef {
   /** The scenario of the tier whose layer holds it; a bond's is its card's first eligible scenario (06 §2). */
   readonly layer: ScenarioOfTier
   readonly grade: ItemGrade
-  readonly dishId: ItemId
+  /**
+   * The one item it takes (D374): a meal for an Extra Stats node, a tonic for a node or an Inspiration slot (a retired
+   * salad or soup of its grade stands in, `standInsOf`), or null for a bond, an inherited unique or a gold, which take
+   * none. Named for the dish every unlock took before D374; the saved field keeps the name.
+   */
+  readonly dishId: ItemId | null
 }
+
+/** The kinds that take no item (D374): relationships and skills cost time and SP, never items. */
+export const ITEM_FREE_KINDS: readonly UnlockKind[] = Object.freeze(['unique', 'gold', 'bond'])
+/** Whether an unlock takes no item. */
+export const takesNoItem = (entry: Pick<Unlock, 'dishId'>): boolean => entry.dishId === null
 
 export const unlockKey = (ref: UnlockRef): string => `${ref.kind}:${ref.target}`
 export const sameUnlock = (a: UnlockRef, b: UnlockRef): boolean => a.kind === b.kind && a.target === b.target
@@ -105,8 +115,11 @@ export function goldPosition(key: string): { readonly slot: InspirationSlot; rea
 
 // ---- The fixed layers ----------------------------------------------------------------------------------------------
 
-const unlock = (kind: UnlockKind, target: string, layer: ScenarioOfTier, grade: ItemGrade, dishId: ItemId): Unlock =>
+const unlock = (kind: UnlockKind, target: string, layer: ScenarioOfTier, grade: ItemGrade, dishId: ItemId | null): Unlock =>
   Object.freeze({ kind, target, layer, grade, dishId })
+
+/** What an unlock of `kind` and grade takes when it isn't an Extra Stats node: a tonic, or nothing (D374). */
+const tonicOrNothing = (kind: UnlockKind, grade: ItemGrade): ItemId | null => (ITEM_FREE_KINDS.includes(kind) ? null : tonicItem(grade).id)
 
 /** Card nodes layer s adds: the tree of scenario s less the tree before it (12, 4, 4, 4, 4). */
 export const layerNodeCount = (s: ScenarioOfTier): number => TREE_CARD_NODES[s - 1]! - (s === 1 ? 0 : TREE_CARD_NODES[s - 2]!)
@@ -117,7 +130,7 @@ function observatoryLayer(s: ScenarioOfTier): Unlock[] {
   // The first half of the layer's nodes at its lower grade, the second half at its higher (05 §3).
   return Array.from({ length: count }, (_, i) => {
     const grade = i < count / 2 ? lowerGrade(s) : higherGrade(s)
-    return unlock('node', cardNodeId(first + i), s, grade, planetDish(familyFor('constellation'), grade).id)
+    return unlock('node', cardNodeId(first + i), s, grade, tonicOrNothing('node', grade))
   })
 }
 
@@ -125,7 +138,7 @@ function lineageHallLayer(s: ScenarioOfTier): Unlock[] {
   return INSPIRATION_LAYER_TABLE[s - 1]!.map(([kind, slot, half, gold]) => {
     const grade = half === 'lower' ? lowerGrade(s) : higherGrade(s)
     const target = kind === 'gold' ? inspirationGoldKey(slot, gold!) : slot
-    return unlock(kind, target, s, grade, planetDish(familyFor('inspiration'), grade).id)
+    return unlock(kind, target, s, grade, tonicOrNothing(kind, grade))
   })
 }
 
@@ -160,14 +173,13 @@ export const BONDS_BY_SCENARIO = Object.freeze([6, 3, 3, 3, 3] as const)
 export const bondsThrough = (s: ScenarioOfTier): number => BONDS_BY_SCENARIO.slice(0, s).reduce((sum, n) => sum + n, 0)
 
 /**
- * The bond unlock for `card` in scenario s of `tier`: layer p = max(1, era − 5(tier − 1)), grade 2p − 1, the card type's
- * family dish (06 §2). Refused while its era is past the scenario.
+ * The bond unlock for `card` in scenario s of `tier`: layer p = max(1, era − 5(tier − 1)) and grade 2p − 1, which set
+ * its session time; it takes no item (06 §2, D374). Refused while its era is past the scenario.
  */
 export function bondUnlock(card: BondCard, tier: Tier, s: ScenarioOfTier): Unlock | Refusal {
   if (card.era > scenarioNumber({ tier, scenario: s })) return cardEraRefusal(card)
   const layer = bondLayer(card.era, tier) as ScenarioOfTier
-  const grade = lowerGrade(layer)
-  return unlock('bond', card.id, layer, grade, planetDish(BOND_FAMILY[card.type], grade).id)
+  return unlock('bond', card.id, layer, lowerGrade(layer), null)
 }
 
 // ---- Sizes ---------------------------------------------------------------------------------------------------------

@@ -2,14 +2,15 @@
 // §2): restarts each Free Uma's last job or session where the stock allows. Umas go in the order of their last slots,
 // each seeing the stock the ones before left and taking the lowest free slot at the same building and room, so Collect
 // all then Repeat all always finds one. The size is the last one, or the fitted one when the profile says `fit`, shrunk
-// to the stock ("×6 → ×3"); gathering always starts; a session takes T128's next unlocks there while their dishes
-// last; the grade stays, with a note when a higher one is open. An Uma is skipped, with a reason and a fix, when she has
-// nothing to repeat (recalled or promoted), isn't Free, has a stopped queue, is short, finds the place full, has
-// finished that facility for her open layers, or was at the Dojo, where which card to bond is the owner's choice.
+// to the stock ("×6 → ×3"); gathering always starts; a session takes T128's next unlocks there while the items they
+// take last (D374: some take none); the grade stays, with a note when a higher one is open. An Uma is skipped, with a
+// reason and a fix, when she has nothing to repeat (recalled or promoted), isn't Free, has a stopped queue, is short,
+// finds the place full, has finished that facility for her open layers, or was at the Dojo, where which card to bond
+// is the owner's choice.
 import { buyPrice, farmLevelsOf, RAW_PER_PURCHASE, stockedGrade } from '../economy/exchange'
 import type { BuildingId, RoomId } from '../farm/buildings'
 import { farmItemSeconds } from '../farm/jobs'
-import { craftedItem, itemById, planetDish, rawItem, type ItemGrade, type ItemId } from '../items/catalogue'
+import { craftedItem, heldFor, itemById, planetDish, rawItem, tonicItem, type ItemGrade, type ItemId } from '../items/catalogue'
 import { highestOpenGrade } from '../items/grades'
 import { recipeOf, type RecipeInput } from '../items/recipes'
 import { assertNow } from '../tiers/ledger'
@@ -112,12 +113,16 @@ export interface RepeatInput {
 
 const requestSize = (request: WorkRequest): number => (request.kind === SESSION_KIND ? request.unlocks.length : request.count)
 
-/** The same line at grade `g`: raw, crafted or a planet dish; null for a Duo or a Feast, whose grade is the node's. */
+/**
+ * The same line at grade `g`: raw, crafted, a planet dish or a tonic; null for a Duo or a Feast, whose grade is the
+ * node's, and for a retired dish, which is never cooked again (D374).
+ */
 function sameLineAt(item: ItemId, g: ItemGrade): ItemId | null {
   const def = itemById(item)
   if (def?.kind === 'raw') return rawItem(def.family, g).id
   if (def?.kind === 'crafted') return craftedItem(def.family, g).id
-  if (def?.kind === 'dish' && def.dish === 'planet') return planetDish(def.family, g).id
+  if (def?.kind === 'dish' && def.dish === 'planet' && !def.retired) return planetDish(def.family, g).id
+  if (def?.kind === 'tonic') return tonicItem(g).id
   return null
 }
 
@@ -156,7 +161,11 @@ function repeatRequest(state: WorkState, outfitId: string, last: { slot: SlotRef
     const left = new Map<ItemId, number>()
     const takeable: Unlock[] = []
     for (const unlock of next) {
-      const have = left.get(unlock.dishId) ?? state.items[unlock.dishId] ?? 0
+      if (unlock.dishId === null) {
+        takeable.push(unlock)
+        continue
+      }
+      const have = left.get(unlock.dishId) ?? heldFor(state.items, unlock.dishId)
       if (have < 1) break
       left.set(unlock.dishId, have - 1)
       takeable.push(unlock)
@@ -166,7 +175,7 @@ function repeatRequest(state: WorkState, outfitId: string, last: { slot: SlotRef
       ? fitSize(now, takeable.map((u) => sessionSeconds(u.grade, speed)), times, utcOffsetMin)
       : requestSize(request)
     if (takeable.length === 0) {
-      const short = shortfall(state.items, sumInputs(next.slice(0, size).map((u) => [{ item: u.dishId, qty: 1 }])))
+      const short = shortfall(state.items, sumInputs(next.slice(0, size).map((u) => (u.dishId === null ? [] : [{ item: u.dishId, qty: 1 }]))))
       return skip('short', say(CHECK_IN_WORDS.short, { n: short[0]!.qty, item: short[0]!.item }), shortFixes(state, short, place))
     }
     const unlocks = takeable.slice(0, size)

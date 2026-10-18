@@ -48,14 +48,14 @@ describe('slots (07 §6, 05 §7)', () => {
   it('pins every building at Lv 1, 2 and 3', () => {
     expect(SLOTS).toEqual({
       'sugar-grove': [2, 3, 3], orchard: [2, 3, 3], fishery: [2, 3, 3], 'nut-grove': [2, 3, 3], 'herb-garden': [2, 3, 3], fields: [2, 3, 3],
-      'vegetable-garden': [4, 5, 5], 'mushroom-cave': [2, 3, 3], pantry: [3, 5, 5], kitchen: [6, 8, 8],
+      'vegetable-garden': [4, 5, 5], 'mushroom-cave': [2, 3, 3], pantry: [3, 5, 5], kitchen: [6, 9, 9],
       observatory: [2, 3, 3], 'lineage-hall': [2, 3, 3], gym: [1, 2, 2], dojo: [1, 2, 2],
     })
   })
 
-  it('total 27 and 39 on the Farm (D351), and 5 and 6 rooms of 1, then 2, in the facilities', () => {
+  it('total 27 and 40 on the Farm (D351, D374), and 5 and 6 rooms of 1, then 2, in the facilities', () => {
     const levels: BuildingLevel[] = [1, 2, 3]
-    expect(levels.map((lv) => sum(FARM_BUILDING_IDS, (id) => totalSlots(id, lv)))).toEqual([27, 39, 39])
+    expect(levels.map((lv) => sum(FARM_BUILDING_IDS, (id) => totalSlots(id, lv)))).toEqual([27, 40, 40])
     expect(levels.map((lv) => totalSlots('gym', lv))).toEqual([5, 10, 10])
     expect(levels.map((lv) => totalSlots('dojo', lv))).toEqual([6, 12, 12])
     expect(levels.map((lv) => slotsPerRoom('dojo', lv))).toEqual([1, 2, 2])

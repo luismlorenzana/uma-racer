@@ -1,15 +1,17 @@
 // The planner: "what she still needs" (docs/game/02-check-ins-and-notifications.md §6, §4 "Best use";
 // docs/game/08-item-catalogue-and-recipes.md §4; uma-rpg's `targetPlan`, D100). Three steps, all derived on read:
-// 1. Needs: for each target, oldest layer first, every unlock left needs its one dish (T128); a bond with no card
-//    chosen has no family, so it counts in `pickCards` and isn't cascaded.
+// 1. Needs: for each target, oldest layer first, every unlock left needs the one item it takes (T128), a meal or a
+//    tonic; an unlock that takes none (a bond, an inherited unique or gold, D374) needs nothing. Bonds still to pick
+//    cards for count in `pickCards`.
 // 2. Supply: the free stock once projected queue starts have taken their inputs, then the outputs still to come in
 //    finish order (T131's projection of T127's settle). Reserved inputs never count; projected drops count neither way.
-// 3. Allocation, once, level by level (dishes, then crafted, then raw), targets in order, stock before coming. A short
-//    dish needs its recipe's crafted items (T126), and a short crafted item its raw one.
+//    A tonic's stand-ins (a retired salad or soup of its grade) supply it first, from stock.
+// 3. Allocation, once, level by level (dishes and tonics, then crafted, then raw), targets in order, stock before
+//    coming. A short dish or tonic needs its recipe's crafted items (T126), and a short crafted item its raw one.
 // Lines are lowest grade first. A line no Free Uma's Farm Level opens carries its gate.
 import { BUILDINGS, isFacility, type BuildingId, type FacilityId, type RoomId } from '../farm/buildings'
 import { FAMILY_SITE } from '../farm/jobs'
-import { ITEMS, itemById, type ItemGrade, type ItemId } from '../items/catalogue'
+import { isKitchenItem, ITEMS, itemById, standInsOf, type ItemGrade, type ItemId } from '../items/catalogue'
 import { gradeOpensAtFarmLevel } from '../items/grades'
 import { PLANET_OWN_QTY, recipeOf, SIDE_QTY } from '../items/recipes'
 import { assertNow } from '../tiers/ledger'
@@ -166,11 +168,15 @@ class Supply {
     }
   }
 
-  /** Allocates `need` of `item`: free stock first, then outputs coming in finish order. */
+  /** Allocates `need` of `item`: free stock first (a tonic's stand-ins before it), then outputs coming in finish order. */
   take(item: ItemId, need: number): Allocated {
-    const inStock = this.stock.get(item) ?? 0
-    const have = Math.min(inStock, need)
-    this.stock.set(item, inStock - have)
+    let have = 0
+    for (const id of [...standInsOf(item), item]) {
+      const inStock = this.stock.get(id) ?? 0
+      const used = Math.min(inStock, need - have)
+      this.stock.set(id, inStock - used)
+      have += used
+    }
     const list = this.coming.get(item) ?? []
     const taken = list.splice(0, need - have)
     return { item, need, have, taken, short: need - have - taken.length }
@@ -221,7 +227,7 @@ export function planFrom(projection: Projection, targets: readonly string[], cho
     const unlocks = remaining.flatMap((entry) => (entry.kind === 'unlock' ? [entry] : []))
     const pickCards = remaining.reduce((sum, entry) => sum + (entry.kind === 'pick-cards' ? entry.count : 0), 0)
     const dishes = new Map<ItemId, number>()
-    for (const entry of unlocks) add(dishes, entry.dishId, 1)
+    for (const entry of unlocks) if (entry.dishId !== null) add(dishes, entry.dishId, 1)
     return { outfitId, unlocks, pickCards, dishes }
   })
 
@@ -241,6 +247,8 @@ export function planFrom(projection: Projection, targets: readonly string[], cho
   const targetPlans = needs.map(({ outfitId, unlocks, pickCards }, t): TargetPlan => {
     const left = new Map(dishLines[t]!.map((dish) => [dish.item, { have: dish.have, coming: dish.taken.length }]))
     const planned = unlocks.map((entry): PlannedUnlock => {
+      // An unlock that takes no item is always ready (D374).
+      if (entry.dishId === null) return { unlock: entry.unlock, facility: entry.facility, room: entry.room, supply: 'ready' }
       const counts = left.get(entry.dishId)!
       const supplied: UnlockSupply = counts.have > 0 ? 'ready' : counts.coming > 0 ? 'coming' : 'short'
       if (supplied === 'ready') counts.have -= 1
@@ -289,7 +297,8 @@ function entryUses(projection: Projection, targets: readonly string[], allocated
     fifths.set(key, (fifths.get(key) ?? 0) + n)
   }
   for (const a of allocated) {
-    const weight = itemById(a.item)?.kind === 'dish' ? BEST_USE_WEIGHTS.dish : BEST_USE_WEIGHTS.crafted
+    const def = itemById(a.item)
+    const weight = def !== undefined && isKitchenItem(def) ? BEST_USE_WEIGHTS.dish : BEST_USE_WEIGHTS.crafted
     for (const item of a.taken) if (item.at > now) credit(item.outfitId, item.startedAt, weight)
   }
   const uses: EntryUse[] = []

@@ -1,10 +1,11 @@
 // The Farm's three kinds of work (docs/game/07-farm.md §1–§4): gather raw items at their family's site, craft at the
-// Pantry (one raw into the crafted item of its family and grade), cook at the Kitchen. Step times are T126's base
-// minutes (`items`), which T127 turns into seconds at the building's speed through `workSeconds`. Every step is
-// gated by her Farm Level (Lv 5g − 4, a dish by its own grade) and pays Farm EXP by the listed minute × her running
-// aptitude for the family: the site's, the crafted item's or the dish's, a Duo or Feast the best of its main families.
+// Pantry (one raw into the crafted item of its family and grade), cook at the Kitchen: meals, and tonics brewed in the
+// cook's time (D374). Step times are T126's base minutes (`items`), which T127 turns into seconds at the building's
+// speed through `workSeconds`. Every step is gated by her Farm Level (Lv 5g − 4, a dish by its own grade) and pays Farm
+// EXP by the listed minute × her running aptitude for the family: the site's, the crafted item's or the dish's, a Duo,
+// Feast or tonic the best of its main families.
 import { workSeconds } from '../state/time'
-import { itemById, type ItemDef, type ItemGrade } from '../items/catalogue'
+import { isKitchenItem, isRetired, itemById, type ItemDef, type ItemGrade } from '../items/catalogue'
 import { FAMILY_IDS, type FamilyId } from '../items/families'
 import { canWorkGrade, gradeOpensAtFarmLevel } from '../items/grades'
 import { dishFamilies, recipeOf } from '../items/recipes'
@@ -35,19 +36,22 @@ export function stepBaseMinutes(kind: FarmKind, g: ItemGrade): number {
 /** One item's real seconds at `speed` (1, or 1.25 at Lv 3): `workSeconds(base, speed)`. */
 export const farmItemSeconds = (kind: FarmKind, g: ItemGrade, speed = 1): number => workSeconds(stepBaseMinutes(kind, g), speed)
 
-/** Whether `building` makes `item` as `kind` (07 §1): raw at its family's site, crafted at the Pantry, dishes at the Kitchen. */
+/**
+ * Whether `building` makes `item` as `kind` (07 §1): raw at its family's site, crafted at the Pantry, dishes and tonics
+ * at the Kitchen. A retired salad, soup or bread is never cooked again (D374).
+ */
 export function makesHere(kind: FarmKind, item: ItemDef, building: BuildingId): boolean {
   switch (kind) {
     case 'gather': return item.kind === 'raw' && FAMILY_SITE[item.family] === building
     case 'craft': return item.kind === 'crafted' && building === 'pantry'
-    case 'cook': return item.kind === 'dish' && building === 'kitchen'
+    case 'cook': return isKitchenItem(item) && !isRetired(item) && building === 'kitchen'
   }
 }
 
-/** The families whose aptitude counts for an item (07 §3): its own, or a Duo's or Feast's main families. */
+/** The families whose aptitude counts for an item (07 §3): its own, or a Duo's, Feast's or tonic's main families. */
 export function expFamilies(item: ItemDef): readonly FamilyId[] {
   if (item.kind === 'raw' || item.kind === 'crafted') return [item.family]
-  if (item.kind === 'dish') return dishFamilies(item)
+  if (isKitchenItem(item)) return dishFamilies(item)
   return []
 }
 

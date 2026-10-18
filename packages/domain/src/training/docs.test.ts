@@ -7,7 +7,7 @@ import { LIVE_BLOCKS } from './docs'
 describe('live blocks', () => {
   it('render the tables this area owns, and join the registry', () => {
     expect(Object.keys(LIVE_BLOCKS).sort()).toEqual([
-      'bond-counts', 'bond-dishes', 'bond-grades', 'rework-buffs', 'training-extra-capacity', 'training-extra-grades', 'training-extra-nodes',
+      'bond-counts', 'bond-grades', 'bond-rooms', 'rework-buffs', 'training-extra-capacity', 'training-extra-grades', 'training-extra-nodes',
       'training-facilities', 'training-inspiration-grades', 'training-layer-grades', 'training-layers', 'training-node-grades', 'training-session-times',
     ])
     for (const [key, render] of Object.entries(LIVE_BLOCKS)) {
@@ -19,7 +19,7 @@ describe('live blocks', () => {
 
   it('state the pages\' numbers', () => {
     expect(LIVE_BLOCKS['training-layers']!()).toContain('| **Tier** | **28** | **24** (6 slots, 6 uniques, 12 golds) | **37** (25 + 8 + 4) | **18** | **107** |')
-    expect(LIVE_BLOCKS['training-session-times']!()).toContain('| Real minutes at *k* = 1.2, Lv 1–2 | 216 | 234 | 252 | 270 | 288 | 306 | 324 | 342 | 360 | 378 |')
+    expect(LIVE_BLOCKS['training-session-times']!()).toContain('| Real minutes at *k* = 1.8, Lv 1–2 | 324 | 351 | 378 | 405 | 432 | 459 | 486 | 513 | 540 | 567 |')
     expect(LIVE_BLOCKS['training-layer-grades']!()).toContain('| 4 | 7–8 | 4 nodes: 2 at g7, 2 at g8 | 2 grandparent uniques and 1 grandparent gold at g7, 3 grandparent golds at g8 |')
     expect(LIVE_BLOCKS['training-extra-capacity']!()).toContain('| Nodes that can pay | 5 | 9 | 11 | 13 | 15 |')
     expect(LIVE_BLOCKS['bond-grades']!()).toContain("| 6 · Project L'Arc | — | **1** | 1 |")

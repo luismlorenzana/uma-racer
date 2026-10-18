@@ -243,7 +243,7 @@ through promotion ([12](12-economy-and-pacing.md) §2).
 <!-- live:exchange-prices -->
 | Grade | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| Price | 108 | 114 | 120 | 126 | 132 | 138 | 144 | 150 | 156 | 162 |
+| Price | 162 | 171 | 180 | 189 | 198 | 207 | 216 | 225 | 234 | 243 |
 <!-- /live -->
 
 **Stock rule:** the Exchange stocks raw grades **1 up to the highest grade any of the owner's Umas has ever opened**,
@@ -316,16 +316,16 @@ real Uma minutes in it at *k* = 1.2, inputs included, whatever the building spee
 <!-- live:sell-values -->
 | Grade | Raw: work | Raw: sells for | Crafted: work | Crafted: sells for | Planet dish: work | Planet dish: sells for |
 |---|---:|---:|---:|---:|---:|---:|
-| 1 | 108 | 36 | 135 | 45 | 963 | 321 |
-| 2 | 114 | 38 | 142.5 | 47 | 1,005 | 335 |
-| 3 | 120 | 40 | 150 | 50 | 1,047 | 349 |
-| 4 | 126 | 42 | 157.5 | 52 | 1,096.5 | 365 |
-| 5 | 132 | 44 | 165 | 55 | 1,146 | 382 |
-| 6 | 138 | 46 | 172.5 | 57 | 1,195.5 | 398 |
-| 7 | 144 | 48 | 180 | 60 | 1,245 | 415 |
-| 8 | 150 | 50 | 187.5 | 62 | 1,294.5 | 431 |
-| 9 | 156 | 52 | 195 | 65 | 1,344 | 448 |
-| 10 | 162 | 54 | 202.5 | 67 | 1,393.5 | 464 |
+| 1 | 162 | 54 | 202.5 | 67 | 1,444.5 | 481 |
+| 2 | 171 | 57 | 213.75 | 71 | 1,507.5 | 502 |
+| 3 | 180 | 60 | 225 | 75 | 1,570.5 | 523 |
+| 4 | 189 | 63 | 236.25 | 78 | 1,644.75 | 548 |
+| 5 | 198 | 66 | 247.5 | 82 | 1,719 | 573 |
+| 6 | 207 | 69 | 258.75 | 86 | 1,793.25 | 597 |
+| 7 | 216 | 72 | 270 | 90 | 1,867.5 | 622 |
+| 8 | 225 | 75 | 281.25 | 93 | 1,941.75 | 647 |
+| 9 | 234 | 78 | 292.5 | 97 | 2,016 | 672 |
+| 10 | 243 | 81 | 303.75 | 101 | 2,090.25 | 696 |
 <!-- /live -->
 
 A crafted item is its raw item plus a quarter of the gathering time. A planet dish is four crafted items of its grade,

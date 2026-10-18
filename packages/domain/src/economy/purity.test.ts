@@ -57,8 +57,8 @@ describe('purity', () => {
         state = deepFreeze({ ...state, profile: result.profile, ledger: [...state.ledger, ...result.ledger] })
       }
       state = step(buy(state, deepFreeze({ opId: 'b1', sku: SPEED_TICKET_ID, qty: 10, unitPrice: 30 }), 50))
-      state = step(buy(state, deepFreeze({ opId: 'b2', sku: rawItem('fish', 1).id, qty: 5, unitPrice: 108 }), 51))
-      state = step(sell(state, deepFreeze({ opId: 's1', itemId: rawItem('fish', 1).id, qty: 2, unitPrice: 36 }), 52))
+      state = step(buy(state, deepFreeze({ opId: 'b2', sku: rawItem('fish', 1).id, qty: 5, unitPrice: 162 }), 51))
+      state = step(sell(state, deepFreeze({ opId: 's1', itemId: rawItem('fish', 1).id, qty: 2, unitPrice: 54 }), 52))
       return { state, receipts }
     }
     const first = run()

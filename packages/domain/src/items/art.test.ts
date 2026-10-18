@@ -4,7 +4,7 @@
 import { readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { describe, expect, it } from 'vitest'
-import { DUOS, ITEMS, SPEED_TICKET_ID } from './catalogue'
+import { DUOS, ITEMS, SPEED_TICKET_ID, TONICS } from './catalogue'
 import { FAMILY_IDS } from './families'
 
 interface ItemFrame {
@@ -104,8 +104,10 @@ describe('uma-art 2.7.0', () => {
   })
 
   it('draws the Speed Ticket from the release\'s own ticket frame (A02), and never reads the effect field', () => {
-    // The catalogue keeps no art for it; the web draws the release's `speed-ticket` frame (`ui/ItemIcon`).
-    expect(ITEMS.filter((item) => item.art === null).map((item) => item.id)).toEqual([SPEED_TICKET_ID])
+    // The catalogue keeps no art for it, nor for the tonics, which uma-art doesn't draw yet (D374); the web draws the
+    // release's `speed-ticket` frame (`ui/ItemIcon`) and a tonic's frame once a release has one.
+    expect(ITEMS.filter((item) => item.art === null).map((item) => item.id)).toEqual([...TONICS.map((tonic) => tonic.id), SPEED_TICKET_ID])
+    for (const tonic of TONICS) expect(ITEM_FRAMES[tonic.id], tonic.id).toBeUndefined()
     expect(DISH_FRAMES[SPEED_TICKET_ID]).toBeUndefined()
     expect(ITEM_FRAMES[SPEED_TICKET_ID]).toMatchObject({ kind: 'ticket' })
     // The guard above is live: a read of `effect` would have thrown in the checks before.

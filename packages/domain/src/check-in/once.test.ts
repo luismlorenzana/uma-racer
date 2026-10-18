@@ -46,10 +46,10 @@ describe('runOnce', () => {
       'set-lineage', 'set-active-nodes', 'set-loadout', 'finish-race', 'dev-grant',
     ])
     const rich = { ...account(1, { carrot: 3 }), profile: { ...account(1).profile, prizeMoney: 500 } }
-    const bought = runOnce(rich, { id: 'tap-9', name: 'buy', input: { sku: 'carrot', qty: 2, unitPrice: 108 } }, NOW, ENV)
+    const bought = runOnce(rich, { id: 'tap-9', name: 'buy', input: { sku: 'carrot', qty: 2, unitPrice: 162 } }, NOW, ENV)
     if (isRefusal(bought)) throw new Error(bought.reason)
     expect(bought.state.ledger.at(-1)!.id).toBe('buy:tap-9:pay')
-    const sold = runOnce(bought.state, { id: 'tap-10', name: 'sell', input: { itemId: 'carrot', qty: 1, unitPrice: 36 } }, NOW, ENV)
+    const sold = runOnce(bought.state, { id: 'tap-10', name: 'sell', input: { itemId: 'carrot', qty: 1, unitPrice: 54 } }, NOW, ENV)
     if (isRefusal(sold)) throw new Error(sold.reason)
     expect(sold.state.ledger.at(-1)!.id).toBe('sell:tap-10:pay')
   })
@@ -118,8 +118,8 @@ describe("02 §9's stale screens end in a result or a one-sentence question", ()
     const yes = runOnce(state, { id: 's2', name: 'start', input: answer.input }, NOW, ENV)
     expect(!isRefusal(yes) && yes.receipt.request).toEqual(craft('chopped-carrot', 3))
     // A session asks with its first unlocks.
-    const dishes = account(1, { 'dish-vegetables-1': 2 })
-    const session = recheck(dishes, { id: 's3', name: 'start', input: { outfitId: uma(1), slot: slot('observatory'), request: nodes(1, 2, 3) } }, NOW, ENV)
+    const tonics = account(1, { 'tonic-1': 2 })
+    const session = recheck(tonics, { id: 's3', name: 'start', input: { outfitId: uma(1), slot: slot('observatory'), request: nodes(1, 2, 3) } }, NOW, ENV)
     expect(session.kind === 'ask' && fill(session.question)).toBe('Only 2 left now. Start ×2?')
     expect(session.kind === 'ask' && 'request' in session.input && session.input.request.kind === 'session' && session.input.request.unlocks.length).toBe(2)
   })
@@ -127,7 +127,7 @@ describe("02 §9's stale screens end in a result or a one-sentence question", ()
   it('a real rule: says it plainly, as "{uma} is busy for another {time}."', () => {
     const state = ok(start(account(1, { carrot: 4 }), { outfitId: uma(1), slot: slot('pantry'), request: craft('chopped-carrot', 4) }, NOW, ENV)).state
     const answer = recheck(state, { id: 'b', name: 'start', input: { outfitId: uma(1), slot: slot('fields'), request: gather('wheat', 1) } }, NOW + 60_000, ENV)
-    expect(answer).toEqual({ kind: 'say', words: { text: '{uma} is busy for another {time}.', data: { uma: uma(1), time: NOW + 108 * 60_000, freeAt: NOW + 108 * 60_000 } } })
+    expect(answer).toEqual({ kind: 'say', words: { text: '{uma} is busy for another {time}.', data: { uma: uma(1), time: NOW + 162 * 60_000, freeAt: NOW + 162 * 60_000 } } })
     if (answer.kind === 'say') sentence(answer.words.text)
     sentence(CHECK_IN_WORDS.offline)
     sentence(CHECK_IN_WORDS.unexpected)
@@ -141,7 +141,7 @@ describe('the clock', () => {
     const state = working()
     const entry = state.work[uma(1)]!.entries[0]!
     expect(collectAll(state, {}, NOW + 60 * 60_000, ENV).receipt.lines).toEqual([])
-    const forward = NOW + 5 * 60 * 60_000
+    const forward = NOW + 6 * 60 * 60_000
     expect(remainingMs(entry, forward)).toBe(0)
     const { receipt } = collectAll(state, {}, forward, ENV)
     expect(receipt.lines).toMatchObject([{ outfitId: uma(1), status: 'collected', items: [{ item: 'wheat', qty: 2 }], freed: true }])
@@ -168,15 +168,15 @@ describe("the collect commit raises the Exchange's stock mark (09 §5.3, §10; D
     if (isRefusal(result)) throw new Error(result.reason)
     return result as Exclude<T, { readonly refused: true }>
   }
-  const TWO_HOURS = 2 * 60 * 60_000
+  const THREE_HOURS = 3 * 60 * 60_000
 
   it('a collect that lifts an Uma to Farm Lv 6 raises it to 2; a retry and promotion leave it there', () => {
-    // 500 EXP from Lv 5 to 6 is 2,000 quarter points; one grade-1 gather pays 108 EXP (432 quarters) at C.
+    // 500 EXP from Lv 5 to 6 is 2,000 quarter points; one grade-1 gather pays 162 EXP (648 quarters) at C.
     const state = atFarmLevel(account(1), uma(1), 5, 1_600)
     expect(state.profile.exchangeGrade).toBe(1)
     const started = done(runOnce(state, { id: 'g-1', name: 'start', input: { outfitId: uma(1), slot: slot('fields'), request: gather('wheat', 1) } }, NOW, ENV))
     expect(started.state.profile.exchangeGrade).toBe(1)
-    const later = NOW + TWO_HOURS
+    const later = NOW + THREE_HOURS
     const collected = done(runOnce(started.state, { id: 'c-1', name: 'collect', input: { outfitId: uma(1) } }, later, ENV))
     expect(collected.state.umas[uma(1)]!.farm.level).toBe(6)
     expect(collected.state.profile.exchangeGrade).toBe(2)
@@ -201,9 +201,9 @@ describe("the collect commit raises the Exchange's stock mark (09 §5.3, §10; D
       const state = atFarmLevel(account(1), uma(1), 5, 1_600)
       return done(runOnce(state, { id, name: 'start', input: { outfitId: uma(1), slot: slot('fields'), request: gather('wheat', 2) } }, NOW, ENV)).state
     }
-    const both = NOW + 2 * TWO_HOURS
-    expect(done(runOnce(ready('a'), { id: 'ca', name: 'collect-all', input: {} }, NOW + TWO_HOURS, ENV)).state.profile.exchangeGrade).toBe(2)
-    expect(done(runOnce(ready('b'), { id: 'rc', name: 'recall', input: { outfitId: uma(1) } }, NOW + TWO_HOURS, ENV)).state.profile.exchangeGrade).toBe(2)
+    const both = NOW + 2 * THREE_HOURS
+    expect(done(runOnce(ready('a'), { id: 'ca', name: 'collect-all', input: {} }, NOW + THREE_HOURS, ENV)).state.profile.exchangeGrade).toBe(2)
+    expect(done(runOnce(ready('b'), { id: 'rc', name: 'recall', input: { outfitId: uma(1) } }, NOW + THREE_HOURS, ENV)).state.profile.exchangeGrade).toBe(2)
     const restart = done(runOnce(ready('c'), { id: 'st', name: 'start', input: { outfitId: uma(1), slot: slot('fields'), request: gather('wheat', 1) } }, both, ENV))
     expect(restart.receipt.collected?.farmLevel.to).toBe(6)
     expect(restart.state.profile.exchangeGrade).toBe(2)

@@ -24,8 +24,8 @@ describe('an empty Warehouse', () => {
     expect(start(state, { outfitId: PLAIN.id, slot: PANTRY, request: chopped(2) }, T0, ENV)).toMatchObject({
       code: 'short', data: { n: 2, item: 'carrot', largestCoverable: 0 },
     })
-    expect(start(state, { outfitId: PLAIN.id, slot: { building: 'kitchen', slot: 0 }, request: { kind: 'cook', item: 'dish-grains-1', count: 1 } }, T0, ENV))
-      .toMatchObject({ code: 'short', data: { n: 4, item: 'wheat-flour', largestCoverable: 0 } })
+    expect(start(state, { outfitId: PLAIN.id, slot: { building: 'kitchen', slot: 0 }, request: { kind: 'cook', item: 'dish-fish-1', count: 1 } }, T0, ENV))
+      .toMatchObject({ code: 'short', data: { n: 4, item: 'carp-fillet', largestCoverable: 0 } })
     let working = ok(start(withStock(state, { carrot: 1 }), { outfitId: PLAIN.id, slot: PANTRY, request: chopped(1) }, T0, ENV)).state
     working = ok(queue(working, { outfitId: PLAIN.id, add: { request: chopped(1), building: 'pantry' } }, T0, ENV)).state
     expect(settle(working, T0 + C, ENV).state.work[PLAIN.id]!.dropped).toMatchObject({ short: [{ item: 'carrot', qty: 1 }] })
@@ -48,7 +48,7 @@ describe('a stale start', () => {
 
 describe('an Uma in a session', () => {
   it('is busy until the session ends', () => {
-    const state = withNodes(withStock(farmAccount(), { 'dish-vegetables-1': 1 }), STUDENT.id, 0)
+    const state = withNodes(withStock(farmAccount(), { 'tonic-1': 1 }), STUDENT.id, 0)
     const session = ok(start(state, { outfitId: STUDENT.id, slot: { building: 'observatory', slot: 0 }, request: { kind: 'session', unlocks: [node(1)] } }, T0, SESSION_ENV)).state
     expect(workState(session, STUDENT.id, T0, SESSION_ENV)).toBe('working')
     expect(start(session, { outfitId: STUDENT.id, slot: GARDEN, request: carrots(1) }, T0, SESSION_ENV)).toMatchObject({
@@ -106,8 +106,8 @@ describe('two devices', () => {
       let next = ok(start(state, { outfitId: PLAIN.id, slot: PANTRY, request: chopped(3) }, T0, ENV)).state
       next = ok(queue(next, { outfitId: PLAIN.id, add: { request: chopped(1), building: 'pantry' } }, T0, ENV)).state
       next = ok(start(next, { outfitId: HELPER.id, slot: GARDEN, request: carrots(2) }, T0 + 1, ENV)).state
-      next = collect(next, { outfitId: PLAIN.id }, clock('12:00'), ENV).state
-      return collect(next, { outfitId: HELPER.id }, clock('12:00'), ENV).state
+      next = collect(next, { outfitId: PLAIN.id }, clock('14:00'), ENV).state
+      return collect(next, { outfitId: HELPER.id }, clock('14:00'), ENV).state
     }
     const state = withStock(farmAccount(), { carrot: 4 })
     const phone = run(state)

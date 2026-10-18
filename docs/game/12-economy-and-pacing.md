@@ -134,12 +134,12 @@ and career are both done:
 <!-- live:loop-scenarios -->
 | Scenario of the tier | Grades | Unlocks | Uma-hours | Farm work | Sessions | Days, tier 1 (p10–p90) | Days, tier 2 · tier 3 |
 |---|---|---|---|---|---|---|---|
-| 1 | 1–2 | 27 | 539 | 439 (82%) | 100 | **38.0 (30.6–50.2)** | 22.0 · 22.8 |
-| 2 | 3–4 | 23 | 506 | 408 (81%) | 98 | **28.0 (6.2–35.8)** | 22.6 · 23.8 |
-| 3 | 5–6 | 21 | 510 | 408 (80%) | 102 | **26.6 (18.6–42.4)** | 21.4 · 21.4 |
-| 4 | 7–8 | 19 | 507 | 402 (79%) | 104 | **24.4 (6.4–28.0)** | 27.8 · 24.6 |
-| 5 | 9–10 | 17 | 492 | 388 (79%) | 104 | **25.0 (10.2–29.8)** | 18.2 · – |
-| **Tier** | | **107** | **2,554** | | | **20.9 weeks** | 16.9 · 14.5 weeks |
+| 1 | 1–2 | 27 | 518 | 368 (71%) | 149 | **35.6 (28.0–46.0)** | 19.6 · 21.6 |
+| 2 | 3–4 | 23 | 532 | 385 (72%) | 147 | **33.4 (17.4–42.0)** | 22.6 · 23.8 |
+| 3 | 5–6 | 21 | 572 | 418 (73%) | 153 | **28.8 (19.6–32.2)** | 27.0 · 24.4 |
+| 4 | 7–8 | 19 | 441 | 284 (64%) | 157 | **23.0 (18.6–29.4)** | 19.6 · 19.2 |
+| 5 | 9–10 | 17 | 462 | 307 (66%) | 155 | **20.6 (10.2–24.2)** | 21.0 · – |
+| **Tier** | | **107** | **2,524** | | | **21.4 weeks** | 16.9 · 13.8 weeks |
 <!-- /live -->
 
 At *k* = 1.2 (D338). D336's 24 Inspiration unlocks (6 slots, 6 inherited uniques, 12 golds) are spread 4, 6, 4, 6, 4
@@ -185,19 +185,19 @@ what the founding cohort measured in tier 1:
 | Grade | Farm Lv | EXP | Day at C (×1.0) | Mixed (×1.3) | Always suited (×1.6) | Founding cohort, measured (median day) |
 |---|---|---|---|---|---|---|
 | 1 | 1 | 0 | 0 | 0 | 0 | 0.0 |
-| 2 | 6 | 2,450 | 3 | 2 | 2 | 2.0 |
-| 3 | 11 | 5,025 | 6 | 4 | 4 | 4.0 |
-| 4 | 16 | 7,725 | 9 | 7 | 6 | 6.0 |
-| 5 | 21 | 10,550 | 12 | 9 | 8 | 8.2 |
-| 6 | 26 | 13,500 | 16 | 12 | 10 | 10.6 |
-| 7 | 31 | 16,575 | 19 | 15 | 12 | 13.0 |
-| 8 | 36 | 19,775 | 23 | 18 | 14 | 15.6 |
-| 9 | 41 | 23,100 | 27 | 21 | 17 | 19.2 |
-| 10 | 46 | 26,550 | 31 | 24 | 19 | 22.2 |
+| 2 | 6 | 2,450 | 3 | 2 | 2 | 2.6 |
+| 3 | 11 | 5,025 | 6 | 4 | 4 | 4.6 |
+| 4 | 16 | 7,725 | 9 | 7 | 6 | 7.0 |
+| 5 | 21 | 10,550 | 12 | 9 | 8 | 10.6 |
+| 6 | 26 | 13,500 | 16 | 12 | 10 | 12.6 |
+| 7 | 31 | 16,575 | 19 | 15 | 12 | 17.6 |
+| 8 | 36 | 19,775 | 23 | 18 | 14 | 19.0 |
+| 9 | 41 | 23,100 | 27 | 21 | 17 | 23.6 |
+| 10 | 46 | 26,550 | 31 | 24 | 19 | 32.0 |
 | (Lv 50) | 50 | 29,400 | 34 | 26 | 21 | |
 
 The day columns are 864 Farm minutes a day. Working without a break, from Farm Lv 1 to 21 at a Lv 1
-building, an Uma gains 2.71 levels a day at C, 4.32 at A and 4.83 at S (the probe).
+building, an Uma gains 2.69 levels a day at C, 4.32 at A and 4.83 at S (the probe).
 <!-- /live -->
 
 **Every grade is open within about three weeks of a tier** for the cohort, which farms more than the average day and
@@ -220,20 +220,20 @@ the spending policy's upgrade dates:
 <!-- live:loop-capacity -->
 | Building | Slots Lv 1 / 2 / 3 | Hours a day held, tier 1 | Running | Peak use (scenario) | Bottleneck hours | Lv 2 / Lv 3 on day |
 |---|---|---|---|---|---|---|
-| Sugar Grove | 2 / 3 / 3 | 20.8 | 17.1 | 40% (2·2) | 5 | 32 / 47 |
-| Orchard | 2 / 3 / 3 | 20.8 | 17.2 | 40% (3·2) | 0 | 33 / 41 |
-| Fishery | 2 / 3 / 3 | 19.9 | 16.7 | 39% (2·2) | 0 | 32 / 63 |
-| Nut Grove | 2 / 3 / 3 | 20.5 | 16.6 | 41% (1·3) | 0 | 34 / 57 |
-| Herb Garden | 2 / 3 / 3 | 19.6 | 16.3 | 43% (1·3) | 0 | 33 / 64 |
-| Fields | 2 / 3 / 3 | 27.3 | 22.8 | 57% (2·3) | 43 | 34 / 41 |
-| Vegetable Garden | 4 / 5 / 5 | 44.0 | 37.4 | 63% (2·1) | 0 | 34 / 51 |
-| Mushroom Cave | 2 / 3 / 3 | 38.0 | 32.1 | 76% (3·4) | 0 | 32 / 55 |
-| Pantry | 3 / 5 / 5 | 67.6 | 44.4 | 80% (2·3) | 48 | 33 / 46 |
-| Kitchen | 6 / 8 / 8 | 124.2 | 82.6 | 79% (2·5) | 499 | 31 / 40 |
-| Observatory | 2 / 3 / 3 | 29.1 | 17.9 | 76% (3·1) | 5 | 31 / 57 |
-| Lineage Hall | 2 / 3 / 3 | 26.3 | 14.8 | 54% (2·2) | 15 | 31 / 61 |
-| Gym | 5 rooms × 1 / 2 / 2 | 45.6 | 21.0 | 31% (3·3) | 24 | 32 / 63 |
-| Dojo | 6 rooms × 1 / 2 / 2 | 25.4 | 11.1 | 17% (2·1) | 0 | 31 / 64 |
+| Sugar Grove | 2 / 3 / 3 | 22.1 | 17.6 | 45% (2·2) | 5 | 34 / 43 |
+| Orchard | 2 / 3 / 3 | 21.4 | 17.3 | 42% (2·3) | 19 | 35 / 40 |
+| Fishery | 2 / 3 / 3 | 22.1 | 17.4 | 42% (2·3) | 0 | 34 / 40 |
+| Nut Grove | 2 / 3 / 3 | 22.1 | 17.6 | 45% (3·3) | 0 | 35 / 52 |
+| Herb Garden | 2 / 3 / 3 | 22.1 | 17.3 | 47% (3·3) | 5 | 38 / 56 |
+| Fields | 2 / 3 / 3 | 23.5 | 18.6 | 60% (1·1) | 19 | 30 / 41 |
+| Vegetable Garden | 4 / 5 / 5 | 21.9 | 17.0 | 32% (1·1) | 0 | 37 / 52 |
+| Mushroom Cave | 2 / 3 / 3 | 21.6 | 16.8 | 63% (1·1) | 0 | 34 / 44 |
+| Pantry | 3 / 5 / 5 | 55.6 | 34.9 | 64% (3·2) | 48 | 33 / 40 |
+| Kitchen | 6 / 9 / 9 | 112.3 | 83.0 | 81% (2·1) | 326 | 28 / 52 |
+| Observatory | 2 / 3 / 3 | 40.4 | 25.3 | 88% (1·1) | 177 | 29 / 39 |
+| Lineage Hall | 2 / 3 / 3 | 34.2 | 21.3 | 78% (1·4) | 240 | 30 / 40 |
+| Gym | 5 rooms × 1 / 2 / 2 | 66.3 | 33.6 | 44% (2·3) | 144 | 32 / 67 |
+| Dojo | 6 rooms × 1 / 2 / 2 | 34.4 | 15.8 | 30% (1·1) | 29 | 36 / 68 |
 <!-- /live -->
 
 - **The Kitchen is the busiest building**, about 130 slot-hours a day, and the Pantry the fullest: the planner fills
@@ -262,8 +262,8 @@ cohort's days of finishing are its racing days. Measured over tier 1:
 <!-- live:loop-racing -->
 | Racing day | Races a day, tier 1 | Prize Money a day | Speed Tickets bought a day, tier 1 | Time saved | Tier 1 |
 |---|---|---|---|---|---|
-| Target: her career once her layer is done | 13.1 | 1,791 | 44 | **8.1%** | 20.9 weeks |
-| Heavy: G1s at 22:30 to 40 races a day | 34.8 | 4,438 | 131 | **22.9%** | 20.5 weeks |
+| Target: her career once her layer is done | 12.9 | 1,686 | 41 | **8.0%** | 21.4 weeks |
+| Heavy: G1s at 22:30 to 40 races a day | 35.5 | 4,578 | 136 | **24.1%** | 20.3 weeks |
 <!-- /live -->
 
 - **Racing buys real progress without replacing the Farm.** The Daily Purse ([09](09-racing-rewards-and-exchange.md)
@@ -284,16 +284,16 @@ until the roster is 25 and then holds them. The founding cohort is the 20 day-0 
 |---|---|---|
 | Day 0 | 20 | The founding cohort: a new account's 20 Uma Tickets, all spent |
 | Day 32 | 21 | An Uma Ticket from five Uma Shards (a Shard a gate) |
-| Day 38 | 22 | An Uma Ticket from five Uma Shards (a Shard a gate) |
-| Day 40 | 23 | An Uma Ticket from five Uma Shards (a Shard a gate) |
-| Day 47 | 24 | An Uma Ticket from five Uma Shards (a Shard a gate) |
-| Day 63 | 25 | An Uma Ticket from five Uma Shards (a Shard a gate) |
-| Day 141 | | Tier 1: the cohort's median Uma starts her Expedition |
-| Day 147 | | Tier 1: the cohort's median promotion |
-| Day 258 | | Tier 2: the cohort's median Uma starts her Expedition |
-| Day 265 | | Tier 2: the cohort's median promotion |
-| Day 359 | | Tier 3: the cohort's median Uma starts her Expedition |
-| Day 366 | | Tier 3: the cohort's median Hall of Fame |
+| Day 36 | 22 | An Uma Ticket from five Uma Shards (a Shard a gate) |
+| Day 43 | 23 | An Uma Ticket from five Uma Shards (a Shard a gate) |
+| Day 46 | 24 | An Uma Ticket from five Uma Shards (a Shard a gate) |
+| Day 66 | 25 | An Uma Ticket from five Uma Shards (a Shard a gate) |
+| Day 144 | | Tier 1: the cohort's median Uma starts her Expedition |
+| Day 150 | | Tier 1: the cohort's median promotion |
+| Day 261 | | Tier 2: the cohort's median Uma starts her Expedition |
+| Day 268 | | Tier 2: the cohort's median promotion |
+| Day 357 | | Tier 3: the cohort's median Uma starts her Expedition |
+| Day 365 | | Tier 3: the cohort's median Hall of Fame |
 | End of the run | 25 | 137 Uma Tickets held: the roster stays at 25 |
 <!-- /live -->
 
@@ -344,10 +344,10 @@ If the sim or the owner's play says it's too slow or too fast:
 <!-- live:loop-utilisation -->
 | Check-ins | Racing | Utilisation, tier 1 | Tier 1 | Races a day | Time saved by racing |
 |---|---|---|---|---|---|
-| One (08:00) | Target | 48% | **28.2 weeks** | 9.6 | 9.4% |
-| Two (08:00, 22:30) | Target | 64% | **21.4 weeks** | 12.2 | 8.3% |
-| Three (08:00, 13:00, 22:30) | Target | 65% | **20.9 weeks** | 13.1 | 8.1% |
-| Three | Heavy | 57% | **20.5 weeks** | 34.8 | 22.9% |
+| One (08:00) | Target | 55% | **24.9 weeks** | 10.1 | 9.5% |
+| Two (08:00, 22:30) | Target | 64% | **20.6 weeks** | 12.8 | 9.0% |
+| Three (08:00, 13:00, 22:30) | Target | 63% | **21.4 weeks** | 12.9 | 8.0% |
+| Three | Heavy | 56% | **20.3 weeks** | 35.5 | 24.1% |
 <!-- /live -->
 
    Three check-ins work about two-thirds of the time, not the first draft's 75%. Most of the rest is the wait between
@@ -427,16 +427,15 @@ the loop sim will read its median race count instead of the placeholder.
 <!-- live:loop-checks -->
 | Check | Range | Measured | Result |
 |---|---|---|---|
-| A new account's first scenario | ≤ 42 days | 38.0 | pass |
-| Days in each later scenario of tier 1 | 24–32 days | 28.0, 26.6, 24.4, 25.0 | pass |
-| Days in each scenario of tiers 2 and 3 (buildings at Lv 3) | 18–28 days | 22.0, 22.6, 21.4, 27.8, 18.2, 22.8, 23.8, 21.4, 24.6 | pass |
-| Tier 1 | 19–23 weeks | 20.9 | pass |
-| Every building's and facility's slot use, in every scenario window | ≤ 90% | 80.2% | pass |
-| Time saved by target racing | 5–10% | 8.1% | pass |
-| Time saved by heavy racing | 18–25% | 22.9% | pass |
-| Farm Levels a day early in a tier, at C | 2–3 levels a day | 2.71 | pass |
+| A new account's first scenario | ≤ 42 days | 35.6 | pass |
+| Days in each scenario after a new account's first | 18–35 days | 33.4, 28.8, 23.0, 20.6, 19.6, 22.6, 27.0, 19.6, 21.0, 21.6, 23.8, 24.4, 19.2 | pass |
+| Tier 1 | 19–23 weeks | 21.4 | pass |
+| Every building's and facility's slot use, in every scenario window | ≤ 90% | 87.7% | pass |
+| Time saved by target racing | 5–10% | 8.0% | pass |
+| Time saved by heavy racing | 18–25% | 24.1% | pass |
+| Farm Levels a day early in a tier, at C | 2–3 levels a day | 2.69 | pass |
 | Farm Levels a day early in a tier, at A and S | 4–5 levels a day | 4.32, 4.83 | pass |
-| First unlock on a fresh account | ≤ 12 hours | 12.0 | pass |
+| First unlock on a fresh account | ≤ 12 hours | 5.4 | pass |
 <!-- /live -->
 
 **How the two first-run misses closed (D351).** The loop first measured tier 1's scenarios at 38, 30, 23, 24 and 22

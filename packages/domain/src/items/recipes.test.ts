@@ -1,8 +1,8 @@
 // Pins every recipe and the side rotation (docs/game/08-item-catalogue-and-recipes.md §4). Expected values are 08's
 // tables copied as written.
 import { describe, expect, it } from 'vitest'
-import { DUOS, FEASTS, ITEM_GRADE_LIST, itemById, ITEMS, planetDish, SPEED_TICKET_ID, type ItemGrade } from './catalogue'
-import { FAMILIES, FAMILY_IDS, FAMILY_RING, STAT_CYCLE, type FamilyId } from './families'
+import { DUOS, FEASTS, ITEM_GRADE_LIST, itemById, ITEMS, planetDish, SPEED_TICKET_ID, TONICS, type ItemGrade } from './catalogue'
+import { FAMILIES, FAMILY_IDS, FAMILY_RING, STAT_CYCLE, TONIC_FAMILIES, type FamilyId } from './families'
 import { DUO_SIDE_FAMILY, dishFamilies, dishSide, recipeOf, sideFamily, sideGrade } from './recipes'
 
 const cells = (row: string) => row.split('|').slice(1, -1).map((cell) => cell.trim())
@@ -13,12 +13,12 @@ const SECTION_4_2 = [
   '| 2 (1) | Fruits | Fish | Nuts | Herbs | Sweets | Herbs | Grains | Grains |',
   '| 3 (1) | Herbs | Sweets | Fruits | Fish | Nuts | Fish | Grains | Grains |',
   '| 4 (2) | Fish | Nuts | Herbs | Sweets | Fruits | Sweets | Grains | Grains |',
-  '| 5 (3) | Grains | Grains | Grains | Grains | Grains | Nuts | Grains | Grains |',
+  '| 5 (3) | Nuts | Herbs | Sweets | Fruits | Fish | Nuts | Grains | Grains |',
   '| 6 (4) | Nuts | Herbs | Sweets | Fruits | Fish | Fruits | Grains | Grains |',
   '| 7 (5) | Fruits | Fish | Nuts | Herbs | Sweets | Herbs | Grains | Grains |',
   '| 8 (6) | Herbs | Sweets | Fruits | Fish | Nuts | Fish | Grains | Grains |',
   '| 9 (7) | Fish | Nuts | Herbs | Sweets | Fruits | Sweets | Grains | Grains |',
-  '| 10 (8) | Grains | Grains | Grains | Grains | Grains | Nuts | Grains | Grains |',
+  '| 10 (8) | Nuts | Herbs | Sweets | Fruits | Fish | Nuts | Grains | Grains |',
 ]
 /** 08 §4.2's columns, in its order, and its short names. */
 const SECTION_4_2_COLUMNS: readonly FamilyId[] = ['sweets', 'fruits', 'fish', 'nuts-seeds', 'herbs-spices', 'grains', 'vegetables', 'mushrooms']
@@ -117,6 +117,17 @@ describe('Duos and Feasts (08 §4.3, §4.4)', () => {
 
   it('send Duo sides to the stat families in only one Duo: Nuts & Seeds, then Fruits', () => {
     expect(DUO_SIDE_FAMILY).toEqual({ 'stamina-wit': 'nuts-seeds', 'wit-power': 'nuts-seeds', 'power-speed': 'fruits', 'speed-guts': 'fruits' })
+  })
+
+  it('brew every tonic from one crafted Vegetables, Mushrooms and Grains item at its grade, with no side (08 §4.5, D374)', () => {
+    for (const tonic of TONICS) {
+      const made = recipeOf(tonic.id)!
+      expect(made.at).toBe('kitchen')
+      expect(made.inputs.map(({ item, qty }) => [crafted(item).family, crafted(item).grade, qty])).toEqual(
+        TONIC_FAMILIES.map((family) => [family, tonic.grade, 1]))
+      expect(dishSide(tonic.id)).toBeUndefined()
+    }
+    expect(recipeOf('tonic-1')!.inputs.map(({ item }) => nameOf(item)).join(' + ')).toBe('Chopped Carrot + Dried Button Mushroom + Wheat Flour')
   })
 
   it('cook every Feast from one crafted item of each stat family at g and a Grains side at g − 2, as 08 §4.4', () => {

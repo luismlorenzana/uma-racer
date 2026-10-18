@@ -25,14 +25,14 @@ const SITE_SLOTS: SlotRef[] = FAMILY_IDS.flatMap((family) => {
 
 const familyAt = (building: BuildingId) => FAMILY_IDS.find((family) => FAMILY_SITE[family] === building)!
 
-/** 25 Umas at work from 22:30: 18 gathering ×3, 3 crafting ×4, 2 cooking ×1 and 2 in an Observatory session. */
+/** 25 Umas at work from 22:30: 18 gathering ×3, 3 crafting ×4, 2 brewing a tonic and 2 in an Observatory session. */
 function busyNight(): { state: WorkState; slots: SlotRef[] } {
-  let state = account(25, { carrot: 12, 'chopped-carrot': 8, 'wheat-flour': 2, 'dish-vegetables-1': 2, [SPEED_TICKET_ID]: 5 })
+  let state = account(25, { carrot: 12, 'chopped-carrot': 2, 'dried-button-mushroom': 2, 'wheat-flour': 2, 'tonic-1': 2, [SPEED_TICKET_ID]: 5 })
   state = { ...state, profile: { ...state.profile, prizeMoney: 777 } }
   const plan: [SlotRef, WorkRequest][] = [
     ...SITE_SLOTS.map((s): [SlotRef, WorkRequest] => [s, gather(rawItem(familyAt(s.building), 1).id, 3)]),
     ...[0, 1, 2].map((n): [SlotRef, WorkRequest] => [slot('pantry', n), craft('chopped-carrot', 4)]),
-    ...[0, 1].map((n): [SlotRef, WorkRequest] => [slot('kitchen', n), cook('dish-vegetables-1', 1)]),
+    ...[0, 1].map((n): [SlotRef, WorkRequest] => [slot('kitchen', n), cook('tonic-1', 1)]),
     ...[0, 1].map((n): [SlotRef, WorkRequest] => [slot('observatory', n), nodes(1)]),
   ]
   plan.forEach(([at, request], i) => {
@@ -51,22 +51,23 @@ describe('collect-all', () => {
     expect(receipt.lines.every((line) => line.status === 'collected' && line.freed && line.words === null)).toBe(true)
     expect(receipt.lines.map((line) => line.slot)).toEqual([...slots].sort((a, b) =>
       BUILDING_IDS.indexOf(a.building) - BUILDING_IDS.indexOf(b.building) || a.slot - b.slot))
-    expect(receipt.totals).toEqual({ items: 18 * 3 + 3 * 4, dishes: 2, unlocks: 2, farmExp: receipt.totals.farmExp, levelUps: 0 })
-    expect(receipt.lines.find((line) => line.outfitId === uma(1))).toMatchObject({ items: [{ item: 'honeycomb', qty: 3 }], farmExp: 324 * 4 })
+    // A gatherer's three Lv 1 items pay 486 EXP, past Lv 1's 480: all 18 reach Lv 2.
+    expect(receipt.totals).toEqual({ items: 18 * 3 + 3 * 4, dishes: 2, unlocks: 2, farmExp: receipt.totals.farmExp, levelUps: 18 })
+    expect(receipt.lines.find((line) => line.outfitId === uma(1))).toMatchObject({ items: [{ item: 'honeycomb', qty: 3 }], farmExp: 486 * 4 })
     expect(receipt.lines.find((line) => line.outfitId === uma(24))!.unlocks).toEqual([expect.objectContaining({ kind: 'node', target: 'n1' })])
     expect(readyCount(after, morning, ENV)).toBe(0)
-    expect(after.items).toMatchObject({ honeycomb: 6, apple: 6, carrot: 12, 'chopped-carrot': 12, 'dish-vegetables-1': 2 })
+    expect(after.items).toMatchObject({ honeycomb: 6, apple: 6, carrot: 12, 'chopped-carrot': 12, 'tonic-1': 2 })
     expect(after.umas[uma(24)]!.build.constellationOpened).toBe(1)
     expect(Object.values(after.work).every((row) => row.entries.length === 0 && row.last !== null)).toBe(true)
   })
 
   it("collects what's finished of a running job and lets it carry on", () => {
     const { state } = busyNight()
-    const { state: after, receipt } = collectAll(state, {}, clock('02:30', 1), ENV)
+    const { state: after, receipt } = collectAll(state, {}, clock('04:30', 1), ENV)
     const gatherer = receipt.lines.find((line) => line.outfitId === uma(1))!
     expect(gatherer).toMatchObject({ status: 'collected', items: [{ item: 'honeycomb', qty: 2 }], freed: false })
     expect(after.work[uma(1)]!.entries[0]!.collected).toBe(2)
-    expect(readyCount(after, clock('02:30', 1), ENV)).toBe(0)
+    expect(readyCount(after, clock('04:30', 1), ENV)).toBe(0)
   })
 
   it('limits itself to the places asked for', () => {
@@ -81,7 +82,7 @@ describe('collect-all', () => {
     const { state: after, receipt } = collectAll(nearly, {}, clock('08:00', 1), ENV)
     expect(receipt.lines.find((line) => line.outfitId === uma(1))).toMatchObject({ farmLevel: { from: 5, to: 6 }, gradesOpened: [2] })
     expect(receipt.lines.find((line) => line.outfitId === uma(2))).toMatchObject({ farmLevel: { from: 1, to: 2 }, gradesOpened: [] })
-    expect(receipt.totals.levelUps).toBe(2)
+    expect(receipt.totals.levelUps).toBe(18)
     expect(receipt.exchangeGrade).toEqual({ from: 1, to: 2 })
     expect(after.profile.exchangeGrade).toBe(2)
   })

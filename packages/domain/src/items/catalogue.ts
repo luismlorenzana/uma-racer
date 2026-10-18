@@ -1,7 +1,8 @@
-// The rework's Farm catalogue (docs/game/08-item-catalogue-and-recipes.md §1, §3, §4.3, §4.4, §9, §10): 80 raw and
-// 80 crafted ingredients, 80 planet dishes, 8 Duos, 4 Feasts and the Speed Ticket, 253 definitions in all. Ids and
-// names are uma-rpg's farming half as uma-art 2.4.0 draws it (D330), written here as data: generated once from the art
-// package's indexes, then frozen. Nothing reads the art package at run time; `art.test.ts` keeps the two in step.
+// The rework's Farm catalogue (docs/game/08-item-catalogue-and-recipes.md §1, §3, §4.3–§4.5, §9, §10): 80 raw and
+// 80 crafted ingredients, 80 planet dishes (the 30 salads, soups and breads retired by D374), 8 Duos, 4 Feasts, 10
+// tonics and the Speed Ticket, 263 definitions in all. Ids and names are uma-rpg's farming half as uma-art 2.4.0 draws
+// it (D330), written here as data: generated once from the art package's indexes, then frozen. Nothing reads the art
+// package at run time; `art.test.ts` keeps the two in step. Tonics have no uma-art frame yet (D374).
 import type { StatKey } from '../types'
 import { FAMILIES, FAMILY_IDS, type Destination, type FamilyId } from './families'
 
@@ -66,6 +67,11 @@ export interface PlanetDishDef extends ItemBase {
   readonly family: FamilyId
   readonly grade: ItemGrade
   readonly destination: Destination
+  /**
+   * A salad, soup or bread (D374): no longer cooked. One already held stays in the Warehouse and sells, and a salad or
+   * soup stands in for the tonic of its grade (`standInsOf`).
+   */
+  readonly retired: boolean
   readonly art: ItemArt
 }
 
@@ -90,6 +96,17 @@ export interface FeastDishDef extends ItemBase {
   readonly art: ItemArt
 }
 
+/**
+ * A training tonic (08 §4.5, D374): brewed at the Kitchen from one crafted Vegetables, Mushrooms and Grains item of its
+ * grade, it pays for a constellation node or an Inspiration slot of that grade. No uma-art frame yet: the icon is a
+ * plain tile until the art ships.
+ */
+export interface TonicDef extends ItemBase {
+  readonly kind: 'tonic'
+  readonly grade: ItemGrade
+  readonly art: null
+}
+
 /** The Speed Ticket: an item in the Warehouse with no uma-art frame (08 §9). */
 export interface TicketDef extends ItemBase {
   readonly kind: 'ticket'
@@ -98,8 +115,10 @@ export interface TicketDef extends ItemBase {
 
 export type IngredientDef = RawItemDef | CraftedItemDef
 export type DishDef = PlanetDishDef | DuoDishDef | FeastDishDef
+/** What the Kitchen makes: dishes and tonics. */
+export type KitchenDef = DishDef | TonicDef
 /** One definition per item (08 §10), a union on `kind`. */
-export type ItemDef = IngredientDef | DishDef | TicketDef
+export type ItemDef = IngredientDef | DishDef | TonicDef | TicketDef
 
 // --- Data -----------------------------------------------------------------------------------------------------------
 
@@ -233,6 +252,15 @@ const FEAST_ROWS: readonly (readonly [id: string, grade: FeastGrade, name: strin
   ['feast-10', 10, 'Grand Feast'],
 ]
 
+/** 08 §4.5's tonic names, grades 1–10 (D374): a race's build-up, legendary at 9 and 10 like uma-art's. */
+const TONIC_NAMES: readonly string[] = [
+  'Warm-Up Tonic', 'Practice Tonic', 'Paddock Tonic', 'Gallop Tonic', 'Stride Tonic',
+  'Stretch Tonic', 'Spurt Tonic', 'Derby Tonic', "Champion's Tonic", "Legend's Tonic",
+]
+
+/** Families whose planet dishes D374 retired: the tonic families' salads, soups and breads. */
+const RETIRED_DISH_FAMILIES: readonly FamilyId[] = ['grains', 'vegetables', 'mushrooms']
+
 // --- Definitions ----------------------------------------------------------------------------------------------------
 
 const art = (atlas: ItemArt['atlas'], frame: string): ItemArt => Object.freeze({ atlas, frame })
@@ -250,7 +278,8 @@ for (const family of FAMILY_IDS) {
     Object.freeze({ kind: 'crafted', id, name, family, grade: gradeAt(i), refined: true, pair, art: art('items', id) })))
   PLANET[family] = Object.freeze(rows.map(([, , , , id, name], i): PlanetDishDef =>
     Object.freeze({
-      kind: 'dish', dish: 'planet', id, name, family, grade: gradeAt(i), destination: FAMILIES[family].destination, art: art('dishes', id),
+      kind: 'dish', dish: 'planet', id, name, family, grade: gradeAt(i), destination: FAMILIES[family].destination,
+      retired: RETIRED_DISH_FAMILIES.includes(family), art: art('dishes', id),
     })))
 }
 
@@ -263,18 +292,26 @@ export const DUOS: readonly DuoDishDef[] = Object.freeze(DUO_ROWS.map(([id, grad
 export const FEASTS: readonly FeastDishDef[] = Object.freeze(FEAST_ROWS.map(([id, grade, name]): FeastDishDef =>
   Object.freeze({ kind: 'dish', dish: 'feast', id, name, grade, destination: 'sun', art: art('dishes', id) })))
 
+/** A tonic's id at grade g (D374). */
+export const tonicId = (g: ItemGrade): ItemId => `tonic-${g}`
+
+/** The 10 tonics by grade (08 §4.5, D374). */
+export const TONICS: readonly TonicDef[] = Object.freeze(TONIC_NAMES.map((name, i): TonicDef =>
+  Object.freeze({ kind: 'tonic', id: tonicId(gradeAt(i)), name, grade: gradeAt(i), art: null })))
+
 /** uma-art draws no ticket; its new icon is on game/11's art list. */
 export const SPEED_TICKET: TicketDef = Object.freeze({ kind: 'ticket', id: SPEED_TICKET_ID, name: 'Speed Ticket', art: null })
 
 /**
  * Every definition: per family in `FAMILY_IDS` order its raw items 1–10 then its crafted 1–10, then the planet dishes
- * by family and grade, the Duos, the Feasts, and the Speed Ticket last.
+ * by family and grade, the Duos, the Feasts, the tonics, and the Speed Ticket last.
  */
 export const ITEMS: readonly ItemDef[] = Object.freeze([
   ...FAMILY_IDS.flatMap((family) => [...RAW[family], ...CRAFTED[family]]),
   ...FAMILY_IDS.flatMap((family) => PLANET[family]),
   ...DUOS,
   ...FEASTS,
+  ...TONICS,
   SPEED_TICKET,
 ])
 
@@ -291,6 +328,10 @@ export const itemById = (id: ItemId): ItemDef | undefined => BY_ID.get(id)
 
 export const isDish = (item: ItemDef): item is DishDef => item.kind === 'dish'
 export const isIngredient = (item: ItemDef): item is IngredientDef => item.kind === 'raw' || item.kind === 'crafted'
+/** What the Kitchen makes: a dish or a tonic. */
+export const isKitchenItem = (item: ItemDef): item is KitchenDef => item.kind === 'dish' || item.kind === 'tonic'
+/** A salad, soup or bread D374 retired: never cooked again. */
+export const isRetired = (item: ItemDef): boolean => item.kind === 'dish' && item.dish === 'planet' && item.retired
 
 function atGrade<T extends { readonly grade: number }>(list: readonly T[], g: number, what: string): T {
   const found = isItemGrade(g) ? list.find((item) => item.grade === g) : undefined
@@ -304,6 +345,38 @@ export const planetDish = (family: FamilyId, g: ItemGrade): PlanetDishDef => atG
 export const duoDish = (pair: DuoPair, g: DuoGrade): DuoDishDef =>
   atGrade(DUOS.filter((duo) => duoPairOf(duo) === pair), g, `${pair} Duo`)
 export const feastDish = (g: FeastGrade): FeastDishDef => atGrade(FEASTS, g, 'Feast')
+export const tonicItem = (g: ItemGrade): TonicDef => atGrade(TONICS, g, 'tonic')
 
 /** A Duo's stat pair, e.g. `stamina-wit`. */
 export const duoPairOf = (duo: DuoDishDef): DuoPair => `${duo.stats[0]}-${duo.stats[1]}` as DuoPair
+
+// --- Stand-ins (D374) -----------------------------------------------------------------------------------------------
+
+/**
+ * A tonic's stand-ins: the retired salad and soup of its grade, which pay for what they were cooked for (a node, an
+ * Inspiration slot) until none are left. Used before the tonic itself.
+ */
+const STAND_INS = new Map<ItemId, readonly ItemId[]>(TONICS.map((tonic) =>
+  [tonic.id, Object.freeze([planetDish('vegetables', tonic.grade).id, planetDish('mushrooms', tonic.grade).id])]))
+
+/** What stands in for `id`, in the order it's used: a tonic's retired salad and soup; nothing for any other item. */
+export const standInsOf = (id: ItemId): readonly ItemId[] => STAND_INS.get(id) ?? []
+
+/** Stock that can pay for `id`: the item itself and its stand-ins. */
+export const heldFor = (stock: Readonly<Record<ItemId, number>>, id: ItemId): number =>
+  [...standInsOf(id), id].reduce((sum, item) => sum + Math.max(0, stock[item] ?? 0), 0)
+
+/**
+ * Takes one of `id` out of `stock`, a stand-in first (D374): the item taken, or null when none is held. `stock` is
+ * changed in place, so a run of takes never promises the same item twice.
+ */
+export function takeFor(stock: Map<ItemId, number>, id: ItemId): ItemId | null {
+  for (const item of [...standInsOf(id), id]) {
+    const held = stock.get(item) ?? 0
+    if (held > 0) {
+      stock.set(item, held - 1)
+      return item
+    }
+  }
+  return null
+}

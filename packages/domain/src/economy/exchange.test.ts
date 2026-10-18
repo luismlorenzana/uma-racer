@@ -14,7 +14,7 @@ import {
 import { EXCHANGE_REFUSALS } from './refusals'
 
 /** 09 §5.3's raw prices by grade, as written. */
-const SECTION_5_3 = '| Price | 108 | 114 | 120 | 126 | 132 | 138 | 144 | 150 | 156 | 162 |'
+const SECTION_5_3 = '| Price | 162 | 171 | 180 | 189 | 198 | 207 | 216 | 225 | 234 | 243 |'
 const PRICES = SECTION_5_3.split('|').slice(2, -1).map((cell) => Number(cell.trim()))
 
 const ok = <R>(result: OpResult<R>): { state: ReworkState; receipt: R } => {
@@ -40,8 +40,8 @@ describe('the numbers', () => {
 })
 
 describe('buyPrice (09 §5, §5.3)', () => {
-  it('sells raw at its real gathering minutes, 108 … 162, equal to T126\'s work value ÷ 60 in every family', () => {
-    expect(PRICES).toEqual([108, 114, 120, 126, 132, 138, 144, 150, 156, 162])
+  it('sells raw at its real gathering minutes, 162 … 243, equal to T126\'s work value ÷ 60 in every family', () => {
+    expect(PRICES).toEqual([162, 171, 180, 189, 198, 207, 216, 225, 234, 243])
     for (const family of FAMILY_IDS) {
       for (const g of ITEM_GRADE_LIST) {
         const id = rawItem(family, g).id
@@ -76,36 +76,36 @@ describe('the stock rule (09 §5.3)', () => {
   })
 
   it("stores a buy's stock as the mark, so a promotion can't lower it", () => {
-    const { state } = ok(buy(withUmas([6, 1]), { opId: 'o1', sku: potato, qty: 1, unitPrice: 114 }, 5))
+    const { state } = ok(buy(withUmas([6, 1]), { opId: 'o1', sku: potato, qty: 1, unitPrice: 171 }, 5))
     expect(state.profile.exchangeGrade).toBe(2)
     const reset = { ...state, umas: Object.fromEntries(Object.entries(state.umas).map(([id, uma]) => [id, { ...uma, farm: { level: 1, exp: 0 } }])) }
-    expect(ok(buy(reset, { opId: 'o2', sku: potato, qty: 1, unitPrice: 114 }, 6)).state.items![potato]).toBe(2)
+    expect(ok(buy(reset, { opId: 'o2', sku: potato, qty: 1, unitPrice: 171 }, 6)).state.items![potato]).toBe(2)
   })
 })
 
 describe('buy (13 §6)', () => {
   it('takes qty × price from Prize Money, adds qty to the Warehouse and writes both rows', () => {
-    const { state, receipt } = ok(buy(rich(500), { opId: 'o1', sku: carrot, qty: 3, unitPrice: 108 }, 7))
-    expect(state.profile.prizeMoney).toBe(500 - 324)
+    const { state, receipt } = ok(buy(rich(650), { opId: 'o1', sku: carrot, qty: 3, unitPrice: 162 }, 7))
+    expect(state.profile.prizeMoney).toBe(650 - 486)
     expect(state.items).toEqual({ [carrot]: 3 })
-    expect(state.ledger.at(-1)).toEqual({ id: 'buy:o1:pay', resource: 'prize-money', delta: -324, reason: 'buy', at: 7 })
+    expect(state.ledger.at(-1)).toEqual({ id: 'buy:o1:pay', resource: 'prize-money', delta: -486, reason: 'buy', at: 7 })
     expect(receipt).toEqual<BuyReceipt>({
-      sku: carrot, qty: 3, unitPrice: 108, total: 324,
-      ledger: [{ id: 'buy:o1:pay', resource: 'prize-money', delta: -324, reason: 'buy', at: 7 }],
+      sku: carrot, qty: 3, unitPrice: 162, total: 486,
+      ledger: [{ id: 'buy:o1:pay', resource: 'prize-money', delta: -486, reason: 'buy', at: 7 }],
       itemLedger: [{ id: 'buy:o1:get', itemId: carrot, delta: 3, reason: 'buy', at: 7 }],
     })
     const more = ok(buy(state, { opId: 'o2', sku: SPEED_TICKET_ID, qty: 5, unitPrice: 30 }, 8)).state
     expect(more.items).toEqual({ [carrot]: 3, [SPEED_TICKET_ID]: 5 })
-    expect(more.profile.prizeMoney).toBe(26)
+    expect(more.profile.prizeMoney).toBe(14)
   })
 
   it('sells tickets without a limit, and up to 99 raw at a time', () => {
     expect(ok(buy(rich(30_000), { opId: 'o', sku: SPEED_TICKET_ID, qty: 500, unitPrice: 30 }, 1)).state.items![SPEED_TICKET_ID]).toBe(500)
-    expect(ok(buy(rich(30_000), { opId: 'o', sku: carrot, qty: 99, unitPrice: 108 }, 1)).receipt.total).toBe(10_692)
+    expect(ok(buy(rich(30_000), { opId: 'o', sku: carrot, qty: 99, unitPrice: 162 }, 1)).receipt.total).toBe(16_038)
   })
 
   it('spends exactly to zero', () => {
-    expect(ok(buy(rich(108), { opId: 'o', sku: carrot, qty: 1, unitPrice: 108 }, 1)).state.profile.prizeMoney).toBe(0)
+    expect(ok(buy(rich(162), { opId: 'o', sku: carrot, qty: 1, unitPrice: 162 }, 1)).state.profile.prizeMoney).toBe(0)
   })
 
   it('refuses what it does not sell', () => {
@@ -117,7 +117,7 @@ describe('buy (13 §6)', () => {
   })
 
   it('refuses a grade above the stock, naming the Farm Level that opens it', () => {
-    expect(buy(rich(), { opId: 'o', sku: potato, qty: 1, unitPrice: 114 }, 1)).toEqual({
+    expect(buy(rich(), { opId: 'o', sku: potato, qty: 1, unitPrice: 171 }, 1)).toEqual({
       refused: true, code: 'not-stocked', reason: 'In stock once an Uma reaches Farm Lv {level}.', data: { level: 6 },
     })
     expect(buy(withUmas([1, 10]), { opId: 'o', sku: rawItem('fish', 3).id, qty: 0, unitPrice: 0 }, 1)).toMatchObject({ code: 'not-stocked', data: { level: 11 } })
@@ -125,7 +125,7 @@ describe('buy (13 §6)', () => {
 
   it('refuses a raw quantity outside 1–99 and a ticket count below 1 or not whole', () => {
     const quantity = { refused: true, code: 'quantity', reason: 'Buy 1 to 99 at a time.' }
-    for (const qty of [0, -1, 100, 1.5, Number.NaN]) expect(buy(rich(), { opId: 'o', sku: carrot, qty, unitPrice: 108 }, 1), `${qty}`).toEqual(quantity)
+    for (const qty of [0, -1, 100, 1.5, Number.NaN]) expect(buy(rich(), { opId: 'o', sku: carrot, qty, unitPrice: 162 }, 1), `${qty}`).toEqual(quantity)
     for (const qty of [0, -3, 2.5]) expect(buy(rich(), { opId: 'o', sku: SPEED_TICKET_ID, qty, unitPrice: 30 }, 1), `${qty}`).toEqual(quantity)
   })
 
@@ -135,7 +135,7 @@ describe('buy (13 §6)', () => {
   })
 
   it('refuses a total above Prize Money, naming how much more is needed (09 §5.5)', () => {
-    expect(buy(rich(204), { opId: 'o', sku: carrot, qty: 3, unitPrice: 108 }, 1)).toEqual({
+    expect(buy(rich(366), { opId: 'o', sku: carrot, qty: 3, unitPrice: 162 }, 1)).toEqual({
       refused: true, code: 'prize-money', reason: 'Need {n} more.', data: { n: 120 },
     })
   })
@@ -145,16 +145,16 @@ describe('buy (13 §6)', () => {
     expect(buy(rich(0), { opId: 'o', sku: potato, qty: 0, unitPrice: 0 }, 1)).toMatchObject({ code: 'not-stocked' })
     expect(buy(rich(0), { opId: 'o', sku: carrot, qty: 0, unitPrice: 0 }, 1)).toMatchObject({ code: 'quantity' })
     expect(buy(rich(0), { opId: 'o', sku: carrot, qty: 1, unitPrice: 0 }, 1)).toMatchObject({ code: 'price-changed' })
-    expect(buy(rich(0), { opId: 'o', sku: carrot, qty: 1, unitPrice: 108 }, 1)).toMatchObject({ code: 'prize-money' })
+    expect(buy(rich(0), { opId: 'o', sku: carrot, qty: 1, unitPrice: 162 }, 1)).toMatchObject({ code: 'prize-money' })
   })
 
   it('throws on a clock that is not integer milliseconds', () => {
-    expect(() => buy(rich(), { opId: 'o', sku: carrot, qty: 1, unitPrice: 108 }, -1)).toThrow(RangeError)
+    expect(() => buy(rich(), { opId: 'o', sku: carrot, qty: 1, unitPrice: 162 }, -1)).toThrow(RangeError)
   })
 })
 
 describe('confirmations (09 §5.5)', () => {
   it('ask once for a purchase of 1,000 or more', () => {
-    expect([buyNeedsConfirm(999), buyNeedsConfirm(1_000), buyNeedsConfirm(10_692)]).toEqual([false, true, true])
+    expect([buyNeedsConfirm(999), buyNeedsConfirm(1_000), buyNeedsConfirm(16_038)]).toEqual([false, true, true])
   })
 })

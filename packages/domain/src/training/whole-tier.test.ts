@@ -1,9 +1,10 @@
 // Cross-task acceptance #1 (docs/game/architecture.md#the-rework-modules): one synthetic Uma goes from tier 1, scenario 1 to
-// promotion by operations only, against a synthetic Warehouse of exactly the 107 dishes the layers call for. Every
-// unlock starts in its own scenario and a later layer's start is refused; each takes one dish of the right family and
-// grade, so the Warehouse ends empty. Racing Level reaches 50 by winning her careers' races, the stand-in Expedition is
-// completed as the tier rules' tests do (phase 9 owns its real rules), and promotion resets her build and bonds while
-// the account's goods carry. Every session runs on T127's work engine: `start` reserves its dishes, `collect` pays.
+// promotion by operations only, against a synthetic Warehouse of exactly the 71 meals and tonics the layers call for
+// (D374). Every unlock starts in its own scenario and a later layer's start is refused; each takes its one item of the
+// right kind and grade, or none, so the Warehouse ends empty. Racing Level reaches 50 by winning her careers' races, the
+// stand-in Expedition is completed as the tier rules' tests do (phase 9 owns its real rules), and promotion resets her
+// build and bonds while the account's goods carry. Every session runs on T127's work engine: `start` reserves its
+// items, `collect` pays.
 import { describe, expect, it } from 'vitest'
 import { COLT, RACES } from '../__fixtures__/tiers'
 import { DECK, ENV, TIER_AND_TRAINING, TRAINING_CONTENT, slotAt, workAccount } from '../__fixtures__/training'
@@ -24,23 +25,22 @@ import type { WorkState } from '../work/types'
 import { sessionRequest } from './sessions'
 import { layerUnlocks, unlockLabel, type UnlockRef } from './unlocks'
 
-/** 05 §3's layer tables and 06 §2's deck, written out from the pages: the dishes a tier of training takes. */
-function warehouseOf107(): Record<string, number> {
-  const dishes: Record<string, number> = {}
-  const add = (id: string, n = 1) => { dishes[id] = (dishes[id] ?? 0) + n }
-  // Observatory: 6 + 6 nodes at grades 1–2, then 2 + 2 a scenario.
-  for (const [g, n] of [[1, 6], [2, 6], [3, 2], [4, 2], [5, 2], [6, 2], [7, 2], [8, 2], [9, 2], [10, 2]] as const) add(`dish-vegetables-${g}`, n)
-  // Lineage Hall: 2 + 2, 4 + 2, 2 + 2, 3 + 3, 2 + 2.
-  for (const [g, n] of [[1, 2], [2, 2], [3, 4], [4, 2], [5, 2], [6, 2], [7, 3], [8, 3], [9, 2], [10, 2]] as const) add(`dish-mushrooms-${g}`, n)
+/**
+ * 05 §3's layer tables, written out from the pages: the meals and tonics a tier of training takes (D374). Uniques, golds
+ * and the deck's 18 bonds take nothing.
+ */
+function warehouseOf71(): Record<string, number> {
+  const items: Record<string, number> = {}
+  const add = (id: string, n = 1) => { items[id] = (items[id] ?? 0) + n }
+  // Observatory: 6 + 6 nodes at grades 1–2, then 2 + 2 a scenario, a tonic each.
+  for (const [g, n] of [[1, 6], [2, 6], [3, 2], [4, 2], [5, 2], [6, 2], [7, 2], [8, 2], [9, 2], [10, 2]] as const) add(`tonic-${g}`, n)
+  // Lineage Hall: slots A and B at grade 1, A1 and B1 at 4, A2 and B2 at 5, a tonic each.
+  for (const g of [1, 4, 5]) add(`tonic-${g}`, 2)
   // Gym: a single per stat at 1, 3, 5, 7, 9; the four Duos at 3 and 5; the four Feasts.
   for (const family of ['sweets', 'fruits', 'fish', 'nuts-seeds', 'herbs-spices']) for (const g of [1, 3, 5, 7, 9]) add(`dish-${family}-${g}`)
   for (const pair of ['stamina-wit', 'wit-power', 'power-speed', 'speed-guts']) for (const g of [3, 5]) add(`duo-${pair}-${g}`)
   for (const g of [4, 6, 8, 10]) add(`feast-${g}`)
-  // Dojo: the deck's 18 bonds, each card of its scenario's era, so grade 2s − 1.
-  for (const family of ['sweets', 'fruits', 'fish', 'nuts-seeds', 'herbs-spices', 'grains']) add(`dish-${family}-1`)
-  for (const g of [3, 7]) for (const family of ['sweets', 'fruits', 'fish']) add(`dish-${family}-${g}`)
-  for (const g of [5, 9]) for (const family of ['nuts-seeds', 'herbs-spices', 'grains']) add(`dish-${family}-${g}`)
-  return dishes
+  return items
 }
 
 function ok<R, S extends ReworkState>(result: OpResult<R, S>): { state: S; receipt: R } {
@@ -59,9 +59,9 @@ function nextGoalRace(career: ScenarioJourney): string | null {
 }
 
 describe('a whole tier, unlocked by the rules (M033 cross-task acceptance #1)', () => {
-  it('takes 107 unlocks with exactly 107 dishes, each layer in its own scenario, to Racing Level 50 and promotion', () => {
-    const dishes = warehouseOf107()
-    expect(Object.values(dishes).reduce((sum, n) => sum + n, 0)).toBe(107)
+  it('takes 107 unlocks with exactly 71 meals and tonics, each layer in its own scenario, to Racing Level 50 and promotion', () => {
+    const dishes = warehouseOf71()
+    expect(Object.values(dishes).reduce((sum, n) => sum + n, 0)).toBe(71)
     let state: WorkState = workAccount([COLT.id], { ...dishes, 'speed-ticket': 3 })
     state = { ...state, profile: { ...state.profile, prizeMoney: 4321 } }
     const profileBefore = state.profile

@@ -35,13 +35,13 @@ describe('purity', () => {
         receipts.push(result.receipt)
         return deepFreeze(result.state)
       }
-      const dishes = { 'dish-vegetables-1': 6, 'dish-vegetables-2': 4, 'dish-sweets-1': 1, 'dish-mushrooms-1': 2 }
+      const dishes = { 'tonic-1': 8, 'tonic-2': 4 }
       let state: WorkState = deepFreeze(workAccount([COLT.id, MOM.id], dishes))
       state = deepFreeze({ ...state, umas: { ...state.umas, [COLT.id]: placeUma(state.umas[COLT.id]!, { tier: 1, scenario: 2, level: 20, careerWon: true }) } })
       const colt = () => state.umas[COLT.id]!
       const session = (building: 'observatory' | 'lineage-hall' | 'dojo', unlocks: readonly { kind: string; target: string }[], at: number) => {
         const started = step(start(state, { outfitId: COLT.id, slot: building === 'dojo' ? slotAt(building, 'speed') : slotAt(building), request: training.sessionRequest(unlocks) }, at, ENV))
-        const done = collect(started, { outfitId: COLT.id }, at + 2 * 86_400_000, ENV)
+        const done = collect(started, { outfitId: COLT.id }, at + 3 * 86_400_000, ENV)
         receipts.push(done.receipt)
         state = deepFreeze(done.state)
       }
@@ -62,7 +62,7 @@ describe('purity', () => {
     expect(JSON.parse(JSON.stringify(first.state))).toEqual(first.state)
     expect(first.state.umas[COLT.id]!.build.constellationOpened).toBe(10)
     expect(first.state.umas[COLT.id]!.build.bonds).toEqual(['speed-e1'])
-    // Every dish was used, and the Warehouse keeps no empty rows.
+    // Every tonic was used (the bond took none), and the Warehouse keeps no empty rows.
     expect(first.state.items).toEqual({})
     expect(first.derived.filledNodes).toBe(1)
   })
@@ -87,9 +87,9 @@ describe('refusals', () => {
 
 describe('the entry', () => {
   it('exports the contract', () => {
-    for (const name of ['FACILITY_UNLOCKS', 'FACILITY_DISH_FAMILY', 'roomAccepts', 'layerUnlocks', 'bondUnlock', 'sessionBaseMinutes', 'LAYER_SIZES',
+    for (const name of ['FACILITY_UNLOCKS', 'GYM_ROOM_FAMILY', 'roomAccepts', 'layerUnlocks', 'bondUnlock', 'sessionBaseMinutes', 'LAYER_SIZES',
       'BONDS_BY_SCENARIO', 'unlockStatus', 'nextUnlocks', 'remainingUnlocks', 'layerDone', 'EXTRA_NODE_IDS', 'extraNodeStats', 'EXTRA_CAPACITY',
-      'EXTRA_HELD', 'baselineSp', 'reworkSpNodeValue', 'BOND_FAMILY', 'bondGrade', 'bondStatus', 'commitUnlocks', 'carryOnAdvance',
+      'EXTRA_HELD', 'baselineSp', 'reworkSpNodeValue', 'cardTypesIn', 'bondGrade', 'bondStatus', 'commitUnlocks', 'carryOnAdvance',
       'advanceScenario', 'setCardSet', 'setAssignments', 'setLineage', 'setActiveNodes', 'setLoadout', 'sessionKind', 'REWORK_BUFFS', 'deriveBuild',
       'TRAINING_REFUSALS']) {
       expect(training, name).toHaveProperty(name)

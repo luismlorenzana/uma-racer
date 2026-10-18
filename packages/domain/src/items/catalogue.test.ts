@@ -2,8 +2,8 @@
 // values are 08's tables copied as written, never recomputed by the code under test.
 import { describe, expect, it } from 'vitest'
 import {
-  craftedItem, DUO_GRADES, DUOS, FEAST_GRADES, FEASTS, ITEM_GRADES, itemById, ITEMS, planetDish, rawItem, SPEED_TICKET,
-  SPEED_TICKET_ID, duoDish, feastDish, isItemGrade, type ItemDef,
+  craftedItem, DUO_GRADES, DUOS, FEAST_GRADES, FEASTS, heldFor, ITEM_GRADES, isKitchenItem, isRetired, itemById, ITEMS, planetDish,
+  rawItem, SPEED_TICKET, SPEED_TICKET_ID, duoDish, feastDish, isItemGrade, standInsOf, takeFor, tonicId, tonicItem, TONICS, type ItemDef,
 } from './catalogue'
 import { FAMILIES, FAMILY_IDS, type FamilyId } from './families'
 import { dishSide } from './recipes'
@@ -23,60 +23,60 @@ const SECTION_3: Readonly<Record<FamilyId, readonly string[]>> = {
     '| 2 | Sugarcane `sugarcane` | Cane Sugar `cane-sugar` | Sugarcane Cake `dish-sweets-2` | Apple Preserve (Fruits 1) |',
     '| 3 | Sugar Beet `sugar-beet` | Beet Sugar `beet-sugar` | Sugar Beet Cake `dish-sweets-3` | Dried Basil (Herbs & Spices 1) |',
     '| 4 | Maple Sap `maple-sap` | Maple Syrup `maple-syrup` | Maple Sap Cake `dish-sweets-4` | Trout Fillet (Fish 2) |',
-    '| 5 | Cacao Pod `cacao-pod` | Chocolate `chocolate` | Cacao Pod Cake `dish-sweets-5` | Pearl Barley (Grains 3) |',
+    '| 5 | Cacao Pod `cacao-pod` | Chocolate `chocolate` | Cacao Pod Cake `dish-sweets-5` | Sesame Paste (Nuts & Seeds 3) |',
     '| 6 | Vanilla Pod `vanilla-pod` | Vanilla Extract `vanilla-extract` | Vanilla Pod Cake `dish-sweets-6` | Walnut Paste (Nuts & Seeds 4) |',
     '| 7 | Agave Heart `agave-heart` | Agave Syrup `agave-syrup` | Agave Heart Cake `dish-sweets-7` | Orange Marmalade (Fruits 5) |',
     '| 8 | Palm Sap `palm-sap` | Palm Sugar `palm-sugar` | Palm Sap Cake `dish-sweets-8` | Ground Pepper (Herbs & Spices 6) |',
     '| 9 | Fairy Honeycomb `fairy-honeycomb` | Fairy Honey `fairy-honey` | Fairy Honeycomb Cake `dish-sweets-9` | Eel Fillet (Fish 7) |',
-    '| 10 | Ambrosia Blossom `ambrosia-blossom` | Ambrosia `ambrosia` | Ambrosia Blossom Cake `dish-sweets-10` | Hulled Wild Rice (Grains 8) |',
+    '| 10 | Ambrosia Blossom `ambrosia-blossom` | Ambrosia `ambrosia` | Ambrosia Blossom Cake `dish-sweets-10` | Macadamia Butter (Nuts & Seeds 8) |',
   ],
   fruits: [
     '| 1 | Apple `apple` | Apple Preserve `apple-preserve` | Apple Tart `dish-fruits-1` | Dried Basil (Herbs & Spices 1) |',
     '| 2 | Pear `pear` | Pear Preserve `pear-preserve` | Pear Tart `dish-fruits-2` | Carp Fillet (Fish 1) |',
     '| 3 | Peach `peach` | Peach Preserve `peach-preserve` | Peach Tart `dish-fruits-3` | Honey (Sweets 1) |',
     '| 4 | Plum `plum` | Plum Preserve `plum-preserve` | Plum Tart `dish-fruits-4` | Sunflower Oil (Nuts & Seeds 2) |',
-    '| 5 | Orange `orange` | Orange Marmalade `orange-marmalade` | Orange Tart `dish-fruits-5` | Pearl Barley (Grains 3) |',
+    '| 5 | Orange `orange` | Orange Marmalade `orange-marmalade` | Orange Tart `dish-fruits-5` | Dried Rosemary (Herbs & Spices 3) |',
     '| 6 | Grape `grape` | Grape Jelly `grape-jelly` | Grape Tart `dish-fruits-6` | Dried Thyme (Herbs & Spices 4) |',
     '| 7 | Mango `mango` | Mango Pulp `mango-pulp` | Mango Tart `dish-fruits-7` | Salmon Fillet (Fish 5) |',
     '| 8 | Pomegranate `pomegranate` | Pomegranate Molasses `pomegranate-molasses` | Pomegranate Tart `dish-fruits-8` | Vanilla Extract (Sweets 6) |',
     '| 9 | Starpeach `starpeach` | Starpeach Nectar `starpeach-nectar` | Starpeach Tart `dish-fruits-9` | Pistachio Paste (Nuts & Seeds 7) |',
-    '| 10 | Golden Apple `golden-apple` | Golden Apple Preserve `golden-apple-preserve` | Golden Apple Tart `dish-fruits-10` | Hulled Wild Rice (Grains 8) |',
+    '| 10 | Golden Apple `golden-apple` | Golden Apple Preserve `golden-apple-preserve` | Golden Apple Tart `dish-fruits-10` | Saffron Threads (Herbs & Spices 8) |',
   ],
   fish: [
     '| 1 | Carp `carp` | Carp Fillet `carp-fillet` | Carp Grill `dish-fish-1` | Honey (Sweets 1) |',
     '| 2 | Trout `trout` | Trout Fillet `trout-fillet` | Trout Grill `dish-fish-2` | Peanut Butter (Nuts & Seeds 1) |',
     '| 3 | Sardine `sardine` | Sardine Fillet `sardine-fillet` | Sardine Grill `dish-fish-3` | Apple Preserve (Fruits 1) |',
     '| 4 | Mackerel `mackerel` | Mackerel Fillet `mackerel-fillet` | Mackerel Grill `dish-fish-4` | Dried Mint (Herbs & Spices 2) |',
-    '| 5 | Salmon `salmon` | Salmon Fillet `salmon-fillet` | Salmon Grill `dish-fish-5` | Pearl Barley (Grains 3) |',
+    '| 5 | Salmon `salmon` | Salmon Fillet `salmon-fillet` | Salmon Grill `dish-fish-5` | Beet Sugar (Sweets 3) |',
     '| 6 | Sea Bream `sea-bream` | Sea Bream Fillet `sea-bream-fillet` | Sea Bream Grill `dish-fish-6` | Maple Syrup (Sweets 4) |',
     '| 7 | Eel `eel` | Eel Fillet `eel-fillet` | Eel Grill `dish-fish-7` | Chestnut Paste (Nuts & Seeds 5) |',
     '| 8 | Tuna `tuna` | Tuna Fillet `tuna-fillet` | Tuna Grill `dish-fish-8` | Grape Jelly (Fruits 6) |',
     '| 9 | Silverfin `silverfin` | Silverfin Fillet `silverfin-fillet` | Silverfin Grill `dish-fish-9` | Ground Cinnamon (Herbs & Spices 7) |',
-    '| 10 | Rainbow Koi `rainbow-koi` | Rainbow Koi Fillet `rainbow-koi-fillet` | Rainbow Koi Grill `dish-fish-10` | Hulled Wild Rice (Grains 8) |',
+    '| 10 | Rainbow Koi `rainbow-koi` | Rainbow Koi Fillet `rainbow-koi-fillet` | Rainbow Koi Grill `dish-fish-10` | Palm Sugar (Sweets 8) |',
   ],
   'nuts-seeds': [
     '| 1 | Peanut `peanut` | Peanut Butter `peanut-butter` | Peanut Cookies `dish-nuts-seeds-1` | Apple Preserve (Fruits 1) |',
     '| 2 | Sunflower Seed `sunflower-seed` | Sunflower Oil `sunflower-oil` | Sunflower Seed Cookies `dish-nuts-seeds-2` | Dried Basil (Herbs & Spices 1) |',
     '| 3 | Sesame `sesame` | Sesame Paste `sesame-paste` | Sesame Cookies `dish-nuts-seeds-3` | Carp Fillet (Fish 1) |',
     '| 4 | Walnut `walnut` | Walnut Paste `walnut-paste` | Walnut Cookies `dish-nuts-seeds-4` | Cane Sugar (Sweets 2) |',
-    '| 5 | Chestnut `chestnut` | Chestnut Paste `chestnut-paste` | Chestnut Cookies `dish-nuts-seeds-5` | Pearl Barley (Grains 3) |',
+    '| 5 | Chestnut `chestnut` | Chestnut Paste `chestnut-paste` | Chestnut Cookies `dish-nuts-seeds-5` | Peach Preserve (Fruits 3) |',
     '| 6 | Almond `almond` | Almond Paste `almond-paste` | Almond Cookies `dish-nuts-seeds-6` | Plum Preserve (Fruits 4) |',
     '| 7 | Pistachio `pistachio` | Pistachio Paste `pistachio-paste` | Pistachio Cookies `dish-nuts-seeds-7` | Ground Ginger (Herbs & Spices 5) |',
     '| 8 | Macadamia `macadamia` | Macadamia Butter `macadamia-butter` | Macadamia Cookies `dish-nuts-seeds-8` | Sea Bream Fillet (Fish 6) |',
     '| 9 | Thundernut `thundernut` | Thundernut Oil `thundernut-oil` | Thundernut Cookies `dish-nuts-seeds-9` | Agave Syrup (Sweets 7) |',
-    '| 10 | Worldseed `worldseed` | Worldseed Oil `worldseed-oil` | Worldseed Cookies `dish-nuts-seeds-10` | Hulled Wild Rice (Grains 8) |',
+    '| 10 | Worldseed `worldseed` | Worldseed Oil `worldseed-oil` | Worldseed Cookies `dish-nuts-seeds-10` | Pomegranate Molasses (Fruits 8) |',
   ],
   'herbs-spices': [
     '| 1 | Basil `basil` | Dried Basil `dried-basil` | Basil Curry `dish-herbs-spices-1` | Carp Fillet (Fish 1) |',
     '| 2 | Mint `mint` | Dried Mint `dried-mint` | Mint Curry `dish-herbs-spices-2` | Honey (Sweets 1) |',
     '| 3 | Rosemary `rosemary` | Dried Rosemary `dried-rosemary` | Rosemary Curry `dish-herbs-spices-3` | Peanut Butter (Nuts & Seeds 1) |',
     '| 4 | Thyme `thyme` | Dried Thyme `dried-thyme` | Thyme Curry `dish-herbs-spices-4` | Pear Preserve (Fruits 2) |',
-    '| 5 | Ginger `ginger` | Ground Ginger `ground-ginger` | Ginger Curry `dish-herbs-spices-5` | Pearl Barley (Grains 3) |',
+    '| 5 | Ginger `ginger` | Ground Ginger `ground-ginger` | Ginger Curry `dish-herbs-spices-5` | Sardine Fillet (Fish 3) |',
     '| 6 | Peppercorn `peppercorn` | Ground Pepper `ground-pepper` | Peppercorn Curry `dish-herbs-spices-6` | Mackerel Fillet (Fish 4) |',
     '| 7 | Cinnamon `cinnamon` | Ground Cinnamon `ground-cinnamon` | Cinnamon Curry `dish-herbs-spices-7` | Chocolate (Sweets 5) |',
     '| 8 | Saffron `saffron` | Saffron Threads `saffron-threads` | Saffron Curry `dish-herbs-spices-8` | Almond Paste (Nuts & Seeds 6) |',
     '| 9 | Mandrake `mandrake` | Mandrake Powder `mandrake-powder` | Mandrake Curry `dish-herbs-spices-9` | Mango Pulp (Fruits 7) |',
-    '| 10 | Phoenix Pepper `phoenix-pepper` | Phoenix Spice `phoenix-spice` | Phoenix Pepper Curry `dish-herbs-spices-10` | Hulled Wild Rice (Grains 8) |',
+    '| 10 | Phoenix Pepper `phoenix-pepper` | Phoenix Spice `phoenix-spice` | Phoenix Pepper Curry `dish-herbs-spices-10` | Tuna Fillet (Fish 8) |',
   ],
   grains: [
     '| 1 | Wheat `wheat` | Wheat Flour `wheat-flour` | Wheat Bread `dish-grains-1` | Apple Preserve (Fruits 1) |',
@@ -134,18 +134,33 @@ const FEAST_NAMES: readonly (readonly [string, string, number])[] = [
   ['feast-10', 'Grand Feast', 10],
 ]
 
+/** 08 §4.5's tonics, as written. */
+const TONIC_NAMES: readonly (readonly [string, string, number])[] = [
+  ['tonic-1', 'Warm-Up Tonic', 1], ['tonic-2', 'Practice Tonic', 2], ['tonic-3', 'Paddock Tonic', 3], ['tonic-4', 'Gallop Tonic', 4],
+  ['tonic-5', 'Stride Tonic', 5], ['tonic-6', 'Stretch Tonic', 6], ['tonic-7', 'Spurt Tonic', 7], ['tonic-8', 'Derby Tonic', 8],
+  ['tonic-9', "Champion's Tonic", 9], ['tonic-10', "Legend's Tonic", 10],
+]
+
 const count = (predicate: (item: ItemDef) => boolean) => ITEMS.filter(predicate).length
 
 describe('the catalogue (08 §1)', () => {
-  it('holds 253 unique definitions', () => {
-    expect(ITEMS).toHaveLength(253)
-    expect(new Set(ITEMS.map((item) => item.id)).size).toBe(253)
+  it('holds 263 unique definitions', () => {
+    expect(ITEMS).toHaveLength(263)
+    expect(new Set(ITEMS.map((item) => item.id)).size).toBe(263)
     expect(count((item) => item.kind === 'raw')).toBe(80)
     expect(count((item) => item.kind === 'crafted')).toBe(80)
     expect(count((item) => item.kind === 'dish' && item.dish === 'planet')).toBe(80)
     expect(count((item) => item.kind === 'dish' && item.dish === 'duo')).toBe(8)
     expect(count((item) => item.kind === 'dish' && item.dish === 'feast')).toBe(4)
+    expect(count((item) => item.kind === 'tonic')).toBe(10)
     expect(count((item) => item.kind === 'ticket')).toBe(1)
+  })
+
+  it('retires the 30 salads, soups and breads, and no other dish (D374)', () => {
+    const retired = ITEMS.filter(isRetired)
+    expect(retired).toHaveLength(30)
+    expect(new Set(retired.map((item) => (item.kind === 'dish' && item.dish === 'planet' ? item.family : '')))).toEqual(new Set(['grains', 'vegetables', 'mushrooms']))
+    expect(isKitchenItem(planetDish('vegetables', 1)) && isKitchenItem(TONICS[0]!) && !isKitchenItem(craftedItem('fish', 1))).toBe(true)
   })
 
   it('has 10 raw and 10 crafted items per family, 160 in all, one of each grade', () => {
@@ -171,12 +186,13 @@ describe('the catalogue (08 §1)', () => {
     }
   })
 
-  it('orders families raw 1–10 then crafted 1–10, then planets, Duos, Feasts and the ticket last', () => {
+  it('orders families raw 1–10 then crafted 1–10, then planets, Duos, Feasts, tonics and the ticket last', () => {
     const expected = [
       ...FAMILY_IDS.flatMap((family) => [...[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((g) => `raw ${family} ${g}`), ...[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((g) => `crafted ${family} ${g}`)]),
       ...FAMILY_IDS.flatMap((family) => [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((g) => `planet ${family} ${g}`)),
       ...DUO_NAMES.map(([id]) => id),
       ...FEAST_NAMES.map(([id]) => id),
+      ...TONIC_NAMES.map(([id]) => id),
       SPEED_TICKET_ID,
     ]
     expect(ITEMS.map((item) => {
@@ -246,5 +262,28 @@ describe('Duos, Feasts and the ticket (08 §4.3, §4.4, §9)', () => {
     expect(itemById('speed-ticket')).toBe(SPEED_TICKET)
     expect(SPEED_TICKET).toEqual({ kind: 'ticket', id: 'speed-ticket', name: 'Speed Ticket', art: null })
     expect(ITEMS.at(-1)).toBe(SPEED_TICKET)
+  })
+})
+
+describe('tonics and their stand-ins (08 §4.5, D374)', () => {
+  it('names one tonic a grade, as 08 §4.5 does, with no uma-art frame yet', () => {
+    expect(TONICS.map((tonic) => [tonic.id, tonic.name, tonic.grade])).toEqual(TONIC_NAMES)
+    for (const tonic of TONICS) expect(tonic.art).toBeNull()
+    expect(tonicItem(4)).toBe(itemById('tonic-4'))
+    expect(tonicId(10)).toBe('tonic-10')
+  })
+
+  it('lets the retired salad and soup of a grade stand in for its tonic, salad first, and nothing else', () => {
+    expect(standInsOf('tonic-2')).toEqual(['dish-vegetables-2', 'dish-mushrooms-2'])
+    expect(standInsOf('dish-fruits-1')).toEqual([])
+    expect(standInsOf('dish-grains-1')).toEqual([])
+  })
+
+  it('pools a tonic with its stand-ins and takes a stand-in first, never one twice', () => {
+    const stock = { 'tonic-3': 1, 'dish-vegetables-3': 1, 'dish-mushrooms-3': 1, 'dish-mushrooms-4': 2 }
+    expect(heldFor(stock, 'tonic-3')).toBe(3)
+    expect(heldFor(stock, 'tonic-4')).toBe(2)
+    const left = new Map(Object.entries(stock))
+    expect([1, 2, 3, 4].map(() => takeFor(left, 'tonic-3'))).toEqual(['dish-vegetables-3', 'dish-mushrooms-3', 'tonic-3', null])
   })
 })

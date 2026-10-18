@@ -66,7 +66,7 @@ describe('purity', () => {
 
   it('never writes into deep-frozen inputs, and repeats itself exactly, after a JSON round trip too', () => {
     const night = (): WorkState => {
-      let state = atFarmLevel(account(6, { carrot: 9, 'dish-vegetables-1': 2, 'speed-ticket': 3 }), uma(2), 4)
+      let state = atFarmLevel(account(6, { carrot: 9, 'tonic-1': 2, 'speed-ticket': 3 }), uma(2), 4)
       state = ok(start(state, { outfitId: uma(1), slot: slot('pantry'), request: craft('chopped-carrot', 4) }, clock('22:30'), ENV)).state
       state = ok(queue(state, { outfitId: uma(1), add: { request: craft('chopped-carrot', 9), building: 'pantry' } }, clock('22:31'), ENV)).state
       state = ok(start(state, { outfitId: uma(2), slot: slot('vegetable-garden'), request: gather('carrot', 3) }, clock('22:30'), ENV)).state

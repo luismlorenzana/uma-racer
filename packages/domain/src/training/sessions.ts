@@ -1,17 +1,17 @@
 // Training Hub sessions on T127's work engine (docs/game/05-training-hub.md §2): 1–10 unlocks of one facility, one
-// room at the Gym and Dojo, one after another, each paid with its one exact dish and lasting 180 + 15(g − 1) base
-// minutes × TIME_FACTOR ÷ the facility's speed. The engine (`work`) runs the slot, the dishes, the clock, queues,
-// collect, recall and Speed Tickets; this is the `session` kind it registers: `plan` checks a request where its slot
-// is and lists each unlock's dish and seconds, and `pay` commits finished unlocks into her build.
+// room at the Gym and Dojo, one after another, each paid with the one item it takes (or none, D374) and lasting
+// 180 + 15(g − 1) base minutes × TIME_FACTOR ÷ the facility's speed. The engine (`work`) runs the slot, the items, the
+// clock, queues, collect, recall and Speed Tickets; this is the `session` kind it registers: `plan` checks a request
+// where its slot is and lists each unlock's item and seconds, and `pay` commits finished unlocks into her build.
 import { isFacility, type FacilityId } from '../farm/buildings'
-import { itemById } from '../items/catalogue'
+import { itemById, takeFor, type ItemId } from '../items/catalogue'
 import { assertNow, withUma } from '../tiers/ledger'
 import { tierRefusal } from '../tiers/refusals'
 import { isRefusal, type Refusal, type Tier, type UmaState } from '../state/types'
 import type { PayContext, PlanContext, PlannedItem, WorkKindRules } from '../work/kinds'
 import { workRefusal } from '../work/refusals'
-import { SESSION_KIND, type WorkContent, type WorkOutput, type WorkRequest, type WorkState } from '../work/types'
-import { BOND_FAMILY } from './bonds'
+import { SESSION_KIND, type ItemStock, type WorkContent, type WorkOutput, type WorkRequest, type WorkState } from '../work/types'
+import { cardTypesIn } from './bonds'
 import { commitUnlocks, type CommitReceipt } from './build'
 import { lowerGrade } from './extra'
 import { roomAccepts } from './facilities'
@@ -32,14 +32,18 @@ type AnyRef = { readonly kind: string; readonly target: string }
 
 const isUnlockKind = (kind: string): kind is UnlockKind => (UNLOCK_KINDS as readonly string[]).includes(kind)
 
-/** A bond unlock as this module wrote it into an entry: its layer, grade and dish agree with a bond's dish rule. */
+/**
+ * A bond unlock as this module wrote it into an entry: its grade is its layer's lower one, and it takes no item, or,
+ * written before D374, a planet dish of that grade.
+ */
 function storedBond(ref: AnyRef): Unlock | null {
   const entry = ref as Partial<Unlock>
-  if (typeof entry.layer !== 'number' || typeof entry.grade !== 'number' || typeof entry.dishId !== 'string') return null
-  const dish = itemById(entry.dishId)
-  const families: readonly string[] = Object.values(BOND_FAMILY)
-  if (dish?.kind !== 'dish' || dish.dish !== 'planet' || !families.includes(dish.family) || dish.grade !== entry.grade) return null
+  if (typeof entry.layer !== 'number' || typeof entry.grade !== 'number' || entry.dishId === undefined) return null
   if (entry.grade !== lowerGrade(entry.layer as Unlock['layer'])) return null
+  if (entry.dishId !== null) {
+    const dish = itemById(entry.dishId)
+    if (dish?.kind !== 'dish' || dish.dish !== 'planet' || dish.grade !== entry.grade) return null
+  }
   return { kind: 'bond', target: ref.target, layer: entry.layer as Unlock['layer'], grade: entry.grade, dishId: entry.dishId }
 }
 
@@ -67,9 +71,20 @@ export const unlocksAhead = (earlier: readonly WorkRequest[]): readonly UnlockRe
   earlier.flatMap((request) => (request.kind === SESSION_KIND ? request.unlocks.filter((ref): ref is UnlockRef => isUnlockKind(ref.kind)) : []))
 
 /**
+ * What each unlock takes out of `stock`, in order (D374): its item, a stand-in first (a retired salad or soup for a
+ * tonic), or nothing for an unlock that takes none. An item the stock doesn't hold is still named, so the engine's
+ * shortfall says what to make.
+ */
+export function sessionInputs(unlocks: readonly Pick<Unlock, 'dishId'>[], stock: ItemStock): readonly (ItemId | null)[] {
+  const left = new Map(Object.entries(stock))
+  return unlocks.map((entry) => (entry.dishId === null ? null : takeFor(left, entry.dishId) ?? entry.dishId))
+}
+
+/**
  * `plan` for a session (05 §2): at a facility's slot, 1–10 unlocks of that facility and room, none open or already on
  * her list, each allowed now with her earlier requests and the session's earlier unlocks counted as made. Each item
- * takes its one dish and lasts `workSeconds(base, speed)`; a session earns no Farm EXP.
+ * takes the one item its unlock takes, or none (`sessionInputs`), and lasts `workSeconds(base, speed)`; a session
+ * earns no Farm EXP.
  */
 export function planSession(state: WorkState, outfitId: string, request: WorkRequest, now: number, context: PlanContext): readonly PlannedItem[] | Refusal {
   assertNow(now)
@@ -90,13 +105,14 @@ export function planSession(state: WorkState, outfitId: string, request: WorkReq
   const facilities = new Set(unlocks.map((entry) => facilityOf(entry.kind)))
   if (facilities.size > 1) return trainingRefusal('mixed-facility')
   if (!facilities.has(facility)) return workRefusal('not-here')
-  const misplaced = unlocks.find((entry) => !roomAccepts(room, entry))
+  const misplaced = unlocks.find((entry) => !roomAccepts(room, entry, cardTypesIn(context.env.content.cards)))
   if (misplaced) return trainingRefusal('wrong-room', { unlock: unlockLabel(misplaced), room: room ?? '' })
 
   const made: UnlockRef[] = [...unlocksAhead(context.earlier)]
   const listed = new Set(made.map(unlockKey))
+  const inputs = sessionInputs(unlocks, state.items)
   const items: PlannedItem[] = []
-  for (const entry of unlocks) {
+  for (const [i, entry] of unlocks.entries()) {
     if (listed.has(unlockKey(entry))) return trainingRefusal('duplicate', { item: unlockLabel(entry) })
     const status = unlockStatus(uma.build, uma, entry, made)
     if (isRefusal(status)) return status
@@ -107,9 +123,10 @@ export function planSession(state: WorkState, outfitId: string, request: WorkReq
     }
     listed.add(unlockKey(entry))
     made.push(entry)
+    const item = inputs[i]!
     items.push(Object.freeze({
       seconds: sessionSeconds(entry.grade, context.speed),
-      inputs: [Object.freeze({ item: entry.dishId, qty: 1 })],
+      inputs: item === null ? [] : [Object.freeze({ item, qty: 1 })],
       output: Object.freeze({ unlock: entry }),
       farmExp: 0,
     }))

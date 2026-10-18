@@ -172,7 +172,7 @@ export function stockSnapshot(logs: LoopLogs, state: WorkState, week: number): v
     const item = itemById(id)
     if (item?.kind === 'raw') raw[item.family][item.grade - 1]! += count
     else if (item?.kind === 'crafted') crafted[item.family][item.grade - 1]! += count
-    else if (item?.kind === 'dish') dishes[item.grade - 1]! += count
+    else if (item?.kind === 'dish' || item?.kind === 'tonic') dishes[item.grade - 1]! += count
   }
   logs.stock.push({ week, raw, crafted, dishes })
 }

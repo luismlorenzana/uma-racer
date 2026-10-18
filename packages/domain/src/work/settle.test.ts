@@ -101,20 +101,20 @@ describe('order and replays', () => {
     return state
   }
 
-  it('reaches the same state settled once after 12 hours or every 15 minutes', () => {
-    const once = settle(night(), clock('10:30', 1), ENV).state
+  it('reaches the same state settled once after 18 hours or every 15 minutes', () => {
+    const once = settle(night(), clock('16:30', 1), ENV).state
     let stepped = night()
-    for (let t = clock('22:30'); t <= clock('10:30', 1); t += 15 * 60_000) stepped = settle(stepped, t, ENV).state
+    for (let t = clock('22:30'); t <= clock('16:30', 1); t += 15 * 60_000) stepped = settle(stepped, t, ENV).state
     expect(stepped).toEqual(once)
     for (const row of Object.values(once.work)) {
       row.entries.forEach((entry, i) => { if (i > 0) expect(entry.startedAt).toBe(endsAt(row.entries[i - 1]!)) })
     }
     expect(once.work[PLAIN.id]!.entries.map((e) => e.request)).toEqual([carrots(3), carrots(2), carrots(1), carrots(4)])
-    // Strong's flour starts at 22:57 and takes a wheat, so Helper's two flours at 03:54 find one; Strong's ten crafts
-    // at 23:24 find the two carrots Helper's queue then takes.
-    expect(once.work[STRONG.id]!.dropped).toMatchObject({ at: clock('23:24'), requests: [chopped(10)], short: [{ item: 'carrot', qty: 8 }] })
+    // Strong's flour starts at 23:10:30 and takes a wheat, so Helper's two flours at 06:36 find one; Strong's ten crafts
+    // at 23:51 find the two carrots Helper's queue then takes.
+    expect(once.work[STRONG.id]!.dropped).toMatchObject({ at: clock('23:51'), requests: [chopped(10)], short: [{ item: 'carrot', qty: 8 }] })
     expect(once.work[HELPER.id]!.dropped).toMatchObject({
-      at: clock('03:54', 1), requests: [{ kind: 'craft', item: 'wheat-flour', count: 2 }, chopped(1)], short: [{ item: 'wheat', qty: 1 }],
+      at: clock('06:36', 1), requests: [{ kind: 'craft', item: 'wheat-flour', count: 2 }, chopped(1)], short: [{ item: 'wheat', qty: 1 }],
     })
   })
 

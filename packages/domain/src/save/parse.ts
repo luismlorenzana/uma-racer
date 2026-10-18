@@ -319,12 +319,15 @@ export function parseSlotRef(value: unknown): SlotRef | null {
   return hasRoom ? { building: value.building, room: value.room as RoomId, slot: value.slot } : { building: value.building, slot: value.slot }
 }
 
-/** An unlock as a request or an output holds it: a ref (`kind`, `target`), or T128's full unlock with its layer, grade and dish. */
+/**
+ * An unlock as a request or an output holds it: a ref (`kind`, `target`), or T128's full unlock with its layer, grade and
+ * the item it takes, null for one that takes none (D374).
+ */
 export function parseUnlock(value: unknown): UnlockRef | null {
   if (!isObject(value) || !UNLOCK_KINDS.includes(value.kind as (typeof UNLOCK_KINDS)[number]) || !isRowId(value.target)) return null
   if (exactKeys(value, ['kind', 'target'])) return { kind: value.kind as string, target: value.target }
   if (!exactKeys(value, ['kind', 'target', 'layer', 'grade', 'dishId']) || !isScenario(value.layer) || !isItemGrade(value.grade as number) ||
-    !isItemId(value.dishId)) return null
+    !(value.dishId === null || isItemId(value.dishId))) return null
   return { kind: value.kind as string, target: value.target, layer: value.layer, grade: value.grade, dishId: value.dishId } as UnlockRef
 }
 

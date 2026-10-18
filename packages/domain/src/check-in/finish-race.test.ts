@@ -25,8 +25,8 @@ const input = (state: WorkState, outfitId: string, extra: Partial<Parameters<typ
 
 describe('finish-race', () => {
   it('collects her finished unlocks first, then races on the preset of the race distance', () => {
-    // Two sessions of 216 minutes each from 04:00: both are finished by noon.
-    const studying = ok(start(account(1, { 'dish-vegetables-1': 2 }), { outfitId: uma(1), slot: slot('observatory'), request: nodes(1, 2) }, clock('04:00'), ENV)).state
+    // Two sessions of 324 minutes each from 01:00: both are finished by noon.
+    const studying = ok(start(account(1, { 'tonic-1': 2 }), { outfitId: uma(1), slot: slot('observatory'), request: nodes(1, 2) }, clock('01:00'), ENV)).state
     const result = ok(finishRace(studying, input(studying, uma(1)), NOW, ENV, 'race-op-01'))
     expect(result.receipt.collect.outputs.map((output) => 'unlock' in output && output.unlock.target)).toEqual(['n1', 'n2'])
     expect(result.state.umas[uma(1)]!.build.constellationOpened).toBe(2)

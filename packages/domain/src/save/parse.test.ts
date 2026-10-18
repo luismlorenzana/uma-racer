@@ -32,7 +32,7 @@ function rows(): { entities: EntityRow[]; logs: LogRow[] } {
   }
   step(1, 'unlock-uma', () => ({ outfitId: uma(1) }))
   step(2, 'unlock-uma', () => ({ outfitId: uma(2) }))
-  step(3, 'dev-grant', () => ({ prizeMoney: 2_000, items: { [VEG]: 4, 'dish-vegetables-1': 1 } }), DEV)
+  step(3, 'dev-grant', () => ({ prizeMoney: 2_000, items: { [VEG]: 4, 'tonic-1': 1 } }), DEV)
   step(4, 'start', () => ({ outfitId: uma(1), slot: { building: 'pantry', slot: 0 }, request: { kind: 'craft', item: CHOPPED, count: 2 } }))
   step(5, 'queue', () => ({ outfitId: uma(1), add: { request: { kind: 'craft', item: CHOPPED, count: 1 }, building: 'pantry' } }))
   step(6, 'start', () => ({ outfitId: uma(2), slot: { building: 'observatory', slot: 0 }, request: { kind: 'session', unlocks: [{ kind: 'node', target: 'n1' }] } }))

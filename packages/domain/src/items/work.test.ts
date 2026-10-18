@@ -27,16 +27,16 @@ const SECTION_3_LADDER = [
 
 /** 08 §8's work values in real minutes, rows as written. */
 const SECTION_8 = [
-  '| 1 | 108 | 135 | 963 | | 36 / 45 / 321 |',
-  '| 2 | 114 | 142.5 | 1,005 | | 38 / 47.5 / 335 |',
-  '| 3 | 120 | 150 | 1,047 | | 40 / 50 / 349 |',
-  '| 4 | 126 | 157.5 | 1,096.5 | 1,254 | 42 / 52.5 / 365.5 (Feast 418) |',
-  '| 5 | 132 | 165 | 1,146 | | 44 / 55 / 382 |',
-  '| 6 | 138 | 172.5 | 1,195.5 | 1,368 | 46 / 57.5 / 398.5 (Feast 456) |',
-  '| 7 | 144 | 180 | 1,245 | | 48 / 60 / 415 |',
-  '| 8 | 150 | 187.5 | 1,294.5 | 1,482 | 50 / 62.5 / 431.5 (Feast 494) |',
-  '| 9 | 156 | 195 | 1,344 | | 52 / 65 / 448 |',
-  '| 10 | 162 | 202.5 | 1,393.5 | 1,596 | 54 / 67.5 / 464.5 (Feast 532) |',
+  '| 1 | 162 | 202.5 | 1,444.5 | | 54 / 67.5 / 481.5 |',
+  '| 2 | 171 | 213.75 | 1,507.5 | | 57 / 71.25 / 502.5 |',
+  '| 3 | 180 | 225 | 1,570.5 | | 60 / 75 / 523.5 |',
+  '| 4 | 189 | 236.25 | 1,644.75 | 1,881 | 63 / 78.75 / 548.25 (Feast 627) |',
+  '| 5 | 198 | 247.5 | 1,719 | | 66 / 82.5 / 573 |',
+  '| 6 | 207 | 258.75 | 1,793.25 | 2,052 | 69 / 86.25 / 597.75 (Feast 684) |',
+  '| 7 | 216 | 270 | 1,867.5 | | 72 / 90 / 622.5 |',
+  '| 8 | 225 | 281.25 | 1,941.75 | 2,223 | 75 / 93.75 / 647.25 (Feast 741) |',
+  '| 9 | 234 | 292.5 | 2,016 | | 78 / 97.5 / 672 |',
+  '| 10 | 243 | 303.75 | 2,090.25 | 2,394 | 81 / 101.25 / 696.75 (Feast 798) |',
 ]
 
 const feastAt = (g: number) => FEASTS.find((feast) => feast.grade === g)
@@ -51,9 +51,9 @@ describe('step times (08 §3, 12 §4)', () => {
     })
   })
 
-  it('are whole seconds at the time factor: 6,480 s, 1,620 s and 17,280 s at grade 1', () => {
-    expect([gatherSeconds(1), craftSeconds(1), cookSeconds(1)]).toEqual([6_480, 1_620, 17_280])
-    expect([gatherSeconds(10), craftSeconds(10), cookSeconds(10)]).toEqual([9_720, 2_430, 23_760])
+  it('are whole seconds at the time factor (k = 1.8, D374): 9,720 s, 2,430 s and 25,920 s at grade 1', () => {
+    expect([gatherSeconds(1), craftSeconds(1), cookSeconds(1)]).toEqual([9_720, 2_430, 25_920])
+    expect([gatherSeconds(10), craftSeconds(10), cookSeconds(10)]).toEqual([14_580, 3_645, 35_640])
     for (const g of ITEM_GRADE_LIST) {
       for (const seconds of [gatherSeconds(g), craftSeconds(g), cookSeconds(g)]) expect(Number.isInteger(seconds)).toBe(true)
     }
@@ -78,7 +78,7 @@ describe('work values in base minutes (08 §3)', () => {
 })
 
 describe('work values in real minutes (08 §8)', () => {
-  it('give raw 108 … 162, crafted 135 … 202.5, planet or Duo 963 … 1,393.5 and Feasts 1,254 … 1,596', () => {
+  it('give raw 162 … 243, crafted 202.5 … 303.75, planet or Duo 1,444.5 … 2,090.25 and Feasts 1,881 … 2,394', () => {
     SECTION_8.forEach((row, i) => {
       const g = (i + 1) as ItemGrade
       const [grade, raw, crafted, dish, feast] = cells(row).map(number)
@@ -107,8 +107,11 @@ describe('work values in real minutes (08 §8)', () => {
     for (const duo of DUOS) expect(workValueSeconds(duo.id)).toBe(workValueSeconds(planetDish('fish', duo.grade).id))
   })
 
-  it('walk the recipe: a crafted item is its raw plus its craft, a dish its inputs plus its cook', () => {
+  it('walk the recipe: a crafted item is its raw plus its craft, a dish or a tonic its inputs plus its cook', () => {
     expect(workValueSeconds('honey')).toBe(workValueSeconds('honeycomb')! + craftSeconds(1))
+    expect(workValueSeconds('tonic-3')).toBe(['shredded-cabbage', 'dried-oyster-mushroom', 'pearl-barley']
+      .reduce((n, id) => n + workValueSeconds(id)!, 0) + cookSeconds(3))
+    expect(workValueBaseMinutes('tonic-1')).toBe(3 * 112.5 + 240)
     expect(workValueSeconds('feast-4')).toBe(
       ['maple-syrup', 'plum-preserve', 'mackerel-fillet', 'walnut-paste', 'dried-thyme', 'rolled-oats']
         .reduce((n, id) => n + workValueSeconds(id)!, 0) + cookSeconds(4),

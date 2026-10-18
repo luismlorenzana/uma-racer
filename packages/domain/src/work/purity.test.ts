@@ -54,7 +54,7 @@ describe('purity', () => {
       return { state, receipts }
     }
     const initial = withNodes(withPrizeMoney(withStock(farmAccount(), {
-      carrot: 4, wheat: 2, 'dish-vegetables-1': 2, 'speed-ticket': 20, 'wheat-flour': 4,
+      carrot: 4, wheat: 2, 'tonic-1': 2, 'speed-ticket': 20, 'wheat-flour': 4,
     }), 2_000), STUDENT.id, 0)
     const first = run(initial)
     expect(run(initial)).toEqual(first)

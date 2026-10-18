@@ -48,7 +48,7 @@ describe('the audit (09 §9)', () => {
         if (isRefusal(result)) throw new Error(result.reason)
         state = { ...state, profile: result.profile, ledger: [...state.ledger, ...result.ledger] }
       }
-      for (const [sku, qty] of [[SPEED_TICKET_ID, 1 + Math.floor(rng.next() * 40)], [carrot, 1 + Math.floor(rng.next() * 30)]] as const) {
+      for (const [sku, qty] of [[SPEED_TICKET_ID, 1 + Math.floor(rng.next() * 40)], [carrot, 1 + Math.floor(rng.next() * 20)]] as const) {
         const bought = buy(state, { opId: `b${(n += 1)}`, sku, qty, unitPrice: buyPrice(sku)! }, (now += 1_000))
         if (isRefusal(bought)) { refusals += 1; continue }
         state = bought.state
