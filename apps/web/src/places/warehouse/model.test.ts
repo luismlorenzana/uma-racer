@@ -1,4 +1,4 @@
-// The Warehouse's view model (07 §10; 09 §6, §6.1, §8; 08 §10): a running three-dish Kitchen job and one target give
+// The Warehouse's view model (07 §10; 09 §6, §6.1, §8; 08 §10): a running three-tonic Kitchen job and one target give
 // each row's held, reserved, coming and needed; the sell sizes, each confirmation's words, the Surplus total, the empty
 // line and the shelves.
 import { hasBannedWord } from '@racer/domain/check-in'
@@ -15,8 +15,8 @@ import { itemById } from '@racer/domain/items'
 function kitchen() {
   const acc = account('fresh')
   for (const id of umaIds(2)) acc.run('unlock-uma', { outfitId: id })
-  acc.run('dev-grant', { items: { 'chopped-carrot': 12, 'wheat-flour': 3, 'dish-vegetables-1': 4, carrot: 6, wheat: 5, 'dish-sweets-3': 1 } })
-  acc.run('start', { outfitId: 'sim-uma-01', slot: { building: 'kitchen', slot: 0 }, request: { kind: 'cook', item: 'dish-vegetables-1', count: 3 } })
+  acc.run('dev-grant', { items: { 'chopped-carrot': 3, 'dried-button-mushroom': 3, 'wheat-flour': 3, 'tonic-1': 2, carrot: 6, wheat: 3, 'dish-sweets-3': 1 } })
+  acc.run('start', { outfitId: 'sim-uma-01', slot: { building: 'kitchen', slot: 0 }, request: { kind: 'cook', item: 'tonic-1', count: 3 } })
   acc.run('set-targets', { outfitIds: ['sim-uma-02'] })
   return acc
 }
@@ -26,21 +26,24 @@ describe("a stack's counts", () => {
     const acc = kitchen()
     const house = warehouse(acc.state, acc.at, acc.env)
     const row = (id: string) => house.counts(id)!
-    // The job reserved twelve Chopped Carrot and three Wheat Flour: they left the Warehouse count.
-    expect(row('chopped-carrot')).toMatchObject({ held: 0, reserved: 12, coming: 0 })
+    // The job reserved three of each crafted input: they left the Warehouse count.
+    expect(row('chopped-carrot')).toMatchObject({ held: 0, reserved: 3, coming: 0 })
+    expect(row('dried-button-mushroom')).toMatchObject({ held: 0, reserved: 3, coming: 0 })
     expect(row('wheat-flour')).toMatchObject({ held: 0, reserved: 3, coming: 0 })
-    expect(row('dish-vegetables-1')).toMatchObject({ held: 4, reserved: 0, coming: 3 })
+    expect(row('tonic-1')).toMatchObject({ held: 2, reserved: 0, coming: 3 })
     const planned = plan(acc.state, targetsOf(acc.state), acc.at, {}, acc.env)
     expect(targetsOf(acc.state)).toEqual(['sim-uma-02'])
-    for (const id of ['dish-vegetables-1', 'carrot', 'dish-sweets-3']) expect(row(id).needed).toBe(neededFromStock(planned, id))
-    // Her Observatory layer needs more Carrot Salads than the Warehouse holds, so all four are held back.
-    expect(row('dish-vegetables-1').needed).toBe(4)
+    for (const id of ['tonic-1', 'carrot', 'dish-sweets-3']) expect(row(id).needed).toBe(neededFromStock(planned, id))
+    // Her nodes and slots need more Warm-Up Tonics than the Warehouse holds, so both are held back.
+    expect(row('tonic-1').needed).toBe(2)
     expect(row('dish-sweets-3').needed).toBe(0)
-    expect(itemLine(itemById('dish-vegetables-1')!)).toBe('Carrot Salad · Constellation · grade 1')
+    expect(itemLine(itemById('tonic-1')!)).toBe('Warm-Up Tonic · Nodes & Inspiration slots · grade 1')
+    expect(itemLine(itemById('dish-vegetables-1')!)).toBe('Carrot Salad · Stands in for a tonic · grade 1')
     expect(itemLine(itemById('carrot')!)).toBe('Carrot · Vegetables · grade 1')
     // Stacks with nothing held, reserved, coming or needed are hidden.
     expect(house.counts('honey')).toBeUndefined()
-    expect(filterRows(house.rows, { shelf: 'dishes', family: null, grade: null }).map((r) => r.item.id)).toEqual(['dish-sweets-3', 'dish-vegetables-1'])
+    expect(filterRows(house.rows, { shelf: 'dishes', family: null, grade: null }).map((r) => r.item.id)).toEqual(['dish-sweets-3'])
+    expect(filterRows(house.rows, { shelf: 'tonics', family: null, grade: null }).map((r) => r.item.id)).toEqual(['tonic-1'])
     expect(filterRows(house.rows, { shelf: 'raw', family: 'vegetables', grade: 1 }).map((r) => r.item.id)).toEqual(['carrot'])
   })
 
@@ -65,12 +68,12 @@ describe('the stock sheet (09 §6.1)', () => {
     const acc = kitchen()
     acc.run('dev-grant', { items: { 'speed-ticket': 2 } })
     const house = warehouse(acc.state, acc.at, acc.env)
-    const salad = sellSheet(house.counts('dish-vegetables-1')!)
-    expect(salad.unitPrice).toBe(sellPrice('dish-vegetables-1'))
-    expect(salad.options.map((option) => [option.size, option.qty, option.total])).toEqual([
-      ['one', 1, 321], ['ten', 4, 1_284], ['surplus', 0, 0], ['allFree', 4, 1_284],
+    const tonic = sellSheet(house.counts('tonic-1')!)
+    expect(tonic.unitPrice).toBe(sellPrice('tonic-1'))
+    expect(tonic.options.map((option) => [option.size, option.qty, option.total])).toEqual([
+      ['one', 1, 346], ['ten', 2, 692], ['surplus', 0, 0], ['allFree', 2, 692],
     ])
-    expect(salad.counts).toEqual(stackCounts({ held: 4, reserved: 0, needed: 4 }))
+    expect(tonic.counts).toEqual(stackCounts({ held: 2, reserved: 0, needed: 2 }))
     expect(sizeOffWords('surplus')).toBe('No surplus: the planner needs all of it.')
     const tickets = sellSheet(house.counts('speed-ticket')!)
     expect(tickets).toMatchObject({ unitPrice: null, options: [], noSale: "Speed Tickets can't be sold." })
@@ -84,22 +87,22 @@ describe('the stock sheet (09 §6.1)', () => {
     const uma = (id: string) => acc.env.content.umas.get(id)!.name
     const option = (id: string, size: 'one' | 'ten' | 'allFree') => sellSheet(house.counts(id)!).options.find((o) => o.size === size)!
     expect(sellQuestion(house.counts('dish-sweets-3')!, option('dish-sweets-3', 'one'), house.plan, uma))
-      .toBe('Sell 1 Sugar Beet Cake (grade 3) for 349? Each took about 17 hours of work.')
-    expect(sellQuestion(house.counts('dish-vegetables-1')!, option('dish-vegetables-1', 'allFree'), house.plan, uma))
-      .toBe(`Sell 4 Carrot Salad (grade 1) for 1,284? Each took about 16 hours of work. This leaves the planner 4 short for ${uma('sim-uma-02')}'s Observatory layer.`)
+      .toBe('Sell 1 Sugar Beet Cake (grade 3) for 523? Each took about 26 hours of work.')
+    expect(sellQuestion(house.counts('tonic-1')!, option('tonic-1', 'allFree'), house.plan, uma))
+      .toBe(`Sell 2 Warm-Up Tonic (grade 1) for 692? Each took about 17 hours of work. This leaves the planner 2 short for ${uma('sim-uma-02')}'s Observatory layer.`)
     const wheat = house.counts('wheat')!
-    expect(wheat.needed).toBeGreaterThan(0)
+    expect(wheat.needed).toBe(3)
     const wheatOne = option('wheat', 'one')
-    expect(sellQuestion(wheat, wheatOne, house.plan, uma)).toBe(`Sell 1 Wheat (grade 1) for 36? This leaves the planner 1 short for ${uma('sim-uma-02')}'s Observatory layer.`)
+    expect(sellQuestion(wheat, wheatOne, house.plan, uma)).toBe(`Sell 1 Wheat (grade 1) for 54? This leaves the planner 1 short for ${uma('sim-uma-02')}'s Observatory layer.`)
     // Free stock under 1,000 sells without a word.
     acc.run('dev-grant', { items: { honey: 30 } })
     const honey = warehouse(acc.state, acc.at, acc.env).counts('honey')!
     expect(sellQuestion(honey, sellSheet(honey).options.find((o) => o.size === 'ten')!, house.plan, uma)).toBeNull()
-    expect(sellQuestion(honey, sellSheet(honey).options.find((o) => o.size === 'allFree')!, house.plan, uma)).toBe(`Sell 30 Honey (grade 1) for 1,350? This leaves the planner 5 short for ${uma('sim-uma-02')}'s Gym layer.`)
+    expect(sellQuestion(honey, sellSheet(honey).options.find((o) => o.size === 'allFree')!, house.plan, uma)).toBe(`Sell 30 Honey (grade 1) for 2,010? This leaves the planner 5 short for ${uma('sim-uma-02')}'s Gym layer.`)
   })
 
-  it('names the recipes that take a stack', () => {
-    expect(recipesUsing('chopped-carrot').map(({ item, qty }) => [item.id, qty])).toContainEqual(['dish-vegetables-1', 4])
+  it('names the recipes that take a stack, never a retired one', () => {
+    expect(recipesUsing('chopped-carrot').map(({ item, qty }) => [item.id, qty])).toEqual([['tonic-1', 1]])
     expect(recipesUsing('carrot').map(({ item }) => item.id)).toEqual(['chopped-carrot'])
   })
 })

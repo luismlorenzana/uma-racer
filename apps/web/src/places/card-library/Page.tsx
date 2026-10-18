@@ -19,7 +19,7 @@ export default function CardLibraryPage({ place, rest }: PageProps) {
   }
   return (
     <div data-place-page="card-library">
-      <PlacePageHeader place={place} rest={rest} lines={['Every SSR is open. A card joins an Uma\'s sets once it is bonded to her: one Dojo session, one dish of its family at the grade its era sets.']} />
+      <PlacePageHeader place={place} rest={rest} lines={['Every SSR is open. A card joins an Uma\'s sets once it is bonded to her: one Dojo session at the grade its era sets, with nothing to cook.']} />
       <div className="px-4 pt-2 pb-24">
         <CardLibrary mode="browse" title="Cards" />
       </div>

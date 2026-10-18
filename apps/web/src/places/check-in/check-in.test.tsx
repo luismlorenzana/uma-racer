@@ -249,13 +249,13 @@ describe('Repeat (02 §5)', () => {
     })
     const skip = within(skips).getByText('Short 1 Carrot.').closest('li')!
     expect(within(skip).getByRole('link', { name: 'Pick another' }).getAttribute('href')).toBe('/farm/pantry')
-    fireEvent.click(within(skip).getByRole('button', { name: 'Buy 1 and repeat · 108' }))
-    within(skip).getByText('Buy 1 Carrot for 108 Prize Money and repeat Amber Sprint’s job?')
+    fireEvent.click(within(skip).getByRole('button', { name: 'Buy 1 and repeat · 162' }))
+    within(skip).getByText('Buy 1 Carrot for 162 Prize Money and repeat Amber Sprint’s job?')
     const before = calls.length
     fireEvent.click(within(skip).getByRole('button', { name: 'Yes' }))
     await waitFor(() => expect(calls.slice(before).map((call) => call.name)).toEqual(['buy', 'repeat']))
     expect(calls.slice(before).map((call) => call.input)).toEqual([
-      { sku: 'carrot', qty: 1, unitPrice: 108 }, { outfitIds: [uma(1)], utcOffsetMin: 0 },
+      { sku: 'carrot', qty: 1, unitPrice: 162 }, { outfitIds: [uma(1)], utcOffsetMin: 0 },
     ])
     await waitFor(() => expect(state(game).work[uma(1)]!.entries.at(-1)!.request).toMatchObject({ item: 'chopped-carrot', count: 1 }))
   })
@@ -291,10 +291,25 @@ describe('Repeat (02 §5)', () => {
     fireEvent.click(point)
     expect(document.activeElement).toBe(document.getElementById(`stopped-${outfit}`))
     expect(within(skips).getByRole('link', { name: 'Pick cards' }).getAttribute('href')).toMatch(/^\/training\/dojo\?session=sim-uma-\d+&room=[\w-]+&back=/)
-    const start = within(skips).getByRole('button', { name: /^Start: / })
-    const before = calls.length
+    expect(calls.map((call) => call.name)).toEqual(['collect-all', 'repeat'])
+
+    // A Gym room done for her layer: its fix starts the planner's next suggestion.
+    const { state: account, at } = farmAccount(1)
+    let gym = apply(account, 'dev-grant', { items: { 'dish-sweets-1': 1 } }, at).state
+    gym = apply(gym, 'start', { outfitId: uma(1), slot: { building: 'gym', room: 'speed', slot: 0 }, request: { kind: 'session', unlocks: [{ kind: 'single', target: 'speed-01' }] } }, at).state
+    cleanup()
+    const done = spied(farmSeed(gym, at + 12 * HOUR))
+    const { sheet: again } = await openSheet(done.game, true)
+    fireEvent.click(await repeatAllButton(again))
+    const finished = await waitFor(() => {
+      const found = section(again, 'couldnt-repeat')
+      expect(found).not.toBeNull()
+      return found!
+    })
+    const start = within(finished).getByRole('button', { name: /^Start: / })
+    const before = done.calls.length
     fireEvent.click(start)
-    await waitFor(() => expect(calls.slice(before).map((call) => call.name)).toEqual(['start']))
+    await waitFor(() => expect(done.calls.slice(before).map((call) => call.name)).toEqual(['start']))
   })
 })
 
@@ -326,56 +341,56 @@ describe('Queue stopped (02 §3, §4)', () => {
     const made = seed('stopped')
     const { game, calls } = spied(made)
     const { sheet } = await openSheet(game, false)
-    const card = within(sheet).getByRole('article', { name: /^Tidal Charm’s queue stopped: Pantry ×10 · stopped 35m ago$/ })
+    const card = within(sheet).getByRole('article', { name: /^Amber Sprint’s queue stopped: Pantry ×10 · stopped 1h 2m ago$/ })
     within(card).getByText('Short 10 Carrot.')
     within(card).getByText('then Chopped Carrot ×5')
-    fireEvent.click(within(card).getByRole('button', { name: 'Buy 10 and restart · 1,080' }))
-    within(card).getByText('Buy 10 Carrot for 1,080 Prize Money and restart her queue?')
+    fireEvent.click(within(card).getByRole('button', { name: 'Buy 10 and restart · 1,620' }))
+    within(card).getByText('Buy 10 Carrot for 1,620 Prize Money and restart her queue?')
     expect(calls).toEqual([])
     fireEvent.click(within(card).getByRole('button', { name: 'Yes' }))
     await waitFor(() => expect(calls.map((call) => call.name)).toEqual(['buy', 'start']))
-    expect(calls.map((call) => call.input)).toEqual([{ sku: 'carrot', qty: 10, unitPrice: 108 }, { outfitId: 'sim-uma-20', from: 'dropped' }])
-    const row = settledOf(game).work['sim-uma-20']!
+    expect(calls.map((call) => call.input)).toEqual([{ sku: 'carrot', qty: 10, unitPrice: 162 }, { outfitId: 'sim-uma-01', from: 'dropped' }])
+    const row = settledOf(game).work['sim-uma-01']!
     expect(row.dropped).toBeNull()
     expect(row.entries.at(-1)!.request).toEqual({ kind: 'craft', item: 'chopped-carrot', count: 10 })
     expect(row.queue).toEqual([{ kind: 'craft', item: 'chopped-carrot', count: 5 }])
-    await waitFor(() => expect(within(sheet).queryByRole('article', { name: /^Tidal Charm’s queue stopped/ })).toBeNull())
+    await waitFor(() => expect(within(sheet).queryByRole('article', { name: /^Amber Sprint’s queue stopped/ })).toBeNull())
   })
 
   it('Start ×6, Make them and Dismiss each issue their operation', async () => {
     const made = seed('stopped')
     const { game, calls } = spied(made)
     const { sheet } = await openSheet(game, false)
-    const basil = within(sheet).getByRole('article', { name: /^Bluebell Dash’s queue stopped/ })
-    fireEvent.click(within(basil).getByRole('button', { name: 'Start ×6' }))
-    await waitFor(() => expect(calls.at(-1)).toEqual({ name: 'start', input: { outfitId: 'sim-uma-02', from: 'dropped', count: 6 } }))
-    const dish = within(sheet).getByRole('article', { name: /^Willow Drift’s queue stopped/ })
-    const make = within(dish).getByRole('button', { name: /^Make them: Pantry ×4, by / })
+    const carp = within(sheet).getByRole('article', { name: /^Opal Breeze’s queue stopped/ })
+    fireEvent.click(within(carp).getByRole('button', { name: 'Start ×6' }))
+    await waitFor(() => expect(calls.at(-1)).toEqual({ name: 'start', input: { outfitId: 'sim-uma-15', from: 'dropped', count: 6 } }))
+    const apples = within(sheet).getByRole('article', { name: /^Tidal Charm’s queue stopped/ })
+    const make = within(apples).getByRole('button', { name: /^Make them: Orchard ×\d+, by / })
     fireEvent.click(make)
-    await waitFor(() => expect(calls.at(-1)).toMatchObject({ name: 'start', input: { request: { kind: 'craft', item: 'apple-preserve', count: 4 } } }))
-    fireEvent.click(within(sheet).getByRole('button', { name: 'Dismiss Willow Drift’s stopped queue' }))
-    await waitFor(() => expect(calls.at(-1)).toEqual({ name: 'queue', input: { outfitId: 'sim-uma-23', dismiss: true } }))
-    await waitFor(() => expect(settledOf(game).work['sim-uma-23']!.dropped).toBeNull())
+    await waitFor(() => expect(calls.at(-1)).toMatchObject({ name: 'start', input: { request: { kind: 'gather', item: 'apple' } } }))
+    fireEvent.click(within(sheet).getByRole('button', { name: 'Dismiss Tidal Charm’s stopped queue' }))
+    await waitFor(() => expect(calls.at(-1)).toEqual({ name: 'queue', input: { outfitId: 'sim-uma-20', dismiss: true } }))
+    await waitFor(() => expect(settledOf(game).work['sim-uma-20']!.dropped).toBeNull())
   })
 
   it('a stale card asks again with the new numbers, and says the rule when another device already acted', async () => {
     const made = seed('stopped')
-    // Another device sells four Basil, and dismisses Tidal Charm's queue, between this screen's drawing and the tap.
+    // Another device sells four Carp, and dismisses Amber Sprint's queue, between this screen's drawing and the tap.
     const { game } = spied(made, async (name, input, base) => {
       if (name !== 'start' || (input as { from?: string }).from !== 'dropped') return
       const { outfitId } = input as { outfitId: string }
-      if (outfitId === 'sim-uma-02' && (state(base).items['basil'] ?? 0) === 6) await base.run('sell', { itemId: 'basil', qty: 4, unitPrice: sellPrice('basil')! })
-      if (outfitId === 'sim-uma-20') await base.run('queue', { outfitId, dismiss: true })
+      if (outfitId === 'sim-uma-15' && (state(base).items['carp'] ?? 0) === 6) await base.run('sell', { itemId: 'carp', qty: 4, unitPrice: sellPrice('carp')! })
+      if (outfitId === 'sim-uma-01') await base.run('queue', { outfitId, dismiss: true })
     })
     const { sheet } = await openSheet(game, false)
-    const basil = within(sheet).getByRole('article', { name: /^Bluebell Dash’s queue stopped/ })
-    fireEvent.click(within(basil).getByRole('button', { name: 'Start ×6' }))
+    const carp = within(sheet).getByRole('article', { name: /^Opal Breeze’s queue stopped/ })
+    fireEvent.click(within(carp).getByRole('button', { name: 'Start ×6' }))
     await within(sheet).findByText('Only 2 left now. Start ×2?')
     fireEvent.click(within(sheet).getByRole('button', { name: 'Yes' }))
-    await waitFor(() => expect(settledOf(game).work['sim-uma-02']!.entries.at(-1)!.request).toMatchObject({ item: 'dried-basil', count: 2 }))
+    await waitFor(() => expect(settledOf(game).work['sim-uma-15']!.entries.at(-1)!.request).toMatchObject({ item: 'carp-fillet', count: 2 }))
 
-    const carrot = within(sheet).getByRole('article', { name: /^Tidal Charm’s queue stopped/ })
-    fireEvent.click(within(carrot).getByRole('button', { name: 'Buy 10 and restart · 1,080' }))
+    const carrot = within(sheet).getByRole('article', { name: /^Amber Sprint’s queue stopped/ })
+    fireEvent.click(within(carrot).getByRole('button', { name: 'Buy 10 and restart · 1,620' }))
     fireEvent.click(within(carrot).getByRole('button', { name: 'Yes' }))
     await within(sheet).findByText('Nothing to restart.')
   })

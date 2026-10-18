@@ -1,16 +1,15 @@
 // The Card Library's view model (docs/game/06-cards-and-bonds.md §1–§4, §6, §10; ux "Albums", D238; T138):
 // every SSR in the content, open (D329), through a lens (All or one playable scenario) and an optional Uma whose
 // scenario the lens follows. A tile's pill is the Umas bonded in their current tier, or, with an Uma, her `bondStatus`:
-// a bond mark, the grade she needs (`bondGrade`) or a lock. The card page's pay (`cardPay`), skills by node, bond cost
-// per tier (`bondDishId`, `sessionSeconds`), who is bonded and where, and who could bond it now; the Bond picker's rows
-// and reasons. Pure.
+// a bond mark, the grade she needs (`bondGrade`) or a lock. The card page's pay (`cardPay`), skills by node, bond time
+// per tier (`bondGrade`, `sessionSeconds`; a bond takes no item, D374), who is bonded and where, and who could bond it
+// now; the Bond picker's rows and reasons. Pure.
 import { durationText, fill, type OperationEnv } from '@racer/domain/check-in'
-import { itemById } from '@racer/domain/items'
 import { workAhead } from '@racer/domain/planner'
 import { scenarioNumber, scenarioPlayable, scenarioRow } from '@racer/domain/tiers'
 import { isRefusal, type Tier, type UmaState } from '@racer/domain/state'
 import {
-  bondDishId, bondGrade, bondStatus, cardFocus, cardNodeSkills, cardPay, dojoRoomOf, sessionSeconds, type BondStatus, type CardFocus,
+  bondGrade, bondStatus, cardFocus, cardNodeSkills, cardPay, dojoRoomOf, sessionSeconds, type BondStatus, type CardFocus,
   type CardPay,
 } from '@racer/domain/training'
 import { endsAt, freeAt, itemEnds, speedAt, statusOf, type WorkRow, type WorkState } from '@racer/domain/work'
@@ -204,27 +203,24 @@ export const raceBonusWords = (raceBonus: number): string => `+${(raceBonus * 10
 export interface BondCost {
   /** "Tier 1" or "Tiers 2–3". */
   readonly tiers: string
-  readonly dish: string | null
-  /** Real time at speed 1 (× k), "3 h 36 m". */
+  /** Real time at speed 1 (× k), "5h 24m"; null when the card can't bond in that tier. */
   readonly time: string | null
 }
 
-/** The dish and session time a bond takes in each tier, equal tiers joined (06 §2, §6 "Bond cost"). */
+/** The session time a bond takes in each tier, equal tiers joined; it takes no item (06 §2, §6 "Bond cost"; D374). */
 export function bondCosts(card: SupportCardTemplate): readonly BondCost[] {
   const each = ([1, 2, 3] as Tier[]).map((tier) => {
-    const dishId = bondDishId(card, tier)
     const grade = bondGrade(card.era, tier)
-    return { tier, dish: dishId === null ? null : itemById(dishId)?.name ?? dishId, time: grade === null ? null : duration(sessionSeconds(grade)) }
+    return { tier, time: grade === null ? null : duration(sessionSeconds(grade)) }
   })
-  const out: { tiers: number[]; dish: string | null; time: string | null }[] = []
+  const out: { tiers: number[]; time: string | null }[] = []
   for (const cost of each) {
     const last = out.at(-1)
-    if (last !== undefined && last.dish === cost.dish && last.time === cost.time) last.tiers.push(cost.tier)
-    else out.push({ tiers: [cost.tier], dish: cost.dish, time: cost.time })
+    if (last !== undefined && last.time === cost.time) last.tiers.push(cost.tier)
+    else out.push({ tiers: [cost.tier], time: cost.time })
   }
   return out.map((cost) => ({
     tiers: cost.tiers.length === 1 ? `Tier ${cost.tiers[0]}` : `Tiers ${cost.tiers[0]}–${cost.tiers.at(-1)}`,
-    dish: cost.dish,
     time: cost.time,
   }))
 }
@@ -288,26 +284,21 @@ export interface BondChoice {
   readonly umaId: string
   /** Why she can't bond it now; null when she can. */
   readonly reason: string | null
-  /** The dish, its stock and the time: "Wheat Bread · 2 in Warehouse · 3h 36m". */
+  /** The time, at her Dojo's speed: "No item · 5h 24m" (D374). */
   readonly line: string | null
-  readonly dishId: string | null
-  readonly stock: number
   /** Her running session is in the card's Dojo room, so Queue can add the bond behind it. */
   readonly canQueue: boolean
 }
 
 export function bondChoice(state: WorkState, uma: UmaState, card: SupportCardTemplate, now: number, env: OperationEnv): BondChoice {
   const status = bondOf(state, uma, card)
-  const dishId = bondDishId(card, uma.tier)
   const grade = bondGrade(card.era, uma.tier)
-  const stock = dishId === null ? 0 : state.items[dishId] ?? 0
-  const line = dishId === null || grade === null ? null
-    : `${itemById(dishId)?.name ?? dishId} · ${stock} in Warehouse · ${duration(sessionSeconds(grade, speedAt(state, 'dojo')))}`
+  const line = grade === null ? null : `No item · ${duration(sessionSeconds(grade, speedAt(state, 'dojo')))}`
   const room = dojoRoomOf(card.type)
   const row = state.work[uma.outfitId]
   const running = row?.entries.at(-1)
   const canQueue = row !== undefined && row.slot?.building === 'dojo' && row.slot.room === room && running !== undefined && endsAt(running) > now && row.queue.length < 3
-  const base = { umaId: uma.outfitId, line, dishId, stock, canQueue: false }
+  const base = { umaId: uma.outfitId, line, canQueue: false }
   if (isRefusal(status)) {
     return { ...base, reason: fill({ text: status.reason, data: status.data }) }
   }
@@ -326,7 +317,3 @@ export function bondSessionPath(umaId: string, card: SupportCardTemplate, back: 
   if (queue) search.set('queue', '1')
   return `/training/dojo?${search.toString()}`
 }
-
-/** The Kitchen's job sheet for a dish she lacks (06 §10 "0 in Warehouse · Cook"; T140's). */
-export const cookPath = (dishId: string, back: string): string =>
-  `/farm/kitchen?${new URLSearchParams({ job: dishId, back }).toString()}`

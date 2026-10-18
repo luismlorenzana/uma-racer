@@ -75,7 +75,7 @@ describe('her Needs tab (02 §6)', () => {
     const line: PlanLine = { item: 'carrot', level: 'raw', grade: 1, need: 3, have: 0, coming: 0, comingFrom: [], short: 3, gate: { needsLevel: 1, highestFree: 0 } }
     const view = lineView(line, workView(made.state, made.at, made.env).settled, context(made))
     expect(view.gate).toBe('Grade 1 needs Farm Lv 1 · highest free Uma: Lv 0')
-    expect(view.buy).toEqual({ price: 108, to: '/town/exchange?family=vegetables&grade=1' })
+    expect(view.buy).toEqual({ price: 162, to: '/town/exchange?family=vegetables&grade=1' })
     expect(lineView({ ...line, gate: null }, made.state, context(made)).buy).toBeNull()
   })
 })
@@ -92,10 +92,11 @@ describe('targets (02 §6)', () => {
     expect(state(game).profile.targets).toEqual(made.state.profile.targets)
     cleanup()
 
-    renderG2('/town/stable/outfit/sim-uma-02/needs', game)
+    const second = made.state.profile.targets[1]!
+    renderG2(`/town/stable/outfit/${second}/needs`, game)
     await screen.findByText('Target 2 of 5')
     fireEvent.click(screen.getByRole('button', { name: NEEDS_WORDS.remove }))
-    await waitFor(() => expect(state(game).profile.targets).toEqual(made.state.profile.targets.filter((id) => id !== 'sim-uma-02')))
+    await waitFor(() => expect(state(game).profile.targets).toEqual(made.state.profile.targets.filter((id) => id !== second)))
     await screen.findByRole('button', { name: NEEDS_WORDS.mark })
   })
 

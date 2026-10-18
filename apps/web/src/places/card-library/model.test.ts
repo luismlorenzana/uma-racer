@@ -7,7 +7,7 @@ import { describe, expect, it } from 'vitest'
 import { account, umaIds } from '../../__fixtures__/testing-ops'
 import { cardName as cardNameById } from '../../ui/words'
 import {
-  bondChoice, bondCosts, bondedTo, bondSessionPath, buildLibrary, cardName, cookPath, eraLabel, lensMode, lensOf, payWords, pendingBond, pillFor,
+  bondChoice, bondCosts, bondedTo, bondSessionPath, buildLibrary, cardName, eraLabel, lensMode, lensOf, payWords, pendingBond, pillFor,
   PLAYABLE, raceBonusWords, umaLens,
 } from './model'
 
@@ -35,11 +35,10 @@ describe('the lens and the pill (06 §6)', () => {
   it('shows a bond mark once bonded, in session while her work holds the bond, and Umas bonded with no Uma chosen', () => {
     const acc = account('fresh')
     for (const id of umaIds(2)) acc.run('unlock-uma', { outfitId: id })
-    acc.run('dev-grant', { items: { 'dish-sweets-1': 2 } })
     acc.run('start', { outfitId: 'sim-uma-01', slot: { building: 'dojo', room: 'speed', slot: 0 }, request: { kind: 'session', unlocks: [{ kind: 'bond', target: 'sim-card-speed-e1' }] } })
     const speed = card(acc, 'sim-card-speed-e1')
     expect(pillFor(acc.state, acc.state.umas['sim-uma-01']!, speed)).toEqual({ kind: 'pending' })
-    expect(pendingBond(acc.state, speed, acc.at)).toEqual([{ umaId: 'sim-uma-01', words: 'In session · bonds in 3h 36m' }])
+    expect(pendingBond(acc.state, speed, acc.at)).toEqual([{ umaId: 'sim-uma-01', words: 'In session · bonds in 5h 24m' }])
     const end = acc.state.work['sim-uma-01']!.entries[0]!
     const finished = end.startedAt + end.seconds[0]! * 1000
     acc.run('collect', { outfitId: 'sim-uma-01' }, finished)
@@ -76,18 +75,18 @@ describe('the card page (06 §6)', () => {
     expect(raceBonusWords(0.049)).toBe('+4.9% Racing EXP')
   })
 
-  it('costs a bond its family dish at the grade of its era, per tier, in real time (× k), equal tiers joined', () => {
+  it('costs a bond no item, only the time of its era\'s grade, per tier, in real time (× k), equal tiers joined (D374)', () => {
     const acc = account('fresh')
     expect(bondCosts(card(acc, 'sim-card-wit-e3'))).toEqual([
-      { tiers: 'Tier 1', dish: 'Ginger Curry', time: '4h 48m' },
-      { tiers: 'Tiers 2–3', dish: 'Basil Curry', time: '3h 36m' },
+      { tiers: 'Tier 1', time: '7h 12m' },
+      { tiers: 'Tiers 2–3', time: '5h 24m' },
     ])
     expect(bondCosts(card(acc, 'sim-card-friend-e7'))).toEqual([
-      { tiers: 'Tier 1', dish: null, time: null },
-      { tiers: 'Tier 2', dish: 'Barley Bread', time: '4h 12m' },
-      { tiers: 'Tier 3', dish: 'Wheat Bread', time: '3h 36m' },
+      { tiers: 'Tier 1', time: null },
+      { tiers: 'Tier 2', time: '6h 18m' },
+      { tiers: 'Tier 3', time: '5h 24m' },
     ])
-    expect(bondCosts(card(acc, 'sim-card-speed-e1'))).toEqual([{ tiers: 'Tiers 1–3', dish: 'Honeycomb Cake', time: '3h 36m' }])
+    expect(bondCosts(card(acc, 'sim-card-speed-e1'))).toEqual([{ tiers: 'Tiers 1–3', time: '5h 24m' }])
   })
 
   it('names who is bonded, her tier and scenario, the presets and nodes holding it, and who could bond it now', () => {
@@ -102,30 +101,25 @@ describe('the card page (06 §6)', () => {
 })
 
 describe('Bond (06 §6, §10)', () => {
-  it("offers each Uma's dish, stock and time; refuses one bonded or past the era; and goes on to T139's Dojo session", () => {
+  it("offers each Uma the bond's time and no item; refuses one bonded or past the era; and goes on to T139's Dojo session", () => {
     const acc = account('fresh')
     for (const id of umaIds(3)) acc.run('unlock-uma', { outfitId: id })
-    acc.run('dev-grant', { items: { 'dish-sweets-1': 1 } })
     const speed = card(acc, 'sim-card-speed-e1')
     const free = bondChoice(acc.state, acc.state.umas['sim-uma-01']!, speed, acc.at, acc.env)
-    expect(free).toMatchObject({ reason: null, dishId: 'dish-sweets-1', stock: 1, line: 'Honeycomb Cake · 1 in Warehouse · 3h 36m', canQueue: false })
+    expect(free).toEqual({ umaId: 'sim-uma-01', reason: null, line: 'No item · 5h 24m', canQueue: false })
     const later = bondChoice(acc.state, acc.state.umas['sim-uma-01']!, card(acc, 'sim-card-speed-e3'), acc.at, acc.env)
     expect(later.reason).toBe('Opens in scenario 3 · Trackblazer')
-    // Busy in the Speed room: "Busy · 3h 36m left" (D366), with Queue there.
+    // Busy in the Speed room: "Busy · 5h 24m left" (D366), with Queue there; a bond needs an empty Warehouse.
     acc.run('start', { outfitId: 'sim-uma-02', slot: { building: 'dojo', room: 'speed', slot: 0 }, request: { kind: 'session', unlocks: [{ kind: 'bond', target: 'sim-card-speed-e1' }] } })
     const busy = bondChoice(acc.state, acc.state.umas['sim-uma-02']!, card(acc, 'sim-card-speed-e1'), acc.at, acc.env)
     expect(busy.reason).toBe('Already bonding')
-    acc.run('dev-grant', { items: { 'dish-sweets-1': 1 } })
     const other = bondChoice(acc.state, acc.state.umas['sim-uma-02']!, { ...speed, id: 'sim-card-power-e1', type: 'power' }, acc.at, acc.env)
-    expect(other.reason).toBe('Busy · 3h 36m left')
+    expect(other.reason).toBe('Busy · 5h 24m left')
     expect(other.canQueue).toBe(false)
     const sameRoom = bondChoice(acc.state, acc.state.umas['sim-uma-02']!, { ...speed, id: 'sim-card-speed-e1b' }, acc.at, acc.env)
     expect(sameRoom.canQueue).toBe(true)
-    // No dish: "0 in Warehouse", and Cook opens the Kitchen's job sheet.
-    expect(bondChoice(acc.state, acc.state.umas['sim-uma-03']!, card(acc, 'sim-card-wit-e1'), acc.at, acc.env).line).toBe('Basil Curry · 0 in Warehouse · 3h 36m')
     const back = '/town/card-library/card/sim-card-speed-e1'
     expect(bondSessionPath('sim-uma-01', speed, back)).toBe(`/training/dojo?session=sim-uma-01&room=speed&unlocks=bond%3Asim-card-speed-e1&back=${encodeURIComponent(back)}`)
-    expect(cookPath('dish-herbs-spices-1', back)).toBe(`/farm/kitchen?job=dish-herbs-spices-1&back=${encodeURIComponent(back)}`)
     for (const text of ['Already bonded', 'Already bonding', free.line!]) expect(hasBannedWord(text), text).toBe(false)
   })
 })

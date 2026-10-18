@@ -25,7 +25,7 @@ import { useTap, useWordsContext, type Tap } from './useTap'
 import { useWorkView } from './view'
 import { grouped, itemName, showWords, workWords, type WordsContext } from './words'
 
-/** What a row makes: its icon and its name for VoiceOver ("Potato", "Node 3 · Carrot Salad"). */
+/** What a row makes: its icon and its name for VoiceOver ("Potato", "Node 3 · Warm-Up Tonic"). */
 export interface SlotCardWhat {
   readonly icon: ReactNode
   readonly name: string

@@ -10,7 +10,7 @@ describe('raw ingredients (09 §5.3)', () => {
   it('stocks grade 1 on a new account, at buyPrice, with grade 2 locked in not-stocked\'s words', () => {
     const acc = account('fresh')
     const family = rawFamily(acc.state, null, 'vegetables')
-    expect(family.rows.map((row) => [row.item.id, row.price, row.held])).toEqual([['carrot', 108, 0]])
+    expect(family.rows.map((row) => [row.item.id, row.price, row.held])).toEqual([['carrot', 162, 0]])
     expect(family.rows[0]!.price).toBe(buyPrice('carrot'))
     expect(family.next).toMatchObject({ item: { id: 'potato' }, words: 'In stock once an Uma reaches Farm Lv 6.' })
   })
@@ -24,7 +24,7 @@ describe('raw ingredients (09 §5.3)', () => {
     acc.state = { ...acc.state, umas: { ...acc.state.umas, 'sim-uma-01': raised } }
     const view = exchangeView(acc.state, acc.at, acc.env)
     const family = rawFamily(view.current, view.plan, 'vegetables')
-    expect(family.rows.map((row) => [row.grade, row.price])).toEqual([[1, 108], [2, 114], [3, 120]])
+    expect(family.rows.map((row) => [row.grade, row.price])).toEqual([[1, 162], [2, 171], [3, 180]])
     expect(family.next?.words).toBe('In stock once an Uma reaches Farm Lv 16.')
     const carrot = family.rows[0]!
     const short = view.plan.raw.find((line) => line.item === 'carrot')!.short

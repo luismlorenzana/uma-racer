@@ -1,5 +1,5 @@
 // The Warehouse's view model (docs/game/07-farm.md §10; docs/game/09-racing-rewards-and-exchange.md §6, §6.1, §8;
-// docs/game/08-item-catalogue-and-recipes.md §10; T138): every stack on its shelf (Raw · Crafted · Dishes · Tickets)
+// docs/game/08-item-catalogue-and-recipes.md §10; T138): every stack on its shelf (Raw · Crafted · Meals · Tonics · Tickets)
 // with what's held, reserved (`reservedStock`), coming (`projectWork(...).coming`) and needed (`neededFromStock` over
 // the plan for `targetsOf`); the stock sheet's recipes, sell sizes (`stackCounts`), prices (`sellPrice`) and the one
 // question a sale asks (`sellConfirmations`); and the Peek's biggest stacks, shortfalls and surplus. Pure.
@@ -7,14 +7,16 @@ import type { OperationEnv } from '@racer/domain/check-in'
 import { EXCHANGE_REFUSALS, sellConfirmations, sellPrice, stackCounts, type StackCounts } from '@racer/domain/economy'
 import { FAMILY_SITE } from '@racer/domain/farm'
 import {
-  FAMILIES, ITEMS, recipeOf, SPEED_TICKET_ID, workValueSeconds, type Destination, type FamilyId, type ItemDef, type ItemId,
+  FAMILIES, isKitchenItem, isRetired, ITEMS, recipeOf, SPEED_TICKET_ID, standInsOf, workValueSeconds, type Destination, type FamilyId, type ItemDef,
+  type ItemId,
 } from '@racer/domain/items'
 import { neededFromStock, planFrom, projectWork, targetsOf, type Plan, type PlanLine } from '@racer/domain/planner'
 import { reservedStock, type WorkState } from '@racer/domain/work'
 
-export type Shelf = 'raw' | 'crafted' | 'dishes' | 'tickets'
-export const SHELVES: readonly Shelf[] = ['raw', 'crafted', 'dishes', 'tickets']
-export const SHELF_LABEL: Readonly<Record<Shelf, string>> = { raw: 'Raw', crafted: 'Crafted', dishes: 'Dishes', tickets: 'Tickets' }
+export type Shelf = 'raw' | 'crafted' | 'dishes' | 'tonics' | 'tickets'
+export const SHELVES: readonly Shelf[] = ['raw', 'crafted', 'dishes', 'tonics', 'tickets']
+/** The dishes shelf holds the meals (and any retired salad, soup or bread), the tonics theirs (D374). */
+export const SHELF_LABEL: Readonly<Record<Shelf, string>> = { raw: 'Raw', crafted: 'Crafted', dishes: 'Meals', tonics: 'Tonics', tickets: 'Tickets' }
 
 /** Where a family's dishes go, as the Kitchen's tabs name them (07 §10). */
 export const DESTINATION_LABEL: Readonly<Record<Destination | 'sun', string>> = {
@@ -22,9 +24,10 @@ export const DESTINATION_LABEL: Readonly<Record<Destination | 'sun', string>> = 
   inspiration: 'Inspiration', sun: 'Sun',
 }
 
-export const shelfOf = (item: ItemDef): Shelf => (item.kind === 'raw' ? 'raw' : item.kind === 'crafted' ? 'crafted' : item.kind === 'dish' ? 'dishes' : 'tickets')
+export const shelfOf = (item: ItemDef): Shelf =>
+  item.kind === 'raw' ? 'raw' : item.kind === 'crafted' ? 'crafted' : item.kind === 'dish' ? 'dishes' : item.kind === 'tonic' ? 'tonics' : 'tickets'
 
-/** The item's family, or a Duo's first; none for a Feast and the Speed Ticket. */
+/** The item's family, or a Duo's first; none for a Feast, a tonic and the Speed Ticket. */
 export function familyOf(item: ItemDef): FamilyId | null {
   if (item.kind === 'raw' || item.kind === 'crafted') return item.family
   if (item.kind === 'dish') return item.dish === 'planet' ? item.family : item.dish === 'duo' ? item.families[0] : null
@@ -33,9 +36,14 @@ export function familyOf(item: ItemDef): FamilyId | null {
 
 export const gradeOf = (item: ItemDef): number | null => (item.kind === 'ticket' ? null : item.grade)
 
-/** Where it goes: a dish's destination, a Duo's two stats, or its family's for an ingredient. */
+/**
+ * Where it goes: a meal's stat, a Duo's two stats, a tonic's nodes and slots, or its family's for an ingredient; a
+ * retired salad or soup stands in for a tonic, and a retired bread only sells (D374).
+ */
 export function destinationOf(item: ItemDef): string {
   if (item.kind === 'ticket') return 'Speeds up work'
+  if (item.kind === 'tonic') return 'Nodes & Inspiration slots'
+  if (isRetired(item)) return item.kind === 'dish' && item.dish === 'planet' && item.destination === 'skill' ? 'Retired · sell it' : 'Stands in for a tonic'
   if (item.kind === 'dish') {
     if (item.dish === 'duo') return `${item.stats.map((stat) => DESTINATION_LABEL[stat]).join('–')} Duo`
     return DESTINATION_LABEL[item.destination]
@@ -43,7 +51,7 @@ export function destinationOf(item: ItemDef): string {
   return FAMILIES[item.family].name
 }
 
-/** "Carrot Salad · Constellation · grade 1" (08 §10). */
+/** "Warm-Up Tonic · Nodes & Inspiration slots · grade 1" (08 §10). */
 export function itemLine(item: ItemDef): string {
   const grade = gradeOf(item)
   return [item.name, destinationOf(item), ...(grade === null ? [] : [`grade ${grade}`])].join(' · ')
@@ -107,19 +115,19 @@ export const EMPTY_WORDS = "Nothing to sell yet: the Farm's first harvest lands 
 
 // ---- The stock sheet (07 §10, 09 §6.1) ------------------------------------------------------------------------------
 
-/** The recipes that take `itemId`, by the dish or crafted item they make and how many each takes. */
+/** The recipes that take `itemId`, by the item they make and how many each takes; a retired dish's never (D374). */
 export function recipesUsing(itemId: ItemId): readonly { readonly item: ItemDef; readonly qty: number }[] {
-  return ITEMS.flatMap((item) => {
+  return ITEMS.filter((item) => !isRetired(item)).flatMap((item) => {
     const input = recipeOf(item.id)?.inputs.find((entry) => entry.item === itemId)
     return input === undefined ? [] : [{ item, qty: input.qty }]
   })
 }
 
-/** Make more (07 §10): the building whose job sheet makes it (T140's), or null for the Speed Ticket. */
+/** Make more (07 §10): the building whose job sheet makes it (T140's), or null for the Speed Ticket and a retired dish. */
 export function makeAt(item: ItemDef): string | null {
   if (item.kind === 'raw') return FAMILY_SITE[item.family]
   if (item.kind === 'crafted') return 'pantry'
-  if (item.kind === 'dish') return 'kitchen'
+  if (isKitchenItem(item)) return isRetired(item) ? null : 'kitchen'
   return null
 }
 
@@ -170,11 +178,12 @@ export const sizeOffWords = (size: SellSize): string => (size === 'surplus' ? 'N
 /** Who the planner needs a stack for, and at which facility, from the plan's lines (02 §6). */
 export function neededFor(plan: Plan, itemId: ItemId): { readonly outfitId: string; readonly facility: string } | null {
   const facilityName: Readonly<Record<string, string>> = { observatory: 'Observatory', 'lineage-hall': 'Lineage Hall', gym: 'Gym', dojo: 'Dojo' }
-  const takes = (dishId: ItemId): boolean => {
-    if (dishId === itemId) return true
+  const takes = (dishId: ItemId | null): boolean => {
+    if (dishId === null) return false
+    if (dishId === itemId || standInsOf(dishId).includes(itemId)) return true
     return (recipeOf(dishId)?.inputs ?? []).some((input) => input.item === itemId || recipeOf(input.item)?.inputs.some((raw) => raw.item === itemId) === true)
   }
-  // The first target, in allocation order, whose unlocks take it, as a dish or inside one.
+  // The first target, in allocation order, whose unlocks take it, as a meal or tonic (or a stand-in), or inside one.
   for (const target of plan.targets) {
     const unlock = target.unlocks.find((entry) => takes(entry.unlock.dishId))
     if (unlock !== undefined) return { outfitId: target.outfitId, facility: facilityName[unlock.facility] ?? unlock.facility }
@@ -183,9 +192,9 @@ export function neededFor(plan: Plan, itemId: ItemId): { readonly outfitId: stri
 }
 
 /**
- * The one question a sale asks (09 §6.1), from `sellConfirmations`: a dish's work at live prices ("Sell 2 Cabbage Salad
- * (grade 3) for 698? Each took about 17 hours of work."), what it leaves the planner short and for whom, or a sale of
- * 1,000 or more. Null when it asks nothing. `uma` names an Uma.
+ * The one question a sale asks (09 §6.1), from `sellConfirmations`: a meal's or tonic's work at live prices ("Sell 2
+ * Warm-Up Tonic (grade 1) for 692? Each took about 17 hours of work."), what it leaves the planner short and for whom,
+ * or a sale of 1,000 or more. Null when it asks nothing. `uma` names an Uma.
  */
 export function sellQuestion(row: StockRow, option: Pick<SellOption, 'qty' | 'total'>, plan: Plan, uma: (outfitId: string) => string): string | null {
   const asks = sellConfirmations({ itemId: row.item.id, qty: option.qty, held: row.held, needed: row.needed })

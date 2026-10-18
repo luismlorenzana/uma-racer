@@ -103,7 +103,7 @@ function Slots({ model, content }: { model: FacilityView; content: Content | nul
                 startTo={sessionPath(facility, { room: room.room, slot: card.slot.slot })}
                 queueTo={card.kind === 'held' ? sessionPath(facility, { uma: card.outfitId, room: room.room, queue: true }) : undefined}
                 queueLabel={(request) => queuedWords(request, content)}
-                what={held === null || line === null ? undefined : { icon: <ItemIcon item={held.dishId} decorative />, name: line }}
+                what={held === null || line === null ? undefined : { icon: held.dishId === null ? null : <ItemIcon item={held.dishId} decorative />, name: line }}
               />
             )
           })}

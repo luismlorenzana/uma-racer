@@ -1,8 +1,8 @@
 // The one session sheet (docs/game/05-training-hub.md §8, §10; docs/game/06-cards-and-bonds.md §6, §10; T139), over
 // a facility page from its query: **Uma** (T138's picker unless the link names her; Queue for her running session here,
-// Recall first for a Farm job), **Room** at the Gym and Dojo, **Unlocks** (her items here with their dish, stock and
-// minutes, or at the Dojo the cards picked from T138's Card Library), and **Confirm** (the dishes to reserve, the time
-// and each finish), then **Start** or **Add to queue**. A disabled button says why in the rule's words; an `ask`
+// Recall first for a Farm job), **Room** at the Gym and Dojo, **Unlocks** (her items here with their meal or tonic,
+// stock and minutes, or "No item"; at the Dojo the cards picked from T138's Card Library), and **Confirm** (the items to
+// reserve, the time and each finish), then **Start** or **Add to queue**. A disabled button says why in the rule's words; an `ask`
 // re-offers what the stock covers; Start closes to `back` or the facility page.
 import { navState } from '@luismlorenzana/uma-kit/shell'
 import { BottomSheet, CheckIcon, LockedIcon, Sheet } from '@luismlorenzana/uma-kit/ui'
@@ -50,8 +50,9 @@ function ItemRow({ item, here, onToggle }: { item: SessionItem; here: string; on
       </li>
     )
   }
-  const empty = item.stock <= 0 && !item.picked
-  const details = [item.dish, empty ? null : trainingWords('stock', { n: grouped(Math.max(0, item.stock)) }), duration(item.seconds)].filter(Boolean).join(' · ')
+  const short = item.stock !== null && item.stock <= 0
+  const empty = short && !item.picked
+  const details = [item.dish, item.stock === null || empty ? null : trainingWords('stock', { n: grouped(Math.max(0, item.stock)) }), duration(item.seconds)].filter(Boolean).join(' · ')
   return (
     <li data-unlock={item.key} data-state={empty ? 'no-stock' : 'available'} className="flex items-center gap-2">
       <button
@@ -70,10 +71,10 @@ function ItemRow({ item, here, onToggle }: { item: SessionItem; here: string; on
         <span className="min-w-0 flex-1">
           <span className="block text-[14px] font-semibold">{item.name}</span>
           <span className="block text-[12px] text-ink-soft">{details}</span>
-          {item.picked && item.stock <= 0 && <span className="block text-[12px] font-semibold text-danger">{trainingWords('no-stock')}</span>}
+          {item.picked && short && <span className="block text-[12px] font-semibold text-danger">{trainingWords('no-stock')}</span>}
         </span>
       </button>
-      {item.dishId !== null && item.stock <= 0 && (
+      {item.dishId !== null && short && (
         <Link
           to={`/farm/kitchen${sheetQuery({ job: item.dishId, back: here })}`}
           state={{ back: true }}
@@ -247,7 +248,7 @@ export default function SessionSheet({ place, facility, query, onClose }: {
           {model.picks.length > 0 && (
             <section aria-labelledby="session-confirm" className="space-y-1.5 text-[13px]" data-g2="session-confirm">
               <h3 id="session-confirm" className="text-micro">{trainingWords('confirm-title')}</h3>
-              <p>{trainingWords('reserves', { items: itemsList(model.confirm.dishes) })}</p>
+              <p>{model.confirm.dishes.length === 0 ? trainingWords('reserves-none') : trainingWords('reserves', { items: itemsList(model.confirm.dishes) })}</p>
               <p className="font-semibold">{totalWords(model.confirm)}</p>
               <ol className="space-y-0.5 text-ink-soft tabular-nums">
                 {model.confirm.finishes.map((finish, i) => <li key={i}>{trainingWords('finish-at', { what: finish.name, time: time(finish.at) })}</li>)}

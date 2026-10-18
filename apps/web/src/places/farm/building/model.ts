@@ -65,10 +65,14 @@ export function farmKindOf(building: FarmBuildingId): FarmKind {
   return job
 }
 
-/** "Vegetables G3" (02 §6): the family and grade of an ingredient or a planet dish; a Duo's or a Feast's kind and grade. */
+/**
+ * "Vegetables G3" (02 §6): the family and grade of an ingredient or a planet dish; a Duo's, a Feast's or a tonic's kind
+ * and grade.
+ */
 export function lineLabel(item: ItemId): string {
   const def = itemById(item)
   if (def === undefined || def.kind === 'ticket') return item
+  if (def.kind === 'tonic') return `Tonic G${def.grade}`
   if (def.kind === 'dish' && def.dish !== 'planet') return `${def.dish === 'duo' ? 'Duo' : 'Feast'} G${def.grade}`
   return `${FAMILIES[def.family].name} G${def.grade}`
 }

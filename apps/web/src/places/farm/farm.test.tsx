@@ -106,13 +106,14 @@ describe('gather, Queue next, Collect and −30m (07 §2, §8; D366)', () => {
 })
 
 describe('cook and Recall (07 §2, §5)', () => {
-  it('Cook Carrot Salad × 3 reserves its inputs; recalled after one and a half salads it pays one and returns 8 Chopped Carrot and 2 Wheat Flour', async () => {
+  it('Brew Warm-Up Tonic × 3 reserves its inputs; recalled after one and a half tonics it pays one and returns two of each input', async () => {
     const { state: account, at } = farmAccount(1)
-    const stocked = apply(account, 'dev-grant', { items: { 'chopped-carrot': 12, 'wheat-flour': 3 } }, at).state
+    const stocked = apply(account, 'dev-grant', { items: { 'chopped-carrot': 3, 'dried-button-mushroom': 3, 'wheat-flour': 3 } }, at).state
     const { game, advance } = clocked(farmSeed(stocked, at))
-    const { where } = renderG2(`/farm/kitchen?job=dish-vegetables-1&uma=${uma(1)}&count=3`, game)
+    const { where } = renderG2(`/farm/kitchen?job=tonic-1&uma=${uma(1)}&count=3`, game)
     const sheet = await screen.findByRole('dialog', { name: 'Start a job · Kitchen' })
-    within(sheet).getByLabelText('Chopped Carrot 12 of 12')
+    within(sheet).getByLabelText('Chopped Carrot 3 of 3')
+    within(sheet).getByLabelText('Dried Button Mushroom 3 of 3')
     within(sheet).getByLabelText('Wheat Flour 3 of 3')
     fireEvent.click(within(sheet).getByRole('button', { name: /^Start · ×3 · / }))
     await waitFor(() => expect(where()).toBe('/farm/kitchen'))
@@ -120,21 +121,21 @@ describe('cook and Recall (07 §2, §5)', () => {
 
     advance(Math.round(1.5 * COOK_1))
     reopen('/farm/kitchen', game)
-    const row = await screen.findByRole('article', { name: new RegExp(`^${AMBER}\\. Carrot Salad, 1 of 3 made`) })
+    const row = await screen.findByRole('article', { name: new RegExp(`^${AMBER}\\. Warm-Up Tonic, 1 of 3 made`) })
     fireEvent.click(within(row).getByRole('button', { name: `More for ${AMBER}: Queue next and Recall` }))
-    fireEvent.click(within(await screen.findByRole('dialog', { name: `${AMBER} · Carrot Salad ×3` })).getByRole('button', { name: 'Recall' }))
+    fireEvent.click(within(await screen.findByRole('dialog', { name: `${AMBER} · Warm-Up Tonic ×3` })).getByRole('button', { name: 'Recall' }))
     const recall = await screen.findByRole('dialog', { name: `Recall ${AMBER}` })
-    within(recall).getByText('1 Carrot Salad collected')
-    within(recall).getByText('8 Chopped Carrot and 2 Wheat Flour come back')
+    within(recall).getByText('1 Warm-Up Tonic collected')
+    within(recall).getByText('2 Chopped Carrot, 2 Dried Button Mushroom and 2 Wheat Flour come back')
     within(recall).getByText(`${Math.round(COOK_1 / 2 / MINUTE)} minutes of progress lost`)
     fireEvent.click(within(recall).getByRole('button', { name: 'Recall' }))
-    await waitFor(() => expect(state(game).items).toEqual({ 'dish-vegetables-1': 1, 'chopped-carrot': 8, 'wheat-flour': 2 }))
+    await waitFor(() => expect(state(game).items).toEqual({ 'tonic-1': 1, 'chopped-carrot': 2, 'dried-button-mushroom': 2, 'wheat-flour': 2 }))
     expect(state(game).work[uma(1)]).toBeUndefined()
   })
 })
 
 describe('upgrades and empty stock (07 §7, §11)', () => {
-  it('upgrading the Kitchen to Lv 2 from its header button shows eight slot rows at once', async () => {
+  it('upgrading the Kitchen to Lv 2 from its header button shows nine slot rows at once', async () => {
     const { state: account, at } = farmAccount(1)
     const paid = apply(account, 'dev-grant', { prizeMoney: 3_000, items: Object.fromEntries(FAMILY_IDS.map((family) => [craftedItem(family, 1).id, 2])) }, at).state
     const { game } = clocked(farmSeed(paid, at))
@@ -143,10 +144,10 @@ describe('upgrades and empty stock (07 §7, §11)', () => {
     expect(document.querySelectorAll('[data-slot-card]')).toHaveLength(6)
     fireEvent.click(screen.getByRole('button', { name: 'Upgrade to Lv 2 for 3,000 Prize Money' }))
     const sheet = await screen.findByRole('dialog', { name: 'Upgrade to Lv 2' })
-    within(sheet).getByText('8 slots at Lv 2')
+    within(sheet).getByText('9 slots at Lv 2')
     fireEvent.click(within(sheet).getByRole('button', { name: 'Yes' }))
-    await waitFor(() => expect(document.querySelectorAll('[data-slot-card]')).toHaveLength(8))
-    screen.getByText('Lv 2 · 0 of 8 slots in use')
+    await waitFor(() => expect(document.querySelectorAll('[data-slot-card]')).toHaveLength(9))
+    screen.getByText('Lv 2 · 0 of 9 slots in use')
     screen.getByText('The Kitchen is Lv 2 now.')
     expect(state(game).profile.prizeMoney).toBe(0)
   })
@@ -164,13 +165,13 @@ describe('upgrades and empty stock (07 §7, §11)', () => {
   it("a fresh account's Kitchen sheet names the shortfall and links to the Pantry; a site's offers grade 1 to any Uma", async () => {
     const { state: account, at } = farmAccount(1)
     const { game } = clocked(farmSeed(account, at))
-    renderG2(`/farm/kitchen?job=dish-vegetables-1&uma=${uma(1)}`, game)
+    renderG2(`/farm/kitchen?job=tonic-1&uma=${uma(1)}`, game)
     const sheet = await screen.findByRole('dialog', { name: 'Start a job · Kitchen' })
     expect(within(sheet).getByRole('button', { name: /^Start · ×1 · / }).hasAttribute('disabled')).toBe(true)
-    within(sheet).getByText('Short 4 Chopped Carrot.')
-    within(sheet).getByLabelText('Chopped Carrot 0 of 4 · 4 short')
+    within(sheet).getByText('Short 1 Chopped Carrot.')
+    within(sheet).getByLabelText('Chopped Carrot 0 of 1 · 1 short')
     const make = within(sheet).getByRole('link', { name: 'Make Chopped Carrot at the Pantry' })
-    expect(make.getAttribute('href')).toBe(`/farm/pantry?job=chopped-carrot&count=4&back=${encodeURIComponent(`/farm/kitchen?job=dish-vegetables-1&uma=${uma(1)}`)}`)
+    expect(make.getAttribute('href')).toBe(`/farm/pantry?job=chopped-carrot&count=1&back=${encodeURIComponent(`/farm/kitchen?job=tonic-1&uma=${uma(1)}`)}`)
 
     reopen(`/farm/fields?job=wheat&uma=${uma(1)}`, game)
     const site = await screen.findByRole('dialog', { name: 'Start a job · Fields' })
@@ -267,7 +268,7 @@ describe('the job sheet, one screen (D366)', () => {
 })
 
 describe('offline, away and reopened (07 §11, 02 §8)', () => {
-  it('twelve hours away, every output and queue start sits where the timestamps put it; a reopen keeps everything', async () => {
+  it('eighteen hours away, every output and queue start sits where the timestamps put it; a reopen keeps everything', async () => {
     const { state: account, at } = farmAccount(1)
     let working = apply(account, 'start', { outfitId: uma(1), slot: { building: 'fields', slot: 0 }, request: { kind: 'gather', item: 'wheat', count: 10 } }, at).state
     working = apply(working, 'queue', { outfitId: uma(1), add: { request: { kind: 'gather', item: 'wheat', count: 3 }, building: 'fields' } }, at).state
@@ -284,17 +285,17 @@ describe('offline, away and reopened (07 §11, 02 §8)', () => {
       return { hours, card, entries: view.settled.work[uma(1)]!.entries }
     }
 
-    advance(12 * HOUR)
+    advance(18 * HOUR)
     reopen('/farm/fields', game)
-    const twelve = await check(12)
-    expect(twelve.card).toMatchObject({ made: 6, count: 10, running: true, queue: [{ item: 'wheat', count: 3 }] })
+    const eighteen = await check(18)
+    expect(eighteen.card).toMatchObject({ made: 6, count: 10, running: true, queue: [{ item: 'wheat', count: 3 }] })
 
     reopen('/farm/fields', game)
-    expect((await check(12)).card).toEqual(twelve.card)
+    expect((await check(18)).card).toEqual(eighteen.card)
 
-    advance(12 * HOUR)
+    advance(18 * HOUR)
     reopen('/farm/fields', game)
-    const day = await check(24)
+    const day = await check(36)
     const first = endsAt(working.work[uma(1)]!.entries[0]!)
     expect(day.entries.map((entry) => entry.startedAt)).toEqual([at, first])
     expect(day.card).toMatchObject({ made: 3, count: 3, running: false, waiting: 13 })
@@ -309,20 +310,20 @@ describe('offline, away and reopened (07 §11, 02 §8)', () => {
 describe('Collect here, Repeat here and a row\'s Repeat (07 §9, §10)', () => {
   it('collect this building only, then Repeat here lists each start and each skip with its reason', async () => {
     const { state: account, at } = farmAccount(2)
-    let working = apply(account, 'dev-grant', { items: { 'chopped-carrot': 4, 'wheat-flour': 1 } }, at).state
-    working = apply(working, 'start', { outfitId: uma(1), slot: { building: 'kitchen', slot: 0 }, request: { kind: 'cook', item: 'dish-vegetables-1', count: 1 } }, at).state
+    let working = apply(account, 'dev-grant', { items: { 'chopped-carrot': 1, 'dried-button-mushroom': 1, 'wheat-flour': 1 } }, at).state
+    working = apply(working, 'start', { outfitId: uma(1), slot: { building: 'kitchen', slot: 0 }, request: { kind: 'cook', item: 'tonic-1', count: 1 } }, at).state
     working = apply(working, 'start', { outfitId: uma(2), slot: { building: 'fields', slot: 0 }, request: { kind: 'gather', item: 'wheat', count: 1 } }, at).state
     const { game, advance } = clocked(farmSeed(working, at))
     advance(COOK_1)
     renderG2('/farm/kitchen', game)
     screen.getByRole('button', { name: 'Nobody to repeat' })
     fireEvent.click(await screen.findByRole('button', { name: 'Collect here · 1' }))
-    await screen.findByText(new RegExp(`^${AMBER}: 1 Carrot Salad · Farm EXP \\+\\d+$`))
-    expect(state(game).items['dish-vegetables-1']).toBe(1)
+    await screen.findByText(new RegExp(`^${AMBER}: 1 Warm-Up Tonic · Farm EXP \\+\\d+$`))
+    expect(state(game).items['tonic-1']).toBe(1)
     expect(state(game).items['wheat']).toBeUndefined()
     expect(screen.getByRole('button', { name: 'Nothing to collect' }).hasAttribute('disabled')).toBe(true)
     fireEvent.click(screen.getByRole('button', { name: 'Repeat here · 1' }))
-    await screen.findByText(`${AMBER}: Short 4 Chopped Carrot.`)
+    await screen.findByText(`${AMBER}: Short 1 Chopped Carrot.`)
     expect(state(game).work[uma(1)]!.entries).toEqual([])
   })
 
@@ -346,10 +347,10 @@ describe('Collect here, Repeat here and a row\'s Repeat (07 §9, §10)', () => {
 describe('a stale screen (02 §9)', () => {
   it('re-offers the covered size in one sentence, and its yes starts that size', async () => {
     const { state: account, at } = farmAccount(1)
-    const stocked = apply(account, 'dev-grant', { items: { 'chopped-carrot': 12, 'wheat-flour': 3 } }, at).state
+    const stocked = apply(account, 'dev-grant', { items: { 'chopped-carrot': 3, 'dried-button-mushroom': 3, 'wheat-flour': 3 } }, at).state
     const base = createMemoryGame(farmSeed(stocked, at), () => 0)
     let stale = true
-    // The other device cooked one salad's worth first: this phone's Start is answered as `recheck` would.
+    // The other device brewed one tonic's worth first: this phone's Start is answered as `recheck` would.
     const game: G2Game = {
       ...base,
       run: (name, input, busyKey) => {
@@ -362,19 +363,19 @@ describe('a stale screen (02 §9)', () => {
         return base.run(name, input, busyKey)
       },
     }
-    const { where } = renderG2(`/farm/kitchen?job=dish-vegetables-1&uma=${uma(1)}&count=3`, game)
+    const { where } = renderG2(`/farm/kitchen?job=tonic-1&uma=${uma(1)}&count=3`, game)
     const sheet = await screen.findByRole('dialog', { name: 'Start a job · Kitchen' })
     fireEvent.click(within(sheet).getByRole('button', { name: /^Start · ×3 · / }))
     await within(sheet).findByText('Only 2 left now. Start ×2?')
     expect(state(game).work[uma(1)]).toBeUndefined()
     fireEvent.click(within(sheet).getByRole('button', { name: 'Yes' }))
     await waitFor(() => expect(where()).toBe('/farm/kitchen'))
-    expect(state(game).work[uma(1)]!.entries[0]!.request).toEqual({ kind: 'cook', item: 'dish-vegetables-1', count: 2 })
+    expect(state(game).work[uma(1)]!.entries[0]!.request).toEqual({ kind: 'cook', item: 'tonic-1', count: 2 })
   })
 })
 
 describe('Speed Tickets on a row (09 §5.1)', () => {
-  it('"Buy 3 and finish · 90" in the ticket\'s sheet asks once, then buys and finishes as two taps in order', async () => {
+  it('"Buy 6 and finish · 180" in the ticket\'s sheet asks once, then buys and finishes as two taps in order', async () => {
     const { state: account, at } = farmAccount(1)
     let ready = apply(account, 'dev-grant', { prizeMoney: 1_000, items: { 'speed-ticket': 5 } }, at).state
     ready = apply(ready, 'start', { outfitId: uma(1), slot: { building: 'fields', slot: 0 }, request: { kind: 'gather', item: 'wheat', count: 2 } }, at).state
@@ -383,12 +384,12 @@ describe('Speed Tickets on a row (09 §5.1)', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Speed Tickets for Wheat ×2' }))
     const sheet = await screen.findByRole('dialog', { name: 'Speed up Wheat ×2' })
     within(sheet).getByText(`${durationText(2 * GATHER_1)} left`)
-    fireEvent.click(within(sheet).getByRole('button', { name: 'Buy 3 and finish · 90' }))
-    within(sheet).getByText('Buy 3 Speed Tickets for 90 Prize Money and finish now?')
+    fireEvent.click(within(sheet).getByRole('button', { name: 'Buy 6 and finish · 180' }))
+    within(sheet).getByText('Buy 6 Speed Tickets for 180 Prize Money and finish now?')
     expect(state(game).profile.prizeMoney).toBe(1_000)
     fireEvent.click(within(sheet).getByRole('button', { name: 'Yes' }))
     await screen.findByRole('article', { name: `${AMBER}. Wheat, 2 of 2 made, ready to collect` })
-    expect(state(game).profile.prizeMoney).toBe(910)
+    expect(state(game).profile.prizeMoney).toBe(820)
     expect(state(game).items['speed-ticket']).toBeUndefined()
     const names = await appliedNames(game)
     expect(names.slice(-2)).toEqual(['buy', 'finish'])

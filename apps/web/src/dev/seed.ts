@@ -16,22 +16,23 @@
 //   the game calls before phase 9: the first is Free, so Promote is enabled; the second is still working, so the
 //   sheet offers Collect, Recall and −30m first.
 // - `tired` and `spent` (T141): `busy` with today's Daily Purse past its first or second edge.
-// - `stopped` (T142): `busy` with stock drained so queues dropped. At its 08:00 check-in the owner queues the same
-//   Pantry jobs again (Chopped Carrot ×10 then ×5; Dried Basil ×10) and a Fruits dish behind the Kitchen's, then sells
-//   the Carrots, all but six Basil and the Apple Preserve, and buys 12 Speed Tickets with part of the proceeds. The clock
-//   opens at 13:05: the three queues dropped at 12:30 and 12:48, so Queue stopped offers Buy and restart, Start ×6 and
-//   Make them, and Prize Money and Speed Tickets are on hand for Speed up.
+// - `stopped` (T142): `busy` with stock drained so queues dropped. At its 08:00 check-in the owner collects the Pantry,
+//   and three Free Umas start Pantry jobs (Chopped Carrot, Carp Fillet and Apple Preserve, ×6 each) with more queued
+//   behind them (Chopped Carrot ×10
+//   then ×5, Carp Fillet ×10, Apple Preserve ×8); the owner then sells the Carrots, all but six Carp and the Apples,
+//   and buys 12 Speed Tickets with part of the proceeds. The clock opens at 13:05: the three queues dropped at 12:03,
+//   so Queue stopped offers Buy and restart, Start ×6 and Make them, and Prize Money and Speed Tickets are on hand for
+//   Speed up.
 // `?at=HH:MM` moves any seed's clock to that time of its own day, forward or back (T142).
 import { devGrant, localMinute, nextCheckIn, OPERATIONS, repeat, type OperationEnv } from '@racer/domain/check-in'
 import { buy, sell, sellPrice, SPEED_TICKET_PRICE } from '@racer/domain/economy'
-import type { BuildingId } from '@racer/domain/farm'
 import { SPEED_TICKET_ID } from '@racer/domain/items'
 import {
   BASELINE, checkInsOn, createLoop, dayStart, loopRng, MS_PER_HOUR, MS_PER_MINUTE, SIM_CONTENT, SIM_UMAS, UTC_OFFSET_MIN, type LoopConfig,
 } from '@racer/domain/sim'
 import { EXPEDITION_WINS, isLastScenario, newAccount, recordExpeditionRace } from '@racer/domain/tiers'
 import { isRefusal, type Refusal } from '@racer/domain/state'
-import { collect, newWorkState, queue, type WorkRequest, type WorkState } from '@racer/domain/work'
+import { collect, newWorkState, queue, slotHolder, slotsOf, start, type WorkState } from '@racer/domain/work'
 import type { G2Records, G2Sync } from '../app/game'
 import { withSyntheticSkills } from './skills'
 
@@ -175,17 +176,20 @@ function purseAt(name: string, gross: number): G2Seed {
   return seed(name, { ...state, profile: { ...state.profile, purse: { day, gross, featuredPaid: [] } } }, OPENS)
 }
 
-/** The jobs `stopped` queues again at 08:00, behind the same Umas' running ones. */
-const REQUEUED: readonly { readonly outfitId: string; readonly building: BuildingId; readonly request: WorkRequest }[] = [
-  { outfitId: 'sim-uma-20', building: 'pantry', request: { kind: 'craft', item: 'chopped-carrot', count: 10 } },
-  { outfitId: 'sim-uma-20', building: 'pantry', request: { kind: 'craft', item: 'chopped-carrot', count: 5 } },
-  { outfitId: 'sim-uma-02', building: 'pantry', request: { kind: 'craft', item: 'dried-basil', count: 10 } },
-  { outfitId: 'sim-uma-23', building: 'kitchen', request: { kind: 'cook', item: 'dish-fruits-1', count: 1 } },
+/** The Pantry's Uma, Ready at 08:00: `stopped` collects her, so all three slots are free. */
+const PANTRY_READY = 'sim-uma-01'
+
+/** The Pantry jobs `stopped` starts at 08:00 with three Free Umas, ×6 each (ending at 12:03), and what it queues behind. */
+const STARTED: readonly { readonly outfitId: string; readonly item: string; readonly queued: readonly number[] }[] = [
+  { outfitId: 'sim-uma-01', item: 'chopped-carrot', queued: [10, 5] },
+  { outfitId: 'sim-uma-15', item: 'carp-fillet', queued: [10] },
+  { outfitId: 'sim-uma-20', item: 'apple-preserve', queued: [8] },
 ]
+const STARTED_COUNT = 6
 
 /** What `stopped` sells at 08:00, and how many of each it keeps. */
 const DRAINED: readonly { readonly item: string; readonly keep: number }[] = [
-  { item: 'carrot', keep: 0 }, { item: 'basil', keep: 6 }, { item: 'apple-preserve', keep: 0 },
+  { item: 'carrot', keep: 0 }, { item: 'carp', keep: 6 }, { item: 'apple', keep: 0 },
 ]
 
 /** Speed Tickets `stopped` buys: enough for 1 h and 2 h at 13:05, short of "to 22:30". */
@@ -197,7 +201,13 @@ function stopped(): G2Seed {
     if (isRefusal(result)) throw new Error(`The stopped seed was refused: ${result.code}`)
     state = result.state
   }
-  for (const { outfitId, building, request } of REQUEUED) step(queue(state, { outfitId, add: { request, building } }, CHECK_IN, SEED_ENV))
+  state = collect(state, { outfitId: PANTRY_READY }, CHECK_IN, SEED_ENV).state
+  for (const { outfitId, item, queued } of STARTED) {
+    const slot = slotsOf(state, 'pantry').find((one) => slotHolder(state, one) === undefined)
+    if (slot === undefined) throw new Error('The stopped seed found no free Pantry slot')
+    step(start(state, { outfitId, slot, request: { kind: 'craft', item, count: STARTED_COUNT } }, CHECK_IN, SEED_ENV))
+    for (const count of queued) step(queue(state, { outfitId, add: { request: { kind: 'craft', item, count }, building: 'pantry' } }, CHECK_IN, SEED_ENV))
+  }
   for (const { item, keep } of DRAINED) {
     step(sell(state, { opId: `seed-sell-${item}`, itemId: item, qty: (state.items[item] ?? 0) - keep, unitPrice: sellPrice(item)! }, CHECK_IN))
   }

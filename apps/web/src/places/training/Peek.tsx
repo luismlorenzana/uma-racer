@@ -44,7 +44,7 @@ export default function TrainingPeek({ place }: PeekProps) {
             <PeekRow
               key={`${card.slot.room ?? ''}:${card.slot.slot}`}
               card={card}
-              what={now === null || line === null ? undefined : { icon: <ItemIcon item={now.dishId} decorative />, name: line }}
+              what={now === null || line === null ? undefined : { icon: now.dishId === null ? null : <ItemIcon item={now.dishId} decorative />, name: line }}
             />
           )
         })}
@@ -71,7 +71,7 @@ export default function TrainingPeek({ place }: PeekProps) {
           </p>
           <section aria-label={trainingWords('peek-dishes', { family: dishFamilyName(facility) })}>
             <h3 className="text-micro mb-1">{trainingWords('peek-dishes', { family: dishFamilyName(facility) })}</h3>
-            {dishes.length === 0 ? <p className="text-[12px] text-ink-soft">{trainingWords('peek-dishes-none', { family: dishFamilyName(facility) })}</p> : (
+            {dishes.length === 0 ? <p className="text-[12px] text-ink-soft">{trainingWords('peek-dishes-none')}</p> : (
               <ul className="flex flex-wrap gap-1.5">
                 {dishes.map((dish) => (
                   <li key={dish.item} className="flex items-center gap-1 rounded-sm bg-sunken/60 py-0.5 pr-2 pl-0.5 text-[12px] tabular-nums" aria-label={`${dish.words}: ${grouped(dish.count)}`}>

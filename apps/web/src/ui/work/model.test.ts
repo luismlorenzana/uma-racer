@@ -29,7 +29,7 @@ describe('slot cards (07 §6, §10)', () => {
       }
     }
     expect(slotCards(state, 'kitchen', at)).toHaveLength(6)
-    expect(slotCards({ ...state, buildings: { ...state.buildings, kitchen: { level: 2 } } }, 'kitchen', at)).toHaveLength(8)
+    expect(slotCards({ ...state, buildings: { ...state.buildings, kitchen: { level: 2 } } }, 'kitchen', at)).toHaveLength(9)
   })
 
   it("reads 07 §2's Potato job: 3/10, the next output, the end and the time left from itemEnds and endsAt", () => {
@@ -69,20 +69,21 @@ describe("SpeedUpControls' four states (07 §8, 09 §5.1)", () => {
   })
 
   it('ready with −30m and Finish · N when she holds N tickets', () => {
-    const model = speedUpModel(running(10), uma(1), at)
-    expect(model).toMatchObject({ state: 'ready', finish: 8, have: 10, buy: 0 })
+    // Two wheat take 5h 24m: eleven tickets finish them.
+    const model = speedUpModel(running(12), uma(1), at)
+    expect(model).toMatchObject({ state: 'ready', finish: 11, have: 12, buy: 0 })
     expect(speedUpQuestion(model)).toBeNull()
   })
 
-  it('buy: too few tickets reads "Buy 3 and finish · 90" and asks once; short of money it says why', () => {
+  it('buy: too few tickets reads "Buy 6 and finish · 180" and asks once; short of money it says why', () => {
     const model = speedUpModel(running(5), uma(1), at)
-    expect(model).toMatchObject({ state: 'buy', finish: 8, have: 5, buy: 3, price: 90 })
-    expect(workWords('buy-finish', { n: model.buy, price: model.price })).toBe('Buy 3 and finish · 90')
-    expect(speedUpQuestion(model)).toBe('Buy 3 Speed Tickets for 90 Prize Money and finish now?')
+    expect(model).toMatchObject({ state: 'buy', finish: 11, have: 5, buy: 6, price: 180 })
+    expect(workWords('buy-finish', { n: model.buy, price: model.price })).toBe('Buy 6 and finish · 180')
+    expect(speedUpQuestion(model)).toBe('Buy 6 Speed Tickets for 180 Prize Money and finish now?')
     // One ticket is singular, in the question and in Finish's label.
     expect(speedUpQuestion({ ...model, buy: 1, price: 30 })).toBe('Buy 1 Speed Ticket for 30 Prize Money and finish now?')
     expect(workWords('finish-label-one')).toBe('Finish now with 1 Speed Ticket')
-    expect(model.buyRefusal).toEqual({ text: 'Need {n} more.', data: { n: 90 } })
+    expect(model.buyRefusal).toEqual({ text: 'Need {n} more.', data: { n: 180 } })
     const rich = apply(running(5), 'dev-grant', { prizeMoney: 1_000 }, at).state
     expect(speedUpModel(rich, uma(1), at).buyRefusal).toBeNull()
   })
@@ -97,23 +98,23 @@ describe("SpeedUpControls' four states (07 §8, 09 §5.1)", () => {
 })
 
 describe('the Recall preview (07 §2, §5)', () => {
-  it("equals the receipt recall gives: Cook Carrot Salad × 3, recalled after one and a half salads", () => {
+  it("equals the receipt recall gives: Brew Warm-Up Tonic × 3, recalled after one and a half tonics", () => {
     const { state, env } = farmAccount(1)
-    const stocked = apply(state, 'dev-grant', { items: { 'chopped-carrot': 12, 'wheat-flour': 3 } }, at).state
-    const cooking = apply(stocked, 'start', { outfitId: uma(1), slot: { building: 'kitchen', slot: 0 }, request: { kind: 'cook', item: 'dish-vegetables-1', count: 3 } }, at).state
+    const stocked = apply(state, 'dev-grant', { items: { 'chopped-carrot': 3, 'dried-button-mushroom': 3, 'wheat-flour': 3 } }, at).state
+    const cooking = apply(stocked, 'start', { outfitId: uma(1), slot: { building: 'kitchen', slot: 0 }, request: { kind: 'cook', item: 'tonic-1', count: 3 } }, at).state
     expect(cooking.items).toEqual({})
     const entry = cooking.work[uma(1)]!.entries[0]!
     const now = at + Math.round(entry.seconds[0]! * 1.5) * 1000
     const preview = recallPreview(cooking, uma(1), now, env)
     const { receipt } = recall(cooking, { outfitId: uma(1) }, now, env)
     expect(preview).toEqual({
-      outfitId: uma(1), paid: [{ item: 'dish-vegetables-1', qty: 1 }], unlocks: 0, returned: receipt.returned,
+      outfitId: uma(1), paid: [{ item: 'tonic-1', qty: 1 }], unlocks: 0, returned: receipt.returned,
       lostMinutes: Math.round(receipt.lostMinutes), droppedQueue: receipt.droppedQueue.length, recalled: true,
     })
-    expect(receipt.returned).toEqual([{ item: 'chopped-carrot', qty: 8 }, { item: 'wheat-flour', qty: 2 }])
+    expect(receipt.returned).toEqual([{ item: 'chopped-carrot', qty: 2 }, { item: 'dried-button-mushroom', qty: 2 }, { item: 'wheat-flour', qty: 2 }])
     expect(recallLines(preview)).toEqual([
-      '1 Carrot Salad collected',
-      '8 Chopped Carrot and 2 Wheat Flour come back',
+      '1 Warm-Up Tonic collected',
+      '2 Chopped Carrot, 2 Dried Button Mushroom and 2 Wheat Flour come back',
       `${Math.round(receipt.lostMinutes)} minutes of progress lost`,
     ])
   })
@@ -154,11 +155,11 @@ describe('size chips (02 §3, D366)', () => {
     const view = sizeChipsView(at, seconds, 10, times, 0)
     const domain = sizeChips(at, seconds, times, 0)
     expect(view.chips.map((chip) => chip.ms)).toEqual(domain.chips.map((chip) => chip.endsAt - at))
-    expect(view.chips.map((chip) => chip.duration)).toEqual(['1h 48m', '3h 36m', '5h 24m', '7h 12m', '9h', '10h 48m', '12h 36m', '14h 24m', '16h 12m', '18h'])
+    expect(view.chips.map((chip) => chip.duration)).toEqual(['2h 42m', '5h 24m', '8h 6m', '10h 48m', '13h 30m', '16h 12m', '18h 54m', '21h 36m', '1d', '1d 3h'])
     expect(view.marked).toBe(domain.marked)
-    expect(view).toMatchObject({ marked: 2, overnight: false, fit: 'fits the next check-in' })
-    // 08:00 + 1h 48m ends at 09:48, 3h 12m before the 13:00 check-in.
-    expect(view.chips[0]!.words).toBe('1h 48m, then free 3h 12m before a check-in')
+    expect(view).toMatchObject({ marked: 1, overnight: false, fit: 'fits the next check-in' })
+    // 08:00 + 2h 42m ends at 10:42, 2h 18m before the 13:00 check-in.
+    expect(view.chips[0]!.words).toBe('2h 42m, then free 2h 18m before a check-in')
     expect(view.chips.every((chip) => !/\d\d:\d\d/.test(`${chip.duration} ${chip.words}`))).toBe(true)
     expect(sizeChipsView(at, seconds, 3, times, 0).chips).toHaveLength(3)
     expect(sizeChipsView(at, seconds, 0, times, 0).chips).toHaveLength(1)

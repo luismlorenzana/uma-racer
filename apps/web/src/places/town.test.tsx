@@ -131,27 +131,27 @@ describe('the Stable (04 §6, 11 §2.4, §6)', () => {
 })
 
 describe('the Warehouse (09 §6.1)', () => {
-  it('sells a dish only after its question', async () => {
+  it('sells a meal only after its question', async () => {
     const game = await freshWith(1, async (g) => void (await g.run('dev-grant', { items: { 'dish-sweets-3': 2 } })))
     renderG2('/town/warehouse', game)
-    click(await screen.findByRole('tab', { name: 'Dishes' }))
+    click(await screen.findByRole('tab', { name: 'Meals' }))
     click(await waitFor(() => need(itemRow('dish-sweets-3'))))
     const sheet = await screen.findByRole('dialog', { name: 'Sugar Beet Cake' })
     expect(within(sheet).getByText('Sugar Beet Cake · Speed · grade 3')).toBeTruthy()
     click(within(sheet).getByRole('button', { name: /^×1/ }))
     const question = await screen.findByRole('dialog', { name: 'Sell' })
-    expect(within(question).getByText('Sell 1 Sugar Beet Cake (grade 3) for 349? Each took about 17 hours of work.')).toBeTruthy()
+    expect(within(question).getByText('Sell 1 Sugar Beet Cake (grade 3) for 523? Each took about 26 hours of work.')).toBeTruthy()
     expect(game.getSnapshot().state!.items['dish-sweets-3']).toBe(2)
     click(within(question).getByRole('button', { name: 'Sell' }))
     await waitFor(() => expect(game.getSnapshot().state!.items['dish-sweets-3']).toBe(1))
-    expect(game.getSnapshot().state!.profile.prizeMoney).toBe(349)
-    expect(await screen.findByText('Sold 1 for 349.')).toBeTruthy()
+    expect(game.getSnapshot().state!.profile.prizeMoney).toBe(523)
+    expect(await screen.findByText('Sold 1 for 523.')).toBeTruthy()
   })
 
   it('never offers reserved stock, and a stale price reads "Price changed."', async () => {
     const game = await freshWith(1, async (g) => {
-      await g.run('dev-grant', { items: { 'chopped-carrot': 4, 'wheat-flour': 1, 'beet-sugar': 3 } })
-      await g.run('start', { outfitId: 'sim-uma-01', slot: { building: 'kitchen', slot: 0 }, request: { kind: 'cook', item: 'dish-vegetables-1', count: 1 } })
+      await g.run('dev-grant', { items: { 'chopped-carrot': 1, 'dried-button-mushroom': 1, 'wheat-flour': 1, 'beet-sugar': 3 } })
+      await g.run('start', { outfitId: 'sim-uma-01', slot: { building: 'kitchen', slot: 0 }, request: { kind: 'cook', item: 'tonic-1', count: 1 } })
     })
     // A port whose price moved since the screen read it: the rule refuses, the screen says so.
     const stale: G2Game = {
@@ -209,9 +209,8 @@ describe('the Card Library and the featured Uma (06 §6, 11 §5)', () => {
     const { where } = renderG2('/town/card-library/card/sim-card-speed-e1', game)
     click(await screen.findByRole('button', { name: 'Bond' }))
     const picker = await screen.findByRole('dialog', { name: /^Bond / })
+    // A bond takes no item (D374), so there's no Cook to follow up: tapping her goes straight on.
     click(await within(picker).findByRole('button', { name: /^Amber Sprint/ }))
-    // The kit owns choosing her; racer keeps Cook as a follow-up rather than a nested button in the shared tile.
-    click(await screen.findByRole('button', { name: 'Choose Amber Sprint' }))
     await waitFor(() => expect(where()).toBe(
       `/training/dojo?session=sim-uma-01&room=speed&unlocks=bond%3Asim-card-speed-e1&back=${encodeURIComponent('/town/card-library/card/sim-card-speed-e1')}`,
     ))

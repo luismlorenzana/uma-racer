@@ -70,12 +70,15 @@ export const FARM_WORDS = Object.freeze({
   'no-slot-ready': 'Every slot is taken. Collect here to free one.',
   'make-at': 'Make {item} at the {place}',
   'buy-raw': 'Buy {item} at the Exchange · {price}',
-  /** Kitchen tabs and dish destinations (07 §10, 08 §2). */
-  'tab-skill': 'Skill bonds',
+  /** Kitchen tabs and what each item is for (07 §10, 08 §2, D374). */
+  'tab-tonics': 'Tonics',
   'tab-duos': 'Duos',
   'tab-feasts': 'Feasts',
   'to-duo': 'Duo: {a} & {b}',
   'to-sun': 'Sun nodes',
+  'to-tonic': 'Nodes & Inspiration slots',
+  'to-stand-in': 'Stands in for a tonic',
+  'to-retired': 'Retired · sell it',
 } as const)
 
 export type FarmWord = keyof typeof FARM_WORDS

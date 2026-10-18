@@ -54,7 +54,8 @@ describe('For your targets (02 §6)', () => {
   it("lists the planner's lines here in 02 §6's words, each opening the sheet filled in", () => {
     const busy = seed('busy')
     const view = workView(busy.state, busy.at, busy.env)
-    const model = buildingView(view, 'vegetable-garden', context(busy.env, busy.at))
+    // The Mushroom Cave: the tonics' mushrooms, with a gather that finished overnight still to collect.
+    const model = buildingView(view, 'mushroom-cave', context(busy.env, busy.at))
     expect(model.lines.length).toBeGreaterThan(0)
     const grades = model.lines.map((line) => line.line.grade)
     expect(grades).toEqual([...grades].sort((a, b) => a - b))
@@ -72,7 +73,8 @@ describe('For your targets (02 §6)', () => {
     expect(lineWords(coming.line, context(busy.env, busy.at))).toBe(coming.words)
     expect(coming.words).toMatch(/coming \d+ \([^,]+, in \d+[dhm]/)
     expect(lineLabel('cabbage')).toBe('Vegetables G3')
-    expect(lineLabel('dish-vegetables-1')).toBe('Vegetables G1')
+    expect(lineLabel('dish-sweets-1')).toBe('Sweets G1')
+    expect(lineLabel('tonic-2')).toBe('Tonic G2')
     expect(lineLabel('duo-stamina-wit-3')).toBe('Duo G3')
     expect(lineLabel('feast-4')).toBe('Feast G4')
   })
@@ -91,7 +93,7 @@ describe('For your targets (02 §6)', () => {
     const leveled = withFarmLevel(state, uma(2), 6)
     const busy = apply(leveled, 'start', { outfitId: uma(2), slot: { building: 'fields', slot: 0 }, request: { kind: 'gather', item: 'wheat', count: 10 } }, at).state
     const stocked = buildingView(workView(busy, at, env), 'vegetable-garden', context(env)).lines.find((line) => line.gate !== null && line.line.grade === 2)
-    expect(stocked?.buy).toEqual({ price: 114, to: exchangeRow('vegetables', 2) })
+    expect(stocked?.buy).toEqual({ price: 171, to: exchangeRow('vegetables', 2) })
     expect(stocked?.buy?.to).toBe('/town/exchange?family=vegetables&grade=2')
   })
 

@@ -5,7 +5,7 @@
 // preselection (the first row, a named Uma, a link's item and what the plan wants most); and each
 // button's rule in its own words.
 import { durationText } from '@racer/domain/check-in'
-import { FARM_BUILDING_IDS, farmExpMultiplier, farmItemSeconds, QUARTERS_PER_EXP } from '@racer/domain/farm'
+import { FARM_BUILDING_IDS, farmExpMultiplier, farmItemSeconds, QUARTERS_PER_EXP, type FarmBuildingId } from '@racer/domain/farm'
 import { craftedItem, FAMILIES, FAMILY_RING, rawItem } from '@racer/domain/items'
 import { suggestFrom } from '@racer/domain/planner'
 import { describe, expect, it } from 'vitest'
@@ -53,45 +53,48 @@ describe('What (07 §10)', () => {
     expect(tabs.map((tab) => tab.icon)).toEqual(FAMILY_RING.map((family) => ({ kind: 'item', item: craftedItem(family, 1).id })))
   })
 
-  it("the Kitchen's eleven tabs, each an icon, Can cook now holding what the free stock covers once at her Farm Level", () => {
+  it("the Kitchen's nine tabs, each an icon, Can cook now holding what the free stock covers once at her Farm Level", () => {
     const { state, at } = farmAccount(1)
     const tabs = sheetTabs('kitchen', state, 1)
-    expect(tabs.map((tab) => tab.label)).toEqual([
-      'Speed', 'Stamina', 'Power', 'Guts', 'Wit', 'Skill bonds', 'Constellation', 'Inspiration', 'Duos', 'Feasts', 'Can cook now',
-    ])
+    expect(tabs.map((tab) => tab.label)).toEqual(['Speed', 'Stamina', 'Power', 'Guts', 'Wit', 'Tonics', 'Duos', 'Feasts', 'Can cook now'])
     expect(tabs.map((tab) => (tab.icon.kind === 'type' ? tab.icon.type : tab.icon.kind === 'mark' ? tab.icon.mark : 'item'))).toEqual([
-      'speed', 'stamina', 'power', 'guts', 'wit', 'friend', 'star', 'spark', 'item', 'item', 'check',
+      'speed', 'stamina', 'power', 'guts', 'wit', 'star', 'item', 'item', 'check',
     ])
     expect(tabs.find((tab) => tab.id === CAN_COOK_NOW)!.items).toEqual([])
     expect(tabs[0]!.items[0]).toBe('dish-sweets-1')
-    expect(tabs[8]!.items).toHaveLength(8)
-    expect(tabs[9]!.items).toHaveLength(4)
-    const stocked = apply(state, 'dev-grant', { items: { 'chopped-carrot': 4, 'wheat-flour': 1, 'diced-potato': 4 } }, at).state
-    expect(sheetTabs('kitchen', stocked, 1).find((tab) => tab.id === CAN_COOK_NOW)!.items).toEqual(['dish-vegetables-1'])
-    // Potato Salad's side is also Wheat Flour; its grade opens at Farm Lv 6, so it joins at 6 once the side is there twice.
-    const more = apply(stocked, 'dev-grant', { items: { 'wheat-flour': 1 } }, at).state
-    expect(sheetTabs('kitchen', more, 6).find((tab) => tab.id === CAN_COOK_NOW)!.items).toEqual(['dish-vegetables-1', 'dish-vegetables-2'])
+    expect(tabs[5]!.items).toEqual(Array.from({ length: 10 }, (_, i) => `tonic-${i + 1}`))
+    expect(tabs[6]!.items).toHaveLength(8)
+    expect(tabs[7]!.items).toHaveLength(4)
+    // The retired salads, soups and breads are no longer cooked (D374): no tab lists them.
+    expect(tabs.flatMap((tab) => tab.items).some((item) => /^dish-(vegetables|mushrooms|grains)-/.test(item))).toBe(false)
+    const stocked = apply(state, 'dev-grant', {
+      items: { 'chopped-carrot': 1, 'dried-button-mushroom': 1, 'wheat-flour': 1, 'diced-potato': 1, 'dried-shiitake': 1, 'rolled-oats': 1 },
+    }, at).state
+    expect(sheetTabs('kitchen', stocked, 1).find((tab) => tab.id === CAN_COOK_NOW)!.items).toEqual(['tonic-1'])
+    // The Practice Tonic's grade opens at Farm Lv 6.
+    expect(sheetTabs('kitchen', stocked, 6).find((tab) => tab.id === CAN_COOK_NOW)!.items).toEqual(['tonic-1', 'tonic-2'])
   })
 })
 
 describe('How many and the preview (07 §2, §10; 02 §3; D366)', () => {
-  it("Cook Carrot Salad × 3 takes 12 Chopped Carrot and 3 Wheat Flour, against free stock, and reads how long it takes", () => {
+  it("Brew Warm-Up Tonic × 3 takes 3 Chopped Carrot, Dried Button Mushroom and Wheat Flour, against free stock, and reads how long it takes", () => {
     const { state, env, at } = farmAccount(1)
-    const stocked = apply(state, 'dev-grant', { items: { 'chopped-carrot': 9, 'wheat-flour': 3 } }, at).state
+    const stocked = apply(state, 'dev-grant', { items: { 'chopped-carrot': 2, 'dried-button-mushroom': 3, 'wheat-flour': 3 } }, at).state
     const view = workView(stocked, at, env)
     const slot = chooseSlot(stocked, 'kitchen', uma(1), null)!
-    const preview = sheetPreview(view, 'kitchen', uma(1), 'dish-vegetables-1', 3, 'start', slot)!
-    expect(preview.request).toEqual({ kind: 'cook', item: 'dish-vegetables-1', count: 3 })
+    const preview = sheetPreview(view, 'kitchen', uma(1), 'tonic-1', 3, 'start', slot)!
+    expect(preview.request).toEqual({ kind: 'cook', item: 'tonic-1', count: 3 })
     expect(preview.inputs).toEqual([
-      { item: 'chopped-carrot', need: 12, have: 9, short: 3 },
+      { item: 'chopped-carrot', need: 3, have: 2, short: 1 },
+      { item: 'dried-button-mushroom', need: 3, have: 3, short: 0 },
       { item: 'wheat-flour', need: 3, have: 3, short: 0 },
     ])
     expect(preview.max).toBe(2)
     expect(preview.minutesEach).toBe(farmItemSeconds('cook', 1) / 60)
     expect(preview.ms).toBe(3 * farmItemSeconds('cook', 1) * 1000)
     expect(preview.endsAt).toBe(at + preview.ms)
-    // Start's label reads the duration: "Start · ×3 · 14h 24m" (240 base minutes × 1.2, three times).
-    expect(durationText(preview.ms)).toBe('14h 24m')
+    // Start's label reads the duration: "Start · ×3 · 21h 36m" (240 base minutes × 1.8, three times).
+    expect(durationText(preview.ms)).toBe('21h 36m')
   })
 
   it('shows Farm EXP in whole numbers from the quarter points Start would freeze', () => {
@@ -100,8 +103,8 @@ describe('How many and the preview (07 §2, §10; 02 §3; D366)', () => {
     const slot = chooseSlot(state, 'pantry', uma(1), null)!
     const stocked = apply(state, 'dev-grant', { items: { carrot: 10 } }, at).state
     const preview = sheetPreview(workView(stocked, at, env), 'pantry', uma(1), 'chopped-carrot', 3, 'start', slot)!
-    // A craft of 27 listed minutes at Front Runner A (×1.6) is 43.2 EXP, 173 quarter points each: 519 for three.
-    expect(preview.farmExp).toBe(Math.round((3 * 173) / QUARTERS_PER_EXP))
+    // A craft of 40.5 listed minutes at Front Runner A (×1.6) is 64.8 EXP, 259 quarter points each: 777 for three.
+    expect(preview.farmExp).toBe(Math.round((3 * 259) / QUARTERS_PER_EXP))
     expect(Number.isInteger(preview.farmExp)).toBe(true)
     expect(sheetPreview(view, 'pantry', null, 'chopped-carrot', 3, 'start', slot)!.farmExp).toBeNull()
     expect(sheetPreview(view, 'pantry', uma(1), 'carrot', 3, 'start', slot)).toBeNull()
@@ -179,16 +182,17 @@ describe('the preselection (D366, A03)', () => {
     const planned = sheetPlan(view)
     const timing = sheetTiming(view, 0)
     const { suggestions } = suggestFrom(view.settled, planned, {}, timing)
-    const here = suggestions.find((s) => s.kind === 'job' && s.slot.building === 'vegetable-garden')
+    // A site where the planner suggests an Uma other than its level-first row.
+    const here = suggestions.find((s) => s.kind === 'job' && s.outfitId !== freeRows(view, s.slot.building as FarmBuildingId, null)[0]?.outfitId)
     expect(here).toBeDefined()
-    const first = freeRows(view, 'vegetable-garden', null)[0]!
-    const picked = preselect(view, 'vegetable-garden', query(), planned, timing)
+    const building = here!.slot.building as FarmBuildingId
+    const first = freeRows(view, building, null)[0]!
+    const picked = preselect(view, building, query(), planned, timing)
     expect(picked.uma).toBe(first.outfitId)
-    expect(here!.outfitId).not.toBe(first.outfitId)
-    expect(picked.item).toBe(bestItem(view.settled, 'vegetable-garden', first.farmLevel, neededByItem(planned)))
-    expect(freeRows(view, 'vegetable-garden', null).some((row) => row.outfitId === here!.outfitId)).toBe(true)
+    expect(picked.item).toBe(bestItem(view.settled, building, first.farmLevel, neededByItem(planned)))
+    expect(freeRows(view, building, null).some((row) => row.outfitId === here!.outfitId)).toBe(true)
     // The link's own count is kept.
-    expect(preselect(view, 'vegetable-garden', query({ count: 1 }), planned, timing).count).toBe(1)
+    expect(preselect(view, building, query({ count: 1 }), planned, timing).count).toBe(1)
   })
 
   it('without one, the best Free Uma (Farm Level first) and what the plan wants most that she can make, else the highest grade she can work', () => {
@@ -254,14 +258,14 @@ describe("the button says why in the rule's words (07 §10, 02 §9)", () => {
     const empty = farmAccount(0)
     expect(sheetAction(workView(empty.state, at, env), 'kitchen', null, 'start', null, 1, null)).toEqual({ mode: 'blocked', words: 'No Umas yet · unlock them in the Stable' })
 
-    const short = sheetAction(view, 'kitchen', uma(1), 'start', 'dish-vegetables-1', 1, null)
-    expect(short).toMatchObject({ mode: 'start', refusal: { text: 'Short {n} {item}.', data: { n: 4, item: 'chopped-carrot' } } })
-    const preview = sheetPreview(view, 'kitchen', uma(1), 'dish-vegetables-1', 1, 'start', chooseSlot(state, 'kitchen', uma(1), null)!)!
-    const [link] = shortfallLinks(state, preview.inputs, '/farm/kitchen?job=dish-vegetables-1')
-    expect(link).toMatchObject({ item: 'chopped-carrot', short: 4, buy: null })
-    expect(link!.make).toEqual({ building: 'pantry', to: '/farm/pantry?job=chopped-carrot&count=4&back=%2Ffarm%2Fkitchen%3Fjob%3Ddish-vegetables-1' })
+    const short = sheetAction(view, 'kitchen', uma(1), 'start', 'tonic-1', 1, null)
+    expect(short).toMatchObject({ mode: 'start', refusal: { text: 'Short {n} {item}.', data: { n: 1, item: 'chopped-carrot' } } })
+    const preview = sheetPreview(view, 'kitchen', uma(1), 'tonic-1', 1, 'start', chooseSlot(state, 'kitchen', uma(1), null)!)!
+    const [link] = shortfallLinks(state, preview.inputs, '/farm/kitchen?job=tonic-1')
+    expect(link).toMatchObject({ item: 'chopped-carrot', short: 1, buy: null })
+    expect(link!.make).toEqual({ building: 'pantry', to: '/farm/pantry?job=chopped-carrot&count=1&back=%2Ffarm%2Fkitchen%3Fjob%3Dtonic-1' })
     const raw = shortfallLinks(state, [{ item: 'carrot', need: 3, have: 0, short: 3 }], '/farm/pantry')
-    expect(raw[0]).toMatchObject({ make: { building: 'vegetable-garden' }, buy: { price: 108, to: '/town/exchange?family=vegetables&grade=1' } })
+    expect(raw[0]).toMatchObject({ make: { building: 'vegetable-garden' }, buy: { price: 162, to: '/town/exchange?family=vegetables&grade=1' } })
 
     // The Orchard's two slots, both held: the next frees when the shorter job ends, read as how long until then.
     let full = apply(state, 'start', { outfitId: uma(1), slot: { building: 'orchard', slot: 0 }, request: { kind: 'gather', item: 'apple', count: 1 } }, at).state

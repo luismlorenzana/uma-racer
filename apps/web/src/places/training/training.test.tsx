@@ -38,24 +38,24 @@ function reopen(path: string, game: G2Game) {
 }
 
 describe('a session from the sheet (05 §2, §8)', () => {
-  it('three nodes take three dishes; two finishes later the Collect chip opens two nodes holding the set card; Recall returns the third dish', async () => {
+  it('three nodes take three tonics; two finishes later the Collect chip opens two nodes holding the set card; Recall returns the third tonic', async () => {
     const { state: account, at } = trainingAccount(1)
     const preset = account.umas[uma(1)]!.raceDefaults.selectedPreset
-    const { state: withCard, cardId } = withSetCard(granted(account, at, { 'dish-vegetables-1': 3 }), uma(1), 'speed', 1, preset, at)
+    const { state: withCard, cardId } = withSetCard(granted(account, at, { 'tonic-1': 3 }), uma(1), 'speed', 1, preset, at)
     const { game, advance } = clocked(farmSeed(withCard, at))
     const { where } = renderG2(`/training/observatory?session=${uma(1)}`, game)
     const sheet = await screen.findByRole('dialog', { name: 'Start a session · Observatory' })
-    // The fitted pre-pick is one node before the 13:00 check-in; two more take the other dishes.
+    // The fitted pre-pick is two nodes, past 13:00 to the 22:30 check-in; a third takes the other tonic.
     expect(within(sheet).getByRole('checkbox', { name: /^Node 1,/ }).getAttribute('aria-checked')).toBe('true')
-    fireEvent.click(within(sheet).getByRole('checkbox', { name: /^Node 2,/ }))
+    expect(within(sheet).getByRole('checkbox', { name: /^Node 2,/ }).getAttribute('aria-checked')).toBe('true')
     fireEvent.click(within(sheet).getByRole('checkbox', { name: /^Node 3,/ }))
-    within(sheet).getByText('Reserves 3 Carrot Salad')
+    within(sheet).getByText('Reserves 3 Warm-Up Tonic')
     // Each finish reads how long until it lands (D366), never its clock time.
     within(sheet).getByText(`Node 3 · in ${durationText(3 * ONE)}`)
     fireEvent.click(within(sheet).getByRole('button', { name: 'Start' }))
     await waitFor(() => expect(where()).toBe('/training/observatory'))
-    expect(state(game).items['dish-vegetables-1'] ?? 0).toBe(0)
-    await screen.findByRole('article', { name: `${name(uma(1))}. Node 1 · Carrot Salad, 0 of 3 made, ${durationText(3 * ONE)} left` })
+    expect(state(game).items['tonic-1'] ?? 0).toBe(0)
+    await screen.findByRole('article', { name: `${name(uma(1))}. Node 1 · Warm-Up Tonic, 0 of 3 made, ${durationText(3 * ONE)} left` })
 
     advance(2 * ONE + MINUTE)
     reopen(`/training/observatory/${uma(1)}`, game)
@@ -64,13 +64,13 @@ describe('a session from the sheet (05 §2, §8)', () => {
     expect(state(game).umas[uma(1)]!.build.presets[preset].assignments).toEqual({ n1: cardId, n2: cardId })
 
     reopen('/training/observatory', game)
-    const card = await screen.findByRole('article', { name: new RegExp(`^${name(uma(1))}\\. Node 3 · Carrot Salad, 2 of 3 made`) })
+    const card = await screen.findByRole('article', { name: new RegExp(`^${name(uma(1))}\\. Node 3 · Warm-Up Tonic, 2 of 3 made`) })
     fireEvent.click(within(card).getByRole('button', { name: `More for ${name(uma(1))}: Queue next and Recall` }))
-    fireEvent.click(within(await screen.findByRole('dialog', { name: `${name(uma(1))} · Node 3 · Carrot Salad ×3` })).getByRole('button', { name: 'Recall' }))
+    fireEvent.click(within(await screen.findByRole('dialog', { name: `${name(uma(1))} · Node 3 · Warm-Up Tonic ×3` })).getByRole('button', { name: 'Recall' }))
     const recall = await screen.findByRole('dialog', { name: `Recall ${name(uma(1))}` })
-    within(recall).getByText('1 Carrot Salad comes back')
+    within(recall).getByText('1 Warm-Up Tonic comes back')
     fireEvent.click(within(recall).getByRole('button', { name: 'Recall' }))
-    await waitFor(() => expect(state(game).items['dish-vegetables-1']).toBe(1))
+    await waitFor(() => expect(state(game).items['tonic-1']).toBe(1))
     expect(state(game).umas[uma(1)]!.build.constellationOpened).toBe(2)
   })
 })
@@ -78,7 +78,7 @@ describe('a session from the sheet (05 §2, §8)', () => {
 describe('Speed Tickets on a session (09 §5.1)', () => {
   it('−30m spends one ticket and takes 30 minutes off the time left; Finish with too few asks to buy, then buys and finishes', async () => {
     const { state: account, at } = trainingAccount(1)
-    const stocked = granted(account, at, { 'dish-vegetables-1': 2, 'speed-ticket': 1 }, 5_000)
+    const stocked = granted(account, at, { 'tonic-1': 2, 'speed-ticket': 1 }, 5_000)
     const her = stocked.umas[uma(1)]!
     const started = apply(stocked, 'start', {
       outfitId: uma(1), slot: { building: 'observatory', slot: 0 },
@@ -123,9 +123,9 @@ describe('upgrades (05 §7)', () => {
 
 describe("the Card Library's Bond link (06 §6)", () => {
   it('opens the Dojo sheet with her, the room and the card; Start returns to `back`', async () => {
+    // A bond takes no item (D374): an empty Warehouse starts it.
     const { state: account, at } = trainingAccount(1)
-    const stocked = granted(account, at, { 'dish-sweets-1': 1 })
-    const { game } = clocked(farmSeed(stocked, at))
+    const { game } = clocked(farmSeed(account, at))
     const back = '/town/card-library/card/sim-card-speed-e1'
     const { where } = renderG2(`/training/dojo?session=${uma(1)}&room=speed&unlocks=bond:sim-card-speed-e1&back=${encodeURIComponent(back)}`, game)
     const sheet = await screen.findByRole('dialog', { name: 'Start a session · Dojo' })
@@ -136,14 +136,13 @@ describe("the Card Library's Bond link (06 §6)", () => {
     fireEvent.click(within(sheet).getByRole('button', { name: 'Start' }))
     await waitFor(() => expect(where()).toBe(back))
     expect(state(game).work[uma(1)]!.entries[0]!.request).toEqual({ kind: 'session', unlocks: [{ kind: 'bond', target: 'sim-card-speed-e1' }] })
-    expect(state(game).items['dish-sweets-1'] ?? 0).toBe(0)
+    expect(state(game).items).toEqual(account.items)
   })
 
   it('with `queue=1` for her running bond session in that room, opens on Add to queue', async () => {
     const { state: account, at } = trainingAccount(1)
-    // In scenario 2 an era-2 Speed card can bond too (06 §2), with a grade-3 dish.
-    const stocked = granted(advanced(account, uma(1), at), at, { 'dish-sweets-1': 1, 'dish-sweets-3': 1 })
-    const started = apply(stocked, 'start', {
+    // In scenario 2 an era-2 Speed card can bond too (06 §2), at grade 3.
+    const started = apply(advanced(account, uma(1), at), 'start', {
       outfitId: uma(1), slot: { building: 'dojo', room: 'speed', slot: 0 }, request: { kind: 'session', unlocks: [{ kind: 'bond', target: 'sim-card-speed-e1' }] },
     }, at).state
     const { game } = clocked(farmSeed(started, at))

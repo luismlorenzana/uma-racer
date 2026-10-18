@@ -47,9 +47,9 @@ describe('facility pages (05 §7, §8)', () => {
     expect(facilityView(viewAt(state, AT), 'dojo', CONTEXT).rooms.map((room) => room.room)).toEqual(['speed', 'stamina', 'power', 'guts', 'wit', 'friend-group'])
   })
 
-  it("names a three-node session's current unlock and its dish, with its finish times from sessionSeconds", () => {
+  it("names a three-node session's current unlock and its tonic, with its finish times from sessionSeconds", () => {
     const { state } = trainingAccount(1)
-    const stocked = granted(state, AT, { 'dish-vegetables-1': 3 })
+    const stocked = granted(state, AT, { 'tonic-1': 3 })
     const unlocks = nextUnlocks(stocked.umas[uma(1)]!.build, stocked.umas[uma(1)]!, 'observatory', null, 3)
     const started = apply(stocked, 'start', { outfitId: uma(1), slot: { building: 'observatory', slot: 0 }, request: sessionRequest(unlocks) }, AT).state
     const [card] = slotCards(started, 'observatory', AT)
@@ -57,20 +57,22 @@ describe('facility pages (05 §7, §8)', () => {
     const one = sessionSeconds(1) * 1000
     expect(card).toMatchObject({ made: 0, count: 3, nextAt: AT + one, endsAt: AT + 3 * one })
     const current = currentUnlock(started.work[uma(1)], card)!
-    expect(unlockLine(current.ref, current.dishId, content)).toBe('Node 1 · Carrot Salad')
+    expect(unlockLine(current.ref, current.dishId, content)).toBe('Node 1 · Warm-Up Tonic')
     expect(clockTime(card.endsAt, 0)).toBe(clockTime(AT + 3 * one, 0))
-    expect(started.items['dish-vegetables-1'] ?? 0).toBe(0)
+    expect(started.items['tonic-1'] ?? 0).toBe(0)
     // Two finishes later the card names node 3, 2 of 3 made.
     const later = AT + 2 * one + 60_000
     const [after] = slotCards(started, 'observatory', later)
     if (after?.kind !== 'held') throw new Error('held')
     expect(after.made).toBe(2)
-    expect(unlockLine(currentUnlock(started.work[uma(1)], after)!.ref, 'dish-vegetables-1', content)).toBe('Node 3 · Carrot Salad')
+    expect(unlockLine(currentUnlock(started.work[uma(1)], after)!.ref, 'tonic-1', content)).toBe('Node 3 · Warm-Up Tonic')
+    // An unlock that takes no item is named alone.
+    expect(unlockLine({ kind: 'unique', target: 'parent0' }, null, content)).toBe("A's unique")
   })
 
   it("counts the Umas whose session here is Ready, as the hub's Counter does", () => {
     const { state } = trainingAccount(2)
-    const stocked = granted(state, AT, { 'dish-vegetables-1': 2 })
+    const stocked = granted(state, AT, { 'tonic-1': 2 })
     let next = stocked
     for (const [i, id] of [uma(1), uma(2)].entries()) {
       const her = next.umas[id]!
@@ -82,13 +84,13 @@ describe('facility pages (05 §7, §8)', () => {
     expect(hubView(next, later, DEV_ENV).counts['observatory']).toBe(2)
   })
 
-  it('writes Needs here in 02 §6\'s words, with Start when she can and the Kitchen for a short dish', () => {
+  it('writes Needs here in 02 §6\'s words, with Start when she can and the Kitchen for a short tonic', () => {
     const { state } = trainingAccount(1)
-    const stocked = granted(state, AT, { 'dish-vegetables-1': 2 })
+    const stocked = granted(state, AT, { 'tonic-1': 2 })
     const [line] = facilityView(viewAt(stocked, AT), 'observatory', CONTEXT).lines
-    expect(line!.words).toBe(`${CONTEXT.umaName(uma(1))} · 12 nodes · 2 in stock, 10 short`)
+    expect(line!.words).toBe(`${CONTEXT.umaName(uma(1))} · 12 nodes · 2 ready, 10 short`)
     expect(line!.start).toBe(`/training/observatory?session=${uma(1)}&back=%2Ftraining%2Fobservatory`)
-    expect(line!.cook!.to).toBe('/farm/kitchen?job=dish-vegetables-1&back=%2Ftraining%2Fobservatory')
+    expect(line!.cook!.to).toBe('/farm/kitchen?job=tonic-1&back=%2Ftraining%2Fobservatory')
     const dojo = facilityView(viewAt(stocked, AT), 'dojo', CONTEXT).lines
     expect(dojo.map((entry) => entry.words)).toEqual([`${CONTEXT.umaName(uma(1))} · 6 bonds: pick cards`])
   })
@@ -103,23 +105,26 @@ describe('the session sheet (05 §8)', () => {
     expect(parseUnlocks('gold:parent0:gold1,node:n99', 'lineage-hall')).toEqual([{ kind: 'gold', target: 'parent0:gold1' }])
   })
 
-  it('lists n13–n16 with their dishes and n17 locked for a scenario-2 Uma, and picking n13 frees n14', () => {
-    const state = granted(scenarioTwo(), AT, { 'dish-vegetables-3': 2, 'dish-vegetables-4': 2 })
+  it('lists n13–n16 with their tonics and n17 locked for a scenario-2 Uma, and picking n13 frees n14', () => {
+    // A Cabbage Salad stands in for a Paddock Tonic, and goes first (D374).
+    const state = granted(scenarioTwo(), AT, { 'tonic-3': 1, 'dish-vegetables-3': 1, 'tonic-4': 2 })
     const view = sheet(state, { facility: 'observatory', picks: [] })
     const rows = view.items.map((item) => [item.ref.target, item.dishId, item.state])
     expect(rows.slice(0, 5)).toEqual([
-      ['n13', 'dish-vegetables-3', 'available'],
-      ['n14', 'dish-vegetables-3', 'waiting'],
-      ['n15', 'dish-vegetables-4', 'waiting'],
-      ['n16', 'dish-vegetables-4', 'waiting'],
-      ['n17', 'dish-vegetables-5', 'later'],
+      ['n13', 'tonic-3', 'available'],
+      ['n14', 'tonic-3', 'waiting'],
+      ['n15', 'tonic-4', 'waiting'],
+      ['n16', 'tonic-4', 'waiting'],
+      ['n17', 'tonic-5', 'later'],
     ])
+    expect(view.items[0]).toMatchObject({ dish: 'Paddock Tonic (grade 3)', stock: 2 })
     expect(view.items[1]!.words).toBe('Needs node 13 first.')
     expect(view.items[4]!.words).toBe('Opens in scenario 3 · Trackblazer')
     const picked = sheet(state, { facility: 'observatory', picks: [{ kind: 'node', target: 'n13' }] })
     expect(picked.items.map((item) => item.state).slice(0, 3)).toEqual(['available', 'available', 'waiting'])
     expect(picked.items[0]!.picked).toBe(true)
     expect(picked.items[1]).toMatchObject({ stock: 1, pickable: true, picked: false })
+    expect(picked.confirm.dishes).toEqual([{ item: 'dish-vegetables-3', qty: 1 }])
   })
 
   it("lists the Power room: Power grade 3, then its Duos and the Spring Feast's Sun, each needing what comes first", () => {
@@ -136,9 +141,9 @@ describe('the session sheet (05 §8)', () => {
     expect(view.items.filter((item) => item.state === 'later').every((item) => item.words === 'Opens in scenario 3 · Trackblazer')).toBe(true)
   })
 
-  it('pre-picks fitSize of the next items, capped by stock; with no dish in stock, Start is off and says why', () => {
+  it('pre-picks fitSize of the next items, capped by stock; with no tonic in stock, Start is off and says why', () => {
     const { state } = trainingAccount(1)
-    const stocked = granted(state, AT, { 'dish-vegetables-1': 6, 'dish-vegetables-2': 4 })
+    const stocked = granted(state, AT, { 'tonic-1': 6, 'tonic-2': 4 })
     const her = stocked.umas[uma(1)]!
     const chain = nextUnlocks(her.build, her, 'observatory', null, 10)
     const fit = fitSize(AT, chain.map((entry) => sessionSeconds(entry.grade, speedAt(stocked, 'observatory'))), stocked.profile.checkIns, 0)
@@ -146,20 +151,20 @@ describe('the session sheet (05 §8)', () => {
     expect(view.picks.length).toBe(fit)
     expect(prePick(viewAt(stocked, AT), her, 'observatory', null, AT, 0)).toHaveLength(fit)
     expect(view.action).toMatchObject({ mode: 'start', refusal: null })
-    expect(view.confirm.dishes).toEqual([{ item: 'dish-vegetables-1', qty: fit }])
+    expect(view.confirm.dishes).toEqual([{ item: 'tonic-1', qty: fit }])
 
     const empty = sheet(state, { facility: 'observatory' })
     expect(empty.picks).toEqual([])
     expect(empty.items[0]).toMatchObject({ state: 'available', stock: 0, pickable: false })
     expect(empty.action).toEqual({ mode: 'blocked', words: 'Pick an unlock.' })
-    // A named unlock arrives picked even with no dish, and Start then reads the shortfall in the rule's words.
+    // A named unlock arrives picked even with no tonic, and Start then reads the shortfall in the rule's words.
     const named = sheet(state, { facility: 'observatory', query: { unlocks: [{ kind: 'node', target: 'n1' }], slot: null } })
-    expect(named.action).toMatchObject({ mode: 'start', refusal: { text: 'Short {n} {item}.', data: { n: 1, item: 'dish-vegetables-1' } } })
+    expect(named.action).toMatchObject({ mode: 'start', refusal: { text: 'Short {n} {item}.', data: { n: 1, item: 'tonic-1' } } })
   })
 
   it('takes the slot card\'s slot, else the first free one, and says when the next frees; a busy Uma here queues', () => {
     const { state } = trainingAccount(3)
-    const stocked = granted(state, AT, { 'dish-vegetables-1': 6 })
+    const stocked = granted(state, AT, { 'tonic-1': 6 })
     const asked = sheet(stocked, { facility: 'observatory', query: { unlocks: [], slot: 1 } })
     expect(asked.action.mode === 'start' && asked.action.input.slot).toEqual({ building: 'observatory', slot: 1 })
     let full = stocked
@@ -176,21 +181,25 @@ describe('the session sheet (05 §8)', () => {
     expect(workAhead(full.work[uma(2)])).toHaveLength(1)
   })
 
-  it("lists the Dojo's picked bonds with each card's own dish, and refuses a card past her scenario in its words", () => {
+  it("lists the Dojo's picked bonds, which take no item, and refuses a card past her scenario in its words", () => {
     const { state } = trainingAccount(1)
     const view = sheet(state, { facility: 'dojo', room: 'speed', query: { unlocks: [{ kind: 'bond', target: 'sim-card-speed-e1' }, { kind: 'bond', target: 'sim-card-speed-e3' }], slot: null } })
     expect(view.items.map((item) => [item.dishId, item.state, item.picked])).toEqual([
-      ['dish-sweets-1', 'available', true],
-      ['dish-sweets-5', 'later', false],
+      [null, 'available', true],
+      [null, 'later', false],
     ])
+    expect(view.items[0]).toMatchObject({ dish: 'No item', stock: null, pickable: true })
     expect(view.items[1]!.words).toBe('Opens in scenario 3 · Trackblazer')
+    // An empty Warehouse starts it (D374).
+    expect(view.confirm.dishes).toEqual([])
+    expect(view.action).toMatchObject({ mode: 'start', refusal: null })
   })
 })
 
 describe('build views (05 §4–§6, §8; 06 §3)', () => {
   it("reads each tree node's state, the next node's dish and stock, and its Unlock", () => {
     const { state } = trainingAccount(1)
-    const stocked = granted(state, AT, { 'dish-vegetables-1': 3 })
+    const stocked = granted(state, AT, { 'tonic-1': 3 })
     const opened = stocked
     const her = opened.umas[uma(1)]!
     const two = nextUnlocks(her.build, her, 'observatory', null, 2)
@@ -203,7 +212,7 @@ describe('build views (05 §4–§6, §8; 06 §3)', () => {
     const byId = new Map(view.nodes.map((node) => [node.id, node]))
     expect(byId.get('n1')).toMatchObject({ state: 'finished', words: 'Finished · Collect' })
     expect(byId.get('n2')).toMatchObject({ state: 'session', words: `In session · opens in ${durationText(AT + 2 * sessionSeconds(1) * 1000 - at)}` })
-    expect(byId.get('n3')).toMatchObject({ state: 'available', words: 'Needs: Carrot Salad (grade 1) at the Observatory · 1 in stock' })
+    expect(byId.get('n3')).toMatchObject({ state: 'available', words: 'Needs: Warm-Up Tonic (grade 1) at the Observatory · 1 in stock' })
     expect(byId.get('n3')!.unlock).not.toBeNull()
     expect(byId.get('n4')).toMatchObject({ state: 'waiting', words: 'Opens after node 3' })
     expect(byId.get('n13')).toMatchObject({ state: 'later', words: 'Opens in scenario 2 · Unity Cup', x: null })

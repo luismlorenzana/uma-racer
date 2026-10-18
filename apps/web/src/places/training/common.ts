@@ -1,17 +1,18 @@
 // What every Training screen reads the same way (docs/game/05-training-hub.md §2, §3, §8; T139): an unlock's name and
-// dish in words, where an unlock stands for her now (open, in her work, available with its stock, waiting on what it
-// names, or in a later layer), the line a locked item shows with what it needs, and the session sheet's link. Pure:
-// the states are the domain's `unlockStatus`, `dependenciesOf` and the work timeline, read, never restated.
+// item in words (a meal, a tonic or none, D374), where an unlock stands for her now (open, in her work, available with
+// its stock, waiting on what it names, or in a later layer), the line a locked item shows with what it needs, and the
+// session sheet's link. Pure: the states are the domain's `unlockStatus`, `dependenciesOf` and the work timeline, read,
+// never restated; a tonic's stock counts the salads and soups that stand in for it (`heldFor`).
 import { durationText, type OperationEnv, type Words } from '@racer/domain/check-in'
 import { BUILDINGS, type FacilityId, type RoomId } from '@racer/domain/farm'
-import { itemById, type ItemId } from '@racer/domain/items'
+import { heldFor, itemById, standInsOf, type ItemId } from '@racer/domain/items'
 import { workAhead } from '@racer/domain/planner'
 import { scenarioRow } from '@racer/domain/tiers'
 import { isRefusal, type UmaState } from '@racer/domain/state'
 import {
   dependenciesOf, facilityOf, isOpen, isRoomOf, roomsFor, unlockKey, unlockLabel, unlockStatus, type Unlock, type UnlockRef,
 } from '@racer/domain/training'
-import { itemEnds, SESSION_KIND, stockOf, type ItemStock, type WorkRow } from '@racer/domain/work'
+import { itemEnds, SESSION_KIND, type ItemStock, type WorkRow } from '@racer/domain/work'
 import { showWords, type WordsContext } from '../../ui/work/words'
 import { cardName } from '../../ui/words'
 import { trainingWords } from './words'
@@ -29,8 +30,9 @@ export function unlockName(ref: UnlockRef, content: Content | null): string {
   return ref.kind === 'bond' ? cardName(content, ref.target) : capital(unlockLabel(ref))
 }
 
-/** "Cabbage Salad (grade 3)": a dish by name and grade, never by its catalogue key (T139, 08 §10). */
-export function dishWords(dishId: ItemId): string {
+/** "Stride Tonic (grade 5)": a meal or tonic by name and grade, never by its catalogue key (T139, 08 §10); "No item". */
+export function dishWords(dishId: ItemId | null): string {
+  if (dishId === null) return trainingWords('no-item')
   const def = itemById(dishId)
   if (def === undefined || def.kind === 'ticket') return dishId
   return trainingWords('dish', { name: def.name, grade: def.grade })
@@ -52,6 +54,15 @@ export function ruleWords(words: Words, context: WordsContext, content: Content 
   return showWords({ text: words.text, data: named }, context)
 }
 
+// ---- The stock a run of unlocks takes (D374) ------------------------------------------------------------------------
+
+/** The free stock as a run of takes: `takeFor` on it pays each unlock with a stand-in first, never twice. */
+export const takesFrom = (items: ItemStock): Map<ItemId, number> => new Map(Object.entries(items).filter(([, n]) => n > 0))
+
+/** What's left in a run that pays for `id`, its stand-ins included. */
+export const heldIn = (left: ReadonlyMap<ItemId, number>, id: ItemId): number =>
+  [...standInsOf(id), id].reduce((sum, item) => sum + (left.get(item) ?? 0), 0)
+
 // ---- Where an unlock stands -----------------------------------------------------------------------------------------
 
 /** One unlock for her now, as every Training screen reads it (05 §8). */
@@ -62,8 +73,8 @@ export type ItemState =
   /** Finished in her work, not yet collected. */
   | { readonly kind: 'finished' }
   | { readonly kind: 'queued' }
-  /** She can start it now; `stock` is its dish's free stock. */
-  | { readonly kind: 'available'; readonly stock: number }
+  /** She can start it now; `stock` is what pays for its item in the free stock, null when it takes none. */
+  | { readonly kind: 'available'; readonly stock: number | null }
   /** It waits on these (`dependenciesOf`, less what's open or in her work). */
   | { readonly kind: 'waiting'; readonly needs: readonly UnlockRef[] }
   /** A later layer, or a card past her scenario: "Opens in scenario 3 · Trackblazer". */
@@ -90,7 +101,7 @@ export function itemState(uma: UmaState, row: WorkRow | undefined, entry: Unlock
   const ahead = workAhead(row)
   const status = unlockStatus(uma.build, uma, entry, ahead)
   if (!isRefusal(status)) {
-    return status.status === 'available' ? { kind: 'available', stock: stockOf(items, entry.dishId) } : { kind: 'open' }
+    return status.status === 'available' ? { kind: 'available', stock: entry.dishId === null ? null : heldFor(items, entry.dishId) } : { kind: 'open' }
   }
   if (status.code === 'needs-first') {
     const made = new Set(ahead.map(unlockKey))
@@ -106,9 +117,10 @@ export function namesList(names: readonly string[]): string {
 }
 
 /**
- * What a locked item shows (05 §8): "Needs: Cabbage Salad (grade 3) at the Observatory · 2 in stock", "Opens after
- * node 14" for a node further on, "Needs: … · Power grade 3 and Speed grade 3 first", "Opens in scenario 3 ·
- * Trackblazer", "In session · opens in 1h 20m", "Finished · Collect". Null once open.
+ * What a locked item shows (05 §8): "Needs: Stride Tonic (grade 5) at the Observatory · 2 in stock", "Opens after
+ * node 14" for a node further on, "Needs: … · Power grade 3 and Speed grade 3 first", "At the Lineage Hall · no item
+ * needed" for one that takes none, "Opens in scenario 3 · Trackblazer", "In session · opens in 1h 20m", "Finished ·
+ * Collect". Null once open.
  */
 export function itemWords(state: ItemState, entry: Unlock, context: WordsContext, content: Content | null): string | null {
   const place = BUILDINGS[facilityOf(entry.kind)].name
@@ -118,10 +130,13 @@ export function itemWords(state: ItemState, entry: Unlock, context: WordsContext
     case 'session': return trainingWords('in-session', { time: durationText(state.leftMs) })
     case 'finished': return trainingWords('finished')
     case 'queued': return trainingWords('queued')
-    case 'available': return trainingWords('needs-dish', { dish, place, blocker: trainingWords('in-stock', { n: state.stock }) })
+    case 'available': return state.stock === null
+      ? trainingWords('at-place', { place, blocker: trainingWords('no-item-needed') })
+      : trainingWords('needs-dish', { dish, place, blocker: trainingWords('in-stock', { n: state.stock }) })
     case 'waiting': {
       const needs = namesList(state.needs.map((ref) => unlockLabel(ref)))
       if (entry.kind === 'node') return trainingWords('opens-after', { needs })
+      if (entry.dishId === null) return trainingWords('at-place', { place, blocker: trainingWords('first', { needs }) })
       return trainingWords('needs-dish', { dish, place, blocker: trainingWords('first', { needs }) })
     }
     case 'later': return ruleWords(state.words, context, content)

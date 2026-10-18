@@ -93,20 +93,20 @@ describe('the roster and an Uma at a glance', () => {
   it("says what she's doing: a job's place, count and time left, a session's, Ready, or Free (11 §5, D366)", () => {
     const acc = account('fresh')
     for (const id of umaIds(2)) acc.run('unlock-uma', { outfitId: id })
-    acc.run('dev-grant', { items: { 'dish-vegetables-1': 2 } })
+    acc.run('dev-grant', { items: { 'tonic-1': 2 } })
     expect(doingWords(doingOf(acc.state, 'sim-uma-01', acc.at), acc.at)).toBe('Free')
     const job = acc.run('start', { outfitId: 'sim-uma-01', slot: { building: 'vegetable-garden', slot: 0 }, request: { kind: 'gather', item: 'carrot', count: 4 } })
     const session = acc.run('start', {
       outfitId: 'sim-uma-02', slot: { building: 'observatory', slot: 0 }, request: { kind: 'session', unlocks: [{ kind: 'node', target: 'n1' }, { kind: 'node', target: 'n2' }] },
     })
-    const gather = 108 * MINUTE
+    const gather = 162 * MINUTE
     const later = acc.at + 2 * gather + MINUTE
-    // Two of four Carrots made, a minute past the second: the last two have 3h 35m left.
-    expect(doingWords(doingOf(acc.state, 'sim-uma-01', later), later)).toBe('Vegetable Garden · 2 of 4 · 3h 35m')
+    // Two of four Carrots made, a minute past the second: the last two have 5h 23m left.
+    expect(doingWords(doingOf(acc.state, 'sim-uma-01', later), later)).toBe('Vegetable Garden · 2 of 4 · 5h 23m')
     expect(job.endsAt - later).toBe(2 * gather - MINUTE)
-    // Two nodes of 3h 36m each.
-    expect(doingWords(doingOf(acc.state, 'sim-uma-02', acc.at), acc.at)).toBe(`Observatory · 0 of 2 · 7h 12m`)
-    expect(session.endsAt - acc.at).toBe(2 * 216 * MINUTE)
+    // Two nodes of 5h 24m each.
+    expect(doingWords(doingOf(acc.state, 'sim-uma-02', acc.at), acc.at)).toBe(`Observatory · 0 of 2 · 10h 48m`)
+    expect(session.endsAt - acc.at).toBe(2 * 324 * MINUTE)
     expect(doingWords(doingOf(acc.state, 'sim-uma-01', job.endsAt), job.endsAt)).toBe('Vegetable Garden · Ready')
   })
 })
@@ -114,15 +114,15 @@ describe('the roster and an Uma at a glance', () => {
 describe('the Skills tab (03 §6)', () => {
   it("lists her unique first, the rest of her library with what each adds, and prices the loadout against her SP", () => {
     const acc = account('busy')
-    const uma = acc.state.umas['sim-uma-25']!
+    const uma = acc.state.umas['sim-uma-08']!
     const view = skillsView(uma, uma.raceDefaults.selectedPreset, acc.env.content)
-    expect(view.equipped[0]).toMatchObject({ unique: true, name: "Yarrow Glen's Finale" })
+    expect(view.equipped[0]).toMatchObject({ unique: true, name: "Harbor Light's Finale" })
     expect(view.cost).toBe(0)
     expect(view.skillPoints).toBeGreaterThan(160)
     const white = view.library.find((skill) => !skill.gold)!
     expect(white.adds).toBe(160)
     acc.run('set-loadout', { umaId: uma.outfitId, preset: uma.raceDefaults.selectedPreset, skillIds: [white.skillId] })
-    const after = skillsView(acc.state.umas['sim-uma-25']!, uma.raceDefaults.selectedPreset, acc.env.content)
+    const after = skillsView(acc.state.umas['sim-uma-08']!, uma.raceDefaults.selectedPreset, acc.env.content)
     expect(after.cost).toBe(160)
     expect(after.equipped.map((skill) => skill.skillId)).toEqual([view.equipped[0]!.skillId, white.skillId])
   })

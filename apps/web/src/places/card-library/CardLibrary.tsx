@@ -42,7 +42,7 @@ function pillWords(pill: Pill): string {
     case 'count': return `${pill.n} Uma${pill.n === 1 ? '' : 's'} bonded`
     case 'bonded': return 'bonded to her'
     case 'pending': return 'bonding now'
-    case 'grade': return `bond with a grade ${pill.grade} dish`
+    case 'grade': return `bonds at grade ${pill.grade}`
     case 'locked': return pill.words
     case 'none': return ''
   }

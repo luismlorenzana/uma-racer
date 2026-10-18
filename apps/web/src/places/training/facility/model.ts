@@ -1,13 +1,14 @@
 // A Training facility's page and Peek (docs/game/05-training-hub.md §7, §8; docs/game/11-hub-and-places.md §3.2;
 // docs/game/02-check-ins-and-notifications.md §2, §6; T139), read from one work view: the header (level, slots in use
 // from `slotsOf` and `slotHolder`, speed, the next upgrade with what it adds); one card per slot, by room at the Gym and
-// Dojo, a busy one naming her current unlock and its dish; **Needs here**, the planner's `facilityLines` in 02 §6's
-// words with Start when she can and the Kitchen for a short dish; Collect here's slots; and the Peek's lines. Pure.
+// Dojo, a busy one naming her current unlock and the item it took; **Needs here**, the planner's `facilityLines` in 02
+// §6's words with Start when she can and the Kitchen for a short meal or tonic; Collect here's slots; and the Peek's
+// lines. Pure.
 import { hasReady } from '@racer/domain/check-in'
 import { BUILDINGS, buildingSpeed, type BuildingLevel, type FacilityId, type RoomId } from '@racer/domain/farm'
-import { FAMILIES, itemById, ITEM_GRADE_LIST, planetDish, DUOS, FEASTS, type ItemId } from '@racer/domain/items'
+import { itemById, ITEM_GRADE_LIST, planetDish, DUOS, FEASTS, standInsOf, TONICS, type ItemId } from '@racer/domain/items'
 import { facilityLines, layerProgress, planFrom, targetsOf, type PlannedUnlock } from '@racer/domain/planner'
-import { FACILITY_DISH_FAMILY, ROOM_NAMES, type UnlockRef } from '@racer/domain/training'
+import { GYM_ROOM_FAMILY, ROOM_NAMES, type UnlockRef } from '@racer/domain/training'
 import { buildingLevel, holdsSlot, SESSION_KIND, stockOf, type SlotRef, type WorkRequest, type WorkRow } from '@racer/domain/work'
 import { slotCards, upgradeView, type HeldSlotCard, type SlotCardModel, type UpgradeView } from '../../../ui/work/model'
 import type { WorkView } from '../../../ui/work/view'
@@ -23,13 +24,13 @@ export interface RoomView {
   readonly cards: readonly SlotCardModel[]
 }
 
-/** One target's line in Needs here (02 §6): "Special Week · 3 nodes · 2 in stock, 1 short". */
+/** One target's line in Needs here (02 §6): "Special Week · 3 nodes · 2 ready, 1 short"; one that takes no item is ready. */
 export interface NeedsLineView {
   readonly outfitId: string
   readonly words: string
-  /** The sheet with her, when she's Free and a dish is in stock (`canStart`). */
+  /** The sheet with her, when she's Free and can start one (`canStart`). */
   readonly start: string | null
-  /** The Kitchen's job sheet for her first short dish here. */
+  /** The Kitchen's job sheet for her first short meal or tonic here. */
   readonly cook: { readonly dish: ItemId; readonly to: string } | null
   /** The Dojo: her bonds still to pick cards for, at her bonds view. */
   readonly pick: string | null
@@ -70,17 +71,17 @@ function needsLines(view: WorkView, facility: FacilityId, route: string, context
     const parts = [trainingWords('needs-line', { uma: name(line.outfitId), left: leftWords(facility, line.left), ready: line.ready })]
     if (short > 0) parts.push(trainingWords('needs-short', { n: short }))
     if (line.coming > 0) parts.push(trainingWords('needs-coming', { n: line.coming }))
-    const firstShort = here.find((entry) => entry.supply === 'short')
+    const shortItem = here.find((entry) => entry.supply === 'short')?.unlock.dishId ?? null
     return {
       outfitId: line.outfitId,
       words: parts.join(', '),
       start: line.canStart ? sessionPath(facility, { uma: line.outfitId, room: here[0]?.room ?? null, back: route }) : null,
-      cook: firstShort === undefined ? null : { dish: firstShort.unlock.dishId, to: `/farm/kitchen${sheetQuery({ job: firstShort.unlock.dishId, back: route })}` },
+      cook: shortItem === null ? null : { dish: shortItem, to: `/farm/kitchen${sheetQuery({ job: shortItem, back: route })}` },
       pick: null,
     }
   })
   if (facility !== 'dojo') return lines
-  // A bond with no card chosen has no dish to cascade (02 §6): "3 bonds: pick cards", at her bonds view.
+  // A bond takes no item, but it needs a card (02 §6): "3 bonds: pick cards", at her bonds view.
   const picks = planned.targets.filter((target) => target.pickCards > 0).map((target): NeedsLineView => ({
     outfitId: target.outfitId,
     words: target.pickCards === 1
@@ -119,19 +120,19 @@ export function facilityView(view: WorkView, facility: FacilityId, context: Word
 
 // ---- A busy slot's line --------------------------------------------------------------------------------------------
 
-/** The unlock a held card shows: the one in progress, else the session's last (05 §8). */
-export function currentUnlock(row: WorkRow | undefined, card: HeldSlotCard): { readonly ref: UnlockRef; readonly dishId: ItemId } | null {
+/** The unlock a held card shows: the one in progress, else the session's last (05 §8), with the item it took, if any. */
+export function currentUnlock(row: WorkRow | undefined, card: HeldSlotCard): { readonly ref: UnlockRef; readonly dishId: ItemId | null } | null {
   const entry = row?.entries.at(-1)
   if (entry === undefined || entry.request.kind !== SESSION_KIND) return null
   const index = Math.min(card.running ? card.made : card.count - 1, entry.request.unlocks.length - 1)
   const ref = entry.request.unlocks[index]
-  const dishId = entry.inputs[index]?.[0]?.item
-  return ref === undefined || dishId === undefined ? null : { ref: { kind: ref.kind as UnlockRef['kind'], target: ref.target }, dishId }
+  return ref === undefined ? null : { ref: { kind: ref.kind as UnlockRef['kind'], target: ref.target }, dishId: entry.inputs[index]?.[0]?.item ?? null }
 }
 
-/** "Node 7 · Potato Salad": her current unlock and its dish by name. */
-export function unlockLine(ref: UnlockRef, dishId: ItemId, content: Content | null): string {
-  return `${unlockName(ref, content)} · ${itemById(dishId)?.name ?? dishId}`
+/** "Node 7 · Stride Tonic": her current unlock and the item it took by name; the unlock alone when it took none. */
+export function unlockLine(ref: UnlockRef, dishId: ItemId | null, content: Content | null): string {
+  const name = unlockName(ref, content)
+  return dishId === null ? name : `${name} · ${itemById(dishId)?.name ?? dishId}`
 }
 
 /** A queued session's short name for the queue chips: "Node 9 +2". */
@@ -150,14 +151,17 @@ export interface PeekDish {
   readonly words: string
 }
 
-/** The facility's dishes in the Warehouse (11 §3.2): Vegetables, Mushrooms, or the Gym's stat, Duo and Feast dishes. */
+/**
+ * What the facility takes, in the Warehouse (11 §3.2; D374): the tonics and the retired salads and soups that stand in
+ * for them at the Observatory and the Lineage Hall, the Gym's meals, Duos and Feasts; nothing at the Dojo.
+ */
 export function facilityDishes(view: WorkView, facility: FacilityId): readonly PeekDish[] {
   const settled = view.settled
   const ids: ItemId[] = facility === 'observatory' || facility === 'lineage-hall'
-    ? ITEM_GRADE_LIST.map((grade) => planetDish(FACILITY_DISH_FAMILY[facility], grade).id)
+    ? TONICS.flatMap((tonic) => [...standInsOf(tonic.id), tonic.id])
     : facility === 'gym'
       ? [
-        ...Object.values(FACILITY_DISH_FAMILY.gym).flatMap((family) => ITEM_GRADE_LIST.map((grade) => planetDish(family, grade).id)),
+        ...Object.values(GYM_ROOM_FAMILY).flatMap((family) => ITEM_GRADE_LIST.map((grade) => planetDish(family, grade).id)),
         ...DUOS.map((duo) => duo.id),
         ...FEASTS.map((feast) => feast.id),
       ]
@@ -167,9 +171,9 @@ export function facilityDishes(view: WorkView, facility: FacilityId): readonly P
     .filter((dish) => dish.count > 0)
 }
 
-/** The family a facility's dishes are named by in its Peek: "Vegetables", "Mushrooms"; the Gym's are many. */
+/** What a facility's Peek lists from the Warehouse: "Tonics" at the Observatory and the Lineage Hall, else "Meals". */
 export const dishFamilyName = (facility: FacilityId): string =>
-  facility === 'observatory' || facility === 'lineage-hall' ? FAMILIES[FACILITY_DISH_FAMILY[facility]].name : 'Stat, Duo and Feast'
+  facility === 'observatory' || facility === 'lineage-hall' ? 'Tonics' : 'Meals'
 
 /** Umas with unlocks left here in their open layers (`layerProgress`), most first; at the Dojo, bonds left this layer. */
 export function leftHere(view: WorkView, facility: FacilityId): readonly { readonly outfitId: string; readonly left: number }[] {

@@ -307,7 +307,7 @@ export function speedOptions(state: WorkState, env: OperationEnv, now: number, u
 
 export interface BestUseLine {
   readonly outfitId: string
-  /** "Amber Sprint: Kitchen · Carrot Salad ×3 → in 2h 10m". */
+  /** "Amber Sprint: Kitchen · Warm-Up Tonic ×3 → in 2h 10m". */
   readonly words: string
 }
 

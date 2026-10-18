@@ -1,8 +1,9 @@
 // An item's icon (docs/game/11-hub-and-places.md §10.3, §11; docs/game/08-item-catalogue-and-recipes.md §9, §10;
 // T140, D366): the catalogue's `art` frame from uma-art's `items` or `dishes` atlas, a CSS sprite with its pixels kept
-// crisp, named for VoiceOver ("Carrot Salad, grade 1"). 32 pt is the cell; the compact Farm and Training rows also draw
-// it at 16 and 24 pt in chips and badges. The Speed Ticket is the `items` atlas's `speed-ticket` frame (uma-art 2.7.0);
-// an item a release lacks is its name on a plain tile. Imported only by lazy chunks, so neither atlas weighs on the entry.
+// crisp, named for VoiceOver ("Warm-Up Tonic, grade 1"). 32 pt is the cell; the compact Farm and Training rows also draw
+// it at 16 and 24 pt in chips and badges. The Speed Ticket is the `items` atlas's `speed-ticket` frame (uma-art 2.7.0),
+// and a tonic (D374) its own id's frame there once a release draws it; an item a release lacks is its name on a plain
+// tile. Imported only by lazy chunks, so neither atlas weighs on the entry.
 import { itemById, type ItemDef } from '@racer/domain/items'
 import dishesUrl from '@luismlorenzana/uma-art/dishes/atlas.png?url'
 import dishes from '@luismlorenzana/uma-art/dishes/atlas.json'
@@ -19,15 +20,19 @@ const ATLASES = {
   dishes: { url: dishesUrl, width: dishes.width, height: dishes.height, frames: dishes.frames as Frames },
 } as const
 
-/** The frame a definition is drawn with, or null: the catalogue's own, else the release's `speed-ticket` once it ships. */
+/**
+ * The frame a definition is drawn with, or null: the catalogue's own, else the `items` atlas's frame of its id (the Speed
+ * Ticket, a tonic) once a release ships it.
+ */
 export function itemFrame(def: ItemDef | undefined): { readonly atlas: keyof typeof ATLASES; readonly x: number; readonly y: number } | null {
   if (def === undefined) return null
-  const art = def.art ?? (def.kind === 'ticket' && ATLASES.items.frames[def.id] !== undefined ? { atlas: 'items' as const, frame: def.id } : null)
+  const byId = (def.kind === 'ticket' || def.kind === 'tonic') && ATLASES.items.frames[def.id] !== undefined
+  const art = def.art ?? (byId ? { atlas: 'items' as const, frame: def.id } : null)
   const at = art === null ? undefined : ATLASES[art.atlas].frames[art.frame]
   return art === null || at === undefined ? null : { atlas: art.atlas, x: at.x, y: at.y }
 }
 
-/** "Carrot Salad, grade 1"; the Speed Ticket, which has no grade, by its name. */
+/** "Warm-Up Tonic, grade 1"; the Speed Ticket, which has no grade, by its name. */
 export function itemLabel(def: ItemDef | undefined, id: string): string {
   if (def === undefined) return id
   return def.kind === 'ticket' ? def.name : `${def.name}, grade ${def.grade}`

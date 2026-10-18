@@ -8,7 +8,7 @@ import { fill } from '@racer/domain/check-in'
 export const TRAINING_WORDS = Object.freeze({
   /** A facility page (05 §8); its header's chips are the shared `PlaceStats`. */
   room: '{room} room',
-  help: 'A session is one Uma working through 1 to {max} unlocks here, one after another; each unlock takes one exact dish, reserved when the session starts.',
+  help: 'A session is one Uma working through 1 to {max} unlocks here, one after another; each unlock takes its one meal or tonic, reserved when the session starts, or none at all.',
   'help-rooms': 'Each room takes its own unlocks; a session stays in one room.',
   'help-time': 'One unlock of grade 1 takes {minutes} here; each grade adds a little.',
   'slots-title': 'Slots',
@@ -16,7 +16,7 @@ export const TRAINING_WORDS = Object.freeze({
   /** Needs here (05 §8, 02 §6). */
   'needs-title': 'Needs here',
   'needs-none': 'Nothing left here for your targets.',
-  'needs-line': '{uma} · {left} · {ready} in stock',
+  'needs-line': '{uma} · {left} · {ready} ready',
   'needs-short': '{n} short',
   'needs-coming': '{n} coming',
   'pick-cards': '{uma} · {n} bonds: pick cards',
@@ -37,8 +37,8 @@ export const TRAINING_WORDS = Object.freeze({
   'peek-left': '{n} Umas have {noun} left here',
   'peek-left-one': '1 Uma has {noun} left here',
   'peek-left-none': 'Nobody has {noun} left here.',
-  'peek-dishes': '{family} dishes in the Warehouse',
-  'peek-dishes-none': 'No {family} dishes in the Warehouse.',
+  'peek-dishes': '{family} in the Warehouse',
+  'peek-dishes-none': 'None in the Warehouse yet.',
   'peek-bonds': 'Bonds left this layer',
   'peek-bonds-line': '{uma} · {n} left',
   /** The session sheet (05 §8, 06 §6). */
@@ -59,6 +59,7 @@ export const TRAINING_WORDS = Object.freeze({
   'no-stock': '0 in Warehouse · Cook',
   'confirm-title': 'Confirm',
   reserves: 'Reserves {items}',
+  'reserves-none': 'Takes no item',
   total: '{n} unlocks · {time} in all',
   'total-one': '1 unlock · {time}',
   'finish-at': '{what} · in {time}',
@@ -69,7 +70,7 @@ export const TRAINING_WORDS = Object.freeze({
   'open-stable': 'Open the Stable',
   'picker-title': 'Who trains at the {place}?',
   'picker-sort': 'Left here',
-  'left-here': '{n} left here · {ready} in stock',
+  'left-here': '{n} left here · {ready} ready',
   'left-here-none': 'Nothing left here',
   'left-bonds': '{n} bonds left this layer',
   'busy-until': 'Busy · {time} left',
@@ -77,7 +78,10 @@ export const TRAINING_WORDS = Object.freeze({
   recall: 'Recall',
   /** Item states (05 §8's labels). */
   'needs-dish': 'Needs: {dish} at the {place} · {blocker}',
+  'at-place': 'At the {place} · {blocker}',
   'in-stock': '{n} in stock',
+  'no-item': 'No item',
+  'no-item-needed': 'no item needed',
   first: '{needs} first',
   'opens-after': 'Opens after {needs}',
   'in-session': 'In session · opens in {time}',
@@ -163,7 +167,7 @@ export const TRAINING_WORDS = Object.freeze({
   'emptied-one': '1 node emptied.',
   'set-done': 'The set is saved.',
   'bond-more': 'Bond more',
-  'bond-more-hint': 'Cards she can bond now, each with its dish.',
+  'bond-more-hint': 'Cards she can bond now. A bond takes no item, only time.',
   'bonded-title': 'Bonded',
 } as const)
 

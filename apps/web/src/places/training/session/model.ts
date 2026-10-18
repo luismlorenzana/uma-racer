@@ -5,31 +5,34 @@
 //    room (`MAX_QUEUE`), and Recall first for a running Farm job (05 §2).
 // 2. **Unlocks**: her items here, oldest layer first in canonical order (`layerUnlocks` of each open layer, kept by
 //    `facilityOf` and `roomAccepts`, the next layer shown locked), each read with `unlockStatus` where the work ahead is
-//    `workAhead(row)` plus the items picked above it. Available ones show their dish, its free stock less the picks
-//    above, and their minutes; none in stock reads "0 in Warehouse · Cook". The sheet pre-picks `fitSize` of the next
-//    items (`nextUnlocks`), capped by stock and `SESSION_MAX_UNLOCKS`; unlocks the link names arrive picked instead. At
-//    the Dojo the list is the bonds picked from the Card Library, each card's own dish and room.
-// 3. **Confirm**: the dishes to reserve, how long in all and how long until each finishes; then `start` on the slot (the slot card's,
-//    else hers, else the first free one of the room in `slotsOf` order) or `queue` behind her running session here,
-//    each run on the current state first so a disabled button says why in the rule's own words.
+//    `workAhead(row)` plus the items picked above it. Available ones show their meal or tonic, its free stock (a
+//    tonic's with the salads and soups standing in for it, D374) less the picks above, and their minutes; none in stock
+//    reads "0 in Warehouse · Cook", and one that takes no item reads "No item". The sheet pre-picks `fitSize` of the
+//    next items (`nextUnlocks`), capped by stock and `SESSION_MAX_UNLOCKS`; unlocks the link names arrive picked
+//    instead. At the Dojo the list is the bonds picked from the Card Library, each in its card type's room, none taking
+//    an item.
+// 3. **Confirm**: the items to reserve (`sessionInputs`, stand-ins first), how long in all and how long until each
+//    finishes; then `start` on the slot (the slot card's, else hers, else the first free one of the room in `slotsOf`
+//    order) or `queue` behind her running session here, each run on the current state first so a disabled button says
+//    why in the rule's own words.
 import { durationText, fitSize, hasReady, say, type Words } from '@racer/domain/check-in'
 import { BUILDINGS, type FacilityId, type RoomId } from '@racer/domain/farm'
-import type { ItemId } from '@racer/domain/items'
+import { takeFor, type ItemId } from '@racer/domain/items'
 import { remainingFor, workAhead } from '@racer/domain/planner'
 import { TIER_REFUSALS } from '@racer/domain/tiers'
 import { isRefusal, type UmaState } from '@racer/domain/state'
 import {
-  facilityOf, isOpen, isRoomOf, layerUnlocks, nextUnlocks, resolveUnlock, roomAccepts, roomsFor, sessionRequest, sessionSeconds,
-  SESSION_MAX_UNLOCKS, TRAINING_REFUSALS, unlockKey, unlockStatus, type Unlock, type UnlockRef,
+  cardTypesIn, facilityOf, isOpen, isRoomOf, layerUnlocks, nextUnlocks, resolveUnlock, roomAccepts, roomsFor, sessionInputs, sessionRequest,
+  sessionSeconds, SESSION_MAX_UNLOCKS, TRAINING_REFUSALS, unlockKey, unlockStatus, type Unlock, type UnlockRef,
 } from '@racer/domain/training'
 import {
-  chainEnd, holdsSlot, MAX_QUEUE, queue, SESSION_KIND, slotHolder, slotsOf, speedAt, start, statusOf, stockOf, type QueueInput, type SlotRef,
+  chainEnd, holdsSlot, MAX_QUEUE, queue, SESSION_KIND, slotHolder, slotsOf, speedAt, start, statusOf, type QueueInput, type SlotRef,
   type StartInput, type WorkState,
 } from '@racer/domain/work'
 import type { WorkView } from '../../../ui/work/view'
 import { duration } from '../../../ui/labels'
 import type { WordsContext } from '../../../ui/work/words'
-import { dishWords, itemState, itemWords, ruleWords, unlockName, type Content } from '../common'
+import { dishWords, heldIn, itemState, itemWords, ruleWords, takesFrom, unlockName, type Content } from '../common'
 import { trainingWords } from '../words'
 import type { SessionQuery } from './query'
 
@@ -40,7 +43,7 @@ export interface SessionUmaRow {
   readonly status: 'free' | 'ready' | 'working'
   /** Her unlocks left here (bonds still to pick cards for, at the Dojo). */
   readonly left: number
-  /** Of those, how many have a dish in the free stock now. */
+  /** Of those, how many the free stock covers now, or take no item. */
   readonly ready: number
   /** When her work ends, while she works. */
   readonly until: number | null
@@ -67,15 +70,10 @@ export function sessionUmaRows(view: WorkView, facility: FacilityId, room: RoomI
     const status = statusOf(row, now)
     const remaining = remainingFor(settled, uma.outfitId).filter((entry) => entry.facility === facility)
     const left = remaining.reduce((sum, entry) => sum + (entry.kind === 'unlock' ? 1 : entry.count), 0)
-    const used = new Map<ItemId, number>()
+    const stock = takesFrom(settled.items)
     let ready = 0
     for (const entry of remaining) {
-      if (entry.kind !== 'unlock') continue
-      const taken = used.get(entry.dishId) ?? 0
-      if (stockOf(settled.items, entry.dishId) > taken) {
-        ready += 1
-        used.set(entry.dishId, taken + 1)
-      }
+      if (entry.kind === 'unlock' && (entry.dishId === null || takeFor(stock, entry.dishId) !== null)) ready += 1
     }
     const last = row?.entries.at(-1)
     const working = status === 'working'
@@ -112,18 +110,19 @@ export interface SessionItem {
   /** The ref as listed: a bond's card even when it can't be bonded. */
   readonly ref: UnlockRef
   readonly name: string
-  /** "Cabbage Salad (grade 3)"; null for a card past her tier. */
+  /** "Stride Tonic (grade 5)", or "No item"; null for a card past her tier. */
   readonly dish: string | null
+  /** The meal or tonic it takes; null when it takes none. */
   readonly dishId: ItemId | null
   /** Real seconds at the facility's speed now. */
   readonly seconds: number
   readonly state: SessionItemState
   /** "Needs Speed grade 1 first.", "In session · opens 04:45", "Opens in scenario 3 · Trackblazer". */
   readonly words: string | null
-  /** The dish's free stock, less what the picks above it reserve. */
-  readonly stock: number
+  /** What pays for its item in the free stock, less what the picks above it reserve; null when it takes none. */
+  readonly stock: number | null
   readonly picked: boolean
-  /** Its checkbox can change: available, and a dish left for it unless it's already picked. */
+  /** Its checkbox can change: available, and its item left for it (or none needed) unless it's already picked. */
   readonly pickable: boolean
 }
 
@@ -144,7 +143,7 @@ export type SessionAction =
   | { readonly mode: 'blocked'; readonly words: string }
 
 export interface SessionConfirm {
-  /** Each dish and how many the session reserves. */
+  /** Each item and how many the session reserves (stand-ins first); empty when its unlocks take none. */
   readonly dishes: readonly { readonly item: ItemId; readonly qty: number }[]
   readonly seconds: number
   /** Each picked unlock's end, in order. */
@@ -175,7 +174,7 @@ export function openingRoom(view: WorkView, facility: FacilityId, query: Session
   const uma = query.uma === null ? undefined : view.settled.umas[query.uma]
   for (const ref of query.unlocks) {
     const resolved = uma === undefined && ref.kind === 'bond' ? null : safeResolve(ref, uma?.tier ?? 1, content)
-    const room = resolved === null ? undefined : roomsFor(resolved)[0]
+    const room = resolved === null ? undefined : roomsFor(resolved, cardTypesIn(content.cards))[0]
     if (room !== undefined) return room
   }
   const slot = query.uma === null ? null : view.settled.work[query.uma]?.slot ?? null
@@ -198,7 +197,7 @@ function safeResolve(ref: UnlockRef, tier: UmaState['tier'], content: Content): 
   }
 }
 
-/** The fitted pre-pick (05 §8): `fitSize` of the next items, capped by the dishes in stock and `SESSION_MAX_UNLOCKS`. */
+/** The fitted pre-pick (05 §8): `fitSize` of the next items, capped by the items in stock and `SESSION_MAX_UNLOCKS`. */
 export function prePick(view: WorkView, uma: UmaState, facility: FacilityId, room: RoomId | null, start: number, utcOffsetMin: number): readonly Unlock[] {
   if (facility === 'dojo' || !isRoomOf(facility, room)) return []
   const { settled } = view
@@ -206,12 +205,10 @@ export function prePick(view: WorkView, uma: UmaState, facility: FacilityId, roo
   if (chain.length === 0) return []
   const speed = speedAt(settled, facility)
   const fit = fitSize(start, chain.map((entry) => sessionSeconds(entry.grade, speed)), settled.profile.checkIns, utcOffsetMin)
-  const taken = new Map<ItemId, number>()
+  const left = takesFrom(settled.items)
   let covered = 0
   for (const entry of chain) {
-    const used = taken.get(entry.dishId) ?? 0
-    if (stockOf(settled.items, entry.dishId) <= used) break
-    taken.set(entry.dishId, used + 1)
+    if (entry.dishId !== null && takeFor(left, entry.dishId) === null) break
     covered += 1
   }
   return chain.slice(0, Math.min(fit, covered, SESSION_MAX_UNLOCKS))
@@ -286,7 +283,7 @@ export function sessionView(view: WorkView, input: SessionInput, context: WordsC
     : listed(uma, facility, room).map((entry) => ({ ref: refOf(entry), unlock: entry }))
 
   const made: UnlockRef[] = [...workAhead(row)]
-  const reserved = new Map<ItemId, number>()
+  const left = takesFrom(settled.items)
   const items: SessionItem[] = []
   const picks: Unlock[] = []
   for (const { ref, unlock } of candidates) {
@@ -302,7 +299,7 @@ export function sessionView(view: WorkView, input: SessionInput, context: WordsC
       })
       continue
     }
-    const stock = stockOf(settled.items, unlock.dishId) - (reserved.get(unlock.dishId) ?? 0)
+    const stock = unlock.dishId === null ? null : heldIn(left, unlock.dishId)
     const base = { key, unlock, ref, name, dish: dishWords(unlock.dishId), dishId: unlock.dishId, seconds: sessionSeconds(unlock.grade, speed), stock }
     const status = unlockStatus(uma.build, uma, unlock, made)
     if (isRefusal(status)) {
@@ -321,18 +318,18 @@ export function sessionView(view: WorkView, input: SessionInput, context: WordsC
     const picked = wantedKeys.has(key)
     if (picked) {
       made.push(unlock)
-      reserved.set(unlock.dishId, (reserved.get(unlock.dishId) ?? 0) + 1)
+      if (unlock.dishId !== null) takeFor(left, unlock.dishId)
       picks.push(unlock)
     }
-    items.push({ ...base, state: 'available', words: null, picked, pickable: picked || stock > 0 })
+    items.push({ ...base, state: 'available', words: null, picked, pickable: picked || stock === null || stock > 0 })
   }
 
-  // Confirm: the dishes it reserves, the time and each end.
+  // Confirm: the items it reserves, the time and each end.
   const dishes = new Map<ItemId, number>()
+  for (const item of sessionInputs(picks, settled.items)) if (item !== null) dishes.set(item, (dishes.get(item) ?? 0) + 1)
   let elapsed = 0
   const finishes: { name: string; at: number }[] = []
   for (const entry of picks) {
-    dishes.set(entry.dishId, (dishes.get(entry.dishId) ?? 0) + 1)
     elapsed += sessionSeconds(entry.grade, speed)
     finishes.push({ name: unlockName(entry, content), at: begin + Math.round(elapsed * 1000) })
   }

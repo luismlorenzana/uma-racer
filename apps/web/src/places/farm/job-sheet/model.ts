@@ -4,7 +4,7 @@
 // 1. **Uma**: Free Umas only (`freeUmas`), never one working, in a session or Ready with a finished job, each with her
 //    Farm Level and a suited mark (`suits`); Farm Level first, then suited (A03). Queue next names her and skips the step.
 // 2. **What**: a site's ten raw grades; the Pantry's crafted items in family tabs in `FAMILY_RING` order; the Kitchen's
-//    tabs by destination, Duos, Feasts and Can cook now, each tab an icon. A grade above her Farm Level shows its lock.
+//    tabs by stat, Tonics, Duos, Feasts and Can cook now, each tab an icon. A grade above her Farm Level shows its lock.
 // 3. **Preselected**: the first Free Uma by Farm Level (unless the link names her), and the item the plan wants
 //    most that she can make, else the highest grade she can work; the size the check-in fits.
 // 4. **How many** and its preview from the kind's own `plan`: how long it takes, the Farm EXP and every input against
@@ -17,8 +17,8 @@ import {
   QUARTERS_PER_EXP, suits, TENTHS, type FarmAptitude, type FarmBuildingId,
 } from '@racer/domain/farm'
 import {
-  craftedItem, DUOS, FAMILIES, FAMILY_RING, familyFor, FEASTS, gradeOpensAtFarmLevel, highestOpenGrade, ITEM_GRADE_LIST, itemById, planetDish,
-  rawItem, recipeOf, type Destination, type DishDef, type FamilyId, type ItemDef, type ItemId,
+  craftedItem, DUOS, FAMILIES, FAMILY_RING, familyFor, FEASTS, gradeOpensAtFarmLevel, highestOpenGrade, isKitchenItem, isRetired, ITEM_GRADE_LIST,
+  itemById, planetDish, rawItem, recipeOf, TONICS, type DishDef, type FamilyId, type ItemDef, type ItemId, type KitchenDef,
 } from '@racer/domain/items'
 import { freeUmas, planFrom, remainingFor, suggestFrom, targetsOf, type Plan, type Timing } from '@racer/domain/planner'
 import { isRefusal } from '@racer/domain/state'
@@ -82,22 +82,21 @@ export function withoutSheet(search: string): string {
 
 // --- What (07 §10) ----------------------------------------------------------------------------------------------------
 
-const KITCHEN_DESTINATIONS: readonly Destination[] = ['speed', 'stamina', 'power', 'guts', 'wit', 'skill', 'constellation', 'inspiration']
-const DESTINATION_WORDS: Readonly<Record<Destination, string>> = {
-  speed: 'Speed', stamina: 'Stamina', power: 'Power', guts: 'Guts', wit: 'Wit', skill: farmWords('tab-skill'), constellation: 'Constellation',
-  inspiration: 'Inspiration',
-}
+/** The meals' tabs: one a stat (D374). */
+const MEAL_STATS = ['speed', 'stamina', 'power', 'guts', 'wit'] as const
+type MealStat = (typeof MEAL_STATS)[number]
 const STAT_WORDS: Readonly<Record<string, string>> = { speed: 'Speed', stamina: 'Stamina', power: 'Power', guts: 'Guts', wit: 'Wit' }
+export const TONICS_TAB = 'tonics'
 
 export const CAN_COOK_NOW = 'can-cook-now'
 
 /**
- * A tab's icon chip (D366): a stat's or bond's type icon, a mark for Constellation, Inspiration and Can cook now, or an
- * item's icon (a Pantry family's first crafted item, the first Duo and Feast).
+ * A tab's icon chip (D366): a stat's type icon, a mark for Tonics and Can cook now, or an item's icon (a Pantry
+ * family's first crafted item, the first Duo and Feast).
  */
 export type TabIcon =
-  | { readonly kind: 'type'; readonly type: 'speed' | 'stamina' | 'power' | 'guts' | 'wit' | 'friend' }
-  | { readonly kind: 'mark'; readonly mark: 'star' | 'spark' | 'check' }
+  | { readonly kind: 'type'; readonly type: MealStat }
+  | { readonly kind: 'mark'; readonly mark: 'star' | 'check' }
   | { readonly kind: 'item'; readonly item: ItemId }
 
 export interface SheetTab {
@@ -109,32 +108,25 @@ export interface SheetTab {
 
 const grades = <T extends { readonly id: ItemId }>(make: (g: (typeof ITEM_GRADE_LIST)[number]) => T): ItemId[] => ITEM_GRADE_LIST.map((g) => make(g).id)
 
-const DESTINATION_ICONS: Readonly<Record<Destination, TabIcon>> = {
-  speed: { kind: 'type', type: 'speed' },
-  stamina: { kind: 'type', type: 'stamina' },
-  power: { kind: 'type', type: 'power' },
-  guts: { kind: 'type', type: 'guts' },
-  wit: { kind: 'type', type: 'wit' },
-  skill: { kind: 'type', type: 'friend' },
-  constellation: { kind: 'mark', mark: 'star' },
-  inspiration: { kind: 'mark', mark: 'spark' },
-}
-
-/** Whether a dish can be cooked now (07 §14): the free stock covers it once and `level` opens its grade. */
-export function canCookNow(state: Pick<WorkState, 'items'>, dish: DishDef, level: number): boolean {
+/** Whether a meal or tonic can be cooked now (07 §14): the free stock covers it once and `level` opens its grade. */
+export function canCookNow(state: Pick<WorkState, 'items'>, dish: KitchenDef, level: number): boolean {
   return level >= gradeOpensAtFarmLevel(dish.grade) && shortfall(state.items, recipeOf(dish.id)?.inputs ?? []).length === 0
 }
 
-const ALL_DISHES: readonly DishDef[] = Object.freeze([
-  ...KITCHEN_DESTINATIONS.flatMap((destination) => ITEM_GRADE_LIST.map((g) => planetDish(familyFor(destination), g))),
+const statMeal = (stat: MealStat, g: (typeof ITEM_GRADE_LIST)[number]): DishDef => planetDish(familyFor(stat), g)
+
+/** Everything the Kitchen cooks (D374): the stat meals, the tonics, the Duos and the Feasts. */
+const ALL_DISHES: readonly KitchenDef[] = Object.freeze([
+  ...MEAL_STATS.flatMap((stat) => ITEM_GRADE_LIST.map((g) => statMeal(stat, g))),
+  ...TONICS,
   ...DUOS,
   ...FEASTS,
 ])
 
 /**
  * The sheet's tabs (07 §10): one untitled list of a site's family's ten raw grades; the Pantry's crafted items by family
- * in `FAMILY_RING` order; the Kitchen's Speed · Stamina · Power · Guts · Wit · Skill bonds · Constellation · Inspiration
- * · Duos · Feasts · Can cook now. `level` is the chosen Uma's Farm Level, or the highest of any Uma's (Can cook now).
+ * in `FAMILY_RING` order; the Kitchen's Speed · Stamina · Power · Guts · Wit · Tonics · Duos · Feasts · Can cook now.
+ * `level` is the chosen Uma's Farm Level, or the highest of any Uma's (Can cook now).
  */
 export function sheetTabs(building: FarmBuildingId, state: Pick<WorkState, 'items'>, level: number): readonly SheetTab[] {
   const family = BUILDINGS[building].family
@@ -143,9 +135,8 @@ export function sheetTabs(building: FarmBuildingId, state: Pick<WorkState, 'item
     return FAMILY_RING.map((f) => ({ id: f, label: FAMILIES[f].name, icon: { kind: 'item', item: craftedItem(f, 1).id }, items: grades((g) => craftedItem(f, g)) }))
   }
   return [
-    ...KITCHEN_DESTINATIONS.map((destination) => ({
-      id: destination, label: DESTINATION_WORDS[destination], icon: DESTINATION_ICONS[destination], items: grades((g) => planetDish(familyFor(destination), g)),
-    })),
+    ...MEAL_STATS.map((stat): SheetTab => ({ id: stat, label: STAT_WORDS[stat]!, icon: { kind: 'type', type: stat }, items: grades((g) => statMeal(stat, g)) })),
+    { id: TONICS_TAB, label: farmWords('tab-tonics'), icon: { kind: 'mark', mark: 'star' }, items: TONICS.map((tonic) => tonic.id) },
     { id: 'duos', label: farmWords('tab-duos'), icon: { kind: 'item', item: DUOS[0]!.id }, items: DUOS.map((duo) => duo.id) },
     { id: 'feasts', label: farmWords('tab-feasts'), icon: { kind: 'item', item: FEASTS[0]!.id }, items: FEASTS.map((feast) => feast.id) },
     {
@@ -161,10 +152,15 @@ export function tabOf(tabs: readonly SheetTab[], item: ItemId | null): string {
   return (found ?? tabs[0]!).id
 }
 
-/** What a dish is for (08 §2, §4.3, §4.4): its destination, a Duo's two stats, or the Sun nodes. */
+/**
+ * What a meal or tonic is for (08 §2, §4.3–§4.5): a meal's stat, a Duo's two stats, the Sun nodes, or a tonic's nodes and
+ * slots; a retired salad or soup stands in for a tonic (D374).
+ */
 export function destinationWords(def: ItemDef): string | null {
+  if (def.kind === 'tonic') return farmWords('to-tonic')
   if (def.kind !== 'dish') return null
-  if (def.dish === 'planet') return DESTINATION_WORDS[def.destination]
+  if (isRetired(def)) return farmWords(def.dish === 'planet' && def.destination === 'skill' ? 'to-retired' : 'to-stand-in')
+  if (def.dish === 'planet') return STAT_WORDS[def.destination] ?? def.destination
   if (def.dish === 'duo') return farmWords('to-duo', { a: STAT_WORDS[def.stats[0]] ?? def.stats[0], b: STAT_WORDS[def.stats[1]] ?? def.stats[1] })
   return farmWords('to-sun')
 }
@@ -192,7 +188,7 @@ export function dishWanters(state: WorkState): ReadonlyMap<ItemId, readonly stri
   const wanted = new Map<ItemId, string[]>()
   for (const outfitId of order) {
     for (const entry of remainingFor(state, outfitId)) {
-      if (entry.kind !== 'unlock') continue
+      if (entry.kind !== 'unlock' || entry.dishId === null) continue
       const list = wanted.get(entry.dishId) ?? []
       if (!list.includes(outfitId)) list.push(outfitId)
       wanted.set(entry.dishId, list)
@@ -221,7 +217,7 @@ export function sheetItems(tab: SheetTab, state: WorkState, level: number, neede
       needed: needed.get(item) ?? 0,
       locked: level >= opens ? null : opens,
       destination: destinationWords(def),
-      wantedBy: def.kind === 'dish' ? wanters.get(item) ?? [] : [],
+      wantedBy: isKitchenItem(def) ? wanters.get(item) ?? [] : [],
     }
   })
 }
@@ -500,7 +496,7 @@ export interface ShortfallLink {
   readonly buy: { readonly price: number; readonly to: string } | null
 }
 
-const FARM_KIND_OF: Readonly<Record<'raw' | 'crafted' | 'dish', FarmKind>> = { raw: 'gather', crafted: 'craft', dish: 'cook' }
+const FARM_KIND_OF: Readonly<Record<'raw' | 'crafted' | 'dish' | 'tonic', FarmKind>> = { raw: 'gather', crafted: 'craft', dish: 'cook', tonic: 'cook' }
 
 export function shortfallLinks(settled: WorkState, inputs: readonly SheetInput[], back: string): ShortfallLink[] {
   return inputs.filter((input) => input.short > 0).map((input): ShortfallLink => {

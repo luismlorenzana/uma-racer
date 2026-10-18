@@ -4,6 +4,7 @@
 // all's counts and refusal; Best use; 02 §3's check-in-fits table, cell by cell, as size chips from base-minute items;
 // and every template held to the banned words.
 import { collectAll, DEFAULT_CHECK_INS, durationText, hasBannedWord, repeat, SUMMARY_SECTIONS, speedUpAllPlan } from '@racer/domain/check-in'
+import { commitUnlocks, layerUnlocks } from '@racer/domain/training'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -122,11 +123,13 @@ describe('Free and its suggestions (02 §4, §6)', () => {
   })
 
   it('a Free Uma with nothing to suggest says so, and links to her Needs', () => {
-    const { made, collected } = checkedIn('stopped')
-    const summary = summaryOf(collected.state, made.env, made.at, 0, null, collected.receipt, null)
-    const settled = workView(collected.state, made.at, made.env).settled
-    const idle = freeLines(sectionOf(summary, 'free')!, settled, '/farm', 0).find((line) => line.suggestion === null)
-    expect(idle).toMatchObject({ words: SUMMARY_WORDS['free-idle'], to: `/town/stable/outfit/${idle!.outfitId}/needs` })
+    // Her only target is done with its layer, so the planner has nothing for her to start.
+    const { state: account, at, env } = farmAccount(1)
+    const her = account.umas[uma(1)]!
+    const trained = { ...account, umas: { [uma(1)]: { ...her, build: { ...commitUnlocks(her.build, her, layerUnlocks(1)).build, bonds: ['a', 'b', 'c', 'd', 'e', 'f'] } } } }
+    const summary = summaryOf(trained, env, at, 0, null, null, null)
+    const idle = freeLines(sectionOf(summary, 'free')!, trained, '/farm', 0).find((line) => line.suggestion === null)
+    expect(idle).toMatchObject({ words: SUMMARY_WORDS['free-idle'], to: `/town/stable/outfit/${uma(1)}/needs` })
   })
 
   it('a session link carries the room and the unlocks in order', () => {
@@ -138,12 +141,23 @@ describe('Free and its suggestions (02 §4, §6)', () => {
 
 describe("Couldn't repeat's fixes (02 §4, §5)", () => {
   it('turns every skip into its fixes at the stock now: make, pick another, pick cards, queue stopped, suggestion', () => {
-    const { made, collected, repeated } = checkedIn('stopped')
-    const summary = summaryOf(repeated.state, made.env, made.at, 0, null, collected.receipt, repeated.receipt)
-    const settled = workView(repeated.state, made.at, made.env).settled
-    const skips = skipViews(sectionOf(summary, 'couldnt-repeat')!, settled, made.at, 0, '/farm')
+    const skipsOf = ({ made, collected, repeated }: ReturnType<typeof checkedIn>) => {
+      const summary = summaryOf(repeated.state, made.env, made.at, 0, null, collected.receipt, repeated.receipt)
+      return skipViews(sectionOf(summary, 'couldnt-repeat')!, workView(repeated.state, made.at, made.env).settled, made.at, 0, '/farm')
+    }
+    // The stopped seed's dropped queues and a Dojo with no cards; the busy seed's tonic short of stock; and a Gym room
+    // done for her layer, whose fix is the planner's next suggestion.
+    const { state: account, at, env } = farmAccount(1)
+    let state = apply(account, 'dev-grant', { items: { 'dish-sweets-1': 1 } }, at).state
+    state = apply(state, 'start', { outfitId: uma(1), slot: { building: 'gym', room: 'speed', slot: 0 }, request: { kind: 'session', unlocks: [{ kind: 'single', target: 'speed-01' }] } }, at).state
+    const later = at + 12 * HOUR
+    const collected = collectAll(state, {}, later, env)
+    const repeated = repeat(collected.state, { utcOffsetMin: 0 }, later, env)
+    const gymDone = skipsOf({ made: { ...seed('fresh'), state, env, at: later }, collected, repeated })
+    const skips = [...skipsOf(checkedIn('stopped')), ...skipsOf(checkedIn('busy')), ...gymDone]
     const kinds = new Set(skips.flatMap((skip) => skip.fixes.map((fix) => fix.kind)))
-    expect([...kinds].sort()).toEqual(['pick-another', 'pick-cards', 'queue-stopped', 'suggestion'])
+    expect([...kinds].sort()).toEqual(['make', 'pick-another', 'pick-cards', 'queue-stopped', 'suggestion'])
+    expect(gymDone.flatMap((skip) => skip.fixes.map((fix) => fix.kind))).toEqual(['suggestion'])
     const cards = skips.flatMap((skip) => skip.fixes).find((fix) => fix.kind === 'pick-cards')
     expect(cards).toMatchObject({ to: expect.stringMatching(/^\/training\/dojo\?session=sim-uma-\d+(&room=[\w-]+)?&back=%2Ffarm$/) })
     const another = skips.flatMap((skip) => skip.fixes).find((fix) => fix.kind === 'pick-another')
@@ -254,7 +268,7 @@ describe('the stopped seed (T142)', () => {
     const { seedAt } = await import('../../dev/seed')
     const made = seed('stopped')
     const settled = workView(made.state, made.at, made.env).settled
-    expect(Object.values(settled.work).filter((row) => row.dropped !== null).map((row) => row.outfitId).sort()).toEqual(['sim-uma-02', 'sim-uma-20', 'sim-uma-23'])
+    expect(Object.values(settled.work).filter((row) => row.dropped !== null).map((row) => row.outfitId).sort()).toEqual(['sim-uma-01', 'sim-uma-15', 'sim-uma-20'])
     expect(new Date(seedAt(made, '09:00').at).toISOString().slice(11, 16)).toBe('09:00')
     expect(seedAt(made, '09:00').at - made.at).toBe(-(4 * HOUR + 5 * MINUTE))
     expect(seedAt(made, '25:00')).toBe(made)

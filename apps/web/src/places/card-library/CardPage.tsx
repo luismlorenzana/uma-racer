@@ -1,7 +1,7 @@
 // A card's page (docs/game/06-cards-and-bonds.md §6, §10; T138): the illustration at 4:5 (the art viewer on tap); type,
 // era, style and distance; what it pays in the lens (`cardPay`: the split, SP per node for Friend and Group, the eraPct
-// it keeps later in the tier, the full Race Bonus); its skills by node, golds first; the bond's dish and real time per
-// tier; who is bonded and where, then who could bond it now; and Bond in the thumb zone, which opens the Uma picker and
+// it keeps later in the tier, the full Race Bonus); its skills by node, golds first; the bond's real time per tier, with
+// no item (D374); who is bonded and where, then who could bond it now; and Bond in the thumb zone, which opens the Uma picker and
 // goes on to T139's Dojo session with her, this card and its room. A bond in progress reads "In session · bonds in 2h 10m".
 import { Button, Panel } from '@luismlorenzana/uma-kit/ui'
 import { scenarioRow } from '@racer/domain/tiers'
@@ -21,7 +21,7 @@ import { RacerUmaPicker as UmaPicker } from '../../ui/racerAlbum'
 import { umaName } from '../../ui/words'
 import type { PageProps } from '../registry'
 import {
-  bondChoice, bondCosts, bondedTo, bondSessionPath, cardName, cardSkills, cookPath, eraLabel, LENS_MODES, lensOf, LIBRARY_ALBUM,
+  bondChoice, bondCosts, bondedTo, bondSessionPath, cardName, cardSkills, eraLabel, LENS_MODES, lensOf, LIBRARY_ALBUM,
   LIBRARY_DEFAULT_QUERY, LIBRARY_FACETS, LIBRARY_SORTS, payWords, pendingBond, PLAYABLE, raceBonusWords, TYPE_LABEL,
 } from './model'
 import { cardFocus, cardPay } from '@racer/domain/training'
@@ -143,7 +143,7 @@ export default function CardPage({ place, rest, cardId }: PageProps & { cardId: 
             {costs.map((cost) => (
               <li key={cost.tiers} className="flex justify-between gap-2">
                 <span className="text-ink-soft">{cost.tiers}</span>
-                <span>{cost.dish === null ? 'Not in this tier' : `${cost.dish} · ${cost.time}`}</span>
+                <span>{cost.time === null ? 'Not in this tier' : `No item · ${cost.time}`}</span>
               </li>
             ))}
           </ul>
@@ -185,14 +185,6 @@ export default function CardPage({ place, rest, cardId }: PageProps & { cardId: 
                 className="font-display mt-1 min-h-11 w-full rounded-sm bg-accent px-3 text-[13px] font-semibold text-accent-ink shadow-1">
                 Queue
               </button>
-            )
-          }
-          if (choice.reason === null && choice.stock === 0 && choice.dishId !== null) {
-            return (
-              <Link to={cookPath(choice.dishId, back)} state={{ back: true }}
-                className="font-display mt-1 flex min-h-11 w-full items-center justify-center rounded-sm border border-hairline-strong bg-panel px-3 text-[13px] font-semibold">
-                Cook
-              </Link>
             )
           }
           return null

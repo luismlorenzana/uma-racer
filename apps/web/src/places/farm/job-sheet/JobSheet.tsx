@@ -7,7 +7,7 @@
 // Exchange's row for stocked raw), an `ask` re-offers the covered size, and Start returns to `back` when the link gave
 // one. With no Free Uma it says so, with **Collect here** when that would free one, and nothing else.
 import { navState } from '@luismlorenzana/uma-kit/shell'
-import { BottomSheet, CheckIcon, ChevronRightIcon, LockedIcon, SparkIcon, StarIcon, UiMark } from '@luismlorenzana/uma-kit/ui'
+import { BottomSheet, CheckIcon, ChevronRightIcon, LockedIcon, StarIcon, UiMark } from '@luismlorenzana/uma-kit/ui'
 import { durationText, hasReady } from '@racer/domain/check-in'
 import type { FarmBuildingId } from '@racer/domain/farm'
 import type { Place } from '@racer/domain/hub'
@@ -36,7 +36,6 @@ function TabMark({ icon }: { icon: TabIcon }) {
   if (icon.kind === 'type') return <TypeIcon type={icon.type} size={24} />
   if (icon.kind === 'item') return <ItemIcon item={icon.item} scale={0.75} decorative />
   if (icon.mark === 'star') return <StarIcon size={24} variant="duotone" />
-  if (icon.mark === 'spark') return <SparkIcon size={24} variant="duotone" />
   return <CheckIcon size={24} />
 }
 
