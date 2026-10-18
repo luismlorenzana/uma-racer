@@ -42,6 +42,7 @@ uma-platform's [queue](https://github.com/luismlorenzana/uma-platform/blob/main/
 | Id | Task | Commit |
 |---|---|---|
 | SA7 | The plaza crowd: small chibis on Town Hall (uma-kit 0.3.0, D371) | `9723a23` |
+| SD4 | Getting in, Account, Warehouse, Exchange and the profile on uma-kit 0.6.0; the API's guard from uma-server 0.2.0 (D372) | `7d2b757` |
 
 ## For ChatGPT, in order
 
