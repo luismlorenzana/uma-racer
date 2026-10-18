@@ -33,7 +33,7 @@ uma-platform's [queue](https://github.com/luismlorenzana/uma-platform/blob/main/
 | Id | Task | Who | Size | Needs | State |
 |---|---|---|---|---|---|
 | [SE1](tasks/SE1-racer-phase-5.md) | Phase 5: uma-platform's master data and art; the GameTora pipeline goes | Claude | L | — | Ready |
-| [SB6](tasks/SB6-racer-album.md) | The Stable, every picker and every small Uma on the kit album; busts in races | Either | L | SB3 (SB1 + SE1 for faces) | Blocked ([PR #120](https://github.com/luismlorenzana/uma-racer/pull/120)): owner must unlock the Mac for final Simulator acceptance; merge, production and closeout follow |
+| [SB6](tasks/SB6-racer-album.md) | The Stable, every picker and every small Uma on the kit album; busts in races | Either | L | SB3 (SB1 + SE1 for faces) | Releasing ([PR #120](https://github.com/luismlorenzana/uma-racer/pull/120)): local acceptance; owner waived Simulator checks (P60); protected merge, deployment and closeout follow |
 | [SC5](tasks/SC5-racer-on-uma-work.md) | Work on `@luismlorenzana/uma-work` and `uma-kit/work` | Either | L | SC1, SC2 | Waiting |
 | [SE4](tasks/SE4-racer-content.md) | Data and art through `uma-kit/content` and `uma-server/content` | Either | M | SE1, SE2 | Waiting |
 

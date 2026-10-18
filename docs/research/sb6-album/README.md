@@ -12,11 +12,10 @@ busts through the real racer `AlbumArtProvider`; it never reads private content,
 The ordinary seeds still fall back to initials. `fresh`, `gate` and `promote` also work. All committed evidence is
 synthetic; production art and account screenshots must stay outside git.
 
-Install from Simulator Safari: ⋯ → Share → View More → Add to Home Screen, keep **Open as Web App** on, then launch
-its Home Screen icon. Validation device: iPhone 17 Pro, iOS 26.4. Repeat in light and dark. The initial **SB6 Racer**
-install checked the Stable's edges; the later **SB6 Album** install used a localhost-only proxy on 5187 with a
-synthetic manifest (`scope: /`, start URL the seed above), forwarding the worktree's Vite on 5186. This keeps all
-place routes in the installed app instead of opening out-of-scope routes in Safari. No production config changes.
+For current acceptance, use the desktop browser at phone width, in light and dark. On 2026-10-18 the owner removed
+Simulator validation entirely (uma-platform P60) and requested local validation followed by a successful production
+deployment. The earlier Simulator observations below are historical evidence, not a remaining release gate. The
+owner checks physical-phone edges after deployment.
 
 ## Automated checks
 
@@ -59,17 +58,18 @@ Evidence (all invented content): [Stable](stable-light.png), [Cards](cards-light
 [Library lens](library-picker-light.png), [Bond](bond-picker-dark.png), [featured](featured-picker-dark.png),
 [dev grants](dev-picker-dark.png), [Trophy Hall](trophy-picker-light.png).
 
-### Browser supplement, 390×844
+### Local browser, 390×844 (rechecked 2026-10-18)
 
+Icons show five face columns, Cards three bust columns, and scrolling reaches the final owned row above the dock.
 Search narrows the Stable to the named outfit. Saved views save under the same existing device key. The real
 Lineage flow was played on the in-memory account: grant synthetic dishes through Account, start Slot A for Ember
 Stride, finish it through the dev UI, collect, open her profile and Lineage, then Fill A. Its shared picker shows
 the proper contribution descriptions and excludes her; selecting Amber Sprint still runs `set-lineage`.
 [Lineage picker](lineage-picker-390.png).
 
-### Remaining release gates
+### Release policy and remaining work
 
-The Mac locked during the final native Lineage check. Its Home Screen check (and finishing the phone scrolling
-pass) requires the owner to unlock the Mac; browser and regression coverage do not replace that gate. The feature
-PR remains in draft until then. Production deployment/verification and both packet-queue closeouts follow that
-acceptance. The owner's physical iPhone and VoiceOver feel remain separate owner checks.
+The owner waived the unfinished Simulator Lineage/scrolling pass on 2026-10-18 and requested local validation only,
+then deployment confirmation. Browser coverage and the automated regressions above remain the acceptance evidence.
+Protected merge, a successful standard production deployment, and both packet-queue closeouts remain. Signed-in
+production UI, physical-iPhone edges, touch scrolling and VoiceOver feel are owner checks, not claimed here.
