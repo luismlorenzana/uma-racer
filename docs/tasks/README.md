@@ -24,7 +24,7 @@ and bonded per Uma, uma-rpg's farming catalogue, Prize Money and the Exchange, a
 | 3 | [M034 — the generation-2 cutover and the new game](M034-generation-2-cutover.md) | **Shipped 2026-10-15** (T134–T144, D352–D361): `ec5b1bd`, racer-api-00188, content `9ba4cdd37cca`. The owner's old save is purged (30 collections, 3,676 documents; `players/` is empty) and the retired bucket objects are deleted. **Left: [T144](T144-the-release.md)'s step 10** (below) |
 | 6 | The Hub: uma-rpg's Phaser town on the four pages | **Shipped 2026-10-15, ahead of phase 5** (T145, D363): `b2cb668`, racer-api-00189. Its own art (four buildings, the Racing ground, currency marks, tier crests) landed as uma-art 2.7.0 from ChatGPT's packets A01 and A02 (D364): `1db8065`, racer-api-00190 |
 | 4 | Push notifications, a port of uma-rpg's | **Archived 2026-10-16** (D370). Parked as sibling SE5 until the owner asks for push (uma-platform P51, P11) |
-| 5 | Platform master data and the first shared packages | **Now sibling packet SE1** ([handoff](../handoff/README.md), uma-platform P51), Claude's: the GameTora pipeline goes |
+| 5 | [M035 — platform master data](M035-platform-master-data.md) | **In progress, SE1**: T148 adapter, T149 sources/overlays, T150 web/retirement, T151 parity/release/cleanup. Owner-assigned to Codex, 2026-10-18 |
 | 7 | The Farm and Training places as pixel-art scenes | **Archived 2026-10-16** (D370) |
 | 8 | The race on Phaser; PixiJS leaves the repo | **Archived 2026-10-16** (D370). PixiJS stays for the race scene |
 | 9 | World Expeditions | **Kept through the 2026-10-16 cleanup** (D370): without it the first Uma to finish tier 1's last career has nowhere to go. Not specified yet. It must land within about 16–20 weeks of 2026-10-15 (by about 2027-02-04 to 2027-03-04), before the first Uma finishes tier 1's last career |
@@ -55,7 +55,7 @@ The `pre-split` tag marks the old game.
 **Retired unbuilt (D339):** M024 (T081), M010 (T035) and M011 (T036–T039). The rework removes what they built on.
 Game feel and device acceptance for the new game are planned after phase 3.
 
-**Next free numbers: M035, T148 and D374** (D362 is reserved for T144's release record). Numbers are never reused, so
+**Next free numbers: M036, T152 and D374** (D362 is reserved for T144's release record). Numbers are never reused, so
 a decision that mentions T014 always means the same work. T057 was consumed by the per-scenario limit-break branch and
 is not reused.
 
