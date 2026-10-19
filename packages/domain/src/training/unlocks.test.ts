@@ -1,4 +1,4 @@
-// Pins the layers (docs/game/05-training-hub.md §3, README "Unlocks per scenario layer", D338, D374): every fixed
+// Pins the layers (docs/game/05-training-hub.md §3, README "Unlocks per scenario layer", D338, D375): every fixed
 // unlock's layer, grade, item (a meal, a tonic or none) and what it waits on, the session minutes and seconds, and bonds'
 // unlocks (06 §2).
 import { describe, expect, it } from 'vitest'
@@ -127,14 +127,14 @@ describe('session time (README, 05 §2)', () => {
     expect(() => sessionBaseMinutes(11 as 1)).toThrow(RangeError)
   })
 
-  it('runs × 1.8 in whole seconds, ÷ the facility speed (D374)', () => {
+  it('runs × 1.8 in whole seconds, ÷ the facility speed (D375)', () => {
     expect(GRADES.map((g) => sessionSeconds(g))).toEqual([19_440, 21_060, 22_680, 24_300, 25_920, 27_540, 29_160, 30_780, 32_400, 34_020])
     expect(GRADES.map((g) => sessionSeconds(g, 1.25))).toEqual([15_552, 16_848, 18_144, 19_440, 20_736, 22_032, 23_328, 24_624, 25_920, 27_216])
   })
 })
 
 describe('bondUnlock (06 §2)', () => {
-  it("takes the era's grade and layer p, and no item (D374)", () => {
+  it("takes the era's grade and layer p, and no item (D375)", () => {
     expect(bondUnlock(cardOf('speed-e1'), 1, 1)).toEqual({ kind: 'bond', target: 'speed-e1', layer: 1, grade: 1, dishId: null })
     expect(bondUnlock(cardOf('friend-e2'), 1, 2)).toEqual({ kind: 'bond', target: 'friend-e2', layer: 2, grade: 3, dishId: null })
     expect(bondUnlock(cardOf('group-e3'), 1, 5)).toEqual({ kind: 'bond', target: 'group-e3', layer: 3, grade: 5, dishId: null })

@@ -123,7 +123,7 @@ describe('upgrades (05 §7)', () => {
 
 describe("the Card Library's Bond link (06 §6)", () => {
   it('opens the Dojo sheet with her, the room and the card; Start returns to `back`', async () => {
-    // A bond takes no item (D374): an empty Warehouse starts it.
+    // A bond takes no item (D375): an empty Warehouse starts it.
     const { state: account, at } = trainingAccount(1)
     const { game } = clocked(farmSeed(account, at))
     const back = '/town/card-library/card/sim-card-speed-e1'

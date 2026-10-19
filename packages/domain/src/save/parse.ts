@@ -321,7 +321,7 @@ export function parseSlotRef(value: unknown): SlotRef | null {
 
 /**
  * An unlock as a request or an output holds it: a ref (`kind`, `target`), or T128's full unlock with its layer, grade and
- * the item it takes, null for one that takes none (D374).
+ * the item it takes, null for one that takes none (D375).
  */
 export function parseUnlock(value: unknown): UnlockRef | null {
   if (!isObject(value) || !UNLOCK_KINDS.includes(value.kind as (typeof UNLOCK_KINDS)[number]) || !isRowId(value.target)) return null

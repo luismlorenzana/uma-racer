@@ -119,7 +119,7 @@ describe('Duos and Feasts (08 §4.3, §4.4)', () => {
     expect(DUO_SIDE_FAMILY).toEqual({ 'stamina-wit': 'nuts-seeds', 'wit-power': 'nuts-seeds', 'power-speed': 'fruits', 'speed-guts': 'fruits' })
   })
 
-  it('brew every tonic from one crafted Vegetables, Mushrooms and Grains item at its grade, with no side (08 §4.5, D374)', () => {
+  it('brew every tonic from one crafted Vegetables, Mushrooms and Grains item at its grade, with no side (08 §4.5, D375)', () => {
     for (const tonic of TONICS) {
       const made = recipeOf(tonic.id)!
       expect(made.at).toBe('kitchen')

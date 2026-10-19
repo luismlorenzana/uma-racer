@@ -128,7 +128,7 @@ describe('remainingUnlocks', () => {
     expect(fresh.at(-1)).toEqual({ kind: 'pick-cards', layer: 1, facility: 'dojo', count: 4 })
     const first = fresh[0]!
     expect(first).toMatchObject({ kind: 'unlock', layer: 1, facility: 'observatory', room: null, grade: 1, dishId: 'tonic-1' })
-    // A chosen card's bond takes no item, in its card type's room (D374).
+    // A chosen card's bond takes no item, in its card type's room (D375).
     const bond = fresh.find((entry) => entry.kind === 'unlock' && entry.unlock.target === 'wit-e1')
     expect(bond).toMatchObject({ facility: 'dojo', room: 'wit', rooms: ['wit'], grade: 1, dishId: null })
     const duo = remainingUnlocks(emptyBuild(null), S(2), []).find((entry) => entry.kind === 'unlock' && entry.unlock.target === 'duo-power-speed-3')

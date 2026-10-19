@@ -202,7 +202,7 @@ Money; it doesn't buy (selling happens in the Warehouse, §6).
 | Goods | Price (Prize Money) | Limit |
 |---|---|---|
 | **Speed Ticket** | 30 | None |
-| **Raw ingredient**, grade *g*, any family | (90 + 5(*g*−1)) × *k*: its real gathering minutes (*k* = 1.8, D374) | Grades up to the stock rule (§5.3); up to 99 a purchase |
+| **Raw ingredient**, grade *g*, any family | (90 + 5(*g*−1)) × *k*: its real gathering minutes (*k* = 1.8, D375) | Grades up to the stock rule (§5.3); up to 99 a purchase |
 | Building and facility upgrades | Bought at each building, priced in Prize Money (and items) by [05](05-training-hub.md) and [07](07-farm.md) | — |
 
 **Not sold, by decision:** Uma Tickets (§5.4), crafted items, meals, tonics, Racing EXP, bonds and unlocks. The Farm makes
@@ -331,7 +331,7 @@ real Uma minutes in it at *k* = 1.8, inputs included, whatever the building spee
 A crafted item is its raw item plus a quarter of the gathering time. A planet dish is four crafted items of its grade,
 one crafted side at max(1, *g*−2) and the cook. A Duo sells like a planet dish of its grade; Feasts sell for 627, 684,
 741 and 798 at grades 4, 6, 8 and 10. A tonic, three crafted items and the cook, sells for 346 at grade 1 up to 501 at
-grade 10; a retired salad, soup or bread keeps its planet dish's price (D374). Speed Tickets and Uma Tickets can't be
+grade 10; a retired salad, soup or bread keeps its planet dish's price (D375). Speed Tickets and Uma Tickets can't be
 sold.
 
 **Why a third:** the Exchange sells raw at full work value, so buying and selling back loses two thirds, and no loop

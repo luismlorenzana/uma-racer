@@ -1,5 +1,5 @@
 // `@racer/domain/state` is the shared shapes and the time factor (docs/game/architecture.md#the-rework-modules). Pins the
-// durations the rework pages quote (D338, D374).
+// durations the rework pages quote (D338, D375).
 import { describe, expect, it } from 'vitest'
 import * as state from './index'
 

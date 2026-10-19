@@ -1,7 +1,7 @@
 // The planner: "what she still needs" (docs/game/02-check-ins-and-notifications.md §6, §4 "Best use";
 // docs/game/08-item-catalogue-and-recipes.md §4; uma-rpg's `targetPlan`, D100). Three steps, all derived on read:
 // 1. Needs: for each target, oldest layer first, every unlock left needs the one item it takes (T128), a meal or a
-//    tonic; an unlock that takes none (a bond, an inherited unique or gold, D374) needs nothing. Bonds still to pick
+//    tonic; an unlock that takes none (a bond, an inherited unique or gold, D375) needs nothing. Bonds still to pick
 //    cards for count in `pickCards`.
 // 2. Supply: the free stock once projected queue starts have taken their inputs, then the outputs still to come in
 //    finish order (T131's projection of T127's settle). Reserved inputs never count; projected drops count neither way.
@@ -247,7 +247,7 @@ export function planFrom(projection: Projection, targets: readonly string[], cho
   const targetPlans = needs.map(({ outfitId, unlocks, pickCards }, t): TargetPlan => {
     const left = new Map(dishLines[t]!.map((dish) => [dish.item, { have: dish.have, coming: dish.taken.length }]))
     const planned = unlocks.map((entry): PlannedUnlock => {
-      // An unlock that takes no item is always ready (D374).
+      // An unlock that takes no item is always ready (D375).
       if (entry.dishId === null) return { unlock: entry.unlock, facility: entry.facility, room: entry.room, supply: 'ready' }
       const counts = left.get(entry.dishId)!
       const supplied: UnlockSupply = counts.have > 0 ? 'ready' : counts.coming > 0 ? 'coming' : 'short'

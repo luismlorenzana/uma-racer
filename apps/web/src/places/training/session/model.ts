@@ -6,7 +6,7 @@
 // 2. **Unlocks**: her items here, oldest layer first in canonical order (`layerUnlocks` of each open layer, kept by
 //    `facilityOf` and `roomAccepts`, the next layer shown locked), each read with `unlockStatus` where the work ahead is
 //    `workAhead(row)` plus the items picked above it. Available ones show their meal or tonic, its free stock (a
-//    tonic's with the salads and soups standing in for it, D374) less the picks above, and their minutes; none in stock
+//    tonic's with the salads and soups standing in for it, D375) less the picks above, and their minutes; none in stock
 //    reads "0 in Warehouse · Cook", and one that takes no item reads "No item". The sheet pre-picks `fitSize` of the
 //    next items (`nextUnlocks`), capped by stock and `SESSION_MAX_UNLOCKS`; unlocks the link names arrive picked
 //    instead. At the Dojo the list is the bonds picked from the Card Library, each in its card type's room, none taking

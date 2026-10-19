@@ -1,6 +1,6 @@
 // Cross-task acceptance #1 (docs/game/architecture.md#the-rework-modules): one synthetic Uma goes from tier 1, scenario 1 to
 // promotion by operations only, against a synthetic Warehouse of exactly the 71 meals and tonics the layers call for
-// (D374). Every unlock starts in its own scenario and a later layer's start is refused; each takes its one item of the
+// (D375). Every unlock starts in its own scenario and a later layer's start is refused; each takes its one item of the
 // right kind and grade, or none, so the Warehouse ends empty. Racing Level reaches 50 by winning her careers' races, the
 // stand-in Expedition is completed as the tier rules' tests do (phase 9 owns its real rules), and promotion resets her
 // build and bonds while the account's goods carry. Every session runs on T127's work engine: `start` reserves its
@@ -26,7 +26,7 @@ import { sessionRequest } from './sessions'
 import { layerUnlocks, unlockLabel, type UnlockRef } from './unlocks'
 
 /**
- * 05 §3's layer tables, written out from the pages: the meals and tonics a tier of training takes (D374). Uniques, golds
+ * 05 §3's layer tables, written out from the pages: the meals and tonics a tier of training takes (D375). Uniques, golds
  * and the deck's 18 bonds take nothing.
  */
 function warehouseOf71(): Record<string, number> {

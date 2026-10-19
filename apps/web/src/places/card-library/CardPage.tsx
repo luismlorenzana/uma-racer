@@ -1,7 +1,7 @@
 // A card's page (docs/game/06-cards-and-bonds.md §6, §10; T138): the illustration at 4:5 (the art viewer on tap); type,
 // era, style and distance; what it pays in the lens (`cardPay`: the split, SP per node for Friend and Group, the eraPct
 // it keeps later in the tier, the full Race Bonus); its skills by node, golds first; the bond's real time per tier, with
-// no item (D374); who is bonded and where, then who could bond it now; and Bond in the thumb zone, which opens the Uma picker and
+// no item (D375); who is bonded and where, then who could bond it now; and Bond in the thumb zone, which opens the Uma picker and
 // goes on to T139's Dojo session with her, this card and its room. A bond in progress reads "In session · bonds in 2h 10m".
 import { Button, Panel } from '@luismlorenzana/uma-kit/ui'
 import { scenarioRow } from '@racer/domain/tiers'

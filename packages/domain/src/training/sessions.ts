@@ -1,5 +1,5 @@
 // Training Hub sessions on T127's work engine (docs/game/05-training-hub.md §2): 1–10 unlocks of one facility, one
-// room at the Gym and Dojo, one after another, each paid with the one item it takes (or none, D374) and lasting
+// room at the Gym and Dojo, one after another, each paid with the one item it takes (or none, D375) and lasting
 // 180 + 15(g − 1) base minutes × TIME_FACTOR ÷ the facility's speed. The engine (`work`) runs the slot, the items, the
 // clock, queues, collect, recall and Speed Tickets; this is the `session` kind it registers: `plan` checks a request
 // where its slot is and lists each unlock's item and seconds, and `pay` commits finished unlocks into her build.
@@ -34,7 +34,7 @@ const isUnlockKind = (kind: string): kind is UnlockKind => (UNLOCK_KINDS as read
 
 /**
  * A bond unlock as this module wrote it into an entry: its grade is its layer's lower one, and it takes no item, or,
- * written before D374, a planet dish of that grade.
+ * written before D375, a planet dish of that grade.
  */
 function storedBond(ref: AnyRef): Unlock | null {
   const entry = ref as Partial<Unlock>
@@ -71,7 +71,7 @@ export const unlocksAhead = (earlier: readonly WorkRequest[]): readonly UnlockRe
   earlier.flatMap((request) => (request.kind === SESSION_KIND ? request.unlocks.filter((ref): ref is UnlockRef => isUnlockKind(ref.kind)) : []))
 
 /**
- * What each unlock takes out of `stock`, in order (D374): its item, a stand-in first (a retired salad or soup for a
+ * What each unlock takes out of `stock`, in order (D375): its item, a stand-in first (a retired salad or soup for a
  * tonic), or nothing for an unlock that takes none. An item the stock doesn't hold is still named, so the engine's
  * shortfall says what to make.
  */

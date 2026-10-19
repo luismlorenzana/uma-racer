@@ -13,7 +13,7 @@ the end).
 Uma Racer is a **racing game with a passive Farm**. Each Uma climbs a **tier** of five scenarios. In each scenario she
 races her career (Racing Level), while the roster works the Farm on timers (Farm Level). The Farm grows ingredients,
 the Pantry crafts them and the Kitchen cooks them into **meals** and **tonics**. A **Training Hub session** unlocks
-one piece of an Uma's build, and takes at most one of them (D374):
+one piece of an Uma's build, and takes at most one of them (D375):
 - a constellation node or an Inspiration slot, for a tonic;
 - an Extra Stats node, for a meal;
 - an inherited unique or gold skill, or a bond with one support card, for nothing but its time.
@@ -136,7 +136,7 @@ come fast, and every grade is open within about a month of a tier ([07](07-farm.
 uma-art's Duo dishes join neighbouring families on a fixed ring, so the five stats take five neighbours. Then
 every stat-to-stat Duo already has art.
 
-| Family (uma-art id) | Farm site (uma-art building) | Its crafted items go to (D374) | Aptitude that speeds its Farm Level |
+| Family (uma-art id) | Farm site (uma-art building) | Its crafted items go to (D375) | Aptitude that speeds its Farm Level |
 |---|---|---|---|
 | Sweets (`sweets`) | Sugar Grove (`sugar-grove`) | **Speed** meals: the Gym's Speed room | Sprint |
 | Fruits (`fruits`) | Orchard (`orchard`) | **Stamina** meals: the Gym's Stamina room | Long |
@@ -181,7 +181,7 @@ Guts–Stamina has no Duo.
 
 ### Time model
 
-Every duration is a base formula below **× the time factor *k* = 1.8** (D374; 1.2 from D338). The domain holds *k* as one constant
+Every duration is a base formula below **× the time factor *k* = 1.8** (D375; 1.2 from D338). The domain holds *k* as one constant
 (`TIME_FACTOR` in `state/time.ts`), and pages that quote minutes quote the base formula.
 
 | Step | Base minutes for grade *g* | Grade 1 | Grade 10 |
@@ -215,7 +215,7 @@ and a bond, inherited unique or gold only its session. The loop simulation measu
 | **Session** | Timed unlocks at one Training Hub facility for one Uma: 1–10 of them one after another, each paid for with one meal or tonic, or with nothing |
 | **Job** | One timed Farm task: gather, craft or cook 1–10 items one after another |
 | **Meal** | A Kitchen dish for Extra Stats: a stat family's planet dish, a Duo or a Feast |
-| **Tonic** | A Kitchen item for a constellation node or an Inspiration slot: one crafted Vegetables, Mushrooms and Grains item of its grade (D374) |
+| **Tonic** | A Kitchen item for a constellation node or an Inspiration slot: one crafted Vegetables, Mushrooms and Grains item of its grade (D375) |
 | **Bond** | A card unlocked for one Uma, for the rest of her tier; it takes no item, only its session |
 | **Racing Level / Farm Level** | An Uma's two levels inside a tier, each 1–50 |
 | **Promotion** | Completing the tier's World Expedition; the Uma moves to the next tier and starts over |

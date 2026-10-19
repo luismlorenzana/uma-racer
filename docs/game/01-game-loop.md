@@ -35,7 +35,7 @@ This page tells the story and owns the **activity rule** (D328). The pages it li
 | **1 Gather** | One of the eight Farm sites ([07](07-farm.md)) | Any free Uma whose Farm Level opens the grade (Lv 5*g* − 4) | 90 min an item (135) | Nothing → 1 raw ingredient |
 | **2 Craft** | Pantry | Same rule | 22.5 min an item (33.75) | 1 raw → 1 crafted item |
 | **3 Cook** | Kitchen | Same rule | 240 min a meal or tonic (330) | 4 crafted of a stat family + 1 crafted side → 1 meal; 1 crafted Vegetables, Mushrooms and Grains → 1 tonic ([08](08-item-catalogue-and-recipes.md)) |
-| **4 Session** | The Training Hub facility the unlock belongs to ([05](05-training-hub.md)) | **The Uma who gets the unlock**, and only her | 180 min an unlock (315) | A meal, a tonic or nothing → 1 unlock (D374) |
+| **4 Session** | The Training Hub facility the unlock belongs to ([05](05-training-hub.md)) | **The Uma who gets the unlock**, and only her | 180 min an unlock (315) | A meal, a tonic or nothing → 1 unlock (D375) |
 | **5 Unlock** | Her build, for the rest of the tier (D328) | — | At Collect | A constellation node, an Inspiration slot, inherited unique or gold, an Extra Stats node, or a card bond |
 | **6 Race** | The Racing page | Any Uma, at any time | ~1–2 minutes of the owner's time with skip | Racing EXP and Prize Money ([09](09-racing-rewards-and-exchange.md)) |
 | **7–8 Spend** | The Exchange | The owner | — | Prize Money → Speed Tickets (30 each), raw items, upgrades |
@@ -44,7 +44,7 @@ This page tells the story and owns the **activity rule** (D328). The pages it li
   check-in or the night ([02](02-check-ins-and-notifications.md) §3).
 - **Steps 1–3 are anybody's work and step 4 is hers.** Meals and tonics go to the account's one Warehouse, and any
   Uma's session can use any of the right kind and grade. Her own sessions are the only work nobody else can do for her.
-- **A meal-paid unlock costs about 30 Uma-hours at grade 1 and 44 at grade 10** (*k* = 1.8, D374): five raw gathered,
+- **A meal-paid unlock costs about 30 Uma-hours at grade 1 and 44 at grade 10** (*k* = 1.8, D375): five raw gathered,
   five crafted, one meal cooked and one session; **a tonic-paid one about 23 and 35**, from three of each; **a bond,
   inherited unique or gold skill only its session**, 5½ to 9½ hours ([12](12-economy-and-pacing.md) §4).
 - **What each unlock takes** ([08](08-item-catalogue-and-recipes.md) §6): a tonic for a constellation node or an
@@ -97,7 +97,7 @@ needs the owner to play at set times.
 
 Scenario 1's layer is **27 unlocks** (README), 19 at grade 1 and 8 at grade 2:
 
-| Unlock | Count | Facility | Takes (D374) |
+| Unlock | Count | Facility | Takes (D375) |
 |---|---|---|---|
 | Constellation nodes (tree of 12) | 12 | Observatory | A tonic: 6 at grade 1, 6 at grade 2 |
 | Inspiration: both parent slots, then both parents' inherited uniques | 4 | Lineage Hall | A tonic for each slot; nothing for the uniques |

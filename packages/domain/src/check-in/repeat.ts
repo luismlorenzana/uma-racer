@@ -3,7 +3,7 @@
 // each seeing the stock the ones before left and taking the lowest free slot at the same building and room, so Collect
 // all then Repeat all always finds one. The size is the last one, or the fitted one when the profile says `fit`, shrunk
 // to the stock ("×6 → ×3"); gathering always starts; a session takes T128's next unlocks there while the items they
-// take last (D374: some take none); the grade stays, with a note when a higher one is open. An Uma is skipped, with a
+// take last (D375: some take none); the grade stays, with a note when a higher one is open. An Uma is skipped, with a
 // reason and a fix, when she has nothing to repeat (recalled or promoted), isn't Free, has a stopped queue, is short,
 // finds the place full, has finished that facility for her open layers, or was at the Dojo, where which card to bond
 // is the owner's choice.
@@ -115,7 +115,7 @@ const requestSize = (request: WorkRequest): number => (request.kind === SESSION_
 
 /**
  * The same line at grade `g`: raw, crafted, a planet dish or a tonic; null for a Duo or a Feast, whose grade is the
- * node's, and for a retired dish, which is never cooked again (D374).
+ * node's, and for a retired dish, which is never cooked again (D375).
  */
 function sameLineAt(item: ItemId, g: ItemGrade): ItemId | null {
   const def = itemById(item)
@@ -184,6 +184,10 @@ function repeatRequest(state: WorkState, outfitId: string, last: { slot: SlotRef
 
   const def = itemById(request.item)
   if (def === undefined || def.kind === 'ticket') throw new RangeError(`No item ${request.item} to repeat`)
+  // A salad, soup or bread cooked before D375 retired it is never cooked again, so she picks another job.
+  if (def.kind === 'dish' && def.dish === 'planet' && def.retired) {
+    return skip('retired', say(CHECK_IN_WORDS.retired), [{ kind: 'pick-another', building: place.building, room: place.room ?? null }])
+  }
   const inputs = recipeOf(request.item)?.inputs ?? []
   const seconds = farmItemSeconds(request.kind, def.grade, speedAt(state, place.building))
   const size = sizing === 'fit'

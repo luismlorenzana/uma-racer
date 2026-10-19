@@ -65,7 +65,7 @@ describe('What (07 §10)', () => {
     expect(tabs[5]!.items).toEqual(Array.from({ length: 10 }, (_, i) => `tonic-${i + 1}`))
     expect(tabs[6]!.items).toHaveLength(8)
     expect(tabs[7]!.items).toHaveLength(4)
-    // The retired salads, soups and breads are no longer cooked (D374): no tab lists them.
+    // The retired salads, soups and breads are no longer cooked (D375): no tab lists them.
     expect(tabs.flatMap((tab) => tab.items).some((item) => /^dish-(vegetables|mushrooms|grains)-/.test(item))).toBe(false)
     const stocked = apply(state, 'dev-grant', {
       items: { 'chopped-carrot': 1, 'dried-button-mushroom': 1, 'wheat-flour': 1, 'diced-potato': 1, 'dried-shiitake': 1, 'rolled-oats': 1 },

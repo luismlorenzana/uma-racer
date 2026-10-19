@@ -53,7 +53,7 @@ describe('slots (07 §6, 05 §7)', () => {
     })
   })
 
-  it('total 27 and 40 on the Farm (D351, D374), and 5 and 6 rooms of 1, then 2, in the facilities', () => {
+  it('total 27 and 40 on the Farm (D351, D375), and 5 and 6 rooms of 1, then 2, in the facilities', () => {
     const levels: BuildingLevel[] = [1, 2, 3]
     expect(levels.map((lv) => sum(FARM_BUILDING_IDS, (id) => totalSlots(id, lv)))).toEqual([27, 40, 40])
     expect(levels.map((lv) => totalSlots('gym', lv))).toEqual([5, 10, 10])

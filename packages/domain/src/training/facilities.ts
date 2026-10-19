@@ -1,4 +1,4 @@
-// The four facilities (docs/game/05-training-hub.md §1, D374): what each unlocks, what it takes, and which room takes
+// The four facilities (docs/game/05-training-hub.md §1, D375): what each unlocks, what it takes, and which room takes
 // which unlock. The Observatory opens nodes and the Lineage Hall Inspiration slots with tonics (its inherited uniques
 // and golds take nothing); the Gym's rooms, one per stat in ring order, take their stat's singles, any Duo with their
 // stat, and any Sun, each for a meal; the Dojo's rooms take their card type's bonds, Friend and Group sharing one, for

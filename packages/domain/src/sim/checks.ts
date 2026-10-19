@@ -43,7 +43,7 @@ export const LOOP_CHECKS: readonly LoopCheck[] = Object.freeze([
     read: ({ baseline }) => [scenarioDays(baseline, [1])[0] ?? null],
   },
   {
-    // One band for every scenario but a new account's first, in every tier (D374): a guard of about 2½ to 5 weeks
+    // One band for every scenario but a new account's first, in every tier (D375): a guard of about 2½ to 5 weeks
     // around the four-week target, not a target per scenario. The owner keeps the layers symmetric rather than tuning
     // each one to a day count.
     id: 'scenarios', label: "Days in each scenario after a new account's first", run: 'baseline', min: 18, max: 35, unit: 'days',

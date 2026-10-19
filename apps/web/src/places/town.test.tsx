@@ -209,7 +209,7 @@ describe('the Card Library and the featured Uma (06 §6, 11 §5)', () => {
     const { where } = renderG2('/town/card-library/card/sim-card-speed-e1', game)
     click(await screen.findByRole('button', { name: 'Bond' }))
     const picker = await screen.findByRole('dialog', { name: /^Bond / })
-    // A bond takes no item (D374), so there's no Cook to follow up: tapping her goes straight on.
+    // A bond takes no item (D375), so there's no Cook to follow up: tapping her goes straight on.
     click(await within(picker).findByRole('button', { name: /^Amber Sprint/ }))
     await waitFor(() => expect(where()).toBe(
       `/training/dojo?session=sim-uma-01&room=speed&unlocks=bond%3Asim-card-speed-e1&back=${encodeURIComponent('/town/card-library/card/sim-card-speed-e1')}`,

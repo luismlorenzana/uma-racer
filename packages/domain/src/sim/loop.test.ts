@@ -79,7 +79,7 @@ describe('conservation', () => {
     for (const [id, cooked] of Object.entries(logs.cooked)) expect(state.items[id] ?? 0, id).toBe(cooked - (logs.reservedDishes[id] ?? 0))
   })
 
-  it('pays every unlock with exactly the one item it takes, or none (D374)', () => {
+  it('pays every unlock with exactly the one item it takes, or none (D375)', () => {
     const pending: Record<string, number> = {}
     for (const row of Object.values(state.work)) {
       for (const entry of row.entries) {
@@ -188,7 +188,7 @@ describe('the demand of a tier (cross-task acceptance #2, 08 §7)', () => {
   const demand = tierDemand(representativeDeck())
   const family = (id: FamilyId) => demand.dishTable[id].reduce((a, b) => a + b, 0)
 
-  it('takes 37 meals, 34 tonics and 291 crafted items for the representative deck (D374)', () => {
+  it('takes 37 meals, 34 tonics and 291 crafted items for the representative deck (D375)', () => {
     expect(Object.values(demand.dishes).reduce((a, b) => a + b, 0)).toBe(71)
     expect([family('vegetables'), family('mushrooms'), family('grains')]).toEqual([0, 0, 0])
     for (const id of ['sweets', 'fruits', 'fish', 'nuts-seeds', 'herbs-spices'] as const) expect(family(id), id).toBe(5)

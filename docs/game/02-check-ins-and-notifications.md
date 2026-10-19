@@ -209,7 +209,7 @@ Wishlist.
 1. **Her remaining unlocks**, oldest layer first: anything left from earlier layers of this tier (under "from scenario
    1"), then the current layer. Older layers take cheaper items and lift her most per hour
    ([03](03-uma-progression.md) §10).
-2. **The item each one takes** ([05](05-training-hub.md), [08](08-item-catalogue-and-recipes.md) §6, D374): a tonic
+2. **The item each one takes** ([05](05-training-hub.md), [08](08-item-catalogue-and-recipes.md) §6, D375): a tonic
    for a node or an Inspiration slot, a stat meal for a single Extra node, a Duo for a Duo node, a Feast for a Sun
    node; nothing for a bond, an inherited unique or a gold, which are ready as soon as their order allows. A retired
    salad or soup in stock counts as the tonic of its grade.
@@ -399,9 +399,9 @@ The planner, suggestions, finish times and the badge count are **derived on read
 | Default check-in times 08:00, 13:00 and 22:30, editable, up to four | The sim's policy ([12](12-economy-and-pacing.md) §12) |
 | The size picker preselects the size that fits the next check-in, and shows the wait after each size | Overshooting a visit usually costs the most idle time |
 | Planner targets: up to 5, in order; automatic (five furthest behind) until the owner marks one | uma-rpg's D100 limit; the automatic choice matches the sim |
-| Unchosen bonds aren't cascaded; the planner asks for cards | A bond takes no item (D374), but its room and time depend on its card |
+| Unchosen bonds aren't cascaded; the planner asks for cards | A bond takes no item (D375), but its room and time depend on its card |
 | Stock and outputs coming are allocated once, in target order; finished-but-uncollected output counts as coming | Never promise one item twice, or spend what isn't collected |
-| An unlock that takes no item counts as ready; a tonic draws its stand-ins (a retired salad, then soup, of its grade) before the tonic itself (D374) | A session reserves them in that order, so the planner promises what Start will take |
+| An unlock that takes no item counts as ready; a tonic draws its stand-ins (a retired salad, then soup, of its grade) before the tonic itself (D375) | A session reserves them in that order, so the planner promises what Start will take |
 | Push is optional and only a port of uma-rpg's D63/D65, built if the owner asks after playing (D336) | The owner's rule: nothing outside what uma-rpg already set up |
 | The racer's changes are limited to sessions, counting Umas, reading per-entity rows, quiet hours and silence while the app is open | What the racer's rules need, and no more |
 | A stale screen re-checks and runs, shows the earlier result, or re-asks with new numbers; never an error | D320 |
@@ -413,6 +413,7 @@ The planner, suggestions, finish times and the badge count are **derived on read
 | Clock times are cut to the minute, so §3's 12:52:30 reads 12:52 | The same table shows 22:22:30 and 07:52:30 as 22:22 and 07:52 |
 | Repeat with no Umas named takes every Free Uma with a last job or session, in her last slot's order, each at the lowest free slot there | §5 says "collected in this check-in", [07](07-farm.md) §9 says "each free Uma", and the screen passes the Umas it collected |
 | Repeat skips an Uma with a stopped queue | Queue stopped's fixes put back what she was meant to do next |
+| Repeat of a salad, soup or bread cooked before D375 skips her with "The Kitchen no longer cooks that." and Pick another | The Kitchen never cooks a retired dish again ([08](08-item-catalogue-and-recipes.md) §1); the one already made still pays |
 | A repeated session takes the next unlocks in order and stops at the first missing item (one that takes none never stops it) | An unlock may depend on the one before ([05](05-training-hub.md) §2) |
 | **Switch** is offered for raw, crafted and planet-dish jobs; a Duo or a Feast keeps its node's grade | Duos and Feasts exist only at their nodes' grades |
 | A stopped queue clears on its restart, on Dismiss, or on any other start for her. A restart takes her old slot, or the lowest free one at the same place | §10 keeps it "until the owner restarts or dismisses it", and a new start is acting on it; the slot may have been taken since |

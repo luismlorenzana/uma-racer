@@ -1,8 +1,8 @@
 // What a Training Hub session unlocks (docs/game/05-training-hub.md §1–§3, docs/game/06-cards-and-bonds.md §2,
-// D328, D338, D374): the layers of a tier, each unlock's fixed grade and the one item it takes, and the session time
+// D328, D338, D375): the layers of a tier, each unlock's fixed grade and the one item it takes, and the session time
 // per grade. Scenario s of a tier adds its layer: 89 fixed unlocks a tier (28 nodes, 24 Inspiration, 37 Extra Stats)
 // and, at the Dojo, bonds with cards the owner picks, counted at 6, 3, 3, 3, 3 for pacing. 107 a tier. An Extra Stats
-// node takes a meal; a node or an Inspiration slot a tonic; a bond, an inherited unique or a gold nothing (D374).
+// node takes a meal; a node or an Inspiration slot a tonic; a bond, an inherited unique or a gold nothing (D375).
 import { INSPIRATION_SLOTS, inspirationGoldKey, type InspirationSlot } from '../inspiration'
 import type { FacilityId } from '../farm/buildings'
 import { feastDish, tonicItem, type FeastGrade, type ItemGrade, type ItemId } from '../items/catalogue'
@@ -48,14 +48,14 @@ export interface Unlock extends UnlockRef {
   readonly layer: ScenarioOfTier
   readonly grade: ItemGrade
   /**
-   * The one item it takes (D374): a meal for an Extra Stats node, a tonic for a node or an Inspiration slot (a retired
+   * The one item it takes (D375): a meal for an Extra Stats node, a tonic for a node or an Inspiration slot (a retired
    * salad or soup of its grade stands in, `standInsOf`), or null for a bond, an inherited unique or a gold, which take
-   * none. Named for the dish every unlock took before D374; the saved field keeps the name.
+   * none. Named for the dish every unlock took before D375; the saved field keeps the name.
    */
   readonly dishId: ItemId | null
 }
 
-/** The kinds that take no item (D374): relationships and skills cost time and SP, never items. */
+/** The kinds that take no item (D375): relationships and skills cost time and SP, never items. */
 export const ITEM_FREE_KINDS: readonly UnlockKind[] = Object.freeze(['unique', 'gold', 'bond'])
 /** Whether an unlock takes no item. */
 export const takesNoItem = (entry: Pick<Unlock, 'dishId'>): boolean => entry.dishId === null
@@ -118,7 +118,7 @@ export function goldPosition(key: string): { readonly slot: InspirationSlot; rea
 const unlock = (kind: UnlockKind, target: string, layer: ScenarioOfTier, grade: ItemGrade, dishId: ItemId | null): Unlock =>
   Object.freeze({ kind, target, layer, grade, dishId })
 
-/** What an unlock of `kind` and grade takes when it isn't an Extra Stats node: a tonic, or nothing (D374). */
+/** What an unlock of `kind` and grade takes when it isn't an Extra Stats node: a tonic, or nothing (D375). */
 const tonicOrNothing = (kind: UnlockKind, grade: ItemGrade): ItemId | null => (ITEM_FREE_KINDS.includes(kind) ? null : tonicItem(grade).id)
 
 /** Card nodes layer s adds: the tree of scenario s less the tree before it (12, 4, 4, 4, 4). */
@@ -174,7 +174,7 @@ export const bondsThrough = (s: ScenarioOfTier): number => BONDS_BY_SCENARIO.sli
 
 /**
  * The bond unlock for `card` in scenario s of `tier`: layer p = max(1, era − 5(tier − 1)) and grade 2p − 1, which set
- * its session time; it takes no item (06 §2, D374). Refused while its era is past the scenario.
+ * its session time; it takes no item (06 §2, D375). Refused while its era is past the scenario.
  */
 export function bondUnlock(card: BondCard, tier: Tier, s: ScenarioOfTier): Unlock | Refusal {
   if (card.era > scenarioNumber({ tier, scenario: s })) return cardEraRefusal(card)

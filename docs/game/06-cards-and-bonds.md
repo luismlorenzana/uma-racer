@@ -1,6 +1,6 @@
 # 06 · Cards and bonds
 
-> **Status: as built, phase 3 (generation 2, D361); first written 2026-10-13 (D329); bonds take no item since D374
+> **Status: as built, phase 3 (generation 2, D361); first written 2026-10-13 (D329); bonds take no item since D375
 > (2026-10-18).** Every SSR open from the start, no stars and no card levels, bonding a card to an Uma at the Dojo, how
 > long a bond takes by era, card sets and presets, Race
 > Bonus, and the Card Library (T138, D356). The tables marked live are rendered from the rules, and the loop
@@ -46,7 +46,7 @@ A **bond** is one card unlocked for one Uma. The rules:
 - **A card goes in an Uma's card set only once it is bonded to her** (D329). Unbonded cards can be browsed, compared
   and planned with, never slotted.
 - **One Dojo session unlock per bond.** The Dojo, its rooms and how sessions run are [05](05-training-hub.md)'s.
-  A bond is one unlock in a session: (180 + 15(*g*−1)) × *k* minutes, and **no item** (D374). The card itself is the
+  A bond is one unlock in a session: (180 + 15(*g*−1)) × *k* minutes, and **no item** (D375). The card itself is the
   cost: choosing it for her set means not choosing another, and its session holds her for hours.
 - **The bond lasts her whole tier** and **resets at promotion** with everything else on the Uma (D327).
 - **Per Uma.** Bonding a card to five Umas takes five sessions.
@@ -128,7 +128,7 @@ grade 1. None takes an item.
 - **What the 18 buys.** Scenario 1's six fill her first preset. The next three give her second preset its own cards.
   The last nine follow the eras: each scenario of tier 1 brings 24–27 newer cards, which pay 5% more a node for every
   era they are newer, so swapping two or three of them in each scenario is worth a bond.
-- **No Farm demand.** A bond takes no item (D374), so a deck changes nothing at the Farm
+- **No Farm demand.** A bond takes no item (D375), so a deck changes nothing at the Farm
   ([08](08-item-catalogue-and-recipes.md) §7); only its sessions' hours differ.
 
 ### Worked example: a Mile Uma's first week
@@ -316,7 +316,7 @@ and collect with the session operations; a set edit is one ordinary Uma write.
 - **A stale screen.** Start re-checks that she is not already bonded and not already bonding this card; a second device's
   bond shows as a refusal naming the session, never a second bond.
 - **The same card twice in one session**, or in two sessions for one Uma, is refused.
-- **A 0-stock Warehouse** changes nothing: a bond takes no item (D374).
+- **A 0-stock Warehouse** changes nothing: a bond takes no item (D375).
 - **Promotion.** Bonds, sets and assignments reset with the rest of the Uma ([04](04-tiers-and-promotion.md)). A running
   Dojo session is recalled first; it reserved nothing, so nothing returns.
 - **An Uma bought mid-tier** starts with no bonds; her first set takes six grade-1 bonds, 18 base hours (32h 24m).
@@ -331,7 +331,7 @@ and collect with the session operations; a set edit is one ordinary Uma write.
 | Every card pays 3★ values: node 100%, full Race Bonus, unique-effect bonus | D329; the owner considers every card max limit broken |
 | A bond can only be made for a card her current scenario allows | Bonds follow the layers |
 | Bond grade = 2*p*−1 with *p* = max(1, era − 5(tier − 1)) | Newer cards take longer; older ones bond at grade 1 in every later tier |
-| **A bond takes no item, only its session's time** (D374) | The card and the hours are the cost; a dish per bond was dozens of cooked items a tier for no build of its own |
+| **A bond takes no item, only its session's time** (D375) | The card and the hours are the cost; a dish per bond was dozens of cooked items a tier for no build of its own |
 | Any number of bonds; 18 a tier is the pacing assumption | Bonds already cost time; a cap would only add a rule |
 | Bonds are never undone or refunded | Unlimited bonds leave nothing to recover |
 | Race Bonus pays Racing EXP only, never Prize Money | Keeps the anchor currency clean and set-swapping pointless |

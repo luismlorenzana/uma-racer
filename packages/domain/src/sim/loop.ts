@@ -60,7 +60,7 @@ const TIER_ENV = Object.freeze({ content: SIM_CONTENT })
 /** The Expedition the placeholder runs (10, phase 9 replaces it). */
 const expeditionId = (tier: Tier): string => `sim-expedition-t${tier}`
 
-/** The conservation logs' key for unlocks that take no item (D374). */
+/** The conservation logs' key for unlocks that take no item (D375). */
 export const NO_ITEM = 'none'
 /** Whether the Kitchen made `item`: a meal or a tonic. */
 const fromKitchen = (item: ItemId): boolean => {

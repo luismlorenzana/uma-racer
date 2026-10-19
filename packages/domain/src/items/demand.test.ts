@@ -14,7 +14,7 @@ const FAMILY_BY_NAME: Readonly<Record<string, FamilyId>> = {
   'Herbs & Spices': 'herbs-spices', Grains: 'grains',
 }
 
-/** 08 §7 "Meals and tonics, per Uma per tier" (D374): row, grades 1–10, total. */
+/** 08 §7 "Meals and tonics, per Uma per tier" (D375): row, grades 1–10, total. */
 const DISHES = [
   '| Sweets meals | 1 | 0 | 1 | 0 | 1 | 0 | 1 | 0 | 1 | 0 | **5** |',
   '| Fruits meals | 1 | 0 | 1 | 0 | 1 | 0 | 1 | 0 | 1 | 0 | **5** |',
@@ -70,7 +70,7 @@ function representativeDishes(): Record<string, number> {
 }
 
 describe('crafted demand (08 §7)', () => {
-  it('turns the representative deck\'s 37 meals and 34 tonics into §7\'s 291 crafted items, cell for cell (D374)', () => {
+  it('turns the representative deck\'s 37 meals and 34 tonics into §7\'s 291 crafted items, cell for cell (D375)', () => {
     const dishes = representativeDishes()
     expect(Object.values(dishes).reduce((a, b) => a + b, 0)).toBe(71)
     const demand = craftedDemand(dishes)

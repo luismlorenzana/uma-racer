@@ -1,6 +1,6 @@
 // The Farm's three kinds of work (docs/game/07-farm.md §1–§4): gather raw items at their family's site, craft at the
 // Pantry (one raw into the crafted item of its family and grade), cook at the Kitchen: meals, and tonics brewed in the
-// cook's time (D374). Step times are T126's base minutes (`items`), which T127 turns into seconds at the building's
+// cook's time (D375). Step times are T126's base minutes (`items`), which T127 turns into seconds at the building's
 // speed through `workSeconds`. Every step is gated by her Farm Level (Lv 5g − 4, a dish by its own grade) and pays Farm
 // EXP by the listed minute × her running aptitude for the family: the site's, the crafted item's or the dish's, a Duo,
 // Feast or tonic the best of its main families.
@@ -38,7 +38,7 @@ export const farmItemSeconds = (kind: FarmKind, g: ItemGrade, speed = 1): number
 
 /**
  * Whether `building` makes `item` as `kind` (07 §1): raw at its family's site, crafted at the Pantry, dishes and tonics
- * at the Kitchen. A retired salad, soup or bread is never cooked again (D374).
+ * at the Kitchen. A retired salad, soup or bread is never cooked again (D375).
  */
 export function makesHere(kind: FarmKind, item: ItemDef, building: BuildingId): boolean {
   switch (kind) {

@@ -88,13 +88,13 @@ mints time from nothing.
 
 The first-draft model put the day at 450 Uma-hours (25 Umas working 75% of the day). The sim's roster starts at 20,
 reaches 25 in its tenth week, and works a little under two-thirds of the time: most of the rest is the wait between a
-job's end and the next check-in (§11). Since D374 sessions are a larger share: a bond, an inherited unique or a gold
+job's end and the next check-in (§11). Since D375 sessions are a larger share: a bond, an inherited unique or a gold
 skill is a session with no Farm work behind it.
 
 ## 4. The time model
 
 **Every step takes real time from start timestamps**, so closed and offline time counts. Base formulas per grade *g*
-(README "Time model"); every one is multiplied by the time factor ***k* = 1.8** (§10, D374), so in play a meal-paid
+(README "Time model"); every one is multiplied by the time factor ***k* = 1.8** (§10, D375), so in play a meal-paid
 unlock is 29.5 hours at grade 1 and 44.3 at grade 10, a tonic-paid one 22.7 and 34.5, and a bond, inherited unique or
 gold skill only its session, 5.4 and 9.5:
 
@@ -145,7 +145,7 @@ and career are both done:
 | **Tier** | | **107** | **2,524** | | | **21.4 weeks** | 16.9 · 13.8 weeks |
 <!-- /live -->
 
-At *k* = 1.8 (D374). D336's 24 Inspiration unlocks (6 slots, 6 inherited uniques, 12 golds) are spread 4, 6, 4, 6, 4
+At *k* = 1.8 (D375). D336's 24 Inspiration unlocks (6 slots, 6 inherited uniques, 12 golds) are spread 4, 6, 4, 6, 4
 across the scenarios; only the slots take an item, a tonic. Each scenario's five Gym singles sit at its first grade
 (D338). Each bond is the representative deck's card of the scenario's own era, at grade 2*s* − 1, and takes no item
 ([06](06-cards-and-bonds.md) §2, [08](08-item-catalogue-and-recipes.md) §7). Duos and Feasts are priced like a planet
@@ -163,7 +163,7 @@ How to read it:
   goes on: by its middle the roster is 25, every building reaches Lv 3 by about day 68 (×1.25 speed), and Prize Money
   buys Speed Tickets. Tiers 2 and 3, fully upgraded from the start, run 19–27 days a scenario.
 
-**Why *k* = 1.8 (D374).** D374 took a tier's items from 107 to 71 and its crafted items from 539 to 291: the same
+**Why *k* = 1.8 (D375).** D375 took a tier's items from 107 to 71 and its crafted items from 539 to 291: the same
 unlocks for more than 40% less Farm work. *k* is the lever that puts the weeks back without touching any ratio, and 1.8
 is the step that does it (tier 1 at 21.4 weeks against D334's twenty) while keeping raw prices in whole minutes
 ([09](09-racing-rewards-and-exchange.md) §5). The layers stay as they were, and every scenario after a new account's
@@ -244,7 +244,7 @@ the spending policy's upgrade dates:
 <!-- /live -->
 
 - **The Kitchen is the busiest building**, about 110 slot-hours a day, with 6 slots at Lv 1 and 9 at Lv 2 and 3
-  (D374); the Pantry takes a fifth slot at Lv 2 and 3 (D351) and peaks at about two-thirds. Fields and the Mushroom
+  (D375); the Pantry takes a fifth slot at Lv 2 and 3 (D351) and peaks at about two-thirds. Fields and the Mushroom
   Cave run hot in a tier's first scenario, where most unlocks take a tonic.
 - **Lv 1 carries the 20-Uma start, and the roster grows to 25 as the first Lv 2s land.** Every Lv 2 is bought between
   days 28 and 38 of a new account, as the first careers pay, and every Lv 3 by about day 68.
@@ -326,7 +326,7 @@ promotions follow about a week after the cohort's last careers.
 
 That's long by design: an idle game the owner checks two or three times a day and races in when free. It's also one
 number to change. **Every duration** (gather, craft, cook, session) **scales with one time factor *k***, **1.8** since
-D374 (1.2 from D338, when a tier took 107 items):
+D375 (1.2 from D338, when a tier took 107 items):
 
 | *k* | Scenario | Tier | Game |
 |---|---|---|---|
@@ -376,7 +376,7 @@ The first draft made Extra Stats 47% of all unlocks (62 of 132), each paying +20
 pays a card node: about 130–280 raw points spread by the card's type. Half the owner's sessions would have felt like the
 least rewarding half. **The owner adopted the recommendation on 2026-10-14:** one single per stat per scenario at +40,
 Duos +20/+20 and Suns +8 to all five, active capacity halved to 7–15, so the Extra Stats budget is unchanged
-([05](05-training-hub.md) §6). Layers shrink from 132 to 107 unlocks a tier, and *k* (1.2 then, 1.8 since D374) keeps
+([05](05-training-hub.md) §6). Layers shrink from 132 to 107 unlocks a tier, and *k* (1.2 then, 1.8 since D375) keeps
 the four weeks (§5).
 
 ## 12. The loop simulation
@@ -425,7 +425,7 @@ the loop sim will read its median race count instead of the placeholder.
 | Check | Range |
 |---|---|
 | A new account's first scenario, its ramp | within 6 weeks (42 days) |
-| Every scenario after it, in every tier, 25 Umas, three check-ins, target racing, the spending policy; every building and facility at Lv 3 when the cohort enters tiers 2 and 3 | 18–35 days (D374) |
+| Every scenario after it, in every tier, 25 Umas, three check-ins, target racing, the spending policy; every building and facility at Lv 3 when the cohort enters tiers 2 and 3 | 18–35 days (D375) |
 | Tier 1 | 19–23 weeks |
 | Any building's slot use in a scenario window, with the spending policy | ≤ 90% (no permanent bottleneck) |
 | Time saved by target racing / by heavy racing | 5–10% / 18–25% |
@@ -454,7 +454,7 @@ days and the Pantry at 91.5% (D348). The owner chose the Pantry's fifth slot, wh
 tiers 2–3, a little quicker with every building at Lv 3, at 18–28 days. On other seeds the tier still takes 20.4–20.9
 weeks, while a later tier-1 scenario can dip to about 20 days, so the committed seed is the one the range pins.
 
-**One symmetric guard (D374).** At *k* = 1.8 with D374's items, tier 1 runs 21.4 weeks, but its scenarios run 33, 29,
+**One symmetric guard (D375).** At *k* = 1.8 with D375's items, tier 1 runs 21.4 weeks, but its scenarios run 33, 29,
 23 and 21 days after the ramp: the later ones shorten as the upgrades land and the roster fills. Holding each to its
 own band would mean tuning each layer's size, which the owner declined on 2026-10-18 ("I don't like this day hyper
 obsession, I would like to keep things very symmetric and linear if possible"). The two scenario checks became one:
@@ -472,8 +472,8 @@ at Lv 3 when the cohort enters tiers 2 and 3. The tier's 19–23 weeks still hol
 | No Farm Level cap | Farm Level is a short ramp at the owner's 2–3 levels a day (4–5 suited); the layers do the pacing |
 | Front-loaded layers (27 → 17 unlocks) | Equal time per scenario, and quick wins at the start of each tier |
 | Half the Gym's singles at twice the value, *k* = 1.2 (D338) | Every session is worth having; the four weeks hold |
-| **Meals for Extra Stats, tonics for nodes and slots, nothing for bonds, uniques and golds; *k* = 1.8; the Kitchen 6/9/9** (D374) | uma-rpg's split of crafted items; 71 items a tier instead of 107, and *k* puts the weeks back with every ratio kept |
-| **One guard for every scenario after a new account's first: 18–35 days** (D374) | The owner's call: symmetric and linear, no per-scenario tuning; the layers stay as they were |
+| **Meals for Extra Stats, tonics for nodes and slots, nothing for bonds, uniques and golds; *k* = 1.8; the Kitchen 6/9/9** (D375) | uma-rpg's split of crafted items; 71 items a tier instead of 107, and *k* puts the weeks back with every ratio kept |
+| **One guard for every scenario after a new account's first: 18–35 days** (D375) | The owner's call: symmetric and linear, no per-scenario tuning; the layers stay as they were |
 | Tier 2 and 3 cost the same Farm time | Higher tiers are harder in races and Expeditions; Farm time stays predictable |
 | Speed Tickets are not counted in the target | The target holds without them; racing is a bonus the owner earns |
 | The Kitchen is sized as the busiest building | Cooking is about a third of all Farm work |

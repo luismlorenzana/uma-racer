@@ -48,7 +48,7 @@ function catalogue(): string {
   return table(['Kind', 'Count', 'Ids'], [
     ['Raw ingredients', `${count('raw')} (${families})`, `uma-art \`items\` frames with \`refined: false\`, e.g. ${code(rawItem(first, 1).id)}`],
     ['Crafted ingredients', count('crafted'), `uma-art \`items\` frames with \`refined: true\`, e.g. ${code(craftedItem(first, 1).id)}`],
-    ['Planet dishes', `${count('dish', 'planet')} (${families}; ${ITEMS.filter(isRetired).length} retired, D374)`,
+    ['Planet dishes', `${count('dish', 'planet')} (${families}; ${ITEMS.filter(isRetired).length} retired, D375)`,
       'uma-art `dishes`: `dish-<family>-<grade>`'],
     ['Duo dishes', `${count('dish', 'duo')} (${DUO_PAIRS.length} stat Duos × grades ${DUO_GRADES.join(' and ')})`,
       '`duo-<stat>-<stat>-<grade>`, drawn with uma-art `duo-…` frames (§4.3)'],

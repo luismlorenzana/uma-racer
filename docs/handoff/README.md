@@ -46,7 +46,7 @@ uma-platform's [queue](https://github.com/luismlorenzana/uma-platform/blob/main/
 
 ## For ChatGPT, in order
 
-1. [A04](tasks/A04-tonic-icons.md): the ten tonics' 32×32 item icons in uma-art's `items` atlas (D374). Ready.
+1. [A04](tasks/A04-tonic-icons.md): the ten tonics' 32×32 item icons in uma-art's `items` atlas (D375). Ready.
 
 The owner authorized A03's implementation, merge and deployment in chat; its proof records the checks and pending
 device acceptance. The shared shell remains uma-kit's (T147, D367), not a local fork.

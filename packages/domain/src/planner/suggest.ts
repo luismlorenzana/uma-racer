@@ -2,7 +2,7 @@
 // free Umas", "What it shows"; docs/game/01-game-loop.md §4). Free Umas go by Farm Level, highest first (01 §4: the
 // higher grades are theirs), ties by outfit id. Each takes, in order:
 // 1. her own session, when the item one of her open unlocks takes is in the projected free stock, or it takes none
-//    (D374): her oldest such unlock picks the facility and room, and she takes the next unlocks there while their
+//    (D375): her oldest such unlock picks the facility and room, and she takes the next unlocks there while their
 //    items last, up to the fitted size;
 // 2. otherwise the largest shortfall she can start for the first target she can work for: her Farm Level opens the
 //    grade, a slot is free and the inputs are in stock. Ties go to a dish, then crafted, then raw, then the lower grade,
@@ -82,7 +82,7 @@ export class Bench {
     return this.stock.get(item) ?? 0
   }
 
-  /** Stock that can pay for `item`: it and its stand-ins (D374). */
+  /** Stock that can pay for `item`: it and its stand-ins (D375). */
   held(item: ItemId): number {
     return [...standInsOf(item), item].reduce((sum, id) => sum + this.has(id), 0)
   }
@@ -166,7 +166,7 @@ function ownSession(state: WorkState, bench: Bench, uma: UmaState, chosen: Chose
     const left = new Map<ItemId, number>()
     const taken: Unlock[] = []
     for (const unlock of candidates) {
-      // An unlock that takes no item is always paid (D374).
+      // An unlock that takes no item is always paid (D375).
       if (unlock.dishId === null) {
         taken.push(unlock)
         continue

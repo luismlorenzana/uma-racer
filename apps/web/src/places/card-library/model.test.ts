@@ -75,7 +75,7 @@ describe('the card page (06 §6)', () => {
     expect(raceBonusWords(0.049)).toBe('+4.9% Racing EXP')
   })
 
-  it('costs a bond no item, only the time of its era\'s grade, per tier, in real time (× k), equal tiers joined (D374)', () => {
+  it('costs a bond no item, only the time of its era\'s grade, per tier, in real time (× k), equal tiers joined (D375)', () => {
     const acc = account('fresh')
     expect(bondCosts(card(acc, 'sim-card-wit-e3'))).toEqual([
       { tiers: 'Tier 1', time: '7h 12m' },

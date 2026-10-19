@@ -106,7 +106,7 @@ describe('the session sheet (05 §8)', () => {
   })
 
   it('lists n13–n16 with their tonics and n17 locked for a scenario-2 Uma, and picking n13 frees n14', () => {
-    // A Cabbage Salad stands in for a Paddock Tonic, and goes first (D374).
+    // A Cabbage Salad stands in for a Paddock Tonic, and goes first (D375).
     const state = granted(scenarioTwo(), AT, { 'tonic-3': 1, 'dish-vegetables-3': 1, 'tonic-4': 2 })
     const view = sheet(state, { facility: 'observatory', picks: [] })
     const rows = view.items.map((item) => [item.ref.target, item.dishId, item.state])
@@ -190,7 +190,7 @@ describe('the session sheet (05 §8)', () => {
     ])
     expect(view.items[0]).toMatchObject({ dish: 'No item', stock: null, pickable: true })
     expect(view.items[1]!.words).toBe('Opens in scenario 3 · Trackblazer')
-    // An empty Warehouse starts it (D374).
+    // An empty Warehouse starts it (D375).
     expect(view.confirm.dishes).toEqual([])
     expect(view.action).toMatchObject({ mode: 'start', refusal: null })
   })

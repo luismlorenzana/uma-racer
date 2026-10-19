@@ -1,4 +1,4 @@
-// Bonds (docs/game/06-cards-and-bonds.md §2, D329, D374): a card enters an Uma's sets only once it is bonded to her, by
+// Bonds (docs/game/06-cards-and-bonds.md §2, D329, D375): a card enters an Uma's sets only once it is bonded to her, by
 // one Dojo unlock that takes no item. Its grade follows the card's era within her tier, and sets the session's time: a
 // card first eligible in the tier's scenario p takes grade 2p − 1, older eras counting as p = 1. Its Dojo room follows
 // the card's type. Bondable when era ≤ T; any number; never undone; reset at promotion (T125's).

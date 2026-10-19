@@ -1,9 +1,9 @@
 // Pins the eight families, the ring and the stat cycle (docs/game/08-item-catalogue-and-recipes.md §2, §4.2, D330,
-// D374).
+// D375).
 import { describe, expect, it } from 'vitest'
 import { FAMILIES, FAMILY_IDS, FAMILY_RING, familyFor, STAT_CYCLE, TONIC_FAMILIES } from './families'
 
-/** 08 §2: family (id), planet dish style, where its dishes went, and what it feeds since D374, in the page's order. */
+/** 08 §2: family (id), planet dish style, where its dishes went, and what it feeds since D375, in the page's order. */
 const SECTION_2 = [
   ['Sweets', 'sweets', 'Cakes', 'speed', 'speed'],
   ['Fruits', 'fruits', 'Tarts', 'stamina', 'stamina'],
@@ -26,7 +26,7 @@ describe('families (08 §2)', () => {
     expect(Object.isFrozen(FAMILIES)).toBe(true)
   })
 
-  it('give a tonic one crafted Vegetables, Mushrooms and Grains item: the three families that feed no stat (D374)', () => {
+  it('give a tonic one crafted Vegetables, Mushrooms and Grains item: the three families that feed no stat (D375)', () => {
     expect(TONIC_FAMILIES).toEqual(['vegetables', 'mushrooms', 'grains'])
     expect(FAMILY_IDS.filter((family) => FAMILIES[family].feeds === 'tonic').sort()).toEqual([...TONIC_FAMILIES].sort())
   })

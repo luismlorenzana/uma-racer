@@ -1,7 +1,7 @@
 # 08 · Item catalogue and recipes
 
 > **Status: as built, phase 3 (generation 2, D361); first written 2026-10-13 (D326, D330, D331); meals and tonics
-> since D374 (2026-10-18).** The catalogue, recipes, grade gate, step times and work values are the rules in
+> since D375 (2026-10-18).** The catalogue, recipes, grade gate, step times and work values are the rules in
 > `@racer/domain/items` (T126, D341), and the tables marked live are rendered from them. The loop simulation ([12](12-economy-and-pacing.md) §12) checks demand per family
 > and per building, and its checks pin the recipes, times and side rotation.
 
@@ -10,7 +10,7 @@ half** (D330): its eight farming families, ten grades each, raw and crafted, and
 names, plus this game's own tonics. uma-rpg's gathering half, gear and the Forge are not used. How jobs, timers and
 Farm Level work is in [07](07-farm.md).
 
-**The two Kitchen lines (D374).** As in uma-rpg, raw items become crafted ones, and crafted ones become either
+**The two Kitchen lines (D375).** As in uma-rpg, raw items become crafted ones, and crafted ones become either
 consumables for stats or consumables for the rest of the build:
 - **Meals** feed Extra Stats only: the five stat families' planet dishes, the Duos and the Feasts (§4–§4.4).
 - **Tonics** feed constellation nodes and Inspiration slots: one crafted Vegetables, Mushrooms and Grains item at the
@@ -25,7 +25,7 @@ consumables for stats or consumables for the rest of the build:
 |---|---|---|
 | Raw ingredients | 80 (8 families × 10 grades) | uma-art `items` frames with `refined: false`, e.g. `honeycomb` |
 | Crafted ingredients | 80 | uma-art `items` frames with `refined: true`, e.g. `honey` |
-| Planet dishes | 80 (8 families × 10 grades; 30 retired, D374) | uma-art `dishes`: `dish-<family>-<grade>` |
+| Planet dishes | 80 (8 families × 10 grades; 30 retired, D375) | uma-art `dishes`: `dish-<family>-<grade>` |
 | Duo dishes | 8 (4 stat Duos × grades 3 and 5) | `duo-<stat>-<stat>-<grade>`, drawn with uma-art `duo-…` frames (§4.3) |
 | Feasts | 4 (grades 4, 6, 8, 10) | uma-art `feast-4` … `feast-10` |
 | Tonics | 10 (grades 1–10) | `tonic-1` … `tonic-10`, no art yet (§4.5) |
@@ -37,7 +37,7 @@ uma-rpg calls the middle step "refined". This game says **crafted** on screen an
 `refined` flag in the data.
 
 **Retired dishes.** The Grains, Vegetables and Mushrooms planet dishes (breads, salads and soups) are no longer cooked
-since D374. They stay in the catalogue as valid ids, so anything already cooked keeps paying: each sells at its work
+since D375. They stay in the catalogue as valid ids, so anything already cooked keeps paying: each sells at its work
 value's third ([09](09-racing-rewards-and-exchange.md) §6), and a salad or soup stands in for the tonic of its grade
 (§6).
 
@@ -241,7 +241,7 @@ Each table lists, per grade: the raw item, the crafted item it becomes at the Pa
 | Planet dish, grade *g* | **4 crafted of its family at *g*** + **1 crafted side** of another family at max(1, *g*−2) (README) | Kitchen | 240 + 10(*g*−1) |
 | Duo, grade 3 or 5 | **2 + 2 crafted** of its two families at *g* + **1 crafted side** at *g*−2 | Kitchen | same cook formula |
 | Feast, grade 4, 6, 8 or 10 | **1 crafted of each of the five stat families** at *g* + **1 Grains** side at *g*−2 | Kitchen | same cook formula |
-| Tonic, grade *g* | **1 crafted Vegetables, 1 Mushrooms and 1 Grains** at *g*, no side (D374) | Kitchen | same cook formula |
+| Tonic, grade *g* | **1 crafted Vegetables, 1 Mushrooms and 1 Grains** at *g*, no side (D375) | Kitchen | same cook formula |
 
 Every recipe names **exact items**: no substitutions, no "any crafted Fish". A meal or tonic pays only an unlock that
 names it (§6), and a higher grade doesn't stand in for a lower one, so the planner's counts stay exact. The one
@@ -262,7 +262,7 @@ A side spreads a meal's demand to another family, so no stat site carries its ro
 for the same reason (its D86):
 1. **Stat meals rotate through the stat cycle** Fruits → Herbs & Spices → Fish → Sweets → Nuts & Seeds → (Fruits): at
    grades 1, 5 and 6 the side is one family on, at 2 and 7 two on, at 3 and 8 three on, at 4 and 9 four on, and at 10
-   one on again. Grades 5 and 10 took bread before D374; with Grains feeding tonics they step one family on instead.
+   one on again. Grades 5 and 10 took bread before D375; with Grains feeding tonics they step one family on instead.
 2. **Duo sides** go to the two stat families that sit in only one Duo: Nuts & Seeds for Stamina–Wit and Wit–Power,
    Fruits for Power–Speed and Speed–Guts.
 3. **Feast sides** are Grains.
@@ -319,7 +319,7 @@ stat family, with bread.
 ### 4.5 Tonics
 
 One per grade, brewed at the Kitchen as any dish is, on the same cook formula: one crafted item each of Vegetables,
-Mushrooms and Grains at its grade, with no side (D374). A tonic pays one constellation node or one Inspiration slot of
+Mushrooms and Grains at its grade, with no side (D375). A tonic pays one constellation node or one Inspiration slot of
 its grade ([05](05-training-hub.md) §3); its grade opens at the same Farm Level as any item's (Lv 5*g* − 4).
 
 <!-- live:tonic-recipes -->
@@ -351,7 +351,7 @@ plain tile until a ChatGPT packet adds them to the `items` atlas ([11](11-hub-an
 
 ## 5. Work and Farm EXP per meal and tonic
 
-The §3 ladder in totals, in base minutes; in play each is × *k* = 1.8 (README, D374). All planet dishes of a grade
+The §3 ladder in totals, in base minutes; in play each is × *k* = 1.8 (README, D375). All planet dishes of a grade
 cost the same whatever their family or side family.
 
 | Dish | Crafted inputs | Gathering | Crafting | Cooking | **Whole chain = Farm EXP** | With its session ([05](05-training-hub.md)) |
@@ -374,7 +374,7 @@ Every other grade is in the §3 ladder. Gathering is 56% of a meal's chain, craf
 [05](05-training-hub.md) and [06](06-cards-and-bonds.md) own the exact cost of each unlock. The default, used for the
 demand counts below: a scenario layer's first half takes grade 2*s*−1 and its second half grade 2*s* (README).
 
-| Unlock | Item (D374) |
+| Unlock | Item (D375) |
 |---|---|
 | A constellation node | The tonic of the layer's grade |
 | An Inspiration slot | The tonic of the grade [05](05-training-hub.md) §3 lists |
@@ -391,7 +391,7 @@ else stands in for anything.
 ## 7. Demand over a tier
 
 One Uma's tier is **107 unlocks** (README, D338): 28 constellation nodes, 24 Inspiration (6 slots, 6 inherited
-uniques, 12 gold skills), 25 Extra Stats singles, 8 Duos, 4 Suns and 18 bonds. Since D374 they take **71 items**:
+uniques, 12 gold skills), 25 Extra Stats singles, 8 Duos, 4 Suns and 18 bonds. Since D375 they take **71 items**:
 37 meals (the singles, Duos and Suns) and 34 tonics (the nodes and slots); the 18 uniques and golds and the 18 bonds
 take none. Bonds no longer change the demand, so the **representative deck** (one card of each of six types in
 scenario 1, a Speed, Stamina and Power card in scenarios 2 and 4, a Guts, Wit and Friend card in scenarios 3 and 5)
@@ -430,7 +430,7 @@ only sets the bonds' session times. These tables are live: the loop simulation's
 | **All** | | | | | | | | | | | **291** | 254 | 37 |
 <!-- /live -->
 
-**What D374 does.** The tier's crafted demand falls from 539 to 291 and spreads almost evenly: Grains 38, each stat
+**What D375 does.** The tier's crafted demand falls from 539 to 291 and spreads almost evenly: Grains 38, each stat
 family 37, Vegetables and Mushrooms 34 each. Before, the meals for nodes, slots, uniques and golds made Vegetables
 the busiest family at 112 a tier (36% of scenario 1's crafted demand) and Mushrooms 96, while the stat families sat at
 50–53; a bond took a whole dish for no build of its own. Now no family is a flag: scenario 1, mostly nodes and slots,
@@ -438,7 +438,7 @@ splits about a fifth to each tonic family, and the later scenarios, mostly the G
 family. The Vegetable Garden keeps its fifth slot ([07](07-farm.md) §6) and the Exchange still sells raw Vegetables as
 a relief valve ([09](09-racing-rewards-and-exchange.md)).
 
-**Fewer items, longer steps.** 71 items instead of 107 cut the Farm's work for a tier by more than 40%, so D374 raised
+**Fewer items, longer steps.** 71 items instead of 107 cut the Farm's work for a tier by more than 40%, so D375 raised
 *k* from 1.2 to 1.8: every step is half as long again, the Kitchen has 6, 9 and 9 slots by level ([07](07-farm.md)
 §6), and a tier of training keeps its weeks ([12](12-economy-and-pacing.md) §12).
 
@@ -459,7 +459,7 @@ its bonds' sessions are.
 
 ## 8. Work values, for selling
 
-An item's **work value** is the real minutes of the work in it: the base minutes × *k* (1.8, D374), so the anchor
+An item's **work value** is the real minutes of the work in it: the base minutes × *k* (1.8, D375), so the anchor
 "1 Prize Money ≈ 1 minute of Uma work" holds whatever *k* is. Selling pays **a third** of it in Prize Money (D331);
 [09](09-racing-rewards-and-exchange.md) owns rounding and the Exchange's buy prices.
 
@@ -520,17 +520,17 @@ signatures × 3 blocks) and Energy, 1,169 in all, drawn as original SVG marks. A
 |---|---|
 | **Feast = one crafted of each stat family at *g* + a Grains side** | A Sun feeds the five stats; six inputs keep it within 14% of a planet dish; it adds nothing to the busiest families |
 | **Duo = 2 + 2 of its families at *g* + one side** | The same chain as a planet dish for the same 40 points |
-| **Meals for Extra Stats, tonics for nodes and slots, nothing for bonds, uniques and golds** (D374) | uma-rpg's split of crafted items into stat consumables and build consumables; a bond already costs a card and its session, and a dish per bond was dozens of cooked items for no build of their own |
-| **Tonic = 1 crafted Vegetables + 1 Mushrooms + 1 Grains at *g*, no side, one per grade** | The three families freed by D374 share it evenly; a node or slot is a smaller step than 40 points of stats |
+| **Meals for Extra Stats, tonics for nodes and slots, nothing for bonds, uniques and golds** (D375) | uma-rpg's split of crafted items into stat consumables and build consumables; a bond already costs a card and its session, and a dish per bond was dozens of cooked items for no build of their own |
+| **Tonic = 1 crafted Vegetables + 1 Mushrooms + 1 Grains at *g*, no side, one per grade** | The three families freed by D375 share it evenly; a node or slot is a smaller step than 40 points of stats |
 | **The 30 salads, soups and breads retire but stay valid ids**; a salad or soup stands in for its grade's tonic | What the owner already cooked keeps paying, and no save needs migrating |
-| **Side rotation** (§4.2): stat meals around the stat cycle, one family on at grades 5 and 10 (bread before D374); Duo sides to Fruits and Nuts & Seeds; Feasts Grains; tonics none | Grains 38, the stat families 37 and the tonic families 34 a tier (§7) |
+| **Side rotation** (§4.2): stat meals around the stat cycle, one family on at grades 5 and 10 (bread before D375); Duo sides to Fruits and Nuts & Seeds; Feasts Grains; tonics none | Grains 38, the stat families 37 and the tonic families 34 a tier (§7) |
 | **No side is ever Vegetables or Mushrooms** | The tonics already draw on them |
 | **Every dish uses the same cook formula** | One rule; the Feast's extra input is its only premium |
 | **Exact recipes, exact items**: no substitutions, no higher grade for a lower, the stand-ins the only exception | The planner's counts stay exact, and every Repeat is predictable |
 | **Duo ids `duo-<stat>-<stat>-<g>`**, drawn with uma-art's grade-3 and grade-7 frames | A grade-5 dish should not carry a `-7` id |
 | **Keep uma-rpg's names; "crafted" on screen, `refined` in data** | No renaming drift from the art package |
-| **Representative deck: 3 bonds of each type** | A neutral basis for the bonds' session times; since D374 no deck changes the items |
-| **Work value = real minutes (base × *k*, D338, *k* = 1.8 since D374); selling a third** | One number per item for [09](09-racing-rewards-and-exchange.md), independent of building speed |
+| **Representative deck: 3 bonds of each type** | A neutral basis for the bonds' session times; since D375 no deck changes the items |
+| **Work value = real minutes (base × *k*, D338, *k* = 1.8 since D375); selling a third** | One number per item for [09](09-racing-rewards-and-exchange.md), independent of building speed |
 | **Durations go through `state/time.ts`'s one conversion** (T126) | M033 gave the items no dependency on T125, which owned `TIME_FACTOR` and the docs check over the rework's pages. Phase 2's groundwork landed both first, so the item rules import `workSeconds` and add neither |
 | **§7 is checked here and owned by `sim:loop`** (T126) | §7's dish counts come from the layers and the deck, which the item rules don't hold, and T132 rewrites this page's Farm tables from its run (T128's draft found §7's bond grades can't all come from [06](06-cards-and-bonds.md)'s era rule). So the items export no demand constant and render no §7 block; their test checks only that the recipes turn §7's dish table into §7's crafted table. §13's "from the layer definitions" lands with T132 |
 | **Step times and the grade gate live with the items** (T126) | [07](07-farm.md) §2, §4 and §3 here all state them, work values need them and the items are upstream, so the Farm's jobs (T127) import them, rather than keeping their own copies, and divide by building speed |
@@ -545,7 +545,7 @@ signatures × 3 blocks) and Energy, 1,169 in all, drawn as original SVG marks. A
   and §4.5 tonics, no side from Vegetables or Mushrooms, no side of the dish's own family; the Kitchen cooks no
   retired dish.
 - A test computes §7's tables from the layer definitions and the representative deck and pins them: 71 meals and
-  tonics and 291 crafted items a tier, Grains 38, the stat families 37, Vegetables and Mushrooms 34 (D374).
+  tonics and 291 crafted items a tier, Grains 38, the stat families 37, Vegetables and Mushrooms 34 (D375).
 - `pnpm sim:loop` reports Warehouse stock by family and grade over a tier, and no site is the bottleneck for more than
   [12](12-economy-and-pacing.md) §12's tolerance.
 - §3's family tables and §4's matrix are live blocks rendered from the domain constants

@@ -4,7 +4,7 @@
 
 ## Why
 
-Since D374 uma-racer's Kitchen brews **tonics**, one per grade, which pay constellation nodes and Inspiration slots
+Since D375 uma-racer's Kitchen brews **tonics**, one per grade, which pay constellation nodes and Inspiration slots
 (stat meals pay the Gym; bonds take nothing). uma-art has no frames for them, so the Kitchen's Tonics tab, the
 Warehouse's Tonics shelf, the session sheets and the slot rows draw each tonic as its name on a plain tile. The other
 Kitchen items are all uma-art's 32×32 dish icons, so the plain tiles stand out.

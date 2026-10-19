@@ -156,7 +156,7 @@ describe('the catalogue (08 §1)', () => {
     expect(count((item) => item.kind === 'ticket')).toBe(1)
   })
 
-  it('retires the 30 salads, soups and breads, and no other dish (D374)', () => {
+  it('retires the 30 salads, soups and breads, and no other dish (D375)', () => {
     const retired = ITEMS.filter(isRetired)
     expect(retired).toHaveLength(30)
     expect(new Set(retired.map((item) => (item.kind === 'dish' && item.dish === 'planet' ? item.family : '')))).toEqual(new Set(['grains', 'vegetables', 'mushrooms']))
@@ -265,7 +265,7 @@ describe('Duos, Feasts and the ticket (08 §4.3, §4.4, §9)', () => {
   })
 })
 
-describe('tonics and their stand-ins (08 §4.5, D374)', () => {
+describe('tonics and their stand-ins (08 §4.5, D375)', () => {
   it('names one tonic a grade, as 08 §4.5 does, with no uma-art frame yet', () => {
     expect(TONICS.map((tonic) => [tonic.id, tonic.name, tonic.grade])).toEqual(TONIC_NAMES)
     for (const tonic of TONICS) expect(tonic.art).toBeNull()

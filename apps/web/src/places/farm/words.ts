@@ -70,7 +70,7 @@ export const FARM_WORDS = Object.freeze({
   'no-slot-ready': 'Every slot is taken. Collect here to free one.',
   'make-at': 'Make {item} at the {place}',
   'buy-raw': 'Buy {item} at the Exchange · {price}',
-  /** Kitchen tabs and what each item is for (07 §10, 08 §2, D374). */
+  /** Kitchen tabs and what each item is for (07 §10, 08 §2, D375). */
   'tab-tonics': 'Tonics',
   'tab-duos': 'Duos',
   'tab-feasts': 'Feasts',

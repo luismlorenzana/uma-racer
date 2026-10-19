@@ -1,6 +1,6 @@
 // What a tier of training asks of the Farm, per Uma (docs/game/08-item-catalogue-and-recipes.md §7; M033 cross-task
 // acceptance #2): each of T128's fixed unlocks takes its one meal or tonic, or nothing, and each bond of the deck
-// nothing (D374); T126's `craftedDemand` expands the meals and tonics into crafted items. Pure.
+// nothing (D375); T126's `craftedDemand` expands the meals and tonics into crafted items. Pure.
 import type { SupportCardTemplate } from '../content'
 import { DUOS, FEASTS, ITEM_GRADES, itemById, type ItemId } from '../items/catalogue'
 import { craftedDemand, type CraftedDemand } from '../items/demand'

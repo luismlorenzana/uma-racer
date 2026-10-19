@@ -1,5 +1,5 @@
 // What every Training screen reads the same way (docs/game/05-training-hub.md §2, §3, §8; T139): an unlock's name and
-// item in words (a meal, a tonic or none, D374), where an unlock stands for her now (open, in her work, available with
+// item in words (a meal, a tonic or none, D375), where an unlock stands for her now (open, in her work, available with
 // its stock, waiting on what it names, or in a later layer), the line a locked item shows with what it needs, and the
 // session sheet's link. Pure: the states are the domain's `unlockStatus`, `dependenciesOf` and the work timeline, read,
 // never restated; a tonic's stock counts the salads and soups that stand in for it (`heldFor`).
@@ -54,7 +54,7 @@ export function ruleWords(words: Words, context: WordsContext, content: Content 
   return showWords({ text: words.text, data: named }, context)
 }
 
-// ---- The stock a run of unlocks takes (D374) ------------------------------------------------------------------------
+// ---- The stock a run of unlocks takes (D375) ------------------------------------------------------------------------
 
 /** The free stock as a run of takes: `takeFor` on it pays each unlock with a stand-in first, never twice. */
 export const takesFrom = (items: ItemStock): Map<ItemId, number> => new Map(Object.entries(items).filter(([, n]) => n > 0))

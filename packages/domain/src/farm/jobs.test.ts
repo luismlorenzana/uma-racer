@@ -18,7 +18,7 @@ const items = (result: ReturnType<typeof plan>): readonly PlannedItem[] => {
   return result
 }
 
-describe('job seconds (07 §2, D338, D374)', () => {
+describe('job seconds (07 §2, D338, D375)', () => {
   it('are T126’s base minutes × k at grades 1 and 10, at speeds 1 and 1.25', () => {
     const at = (kind: FarmKind, g: ItemGrade) => [farmItemSeconds(kind, g), farmItemSeconds(kind, g, 1.25)]
     expect(at('gather', 1)).toEqual([9_720, 7_776])
@@ -51,7 +51,7 @@ describe('the family → site map (07 §1)', () => {
     expect(makesHere('cook', tart, 'pantry')).toBe(false)
   })
 
-  it('never cooks a retired salad, soup or bread again (D374)', () => {
+  it('never cooks a retired salad, soup or bread again (D375)', () => {
     for (const id of ['dish-vegetables-2', 'dish-mushrooms-1', 'dish-grains-5']) expect(makesHere('cook', itemById(id)!, 'kitchen'), id).toBe(false)
     expect(plan(farmAccount(), PLAIN.id, 'cook', 'dish-vegetables-1', 1, 'kitchen')).toMatchObject({ code: 'not-here' })
   })

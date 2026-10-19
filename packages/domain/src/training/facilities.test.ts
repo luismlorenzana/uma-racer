@@ -1,4 +1,4 @@
-// Pins the four facilities (docs/game/05-training-hub.md §1, D374): what each unlocks, the Gym rooms' meal families,
+// Pins the four facilities (docs/game/05-training-hub.md §1, D375): what each unlocks, the Gym rooms' meal families,
 // its rooms and which room takes which unlock.
 import { describe, expect, it } from 'vitest'
 import { cardOf } from '../__fixtures__/training'
@@ -41,7 +41,7 @@ describe('roomAccepts', () => {
     expect(roomAccepts(null, fixed('single', 'power-03'))).toBe(false)
   })
 
-  it("takes a Dojo room's own card type, Friend and Group together, read from the content (D374)", () => {
+  it("takes a Dojo room's own card type, Friend and Group together, read from the content (D375)", () => {
     const typeOf = cardTypesIn(new Map(['speed-e1', 'friend-e2', 'group-e3'].map((id) => [id, cardOf(id)])))
     expect(roomAccepts('speed', bond('speed-e1'), typeOf)).toBe(true)
     expect(roomAccepts('stamina', bond('speed-e1'), typeOf)).toBe(false)

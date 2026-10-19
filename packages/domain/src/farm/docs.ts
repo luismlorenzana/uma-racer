@@ -46,7 +46,7 @@ function jobTimes(): string {
 
 // --- 07 §3 ----------------------------------------------------------------------------------------------------------
 
-/** What a family's crafted items go to since D374: its stat's meals, or the tonics. */
+/** What a family's crafted items go to since D375: its stat's meals, or the tonics. */
 const FEEDS_LABEL: Readonly<Record<Feeds, string>> = {
   speed: 'Speed', stamina: 'Stamina', power: 'Power', guts: 'Guts', wit: 'Wit', tonic: 'Tonics',
 }

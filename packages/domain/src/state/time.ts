@@ -3,7 +3,7 @@
 
 /**
  * Every base duration (gather, craft, cook, session) is multiplied by this. The loop simulation tunes it (D338): 1.8
- * since D374 made bonds, inherited uniques and golds item-free, so the tier keeps its ~21 weeks.
+ * since D375 made bonds, inherited uniques and golds item-free, so the tier keeps its ~21 weeks.
  */
 export const TIME_FACTOR = 1.8
 export const SECONDS_PER_MINUTE = 60

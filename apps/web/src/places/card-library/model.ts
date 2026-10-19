@@ -2,7 +2,7 @@
 // every SSR in the content, open (D329), through a lens (All or one playable scenario) and an optional Uma whose
 // scenario the lens follows. A tile's pill is the Umas bonded in their current tier, or, with an Uma, her `bondStatus`:
 // a bond mark, the grade she needs (`bondGrade`) or a lock. The card page's pay (`cardPay`), skills by node, bond time
-// per tier (`bondGrade`, `sessionSeconds`; a bond takes no item, D374), who is bonded and where, and who could bond it
+// per tier (`bondGrade`, `sessionSeconds`; a bond takes no item, D375), who is bonded and where, and who could bond it
 // now; the Bond picker's rows and reasons. Pure.
 import { durationText, fill, type OperationEnv } from '@racer/domain/check-in'
 import { workAhead } from '@racer/domain/planner'
@@ -207,7 +207,7 @@ export interface BondCost {
   readonly time: string | null
 }
 
-/** The session time a bond takes in each tier, equal tiers joined; it takes no item (06 §2, §6 "Bond cost"; D374). */
+/** The session time a bond takes in each tier, equal tiers joined; it takes no item (06 §2, §6 "Bond cost"; D375). */
 export function bondCosts(card: SupportCardTemplate): readonly BondCost[] {
   const each = ([1, 2, 3] as Tier[]).map((tier) => {
     const grade = bondGrade(card.era, tier)
@@ -284,7 +284,7 @@ export interface BondChoice {
   readonly umaId: string
   /** Why she can't bond it now; null when she can. */
   readonly reason: string | null
-  /** The time, at her Dojo's speed: "No item · 5h 24m" (D374). */
+  /** The time, at her Dojo's speed: "No item · 5h 24m" (D375). */
   readonly line: string | null
   /** Her running session is in the card's Dojo room, so Queue can add the bond behind it. */
   readonly canQueue: boolean

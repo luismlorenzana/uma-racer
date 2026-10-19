@@ -37,6 +37,8 @@ export const CHECK_IN_WORDS = {
   'pick-cards': 'Pick cards',
   'place-done': '{place} done for this scenario.',
   'place-full': '{place} full.',
+  /** D375: a salad, soup or bread cooked before the tonics, which the Kitchen no longer cooks. */
+  retired: 'The Kitchen no longer cooks that.',
   short: 'Short {n} {item}.',
   /** 02 §4: the summary. */
   'training-done': 'scenario {scenario} training complete',

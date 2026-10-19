@@ -1,4 +1,4 @@
-// Pins bonds (docs/game/06-cards-and-bonds.md §2, D374): the Dojo room by card type, 06 §2's era-to-grade table in all
+// Pins bonds (docs/game/06-cards-and-bonds.md §2, D375): the Dojo room by card type, 06 §2's era-to-grade table in all
 // three tiers, and a bond's status. A bond takes no item.
 import { describe, expect, it } from 'vitest'
 import { cardOf } from '../__fixtures__/training'

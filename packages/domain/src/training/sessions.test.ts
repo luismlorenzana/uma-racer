@@ -1,4 +1,4 @@
-// Sessions on T127's work engine (docs/game/05-training-hub.md §2, D374): the `session` kind checks a request where its
+// Sessions on T127's work engine (docs/game/05-training-hub.md §2, D375): the `session` kind checks a request where its
 // slot is and lists each unlock's item (a meal, a tonic or none) and seconds; the engine's own `start`, `queue`,
 // `collect`, `recall` and `speed-up` run it. One session per facility reserves its items, finishes each unlock at its
 // duration ÷ speed, Collect commits exactly the finished ones and Recall returns the rest.
@@ -64,7 +64,7 @@ describe('the session kind', () => {
     expect(!isRefusal(fast) && fast[0]!.seconds).toBe(15_552)
   })
 
-  it('takes a retired salad or soup of its grade before the tonic, while one is held (D374)', () => {
+  it('takes a retired salad or soup of its grade before the tonic, while one is held (D375)', () => {
     const state = account(1, [], { 'dish-mushrooms-1': 1, 'tonic-1': 3 })
     const items = plan(state, 'lineage-hall', undefined, [ref('slot', 'parent0'), ref('slot', 'parent1'), ref('unique', 'parent0')])
     if (isRefusal(items)) throw new Error(items.reason)
@@ -105,7 +105,7 @@ describe('the session kind', () => {
   it("bonds: reads the card's era and type, refuses one past her era, bonded or listed; any number otherwise", () => {
     const bond = (id: string) => ref('bond', id)
     const state = account(2, [], {}, (b) => ({ ...b, bonds: [...Array.from({ length: 18 }, (_, i) => `bonded-${i}`), 'speed-e1'] }))
-    // A bond takes no item; its grade still sets its time (D374).
+    // A bond takes no item; its grade still sets its time (D375).
     const items = plan(state, 'dojo', 'friend-group', [bond('friend-e2'), bond('group-e1')])
     expect(!isRefusal(items) && items.map((item) => [item.inputs, item.seconds])).toEqual([[[], 22_680], [[], 19_440]])
     expect(plan(state, 'dojo', 'speed', [bond('speed-e1')])).toMatchObject({ code: 'already-bonded', data: { card: 'speed-e1', uma: COLT.id } })
@@ -168,7 +168,7 @@ describe('one session per facility on the engine', () => {
   })
 
   it('runs the Lineage Hall, a Gym room and a Dojo room the same way, at a Lv 3 facility', () => {
-    // Slots take a tonic, uniques and bonds nothing, a single its meal (D374).
+    // Slots take a tonic, uniques and bonds nothing, a single its meal (D375).
     let state: WorkState = account(1, [], { 'tonic-1': 2, 'dish-fruits-1': 1 })
     state = { ...state, buildings: { ...state.buildings, 'lineage-hall': { level: 3 }, gym: { level: 3 }, dojo: { level: 3 } } }
     const her = () => state.umas[COLT.id]!

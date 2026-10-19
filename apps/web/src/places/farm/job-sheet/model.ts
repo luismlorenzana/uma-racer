@@ -82,7 +82,7 @@ export function withoutSheet(search: string): string {
 
 // --- What (07 §10) ----------------------------------------------------------------------------------------------------
 
-/** The meals' tabs: one a stat (D374). */
+/** The meals' tabs: one a stat (D375). */
 const MEAL_STATS = ['speed', 'stamina', 'power', 'guts', 'wit'] as const
 type MealStat = (typeof MEAL_STATS)[number]
 const STAT_WORDS: Readonly<Record<string, string>> = { speed: 'Speed', stamina: 'Stamina', power: 'Power', guts: 'Guts', wit: 'Wit' }
@@ -115,7 +115,7 @@ export function canCookNow(state: Pick<WorkState, 'items'>, dish: KitchenDef, le
 
 const statMeal = (stat: MealStat, g: (typeof ITEM_GRADE_LIST)[number]): DishDef => planetDish(familyFor(stat), g)
 
-/** Everything the Kitchen cooks (D374): the stat meals, the tonics, the Duos and the Feasts. */
+/** Everything the Kitchen cooks (D375): the stat meals, the tonics, the Duos and the Feasts. */
 const ALL_DISHES: readonly KitchenDef[] = Object.freeze([
   ...MEAL_STATS.flatMap((stat) => ITEM_GRADE_LIST.map((g) => statMeal(stat, g))),
   ...TONICS,
@@ -154,7 +154,7 @@ export function tabOf(tabs: readonly SheetTab[], item: ItemId | null): string {
 
 /**
  * What a meal or tonic is for (08 §2, §4.3–§4.5): a meal's stat, a Duo's two stats, the Sun nodes, or a tonic's nodes and
- * slots; a retired salad or soup stands in for a tonic (D374).
+ * slots; a retired salad or soup stands in for a tonic (D375).
  */
 export function destinationWords(def: ItemDef): string | null {
   if (def.kind === 'tonic') return farmWords('to-tonic')

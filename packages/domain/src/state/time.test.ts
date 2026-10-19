@@ -1,4 +1,4 @@
-// Pins the rework's time factor and its one conversion (D338, D374).
+// Pins the rework's time factor and its one conversion (D338, D375).
 import { describe, expect, it } from 'vitest'
 import { secondsToMs, TIME_FACTOR, workSeconds } from './time'
 import { isRefusal, refuse } from './types'

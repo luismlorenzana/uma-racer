@@ -104,7 +104,7 @@ describe('uma-art 2.7.0', () => {
   })
 
   it('draws the Speed Ticket from the release\'s own ticket frame (A02), and never reads the effect field', () => {
-    // The catalogue keeps no art for it, nor for the tonics, which uma-art doesn't draw yet (D374); the web draws the
+    // The catalogue keeps no art for it, nor for the tonics, which uma-art doesn't draw yet (D375); the web draws the
     // release's `speed-ticket` frame (`ui/ItemIcon`) and a tonic's frame once a release has one.
     expect(ITEMS.filter((item) => item.art === null).map((item) => item.id)).toEqual([...TONICS.map((tonic) => tonic.id), SPEED_TICKET_ID])
     for (const tonic of TONICS) expect(ITEM_FRAMES[tonic.id], tonic.id).toBeUndefined()

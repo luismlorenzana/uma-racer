@@ -109,6 +109,22 @@ describe("02 §5's table", () => {
     expect(receipt.skipped).toMatchObject([{ code: 'place-full', words: { data: { place: 'pantry' } }, fixes: [{ kind: 'pick-another', building: 'pantry', room: null }] }])
   })
 
+  it('pays a salad cooked before D375 and skips its Repeat with Pick another: the Kitchen no longer cooks it', () => {
+    // An entry as a pre-D375 save holds it: started as a meal here, then rewritten to the retired salad.
+    let state = account(8, { 'apple-preserve': 4, 'dried-basil': 1 })
+    state = ok(start(state, { outfitId: uma(1), slot: slot('kitchen'), request: cook('dish-fruits-1', 1) }, clock('08:00'), ENV)).state
+    const row = state.work[uma(1)]!
+    const salad = { ...row.entries[0]!, request: cook('dish-vegetables-1', 1), outputs: [{ item: 'dish-vegetables-1' }] }
+    state = { ...state, work: { ...state.work, [uma(1)]: { ...row, entries: [salad] } } }
+    const collected = collect(state, { outfitId: uma(1) }, clock('20:00'), ENV).state
+    expect(collected.items['dish-vegetables-1']).toBe(1)
+    const { receipt } = repeat(withItems(collected, { 'chopped-carrot': 8, 'wheat-flour': 2 }), {}, NOW, ENV)
+    expect(receipt.started).toEqual([])
+    expect(receipt.skipped).toEqual([{
+      outfitId: uma(1), code: 'retired', words: { text: 'The Kitchen no longer cooks that.' }, fixes: [{ kind: 'pick-another', building: 'kitchen', room: null }],
+    }])
+  })
+
   it("skips an Uma who isn't Free, or whose queue stopped", () => {
     let state = didWork(craft('chopped-carrot', 1), slot('pantry'), { carrot: 6 })
     const busy = ok(start(state, { outfitId: uma(1), slot: slot('pantry'), request: craft('chopped-carrot', 4) }, clock('20:20'), ENV)).state

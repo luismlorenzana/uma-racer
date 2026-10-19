@@ -15,7 +15,7 @@ import { reservedStock, type WorkState } from '@racer/domain/work'
 
 export type Shelf = 'raw' | 'crafted' | 'dishes' | 'tonics' | 'tickets'
 export const SHELVES: readonly Shelf[] = ['raw', 'crafted', 'dishes', 'tonics', 'tickets']
-/** The dishes shelf holds the meals (and any retired salad, soup or bread), the tonics theirs (D374). */
+/** The dishes shelf holds the meals (and any retired salad, soup or bread), the tonics theirs (D375). */
 export const SHELF_LABEL: Readonly<Record<Shelf, string>> = { raw: 'Raw', crafted: 'Crafted', dishes: 'Meals', tonics: 'Tonics', tickets: 'Tickets' }
 
 /** Where a family's dishes go, as the Kitchen's tabs name them (07 §10). */
@@ -38,7 +38,7 @@ export const gradeOf = (item: ItemDef): number | null => (item.kind === 'ticket'
 
 /**
  * Where it goes: a meal's stat, a Duo's two stats, a tonic's nodes and slots, or its family's for an ingredient; a
- * retired salad or soup stands in for a tonic, and a retired bread only sells (D374).
+ * retired salad or soup stands in for a tonic, and a retired bread only sells (D375).
  */
 export function destinationOf(item: ItemDef): string {
   if (item.kind === 'ticket') return 'Speeds up work'
@@ -115,7 +115,7 @@ export const EMPTY_WORDS = "Nothing to sell yet: the Farm's first harvest lands 
 
 // ---- The stock sheet (07 §10, 09 §6.1) ------------------------------------------------------------------------------
 
-/** The recipes that take `itemId`, by the item they make and how many each takes; a retired dish's never (D374). */
+/** The recipes that take `itemId`, by the item they make and how many each takes; a retired dish's never (D375). */
 export function recipesUsing(itemId: ItemId): readonly { readonly item: ItemDef; readonly qty: number }[] {
   return ITEMS.filter((item) => !isRetired(item)).flatMap((item) => {
     const input = recipeOf(item.id)?.inputs.find((entry) => entry.item === itemId)

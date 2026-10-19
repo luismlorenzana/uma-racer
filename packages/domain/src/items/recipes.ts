@@ -1,7 +1,7 @@
 // Every recipe (docs/game/08-item-catalogue-and-recipes.md §4): a crafted item from its raw pair at the Pantry, and
 // every dish and tonic at the Kitchen from exact crafted items, with §4.2's side rotation. No substitutions: a recipe
 // names its items, and a higher grade never stands in for a lower one. The retired salads, soups and breads keep their
-// recipes, which their work value reads, though the Kitchen no longer cooks them (D374).
+// recipes, which their work value reads, though the Kitchen no longer cooks them (D375).
 import {
   craftedItem, duoPairOf, isItemGrade, ITEM_GRADES, ITEMS, type DuoDishDef, type DuoPair, type FeastDishDef,
   type ItemGrade, type ItemId, type KitchenDef, type PlanetDishDef, type TonicDef,
@@ -27,7 +27,7 @@ export const PLANET_OWN_QTY = 4
 export const DUO_OWN_QTY = 2
 /** A Feast takes 1 crafted item of each stat family at its grade (08 §4, §4.4). */
 export const FEAST_OWN_QTY = 1
-/** A tonic takes 1 crafted item of each tonic family at its grade, and no side (08 §4.5, D374). */
+/** A tonic takes 1 crafted item of each tonic family at its grade, and no side (08 §4.5, D375). */
 export const TONIC_OWN_QTY = 1
 /** Every dish takes 1 crafted side of another family (08 §4). */
 export const SIDE_QTY = 1
@@ -47,7 +47,7 @@ const BREAD_DISH_FAMILIES: readonly FamilyId[] = ['vegetables', 'mushrooms']
 /**
  * The side family of `family`'s planet dish at grade `g` (08 §4.2):
  * - a stat family takes the family ((g − 1) mod 5) + 1 steps on in `STAT_CYCLE`, and one step on at grades 5 and 10,
- *   where that count would come back to itself (D374: Grains feeds tonics, so no stat dish takes bread);
+ *   where that count would come back to itself (D375: Grains feeds tonics, so no stat dish takes bread);
  * - the retired salads and soups took Grains, and the retired breads `STAT_CYCLE[(g − 1) mod 5]`.
  */
 export function sideFamily(family: FamilyId, g: ItemGrade): FamilyId {
@@ -96,7 +96,7 @@ function feastRecipe(feast: FeastDishDef): { recipe: Recipe; side: ItemId } {
   return { recipe: kitchen(FEAST_FAMILIES.map((family) => input(craftedItem(family, feast.grade).id, FEAST_OWN_QTY)), side), side }
 }
 
-/** A tonic: one crafted Vegetables, Mushrooms and Grains item at its grade (08 §4.5, D374). */
+/** A tonic: one crafted Vegetables, Mushrooms and Grains item at its grade (08 §4.5, D375). */
 const tonicRecipe = (tonic: TonicDef): Recipe => Object.freeze({
   at: 'kitchen',
   inputs: Object.freeze(TONIC_FAMILIES.map((family) => input(craftedItem(family, tonic.grade).id, TONIC_OWN_QTY))),

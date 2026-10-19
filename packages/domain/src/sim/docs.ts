@@ -37,7 +37,7 @@ const spread = (entry: ScenarioRow | undefined) => (entry ? `${fixed(entry.days.
 
 /**
  * One Uma's listed work in a scenario (rules, at a Lv 1 building): the whole chains of her meals and tonics (none for
- * an unlock that takes nothing, D374) and her sessions, in hours.
+ * an unlock that takes nothing, D375) and her sessions, in hours.
  */
 function umaHours(demand: TierDemand, s: ScenarioOfTier): { farm: number; sessions: number } {
   const here = demand.unlocks.filter((entry) => entry.layer === s)
@@ -204,7 +204,7 @@ function checks(): string {
 
 // ---- 08 §7: demand ---------------------------------------------------------------------------------------------------
 
-/** 08 §7's rows: each stat family's meals, then Duos, Feasts and tonics (the salads, soups and breads are retired, D374). */
+/** 08 §7's rows: each stat family's meals, then Duos, Feasts and tonics (the salads, soups and breads are retired, D375). */
 const DISH_ROWS: readonly DishRow[] = ['sweets', 'fruits', 'fish', 'nuts-seeds', 'herbs-spices', 'duos', 'feasts', 'tonics']
 const ROW_LABELS: Readonly<Record<'duos' | 'feasts' | 'tonics', string>> = { duos: 'Duos', feasts: 'Feasts', tonics: 'Tonics' }
 const label = (key: DishRow) => (key === 'duos' || key === 'feasts' || key === 'tonics' ? ROW_LABELS[key] : `${FAMILIES[key].name} meals`)

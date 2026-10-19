@@ -152,7 +152,7 @@ export interface PeekDish {
 }
 
 /**
- * What the facility takes, in the Warehouse (11 §3.2; D374): the tonics and the retired salads and soups that stand in
+ * What the facility takes, in the Warehouse (11 §3.2; D375): the tonics and the retired salads and soups that stand in
  * for them at the Observatory and the Lineage Hall, the Gym's meals, Duos and Feasts; nothing at the Dojo.
  */
 export function facilityDishes(view: WorkView, facility: FacilityId): readonly PeekDish[] {

@@ -106,7 +106,7 @@ describe('the plan', () => {
   it('equals a brute-force recount: layer, meal or tonic, crafted, raw, less stock and coming', () => {
     const state = busy()
     const planned = plan(state, [uma(1), uma(2)], NOW, {}, ENV)
-    // Uniques take no item (D374): they ask nothing of the Farm.
+    // Uniques take no item (D375): they ask nothing of the Farm.
     const layer = layerUnlocks(1).flatMap((u) => (u.dishId === null ? [] : [u.dishId]))
     const expected = recount([layer, layer],
       { 'tonic-1': 9, 'chopped-carrot': 9, carrot: 1, 'dried-button-mushroom': 1 },
@@ -168,7 +168,7 @@ describe('the plan', () => {
     expect(target.unlocks.filter((u) => u.unlock.kind === 'bond').map((u) => [u.unlock.target, u.unlock.dishId])).toEqual([
       ['speed-e1', null], ['speed-e2', null],
     ])
-    // Only the layer's single takes a Speed meal; the bonds take none (D374).
+    // Only the layer's single takes a Speed meal; the bonds take none (D375).
     expect(target.dishes.find((l) => l.item === 'dish-sweets-1')!.need).toBe(1)
     expect(planned.highestFree).toBe(1)
     expect(target.dishes.find((l) => l.item === 'dish-sweets-3')!.gate).toEqual({ needsLevel: 11, highestFree: 1 })

@@ -82,7 +82,7 @@ const nodeGrade = (n: number): ItemGrade => (n <= 6 ? 1 : 2)
 /**
  * A synthetic session kind, only for these tests. Two unlock shapes:
  * - `{ kind: 'node', target: 'n<k>' }` at the Observatory: the next node in order, after her opened nodes and every node
- *   her earlier entries make (T127 counts them as made), paid with `tonic-<g>` (D374);
+ *   her earlier entries make (T127 counts them as made), paid with `tonic-<g>` (D375);
  * - `{ kind: 'dish', target: '<dish or tonic id>' }` at any facility: one session paid with that item.
  * Paying a node opens it in her build; paying a dish unlock opens nothing.
  */

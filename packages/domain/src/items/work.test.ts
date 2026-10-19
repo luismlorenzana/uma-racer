@@ -51,7 +51,7 @@ describe('step times (08 §3, 12 §4)', () => {
     })
   })
 
-  it('are whole seconds at the time factor (k = 1.8, D374): 9,720 s, 2,430 s and 25,920 s at grade 1', () => {
+  it('are whole seconds at the time factor (k = 1.8, D375): 9,720 s, 2,430 s and 25,920 s at grade 1', () => {
     expect([gatherSeconds(1), craftSeconds(1), cookSeconds(1)]).toEqual([9_720, 2_430, 25_920])
     expect([gatherSeconds(10), craftSeconds(10), cookSeconds(10)]).toEqual([14_580, 3_645, 35_640])
     for (const g of ITEM_GRADE_LIST) {

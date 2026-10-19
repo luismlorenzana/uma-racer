@@ -155,7 +155,7 @@ uma-platform's `scripts/pixel-art` and publishes a `@luismlorenzana/uma-art` rel
 3. updates [11](docs/game/11-hub-and-places.md) §10, the architecture's art section and a decision;
 4. deletes the packet and logs it in the handoff README.
 
-A04, the ten tonics' item icons (D374), is ready in `docs/handoff/tasks/`; `ui/ItemIcon` takes their frames by id, so
+A04, the ten tonics' item icons (D375), is ready in `docs/handoff/tasks/`; `ui/ItemIcon` takes their frames by id, so
 pinning the release is the whole racer side. The next packets after it are the Expedition world map and its region
 crests (phase 9), and a calibration packet only if the owner chooses a pixel-art interface.
 

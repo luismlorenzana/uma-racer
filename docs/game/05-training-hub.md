@@ -1,7 +1,7 @@
 # 05 · Training Hub
 
 > **Status: as built, phase 3 (generation 2, D361); first written 2026-10-13 (D326, D328, D338); meals and tonics since
-> D374 (2026-10-18).** The Observatory, Lineage Hall, Gym and Dojo: how a session works, which item each unlock takes
+> D375 (2026-10-18).** The Observatory, Lineage Hall, Gym and Dojo: how a session works, which item each unlock takes
 > (a meal, a tonic or none), the layer each scenario adds, the
 > re-authored constellations, the Inspiration and Extra Stats maps, and facility slots and upgrades. The tables marked
 > live are rendered from the rules, and the loop simulation's checks ([12](12-economy-and-pacing.md) §12) pin the pace.
@@ -9,7 +9,7 @@
 > and durations (D366).
 
 The Training Hub is where an Uma's build is unlocked, one piece at a time. Every piece follows the same model (D326):
-**a timed unlock, paid with at most one item from the Kitchen**. Since D374 a **meal** pays an Extra Stats node, a
+**a timed unlock, paid with at most one item from the Kitchen**. Since D375 a **meal** pays an Extra Stats node, a
 **tonic** pays a constellation node or an Inspiration slot, and a card bond, an inherited unique or a gold skill takes
 **no item**, only its session's time ([08](08-item-catalogue-and-recipes.md) §6). The four facilities differ only in
 what they unlock and what they take. Nothing here needs tokens, Constellation Level or a minigame, and racing is never
@@ -53,7 +53,7 @@ Hub's version of a Farm job ([07](07-farm.md)).
 |---|---|
 | Unlocks in a session | 1–10, all at the same facility (and, at the Gym and Dojo, in the same room) |
 | Items | **At most one exact item per unlock** (a meal, a tonic or none, [08](08-item-catalogue-and-recipes.md) §6), all of them **reserved when the session starts**. No substitutions: a higher grade never pays for a lower one. The one exception: a retired salad or soup stands in for the tonic of its grade, and is reserved first |
-| Time for one unlock of grade *g* | **180 + 15(*g*−1) minutes × *k*** (README; *k* = 1.8, D374), divided by the facility's speed |
+| Time for one unlock of grade *g* | **180 + 15(*g*−1) minutes × *k*** (README; *k* = 1.8, D375), divided by the facility's speed |
 | Order | The order shown on the sheet. An unlock may depend on an earlier one in the same session |
 | Sessions per Uma | **One at a time.** While in a session she can race, but cannot take a Farm job (D328) |
 | An Uma with Farm work | A **finished** job is collected in the same tap that starts her session ([07](07-farm.md)). A **running** job refuses the session until it is collected or recalled, with Recall on the sheet ([01](01-game-loop.md)) |
@@ -211,7 +211,7 @@ and the planner simple (uma-rpg's D119 does the same).
 
 A bond's grade comes from the card's era: a card first eligible in scenario *p* of the tier bonds at grade 2*p*−1
 (older eras count as *p* = 1). So most bonds are grade 1, and only the newest cards take longer. A bond takes no item
-(D374): the grade sets its session's time alone. The full table, the room by card type and the counts are in
+(D375): the grade sets its session's time alone. The full table, the room by card type and the counts are in
 [06](06-cards-and-bonds.md).
 
 ## 4. Constellations re-authored
@@ -598,7 +598,7 @@ is +40 on the profile.
 whole dish and session for +20 to one stat, while an Observatory node pays a card node: about 130–280 raw points. Half
 the owner's sessions would have felt like the least rewarding half. Halving the singles and doubling every node keeps
 the Extra Stats a build can have (the budget below is unchanged), makes each Gym session worth twice as much, and cuts
-a tier from 132 unlocks to 107. The time factor *k* (1.8 since D374, when the tier's items fell from 107 to 71) keeps
+a tier from 132 unlocks to 107. The time factor *k* (1.8 since D375, when the tier's items fell from 107 to 71) keeps
 each scenario at about four weeks.
 
 **Active capacity** limits how many opened nodes pay at once:
@@ -666,7 +666,7 @@ What changed and why:
 - **Capacity restarts each tier,** because the map does; the tier multiplier carries the growth that today's absolute
   capacity carried.
 - **uma-rpg's eight stats become racing's five.** Its three other families make the tonics for the Observatory and
-  the Lineage Hall (D374).
+  the Lineage Hall (D375).
 
 ## 7. Slots and upgrades
 
@@ -698,7 +698,7 @@ held over a tier-1 scenario's window:
 **Upgrades** follow uma-rpg's facility upgrades and [07](07-farm.md) §7's pattern: Lv 1–3, one more slot per room at Lv 2,
 speed ×1.25 at Lv 3, paid in Prize Money and crafted items of the facility's families. Prices follow the anchor
 (1 Prize Money ≈ 1 Uma-minute, D331). Lv 3 saves a fifth of the facility's session time, so it repays within about two
-weeks; since D374 a session's minutes are half as long again, so the saving is too.
+weeks; since D375 a session's minutes are half as long again, so the saving is too.
 
 <!-- live:facility-slots-upgrades -->
 | Facility | Lv 1 | Lv 2 | Lv 3 | To Lv 2 | To Lv 3 |
@@ -788,7 +788,7 @@ rule's own words ("Needs node 13 first.", "Opens in scenario 3 · Trackblazer").
 with the meal or tonic by name and grade ("Needs: Paddock Tonic (grade 3) at the Observatory · 2 in stock"; "Opens
 after node 14"; "Needs: … · Power grade 3 and Speed grade 3 first", every unmet need of `dependenciesOf`; "At the
 Lineage Hall · no item needed" for an unlock that takes none). A tonic's stock there counts the salads and soups that
-stand in for it (`heldFor`, D374).
+stand in for it (`heldFor`, D375).
 
 ## 9. What is saved
 
@@ -822,7 +822,7 @@ facility `upgrade`. Each is checked by the domain on the API and returns its fir
 - **A lineage slot emptied during a gold session.** The gold position still opens; it pays when the slot is filled
   again.
 - **An item reserved by a session** is not stock: it cannot be sold or used elsewhere until a recall returns it.
-- **Salads and soups cooked before D374** pay for the tonics of their grades, before any tonic; breads pay for
+- **Salads and soups cooked before D375** pay for the tonics of their grades, before any tonic; breads pay for
   nothing and sell ([08](08-item-catalogue-and-recipes.md) §6).
 
 ## 11. Decided here
@@ -846,7 +846,7 @@ facility `upgrade`. Each is checked by the domain on the API and returns its fir
 | Lv 1: Observatory 2, Lineage Hall 2, Gym 5 × 1, Dojo 6 × 1; Lv 2 adds a slot per room | Lv 1 carries 20 Umas, Lv 2 carries 25, as at the Farm; only the Observatory needs its Lv 2 for 25 (scenario 1 at 105%) |
 | Upgrades Lv 2 (+slots, grade-1 items) and Lv 3 (×1.25 session speed, grade-3 items), instant, priced in §7 | uma-rpg's and [07](07-farm.md)'s pattern; Lv 3 repays within about two weeks and shortens a scenario by ~4%, mostly helping late Umas |
 | Each unlock names one exact item id or none; no substitutions but the stand-ins; a finished Farm job is collected when her session starts | Agrees with [07](07-farm.md) and [08](08-item-catalogue-and-recipes.md) |
-| **Meals pay Extra Stats, tonics pay nodes and slots; bonds, uniques and golds take nothing** (D374) | [08](08-item-catalogue-and-recipes.md) §6; uma-rpg's split of crafted items into stat and build consumables |
+| **Meals pay Extra Stats, tonics pay nodes and slots; bonds, uniques and golds take nothing** (D375) | [08](08-item-catalogue-and-recipes.md) §6; uma-rpg's split of crafted items into stat and build consumables |
 | A running session must be recalled or finished before promotion ([04](04-tiers-and-promotion.md) §5) | Items carry; unlocks don't |
 | Constellation motifs adapted as in §4's table: fourteen drawings now, every size and cap for fifteen; the 15th drawn when it ships, with its own decision entry | Keeps each scenario recognisable at its new size; the 15th's motif isn't known until it ships |
 | Tree ids: the root `n0`, card nodes `n1` … `n`*N*, as §3 and [03](03-uma-progression.md) §6 write them | The number is the unlock order. Today's trees name the root `root` and number cards from `n0`; generation 2 starts empty, so no save maps between the two |
@@ -879,7 +879,7 @@ facility `upgrade`. Each is checked by the domain on the API and returns its fir
 | The stamina ladder runs full-layer builds whose active Extra Stats lean on the rung's stat, most first, then on its backup (Guts behind Stamina, Power behind Speed), up to the capacity (D349) | Today's six leaned four and two; the capacity takes every opened node that pays the stat before any other |
 | Start takes the slot row's slot, else her own slot here, else the first free slot of the room or facility in `slotsOf` order; with none free, Start says how long until the next one frees, or that one is ready to collect (T139, D366) | §8 doesn't say; every free slot of a place runs the same |
 | The sheet pre-picks `fitSize` of the next items (`nextUnlocks`), capped by the items in stock and 10; unlocks the link names arrive picked instead (an Unlock, a Bond), even without their item, and the Dojo picks only cards it is given (T139) | §8's "as many as fit before the next check-in"; a locked item's Unlock means that item; a bond names its card (D344) |
-| An item's free stock in the sheet is less the picks above it, a tonic's counting its stand-ins (each pick takes a stand-in first); an available item with none left is greyed with "0 in Warehouse · Cook" and can't be picked, and Start reads the rule's `short` words for a named one; one that takes no item is always pickable (T139, D374) | §10's empty Warehouse: the sheet opens greyed and Start stays off until a picked unlock has its item |
+| An item's free stock in the sheet is less the picks above it, a tonic's counting its stand-ins (each pick takes a stand-in first); an available item with none left is greyed with "0 in Warehouse · Cook" and can't be picked, and Start reads the rule's `short` words for a named one; one that takes no item is always pickable (T139, D375) | §10's empty Warehouse: the sheet opens greyed and Start stays off until a picked unlock has its item |
 | The sheet lists her items of every open layer not yet open, oldest first in canonical order, then the next layer locked; open items are left out, items in her work read "In session · opens in 1h 20m", "Finished · Collect" or "Queued behind her session" (T139, D366) | §8 step 2's "her unlockable items here, in unlock order" with §3's later layer shown locked |
 | A Duo or Sun goes to the room it was started from, else the first `roomsFor` lists; a Needs line's Start opens the room of her first unlock left here (T139) | §1 lets either room take it |
 | A busy Uma at this facility and room, with room in her queue, opens the sheet on **Add to queue** (T138's `&queue=1`, or her slot row's Queue next); a running Farm job offers Recall first in the picker, through the shared Recall sheet, then picks her (T139) | §2: a running job refuses the session until it is collected or recalled, with Recall on the sheet |

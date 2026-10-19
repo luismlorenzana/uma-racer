@@ -72,7 +72,7 @@ export function stackCounts(input: { readonly held: number; readonly reserved: n
 }
 
 /**
- * Why a sale asks once (09 §6.1): a dish or a tonic (D374); needed stock, with how many the planner is left short; or
+ * Why a sale asks once (09 §6.1): a dish or a tonic (D375); needed stock, with how many the planner is left short; or
  * 1,000 or more.
  */
 export type SellConfirmation =
