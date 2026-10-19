@@ -2,7 +2,7 @@
 // in is uma-kit's `BootGates` (splash → sign-in → boot → start page; uma-racer has no first-launch step), and this
 // provider is what the gates' boot runs.
 // - The boot waits for the private content (`ContentProvider`, on the owner's token), opens the device save on it
-//   (`bootSaveGame`: the first-boot wipe, the purge call, local first) and waits for its first snapshot. A page holds
+//   (`bootSaveGame`: the server-purge call, local first) and waits for its first snapshot. A page holds
 //   one save, so a later content version or a second render keeps it.
 // - Then the start rule (`start.ts`) reads the opened save: a new account opens the Stable's Locked tab, a pending tap
 //   the Farm, else the last page.
@@ -16,7 +16,7 @@ import { hubWords } from '@racer/domain/hub'
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useContent, type ContentState } from '../content/ContentProvider'
 import type { ContentDiagnostic } from '../content/diagnostics'
-import type { LoadedContent } from '../content/runtime'
+import type { LoadedContent } from '../content/view'
 import { authOn, ownerSignIn, ownerSignOut, ownerToken } from './auth'
 import { bootSaveGame, type G2Boot } from './boot'
 import { G2ContentContext } from './content'

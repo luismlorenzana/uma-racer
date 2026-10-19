@@ -2,7 +2,7 @@ import { withRun } from './__fixtures__/save'
 import { umaFixture } from './__fixtures__/save'
 import { describe, expect, it } from 'vitest'
 import { createUmaSave, type ContentAtlas, type RaceResultRecord, type RaceTemplate, type ScenarioJourney, type UmaTemplate } from '@racer/domain'
-import type { LoadedContent } from '../../content/runtime'
+import type { LoadedContent } from '../../content/view'
 import { buildGoalRaceCatalog, buildHomeGoalState, buildJourneyView, buildResultGoalView, goalsAtStake } from './goals-view'
 
 const template: UmaTemplate = {
@@ -10,7 +10,7 @@ const template: UmaTemplate = {
   starter: true, baseStats: { speed: 1, stamina: 1, power: 1, guts: 1, wit: 1 },
   growthRates: { speed: 0, stamina: 0, power: 0, guts: 0, wit: 0 },
   aptitudes: { surface: { turf: 'A', dirt: 'G' }, distance: { sprint: 'B', mile: 'A', medium: 'B', long: 'C' }, strategy: { front: 'C', pace: 'A', late: 'B', end: 'D' } },
-  uniqueSkillId: null, awakeningSkillIds: [], realHorseSex: null, signatureRaceFamilyIds: [], imageSource: 'https://invalid.test/synthetic.png',
+  uniqueSkillId: null, awakeningSkillIds: [], realHorseSex: null, signatureRaceFamilyIds: [],
 }
 const races: RaceTemplate[] = ['a', 'b', 'c', 'd'].map((id, index) => ({
   id: `race-${id}`, familyId: String(100 + index), name: `Synthetic Race ${id.toUpperCase()}`, grade: 'op', surface: 'turf',
@@ -22,7 +22,7 @@ const atlas = (kind: ContentAtlas['kind']): ContentAtlas => ({
   pages: [{ path: `${kind}.webp`, width: 128, height: 128 }], frames: { x: { page: 0, x: 0, y: 0, width: 128, height: 128 } },
 })
 const content: LoadedContent = {
-  manifest: { version: 'synthetic-v1', generatedAt: '2000-01-01T00:00:00Z', source: {}, files: [] }, origin: 'network',
+  manifest: { version: 'synthetic-v1' }, origin: 'network',
   umas: { items: [template], byId: new Map([[template.id, template]]) }, cards: { items: [], byId: new Map() },
   skills: { items: [], byId: new Map() }, races: { items: races, byId: new Map(races.map((race) => [race.id, race])) },
   courses: { items: [], byId: new Map() },

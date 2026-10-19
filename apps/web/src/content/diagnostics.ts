@@ -4,7 +4,7 @@
 
 import { ApiError } from '../api/client'
 import { ContentFallbackError } from './errors'
-import type { LoadedContent } from './runtime'
+import type { LoadedContent } from './view'
 
 export type ContentDiagnosticCode =
   | 'signed-out'
@@ -24,7 +24,7 @@ export interface ContentDiagnostic {
   action: { kind: 'sign-in' | 'sign-out' | 'retry'; label: string } | null
 }
 
-const CORRUPT_PATTERN = /(?:byte length mismatch|hash mismatch|sha-256|manifest version|invalid json|unexpected content type|invalid webp|atlas .*mismatch|malformed)/i
+const CORRUPT_PATTERN = /(?:byte length mismatch|hash mismatch|sha-?256|manifest version|invalid json|unexpected content type|invalid webp|atlas .*mismatch|malformed)/i
 const NETWORK_PATTERN = /(?:failed to fetch|network|offline|timed out|timeout|connection|unreachable|load failed)/i
 
 function errors(value: unknown): unknown[] {
@@ -50,7 +50,7 @@ export function diagnoseContentError(error: unknown): ContentDiagnostic {
       action: { kind: 'sign-out', label: 'Switch account' },
     }
   }
-  if (api?.status === 404 && api.path.includes('/api/content/files/')) {
+  if (api?.status === 404 && /^\/api\/(master|content)\//.test(api.path)) {
     return {
       code: 'missing-object', success: false, title: 'The game’s content is incomplete',
       message: 'Part of the game’s content is missing online. Your progress on this phone is safe.',

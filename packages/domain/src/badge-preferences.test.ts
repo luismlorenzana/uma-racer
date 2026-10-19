@@ -30,7 +30,6 @@ const template: UmaTemplate = {
     strategy: { front: 'A', pace: 'A', late: 'A', end: 'A' },
   },
   uniqueSkillId: null, awakeningSkillIds: [], realHorseSex: null, signatureRaceFamilyIds: [],
-  imageSource: 'https://invalid.test/synthetic-badge.png',
 }
 
 function awardedState() {

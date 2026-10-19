@@ -11,7 +11,7 @@ import {
   type UmaTemplate,
 } from '@racer/domain'
 import { describe, expect, it } from 'vitest'
-import type { LoadedContent } from '../../content/runtime'
+import type { LoadedContent } from '../../content/view'
 import {
   buildStableBadgeCollection,
   buildTimelineItems,
@@ -30,7 +30,6 @@ const uma = (id: string, name: string): UmaTemplate => ({
   growthRates: { speed: 0, stamina: 0, power: 0, guts: 0, wit: 0 },
   aptitudes: { surface: { turf: 'A', dirt: 'B' }, distance: { sprint: 'A', mile: 'A', medium: 'A', long: 'A' }, strategy: { front: 'A', pace: 'A', late: 'A', end: 'A' } },
   uniqueSkillId: null, awakeningSkillIds: [], realHorseSex: null, signatureRaceFamilyIds: [],
-  imageSource: 'https://invalid.test/synthetic.png',
 })
 const race: RaceTemplate = {
   id: 'synthetic-race', familyId: 'synthetic-family', name: 'Synthetic Grand Prix', grade: 'g1', surface: 'turf',
@@ -52,7 +51,7 @@ function content(umas: UmaTemplate[]): LoadedContent {
     schemaVersion: 1, kind, frameWidth: 128, frameHeight: 128, pages: [{ path: `${kind}.webp`, width: 128, height: 128 }], frames: {},
   })
   return {
-    manifest: { version: 'synthetic', generatedAt: '', source: {}, files: [] }, origin: 'network',
+    manifest: { version: 'synthetic' }, origin: 'network',
     umas: { items: umas, byId: new Map(umas.map((entry) => [entry.id, entry])) }, cards: { items: [], byId: new Map() },
     skills: { items: [], byId: new Map() }, races: { items: [race], byId: new Map([[race.id, race]]) },
     art: { has: () => false, load: async () => null },

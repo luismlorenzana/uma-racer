@@ -47,7 +47,7 @@ export const template = (id: string, aptitudes: Aptitudes, extra: Partial<UmaTem
   baseStats: { speed: 100, stamina: 100, power: 100, guts: 100, wit: 100 },
   growthRates: { speed: 0, stamina: 0, power: 0, guts: 0, wit: 0 },
   aptitudes, uniqueSkillId: `unique-${id}`, awakeningSkillIds: [], realHorseSex: null, signatureRaceFamilyIds: [],
-  imageSource: 'https://invalid.test/synthetic.png', ...extra,
+    ...extra,
 })
 
 /** A colt for medium and long; a sprinter whose dirt is F, so lineage can lift it; parents strong on dirt and sprint. */

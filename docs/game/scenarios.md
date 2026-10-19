@@ -23,6 +23,6 @@ Each scenario rule is rendered live on the page that owns it:
 ## Keeping the list current
 
 The scenario list is code (`SCENARIOS` in `scenarios.ts`), not content, so a new release in Japan needs a code change
-and its decision. `pnpm data:import` warns when GameTora lists more released scenarios than the code models
-(`scripts/data/src/scenario-coverage.ts`), naming none of them: aggregate dates only. Until the 15th is modelled, tier 3
+and its decision. The pure master adapter's `scenarioCoverage` compares release dates when given today's date,
+naming none of them: aggregate dates only (SE1). Until the 15th is modelled, tier 3
 runs four scenarios ([04](04-tiers-and-promotion.md) §2).

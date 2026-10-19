@@ -1,5 +1,5 @@
 import type { CSSProperties, ReactNode } from 'react'
-import type { ContentAsset } from '../content/runtime'
+import type { ContentAsset } from '../content/view'
 
 export function atlasImageStyle(asset: ContentAsset): CSSProperties {
   return {

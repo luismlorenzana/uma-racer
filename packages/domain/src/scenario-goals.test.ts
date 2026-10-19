@@ -113,7 +113,6 @@ const template = (id: string, aptitudes: Aptitudes, extra: Partial<UmaTemplate> 
   awakeningSkillIds: [],
   realHorseSex: null,
   signatureRaceFamilyIds: [],
-  imageSource: 'https://invalid.test/synthetic.png',
   ...extra,
 })
 

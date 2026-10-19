@@ -7,7 +7,6 @@ import { cleanup, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderG2, seedGame, stubStorage } from '../__fixtures__/testing'
 import { BOOTING_GAME } from './game'
-import { REDIRECTS, redirectPath } from './redirects'
 import { isSeedsPath, SEEDS_PATH } from './router'
 import { RULES } from './rules'
 import { LAST_PAGE_KEY, startPath } from './start'
@@ -17,9 +16,6 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 beforeEach(stubStorage)
-
-const SAMPLE: Readonly<Record<string, string>> = { umaId: 'sim-uma-07', cardId: 'sim-card-wit-e2', districtId: 'garden' }
-const filled = (path: string) => path.replace(/:(\w+)/g, (_, name: string) => SAMPLE[name] ?? name)
 
 /** Where `path` lands while the game is still opening, so `/` stays put. */
 async function landing(path: string): Promise<string> {
@@ -36,18 +32,13 @@ async function landing(path: string): Promise<string> {
 }
 
 describe("today's routes (§7.2)", () => {
-  it.each(REDIRECTS.map((row) => [row.from, row.to]))('%s lands on %s, carrying its params and search', async (from, to) => {
-    const expected = to === '/' ? '/' : `${redirectPath(to, SAMPLE)}?from=old`
-    expect(await landing(`${filled(from)}?from=old`)).toBe(expected)
-  })
-
   it("keeps the routes that already match: /farm is the Farm page, an Uma's reveal is the reveal", async () => {
     expect(await landing('/farm')).toBe('/farm')
     expect(await landing('/collection/reveal/uma/sim-uma-07')).toBe('/collection/reveal/uma/sim-uma-07')
   })
 
   it.each([
-    '/cards/redeem', '/training/sim-uma-07', '/rpg/roster', '/rpg/party/1/2/fight', '/puzzles', '/puzzles/practice', '/puzzles/content',
+    '/stable', '/collection', '/races', '/cards/redeem', '/training/sim-uma-07', '/rpg/roster', '/rpg/party/1/2/fight', '/puzzles', '/puzzles/practice', '/puzzles/content',
     '/minigames/spark-match/sim-uma-07', '/minigames/friendship-training/c', '/minigames/bond-recall', '/farm/section/crops', '/farm/workers',
     '/farm/crops', '/farm/nowhere', '/collection/reveal/card/sim-card-wit-e2', '/dev/farm-kitchen-proof', '/dev/spark-rival-proof',
     '/dev/seeds', '/dev/seeds/town',

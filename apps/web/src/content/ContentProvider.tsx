@@ -8,12 +8,12 @@ import {
   SIGNED_OUT_CONTENT,
   type ContentDiagnostic,
 } from './diagnostics'
-import type { LoadedContent } from './runtime'
+import type { LoadedContent } from './view'
 
-let runtimePromise: Promise<typeof import('./runtime')> | undefined
+let runtimePromise: Promise<typeof import('./master')> | undefined
 
 function loadRuntime() {
-  runtimePromise ??= import('./runtime')
+  runtimePromise ??= import('./master')
   return runtimePromise
 }
 

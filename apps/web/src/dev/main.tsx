@@ -2,7 +2,7 @@
 // `import.meta.env.DEV` for any path under `SEEDS_PATH` (`/dev/seeds/*`), so a production build holds none of it
 // (scripts/check-size.mjs refuses one that does). The app's own routes under that basename, over the in-memory port on
 // `@racer/domain/sim`'s invented seeds (`?seed=busy | fresh | quiet | gate | promote | tired | spent | stopped`, `?at=HH:MM`),
-// or the device save on the seeds' content with `?save=device` (`&wipe` adds the wipe and the purge). It mounts no auth,
+// or the device save on the seeds' content with `?save=device` (no wipe or purge, SE1). It mounts no auth,
 // content or service worker, so art falls back to each Uma's initial (uma-art's atlases are the app's own, so the Hub
 // map and the bars draw as on the phone). The dev proofs sit under it too
 // (`/dev/seeds/dev/check-in`).

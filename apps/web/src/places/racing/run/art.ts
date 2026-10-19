@@ -1,5 +1,5 @@
 // Verified outfit busts for race playback (SB6; docs/game/racing.md). Pure playback art: no save or engine changes.
-import type { ArtLoader } from '../../../content/runtime'
+import type { ArtLoader } from '../../../content/view'
 
 export function holdRaceBusts(art: ArtLoader, outfitIds: readonly string[]): { urls: Promise<(string | null)[]>; release: () => void } {
   const releases: (() => void)[] = []

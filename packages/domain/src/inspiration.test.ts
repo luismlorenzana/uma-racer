@@ -8,7 +8,7 @@ const outfit = (id: string): UmaTemplate => ({ id, charaId: `chara-${id}`, name:
   baseStats: { speed: 100, stamina: 100, power: 100, guts: 100, wit: 100 }, growthRates: { speed: 0, stamina: 0, power: 0, guts: 0, wit: 0 },
   aptitudes: { surface: { turf: 'A', dirt: 'G' }, distance: { sprint: 'G', mile: 'A', medium: 'A', long: 'G' },
     strategy: { front: 'A', pace: 'G', late: 'G', end: 'G' } },
-  uniqueSkillId: null, awakeningSkillIds: [], realHorseSex: null, signatureRaceFamilyIds: [], imageSource: 'https://invalid.test/invented.png' })
+  uniqueSkillId: null, awakeningSkillIds: [], realHorseSex: null, signatureRaceFamilyIds: [], })
 const child = outfit('child'), grand = { ...outfit('grand'),
   uniqueSkillId: 'unique', awakeningSkillIds: ['white', 'gold', 'white2', 'gold2'] }
 

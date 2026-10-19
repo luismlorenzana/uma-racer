@@ -34,15 +34,10 @@ async function requestResponse(path: string, init: RequestInit = {}): Promise<Re
   return res
 }
 
-async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
-  return (await requestResponse(path, init)).json() as Promise<T>
-}
-
-export const contentApi = {
-  manifest: () => request<unknown>('/api/content/manifest'),
-  file: async (path: string) => {
+export const masterApi = {
+  read: async (path: string): Promise<Uint8Array> => {
     const encodedPath = path.split('/').map(encodeURIComponent).join('/')
-    const response = await requestResponse(`/api/content/files/${encodedPath}`)
-    return { bytes: await response.arrayBuffer(), contentType: response.headers.get('content-type') ?? '' }
+    const response = await requestResponse(`/api/${encodedPath}`)
+    return new Uint8Array(await response.arrayBuffer())
   },
 }

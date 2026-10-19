@@ -41,7 +41,6 @@ const uma: UmaTemplate = {
   awakeningSkillIds: [],
   realHorseSex: null,
   signatureRaceFamilyIds: [],
-  imageSource: 'https://invalid.test/synthetic.png',
 }
 
 function skill(id: string, kind: SkillTemplate['kind'] = 'white', costSp: number | null = 90): SkillTemplate {

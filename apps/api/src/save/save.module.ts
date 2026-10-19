@@ -3,7 +3,8 @@
 import { resolve } from 'node:path'
 import { Module } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
-import { ContentService } from '../content/content.service'
+import { MasterContent } from '../master/master-content'
+import { masterSources } from '../master/master.module'
 import { FirestoreSaveRepository } from './firestore-save.repository'
 import { LocalSaveRepository } from './local-save.repository'
 import { OperationContent } from './operation-content'
@@ -27,7 +28,7 @@ export const DEFAULT_LOCAL_SAVE_FILE = '.data/save-g2.json'
     {
       provide: OperationContent,
       inject: [ConfigService],
-      useFactory: (config: ConfigService): OperationContent => new OperationContent(new ContentService(config)),
+      useFactory: (): OperationContent => new OperationContent(new MasterContent(masterSources())),
     },
   ],
 })
