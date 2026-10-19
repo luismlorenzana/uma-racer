@@ -1,10 +1,9 @@
 // The save's boot (docs/rearchitecture/01-target-architecture.md §4.3; docs/rearchitecture/07-data-reset.md §2–§3;
 // docs/game/02-check-ins-and-notifications.md §8, §11; T136), in this order:
-// 1. The wipe (`wipe.ts`), unless `uma-racer:g2:wiped` is set. Only the new game's own boot asks for it.
-// 2. The purge, unless `uma-racer:g2:purged` is set: `POST /api/legacy/purge` in the background once signed in, again
+// 1. The purge, unless `uma-racer:g2:purged` is set: `POST /api/legacy/purge` in the background once signed in, again
 //    at the next boot or back online after a failure. It never blocks play, and it touches only `players/`, so it can
 //    run before or after the create; online, its request goes first (07 §3's order).
-// 3. Open, local first:
+// 2. Open, local first (the first-boot device wipe retired with SE1, D365):
 //    - a save on the device (a profile row, or a create in the outbox): fold, ready at once, then flush and pull;
 //    - empty: pull every page from 0. With rows, the store opens once the pages have brought the kinds the rules read,
 //      and the history keeps loading behind it. With none, `initialSave(now)` is queued as the create, and it opens;
@@ -16,16 +15,14 @@ import { createActions, type SaveActions } from './actions'
 import { CREATE_KEY, holdsSave, SaveDb, UnreadableRow } from './db'
 import { createSerial, refold, resetSave, useSave } from './store'
 import { browserSignals, forgetPull, SyncLane, type LaneSignals } from './sync'
-import { browserStorage, browserWipe, wipeOnce, type WipeDeps } from './wipe'
+import { browserStorage } from './storage'
 import { SAVE_WORDS } from './words'
 
 export const PURGED_KEY = 'uma-racer:g2:purged'
 
 export interface SaveBootOptions {
   readonly env: OperationEnv
-  /** The first-boot wipe: the app's own boot only, never the seeds' mount unless it asks (`&wipe`). */
-  readonly wipe: boolean
-  /** The purge call: with the wipe, until the release after the owner confirms it ran (07 §6). */
+  /** The purge call stays until the separate owner confirmation (07 §6). */
   readonly purge: boolean
   /** Whether sync may run yet; T143 follows the auth provider with `setSignedIn`. */
   readonly signedIn?: boolean
@@ -33,7 +30,6 @@ export interface SaveBootOptions {
   readonly db?: SaveDb
   readonly storage?: Storage | null
   readonly signals?: LaneSignals
-  readonly wipeDeps?: WipeDeps
   readonly now?: () => number
   readonly newId?: () => string
 }
@@ -142,7 +138,6 @@ export function bootSave(options: SaveBootOptions): SaveSession {
   }
 
   const opened = (async () => {
-    if (options.wipe) await wipeOnce(options.wipeDeps ?? browserWipe())
     purge()
     await db.open()
     await open()

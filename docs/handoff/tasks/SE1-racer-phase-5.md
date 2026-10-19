@@ -5,6 +5,10 @@ Unblocks: SE4, and real faces in SB6 · Part of sibling Phase E. This is the rac
 
 ## Why
 
+**In progress, 2026-10-18:** the owner explicitly assigned this packet to Codex. The M035/T148–T151 plan is retained
+at commit `97f08f7`; resulting rules are in the manual and [acceptance note](../../research/se1-master-data/README.md).
+Protected PR workflow and local-only validation (P60); this packet stays until deploy/cleanup verify.
+
 uma-racer still imports master data and Uma art with its own GameTora pipeline, into its private content. uma-rpg
 reads uma-platform's releases (`@luismlorenzana/uma-data`) through its API. The re-architecture's phase 5 moves
 uma-racer onto the same releases and art families and deletes its pipeline. Then both games read the same data, art

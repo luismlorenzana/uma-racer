@@ -1,4 +1,4 @@
-// Static content-pack contracts produced by scripts/data (docs/game/architecture.md#private-content).
+// Racer-only views of platform master data (SE1; docs/game/architecture.md#private-content).
 
 import type { CardEffect } from './cards'
 import type { CardFocusOverride } from './card-focus'
@@ -29,7 +29,6 @@ export interface UmaTemplate {
   realHorseSex: 'male' | 'female' | null
   /** Ordered, distinct source race-family ids from this character's career objectives. */
   signatureRaceFamilyIds: string[]
-  imageSource: string
 }
 
 export type SupportCardType = StatKey | 'friend' | 'group'
@@ -54,7 +53,6 @@ export interface SupportCardTemplate {
   eventSkillIds: string[]
   effectProfile: Record<CardEffect, number>
   uniqueEffect: SupportCardUniqueEffect | null
-  imageSource: string
   /** An authored correction of the card's derived focus (D201); a pack without it keeps working. */
   focus?: CardFocusOverride
 }
@@ -136,24 +134,6 @@ export interface CourseStraight {
   start: number
   end: number
   frontType: number
-}
-
-export interface ContentManifestFile {
-  path: string
-  bytes: number
-  sha256: string
-}
-
-export interface ContentManifest {
-  version: string
-  generatedAt: string
-  source: Record<string, string>
-  files: ContentManifestFile[]
-}
-
-export interface ContentPack<T> {
-  version: string
-  items: T[]
 }
 
 export type ContentAtlasKind = 'uma-icons' | 'card-icons' | 'scenario-icons' | 'skill-icons'

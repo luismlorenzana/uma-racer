@@ -14,7 +14,7 @@ import {
   type UmaTemplate,
 } from '@racer/domain'
 import { describe, expect, it } from 'vitest'
-import type { LoadedContent } from '../../content/runtime'
+import type { LoadedContent } from '../../content/view'
 import { filterBadgeItems } from './badge-collection-view'
 import {
   buildStableRecentFlair,
@@ -29,18 +29,18 @@ const uma: UmaTemplate = {
   baseStats: { speed: 100, stamina: 100, power: 100, guts: 100, wit: 100 },
   growthRates: { speed: 0, stamina: 0, power: 0, guts: 0, wit: 0 },
   aptitudes: { surface: { turf: 'A', dirt: 'B' }, distance: { sprint: 'A', mile: 'A', medium: 'A', long: 'A' }, strategy: { front: 'A', pace: 'A', late: 'A', end: 'A' } },
-  uniqueSkillId: null, awakeningSkillIds: [], realHorseSex: null, signatureRaceFamilyIds: [], imageSource: 'https://invalid.test/synthetic.png',
+  uniqueSkillId: null, awakeningSkillIds: [], realHorseSex: null, signatureRaceFamilyIds: [],
 }
 
 const card: SupportCardTemplate = {
   id: 'trainer-view-card', charaId: 'trainer-view-support', charName: 'Synthetic Support', title: 'Profile Notes', type: 'speed',
   jpRelease: '2000-01-01', era: 7, obtain: 'gacha', starter: false, hintSkillIds: [], eventSkillIds: [],
   effectProfile: Object.fromEntries(CARD_EFFECTS.map((effect) => [effect, 0])) as SupportCardTemplate['effectProfile'],
-  uniqueEffect: null, imageSource: 'https://invalid.test/synthetic.png',
+  uniqueEffect: null,
 }
 
 const content: LoadedContent = {
-  manifest: { version: 'synthetic-profile', generatedAt: '', source: {}, files: [] }, origin: 'network',
+  manifest: { version: 'synthetic-profile' }, origin: 'network',
   umas: { items: [uma], byId: new Map([[uma.id, uma]]) }, cards: { items: [card], byId: new Map([[card.id, card]]) },
   skills: { items: [], byId: new Map() }, races: { items: [], byId: new Map() }, courses: { items: [], byId: new Map() },
   atlases: {

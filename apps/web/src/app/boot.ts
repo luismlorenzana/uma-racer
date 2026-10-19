@@ -1,8 +1,8 @@
 // Creates the game port lazily (T137, T136, T143). Everything it loads, the port and the rules alike, stays out of the
 // entry chunk.
 // - `bootSaveGame` is the app's boot, called by the session once the private content is ready: the device save (`save/`)
-//   with the first-boot wipe and the purge call, its requests on the signed-in owner's token, and Account's Sign in and
-//   Sign out from the auth provider. It is the only caller that wipes.
+//   with the retained server-purge call, its requests on the signed-in owner's token, and Account's Sign in and
+//   Sign out from the auth provider. No boot deletes device data (SE1).
 // - `bootDevice` is the device save under any options: the seeds' mount (`dev/boot.ts`) opens it on the seeds' content.
 // A page holds one device save: one database connection and one sync lane. A second boot (StrictMode runs the
 // provider's effect twice in development) gets the first one's port. Every tap holds the update prompt's restart until
@@ -56,7 +56,7 @@ export function bootSaveGame(content: OperationContent, auth: SaveAuth): Promise
   return bootDevice(async () => {
     const { operationEnv, setSaveTokenProvider } = await import('../save')
     setSaveTokenProvider(auth.token)
-    return { env: operationEnv(content), wipe: true, purge: true, signedIn: auth.signedIn }
+    return { env: operationEnv(content), purge: true, signedIn: auth.signedIn }
   }, auth)
 }
 

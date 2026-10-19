@@ -28,12 +28,13 @@ gs://uma-platform-master-data ──(API service account, read-only)──▶ ra
         ──(signed-in fetch, hash-verified, cached)──▶ web content client ──▶ @racer/domain/master adapter ──▶ the game
 ```
 
-- **API:** a `master` module copied from uma-rpg (`apps/api/src/master/master-source.ts`, `master.controller.ts`).
+- **API (SE1):** a `master` module configures published `uma-server/content` 0.2.0's proxies/sources, not copies.
   - In production it reads the channel, then the manifest, then the files from the platform bucket.
   - In development it reads `../uma-platform/content/release`.
   - Files are served `private, max-age=31536000, immutable`, since their names carry their hash.
-- **Web:** the shared content client (§5, `uma-content`) loads the manifest and the small sets at startup. The skill
-  set (about 2.5 MB) loads when a screen first needs it. Art is looked up through the release's art index.
+- **Web (SE1):** `uma-data` 1.1.0's client verifies the manifest, sets and art index. Racer loads all rule sets at boot
+  because race/save operations need them, and keeps verified persistent bytes for offline startup. Images load on
+  demand. The shared React provider adoption remains SE4, not a copied component.
 - **Following releases:** the racer follows `latest` within schema major 1 automatically (P7). A new Uma or card
   reaches the game without a code change; a breaking schema change waits for a deliberate package upgrade.
 
@@ -77,12 +78,12 @@ are outfit chibis, busts, portraits, character dresses and faces) and the bust s
 | `scripts/assets/src`: `art`, `atlas`, `bust-sheet`, `download`, `import`, `layout`, `read`, `wiki`, `write` | Deleted: uma-platform's `scripts/assets` |
 | `scripts/data/src/rpg*`, `scripts/assets/src/priconne*` | Deleted with the RPG ([06](06-rpg-decommission.md)) |
 | `normalize/spark-rivals` and the optional `spark-rivals` pack | Deleted with Spark Rival Circuit |
-| `normalize/flair`, `normalize/card-focus`, `puzzles.ts` (both pipelines), the puzzle placeholders, `publish.ts`, `gcloud-storage.ts` | Kept, moved to `scripts/overlays`: the racer's own private content, published content-addressed to `uma-racer-content` as today |
+| `normalize/flair`, `normalize/card-focus` | Pure validators in `@racer/domain/master`; private authored inputs stay Racer's, built/published by `scripts/overlays`. Puzzles and their placeholders were deleted, not retained |
 | `pnpm data:import`, `assets:import` | Replaced by `pnpm overlays:import`; master data is imported once, in uma-platform |
 | Atlas descriptors `uma-icons`, `card-icons`, `scenario-icons`, `skill-icons` | The release's `outfit-icons`, `support-card-icons`, `scenario-icons`, `skill-icons` |
-| Art kinds `uma`, `card`, `bust`, `chibi`, `dress`, `face` | Families `outfit-icons`, `support-card-art`, `outfit-busts`, `outfit-chibis`, `character-dresses`, `character-faces` |
+| Art kinds `uma`, `card`, `bust`, `chibi`, `dress`, `face` | Families `outfit-portraits`, `support-card-art`, `outfit-busts`, `outfit-chibis`, `character-dresses`, `outfit-faces`; outfit icons are the fallback |
 | Art kind `priconne` | Deleted (RPG) |
-| `starter` flags in the racer's packs (25 launch Umas, 94 starter cards) | Starter Umas are gone (a new account picks its own with 20 Uma Tickets, [07](07-data-reset.md) §5); the starter card ids become a racer overlay the adapter reads |
+| Legacy `starter` metadata | Generation 2 opens every SSR (D329); no starter-card compatibility overlay or gating. Uma unlocking still uses tickets |
 
 **Private overrides:** `content/overrides/flair.json` stays the racer's to author and keep (D107), since it maps
 race-series legs and venues; it now names platform race and track ids. The platform's own overrides (scenario

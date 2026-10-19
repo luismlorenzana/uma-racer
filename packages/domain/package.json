@@ -8,6 +8,10 @@
   "main": "./dist/cjs/index.js",
   "types": "./dist/cjs/index.d.ts",
   "exports": {
+    "./master": {
+      "require": { "types": "./dist/cjs/master/index.d.ts", "default": "./dist/cjs/master/index.js" },
+      "default": { "types": "./src/master/index.ts", "default": "./src/master/index.ts" }
+    },
     ".": {
       "require": {
         "types": "./dist/cjs/index.d.ts",
@@ -161,6 +165,6 @@
     "vitest": "^3.2.7"
   },
   "dependencies": {
-    "@luismlorenzana/uma-data": "1.0.0"
+    "@luismlorenzana/uma-data": "1.1.0"
   }
 }

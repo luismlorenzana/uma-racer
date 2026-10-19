@@ -4,7 +4,7 @@
 // convenience under `uma-racer:g2:trophy-hall-seen` (01 §4.2).
 import { badgeStateId, buildTrainerAchievementCatalog, buildUmaFlairCatalog, type BadgeStateV1, type FlairEventV1, type UmaBadgeStateV1, type UmaSave } from '@racer/domain'
 import type { WorkState } from '@racer/domain/work'
-import type { LoadedContent } from '../../content/runtime'
+import type { LoadedContent } from '../../content/view'
 import type { G2Records } from '../../app/game'
 import { TRAINER_BADGE_ID } from './flair'
 import { linkedHistoryOf, umaSaveOf, type LinkedRaceRecord } from './today'

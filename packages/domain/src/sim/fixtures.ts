@@ -46,7 +46,6 @@ function umaTemplate(i: number): UmaTemplate {
     id, charaId: `sim-chara-${id}`, name: `Synthetic Uma ${i + 1}`, outfit: null, jpRelease: '2000-01-01', globalRelease: null, starter: true,
     baseStats: { ...BASE_STATS }, growthRates: { speed: 0, stamina: 0, power: 0, guts: 0, wit: 0 },
     aptitudes: simAptitudes(i), uniqueSkillId: `sim-unique-${id}`, awakeningSkillIds: [], realHorseSex: null, signatureRaceFamilyIds: [],
-    imageSource: 'https://invalid.test/synthetic.png',
   }
 }
 
@@ -83,7 +82,7 @@ function card(type: SupportCardType, era: number): SupportCardTemplate {
   const id = simCardId(type, era)
   return {
     id, charaId: `sim-chara-${id}`, charName: `Invented ${id}`, title: id, type, jpRelease: '2000-01-01', era, obtain: 'free', starter: true,
-    hintSkillIds: [], eventSkillIds: [], effectProfile: { ...PROFILE }, uniqueEffect: null, imageSource: 'https://invalid.test/card.png',
+    hintSkillIds: [], eventSkillIds: [], effectProfile: { ...PROFILE }, uniqueEffect: null,
   }
 }
 

@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common'
 import { ConfigModule, ConfigService } from '@nestjs/config'
 import { AuthModule, authMode } from '@luismlorenzana/uma-server/auth'
-import { ContentModule } from './content/content.module'
+import { masterModules } from './master/master.module'
 import { HealthController } from './health.controller'
 import { SaveModule } from './save/save.module'
 
@@ -20,7 +20,7 @@ export const authModule = () =>
   })
 
 @Module({
-  imports: [ConfigModule.forRoot({ isGlobal: true }), authModule(), SaveModule, ContentModule],
+  imports: [ConfigModule.forRoot({ isGlobal: true }), authModule(), SaveModule, ...masterModules()],
   controllers: [HealthController],
 })
 export class AppModule {}

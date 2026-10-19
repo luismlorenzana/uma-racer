@@ -15,12 +15,14 @@ import { createTrainerBadgeState } from '@racer/domain'
 import { SAVE_LIMITS, type OperationEnv } from '@racer/domain/save'
 import { AuthGuard } from '@luismlorenzana/uma-server/auth'
 import { authModule } from '../app.module'
-import { ContentService } from '../content/content.service'
+import { DirectoryFileSource, DirectoryReleaseSource } from '@luismlorenzana/uma-server/content'
+import { MasterContent } from '../master/master-content'
+import { writeMasterFixture } from '../master/master.test-support'
 import { FirestoreSaveRepository } from './firestore-save.repository'
 import { ContentUnavailable, MANIFEST_TTL_MS, OperationContent } from './operation-content'
 import { SaveController } from './save.controller'
 import { SaveModule } from './save.module'
-import { FakeFirestore, saveFixtures, writeSyntheticContent, type SaveFixtures } from './save.test-support'
+import { FakeFirestore, saveFixtures, type SaveFixtures } from './save.test-support'
 
 let F: SaveFixtures
 beforeAll(async () => { F = await saveFixtures() })
@@ -119,16 +121,17 @@ describe('the routes', () => {
   it('answers 503 for a pack missing from the published content, and runs the operation once it is published', async () => {
     const dir = await mkdtemp(join(tmpdir(), 'racer-g2-missing-'))
     try {
-      await writeSyntheticContent(dir, F.PACKS, 'a1a1a1a1a1a1', ['skills'])
+      const fixture = await writeMasterFixture(dir)
+      await rm(join(dir, 'master', fixture.release.manifest.sets.skills))
       let now = 1_800_000_000_000
-      const content = new OperationContent(new ContentService(new ConfigService({ CONTENT_SOURCE: 'local', CONTENT_DIR: dir })), () => now)
+      const content = new OperationContent(new MasterContent({ master: new DirectoryReleaseSource(join(dir, 'master')), overlay: new DirectoryFileSource(join(dir, 'content')) }), () => now)
       const routes = new SaveController(new FirestoreSaveRepository(fake.asFirestore), content)
       await routes.sync('u1', { ...STAMP, changes: [{ type: 'create', createdAt: 1 }] })
       const before = new Map(fake.docs)
-      const changes = [op(1, 'unlock-uma', { outfitId: F.uma(1) }, 2)]
+      const changes = [op(1, 'unlock-uma', { outfitId: '900101' }, 2)]
       expect(await thrown(() => routes.sync('u1', { ...STAMP, changes }))).toEqual({ status: 503, body: { code: 'content-unavailable' } })
       expect(fake.docs).toEqual(before)
-      await writeSyntheticContent(dir, F.PACKS, 'b2b2b2b2b2b2')
+      await writeMasterFixture(dir)
       now += MANIFEST_TTL_MS
       expect((await routes.sync('u1', { ...STAMP, changes })).results).toEqual([expect.objectContaining({ status: 'applied' })])
     } finally {
@@ -154,7 +157,7 @@ describe('the routes', () => {
 @Module({ imports: [ConfigModule.forRoot({ isGlobal: true, ignoreEnvFile: true }), authModule(), SaveModule] })
 class SaveTestApp {}
 
-const ENV_KEYS = ['AUTH_MODE', 'ALLOWED_EMAIL', 'PERSISTENCE', 'LOCAL_SAVE_FILE', 'CONTENT_SOURCE', 'CONTENT_DIR', 'DEV_OPERATIONS'] as const
+const ENV_KEYS = ['AUTH_MODE', 'ALLOWED_EMAIL', 'PERSISTENCE', 'LOCAL_SAVE_FILE', 'CONTENT_SOURCE', 'CONTENT_DIR', 'MASTER_DIR', 'DEV_OPERATIONS'] as const
 
 describe('over HTTP', () => {
   let dir: string
@@ -169,7 +172,8 @@ describe('over HTTP', () => {
     process.env.LOCAL_SAVE_FILE = join(dir, 'save-g2.json')
     process.env.CONTENT_SOURCE = 'local'
     process.env.CONTENT_DIR = join(dir, 'content')
-    await writeSyntheticContent(join(dir, 'content'), F.PACKS)
+    process.env.MASTER_DIR = join(dir, 'master')
+    await writeMasterFixture(dir)
   })
   afterAll(async () => {
     for (const app of apps) await app.close()
@@ -211,8 +215,8 @@ describe('over HTTP', () => {
       expect(response.status).toBe(426)
       expect(await response.json()).toEqual({ code: 'upgrade-required', protocol: 2, generation: 2 })
     }
-    expect((await post(`${api}/sync`, { ...STAMP, changes: [op(1, 'unlock-uma', { outfitId: F.uma(1) }, 1)] })).status).toBe(409)
-    const created = await post(`${api}/sync`, { ...STAMP, changes: [{ type: 'create', createdAt: F.clock('07:00') }, op(1, 'unlock-uma', { outfitId: F.uma(1) }, F.clock('07:01'))] })
+    expect((await post(`${api}/sync`, { ...STAMP, changes: [op(1, 'unlock-uma', { outfitId: '900101' }, 1)] })).status).toBe(409)
+    const created = await post(`${api}/sync`, { ...STAMP, changes: [{ type: 'create', createdAt: F.clock('07:00') }, op(1, 'unlock-uma', { outfitId: '900101' }, F.clock('07:01'))] })
     expect(created.status).toBe(200)
     expect((await created.json() as { results: { status: string }[] }).results.map((result) => result.status)).toEqual(['created', 'applied'])
     const dev = await post(`${api}/sync`, { ...STAMP, changes: [op(2, 'dev-grant', { prizeMoney: 10 }, F.clock('07:02'))] })

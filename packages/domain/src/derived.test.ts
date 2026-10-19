@@ -25,7 +25,6 @@ const uma = (id: string, uniqueSkillId: string | null, awakening: string[] = [])
   awakeningSkillIds: awakening,
   realHorseSex: null,
   signatureRaceFamilyIds: [],
-  imageSource: 'https://invalid.test/uma.png',
 })
 
 const skill = (id: string, kind: SkillKind, inheritedSkillId: string | null = null): SkillTemplate => ({

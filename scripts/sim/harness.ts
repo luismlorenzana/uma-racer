@@ -174,7 +174,7 @@ const APTITUDE_A = {
 const synthetic = (id: string): UmaTemplate => ({
   id, charaId: `chara-${id}`, name: `Synthetic ${id}`, outfit: null, jpRelease: '2000-01-01', globalRelease: null, starter: true,
   baseStats: { ...BASE }, growthRates: { speed: 0, stamina: 0, power: 0, guts: 0, wit: 0 }, aptitudes: APTITUDE_A,
-  uniqueSkillId: null, awakeningSkillIds: [], realHorseSex: null, signatureRaceFamilyIds: [], imageSource: '',
+  uniqueSkillId: null, awakeningSkillIds: [], realHorseSex: null, signatureRaceFamilyIds: [],
 })
 /** The sims' Uma: the median base stats above, zero growth, A everywhere. */
 export const REWORK_UMA = synthetic('sim-uma')
@@ -187,7 +187,7 @@ const NO_EFFECTS = Object.fromEntries(CARD_EFFECTS.map((key) => [key, 0])) as Re
 export const reworkCard = (type: CardType, era: number, index: number): SupportCardTemplate => ({
   id: `${type}-${index}`, charaId: `chara-${type}-${index}`, charName: `Synthetic ${type} ${index}`, title: `${type}-${index}`, type,
   jpRelease: '2000-01-01', era, obtain: 'free', starter: true, hintSkillIds: [], eventSkillIds: [], effectProfile: NO_EFFECTS,
-  uniqueEffect: null, imageSource: '',
+  uniqueEffect: null,
 })
 
 /** A card's fair share and the per-card cap on scenario T's re-authored tree (D134): 2/3, 3/4, 4/5, 4/5, 5/6. */

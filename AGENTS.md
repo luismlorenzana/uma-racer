@@ -48,8 +48,9 @@ Packages; `.npmrc` reads it from `NODE_AUTH_TOKEN`). With the GitHub CLI: `gh au
     pnpm docs:update    # regenerate the live blocks in docs/game/ after changing what they list
     pnpm dev            # web :5173 (proxies /api) + api :8080, auth disabled, save apps/api/.data/save-g2.json, dev operations on
     pnpm sim:balance    # headless race balance table; also sim:turns, sim:builds, sim:careers and sim:loop
-    pnpm data:import    # GameTora datasets → private, gitignored content packs
-    pnpm assets:import  # pack image sources → private WebP atlases (run data import first)
+    pnpm overlays:import   # Racer-only authored overlays against the platform master
+    pnpm overlays:publish -- --dry-run # verify before publishing overlays
+    pnpm master:parity     # private migration oracle, aggregates only in git
 
 In dev builds, `/dev/seeds/` opens the game on synthetic accounts. Run `pnpm lint && pnpm test:ci && pnpm build`
 before opening a PR. CI runs the same.
@@ -63,7 +64,7 @@ before opening a PR. CI runs the same.
 | `apps/api` | NestJS 11 API for Cloud Run | `AuthGuard` (Firebase token + allowlist), `/api/save`, `/api/sync`, `/api/legacy/purge` (one release), `/api/content/*`, `/api/health` |
 | `apps/web` | React 19 + Vite 7 + Tailwind 4 + Motion PWA on `@luismlorenzana/uma-kit` (the theme in light and dark, the shell, the Hub map on Phaser 4, the primitives and icons); PixiJS 8 for the race scene only (`src/scenes/race`) | Mobile-first (390×844 portrait). `src/app` (routes, session, port, the kit's setup), `hub` (the racer's adapters to the kit's shell and map), `places`, `save`, `ui` (the racer's own pieces), `content`, dev-only `dev` |
 | `scripts/sim` | Balance simulations | |
-| `scripts/data`, `scripts/assets` | Content pipeline (GameTora → private packs) | Output goes to gitignored `/content/` |
+| `scripts/overlays` | Racer-only private overlays and master parity; no master importer | Output goes to gitignored `/content/` |
 | `docs/` | The manual (`game/`), design, plans (`rework/`, `rearchitecture/`), tasks, technical, research, handoff packets | |
 
 ## Workflows
@@ -85,8 +86,8 @@ before opening a PR. CI runs the same.
 - **`pnpm dev`** runs the local API with `DEV_OPERATIONS=true` (so Account's dev section can run `dev-grant`), auth off,
   and its save at `apps/api/.data/save-g2.json`; `apps/api/.env` comes from `.env.example`.
 - **Private content in a worktree.** The importers and the local API read the gitignored `content/` at the repo root.
-  If you have the owner's copy, symlink it from the primary checkout (and `scripts/data/.cache` before `pnpm
-  data:import`), never commit the links, and stage explicit paths rather than `git add -A`, since an untracked link
+  Master data/art comes from sibling `uma-platform/content/release` (`MASTER_DIR`); link only the owner's authored
+  `content/overrides` into the worktree before `pnpm overlays:import`. Never commit links; stage explicit paths, since a link
   shows up beside your changes.
 - **Docs-only pushes don't deploy.** The workflow ignores pushes that change only `docs/**` or Markdown files; any
   other push to `main` verifies and deploys production.

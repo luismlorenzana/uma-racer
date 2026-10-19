@@ -24,7 +24,7 @@ and bonded per Uma, uma-rpg's farming catalogue, Prize Money and the Exchange, a
 | 3 | [M034 — the generation-2 cutover and the new game](M034-generation-2-cutover.md) | **Shipped 2026-10-15** (T134–T144, D352–D361): `ec5b1bd`, racer-api-00188, content `9ba4cdd37cca`. The owner's old save is purged (30 collections, 3,676 documents; `players/` is empty) and the retired bucket objects are deleted. **Left: [T144](T144-the-release.md)'s step 10** (below) |
 | 6 | The Hub: uma-rpg's Phaser town on the four pages | **Shipped 2026-10-15, ahead of phase 5** (T145, D363): `b2cb668`, racer-api-00189. Its own art (four buildings, the Racing ground, currency marks, tier crests) landed as uma-art 2.7.0 from ChatGPT's packets A01 and A02 (D364): `1db8065`, racer-api-00190 |
 | 4 | Push notifications, a port of uma-rpg's | **Archived 2026-10-16** (D370). Parked as sibling SE5 until the owner asks for push (uma-platform P51, P11) |
-| 5 | Platform master data and the first shared packages | **Now sibling packet SE1** ([handoff](../handoff/README.md), uma-platform P51), Claude's: the GameTora pipeline goes |
+| 5 | M035 — platform master data (T148–T151, SE1) | **Implementation complete**: shared source, pure adapter, outfit faces and retired importer code. Production/cleanup gates in the [acceptance note](../research/se1-master-data/README.md); packet closes after verified deployment |
 | 7 | The Farm and Training places as pixel-art scenes | **Archived 2026-10-16** (D370) |
 | 8 | The race on Phaser; PixiJS leaves the repo | **Archived 2026-10-16** (D370). PixiJS stays for the race scene |
 | 9 | World Expeditions | **Kept through the 2026-10-16 cleanup** (D370): without it the first Uma to finish tier 1's last career has nowhere to go. Not specified yet. It must land within about 16–20 weeks of 2026-10-15 (by about 2027-02-04 to 2027-03-04), before the first Uma finishes tier 1's last career |
@@ -57,7 +57,7 @@ The `pre-split` tag marks the old game.
 **Retired unbuilt (D339):** M024 (T081), M010 (T035) and M011 (T036–T039). The rework removes what they built on.
 Game feel and device acceptance for the new game are planned after phase 3.
 
-**Next free numbers: M035, T148 and D375** (D362 is reserved for T144's release record). Numbers are never reused, so
+**Next free numbers: M036, T152 and D376** (D362 is reserved for T144's release record). Numbers are never reused, so
 a decision that mentions T014 always means the same work. T057 was consumed by the per-scenario limit-break branch and
 is not reused.
 
@@ -67,6 +67,7 @@ Each row's specs are readable with `git show <commit>:docs/tasks/<file>`. Pages 
 are named by their old path (`design/uma-rpg.md` …); read them with `git show pre-split:docs/<path>`.
 
 | Work | Landed | Carried by | Last commit with the specs |
+| M035 / T148–T151 · SE1 platform master data | SE1; delivery evidence in the acceptance note | `@racer/domain/master`, API shared proxies, verified web cache, private overlay tools and the manual | `97f08f7` |
 |---|---|---|---|
 | SB6 (sibling handoff) — shared album and Uma pickers on uma-kit 0.7.1, faces when small and busts throughout races; saved preferences and racer operations preserved | 2026-10-18 | [game/11](../game/11-hub-and-places.md) §3.1, [architecture](../game/architecture.md#uma-kit), D373, [local acceptance and deployment](../research/sb6-album/README.md); `4885baf` | `4885baf` (`docs/handoff/tasks/`) |
 | A03 (ChatGPT handoff) — the four remaining Uma pickers open on level, with context sorts optional and Open goals as a Racing filter; the default Farm Uma follows the first row unless explicitly linked | 2026-10-16 | [game/07](../game/07-farm.md) §10, [game/05](../game/05-training-hub.md) §8, [game/11](../game/11-hub-and-places.md) §9.2, D368, [phone proof](../research/a03-level-rule/README.md) | `652cc58` (`docs/handoff/tasks/`) |

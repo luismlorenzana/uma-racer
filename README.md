@@ -37,7 +37,8 @@ pnpm dev            # web http://localhost:5173 (also on the LAN for the iPhone)
 ```
 
 The local API keeps its save in `apps/api/.data/save-g2.json` and reads the private content from the gitignored
-`content/` folder. A new account opens the Stable's Locked tab with 20 Uma Tickets: unlock Umas there, then send them
+`content/` overlay folder and sibling `uma-platform/content/release` master release (`MASTER_DIR` overrides it).
+Racer no longer imports GameTora or images. A new account opens the Stable's Locked tab with 20 Uma Tickets: unlock Umas there, then send them
 to the Farm's sites, the Pantry and the Kitchen, spend dishes on Training Hub sessions, and race from the raised
 **Race** button. Every place is also in the ☰ menu. In dev builds, `/dev/seeds/` opens the game on synthetic accounts
 (`?seed=busy | fresh | quiet | gate | promote | tired | spent | stopped`, `&at=HH:MM`) without touching the device
@@ -57,9 +58,9 @@ pnpm sim:turns      # engine v9's balance targets on generated G1 fields
 pnpm sim:builds     # the stamina ladder and G1 grid on full-layer builds at every scenario
 pnpm sim:careers    # every career of the private pack on full-layer builds
 pnpm sim:loop       # the whole economy from a fresh account, and the pacing checks
-pnpm data:import    # GameTora datasets → private, gitignored content packs
-pnpm assets:import  # image sources in those packs → private WebP atlases
-pnpm content:publish -- --dry-run   # check the private content before publishing it
+pnpm overlays:import   # validate and build only Racer-authored private overlays
+pnpm overlays:publish -- --dry-run  # verify the overlay before publishing it
+pnpm master:parity     # private migration proof; never commits source rows
 ```
 
 The checks CI enforces, and the ones run by hand (reach, "nothing old remains", links), are
@@ -72,7 +73,7 @@ apps/web        React 19 + Vite 7 + Tailwind 4 + Motion — mobile-first PWA on 
 apps/api        NestJS 11 on Cloud Run — auth guard, the generation-2 save and sync, private content
 packages/domain game rules as pure, tested functions, with subpath exports per area
 packages/race   deterministic race engine
-scripts/        balance sims; private data and WebP atlas pipelines; the startup size check
+scripts/        balance sims; Racer-only private overlays; the startup size check
 infra/          GCP bootstrap + GitHub Actions docs
 docs/           the manual, design, plans, tasks, technical, research, handoff packets
 .github/        the verify-and-deploy workflow

@@ -12,7 +12,7 @@ import {
   type UmaBadgeStateV1,
   type TrainerBadgeStateV1,
 } from '@racer/domain'
-import type { LoadedContent } from '../../content/runtime'
+import type { LoadedContent } from '../../content/view'
 import { badgeFrameStyle, type BadgeFrameStyle } from './badge-frame'
 
 export interface FlairEventView {

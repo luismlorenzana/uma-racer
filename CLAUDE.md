@@ -11,7 +11,7 @@ Hub and primitives are uma-kit's, the app both Uma games share.
   Claude's production notes.
 - `docs/tasks/README.md` is the current plan: what shipped, what's open (T144's step 10, the sibling packets in
   `docs/handoff/` with phase 5 as SE1, and phase 9; phases 4, 7, 8 and the pixel-art question are archived, D370) and
-  the next free numbers (M035, T148, D375; **D362 is reserved for T144's release record**). A task spec is deleted once its work merges (D104), so that folder only holds work still ahead.
+  the next free numbers (M036, T152, D376; **D362 is reserved for T144's release record**). A task spec is deleted once its work merges (D104), so that folder only holds work still ahead.
 - **The docs are the source of truth:** [the manual](docs/game/README.md) (`docs/game/`) describes the game as it runs.
   Every screen, route and sheet is [11's menu tree](docs/game/11-hub-and-places.md#the-menu-tree-at-a-glance); the code
   by folder, the checks and the deploy are [the architecture](docs/game/architecture.md). Read the relevant page before
@@ -52,7 +52,7 @@ Hub and primitives are uma-kit's, the app both Uma games share.
 | `apps/api` | NestJS 11: uma-server's `AuthGuard` on every route (`@luismlorenzana/uma-server/auth`: Firebase token + `ALLOWED_EMAIL`, 401 or 403), `/api/save`, `/api/sync` (generation 2, protocol 2), `/api/legacy/purge` (until T144's step 10), `/api/content/*`, `/api/health` |
 | `apps/web` | React 19 + Vite 7 + Tailwind 4 + Motion (`m.*` under `LazyMotion strict`) + PWA on uma-kit 0.7.1 (theme, shell, Hub map on Phaser 4, primitives, places and auth frames, and since SB6 the shared album/picker): `src/app` (routes, session, the `G2Game` port, kit setup and art providers), `hub` (racer shell/map adapters), `places`, `save` (Dexie `uma-racer-g2`, one sync lane), `ui` (racer-only pieces), `content`; PixiJS 8 only for `scenes/race`; dev-only seeds at `/dev/seeds/*` (`src/dev`) |
 | `scripts/sim` | Headless balance runs (`pnpm sim:balance`, `sim:turns`, `sim:builds`, `sim:careers`, `sim:loop`) |
-| `scripts/data`, `scripts/assets` | Content pipeline (GameTora → private data packs and WebP icon atlases) |
+| `scripts/overlays` | Racer-only private overlays; master data/art comes from uma-platform (SE1) |
 | `docs/handoff` | Packets for ChatGPT sessions and the master prompt |
 
 ## Commands
@@ -66,8 +66,9 @@ pnpm test:ci        # the same, one package at a time, as CI runs them
 pnpm build          # production builds (web includes the PWA service worker and the 180 KB startup check)
 pnpm docs:update    # regenerate the live blocks in docs/game/ (the manual generated from code)
 pnpm sim:balance    # race balance table; sim:builds, sim:careers and sim:loop check the rework's builds and pacing
-pnpm data:import    # GameTora datasets → private, gitignored content packs
-pnpm assets:import  # image sources → private WebP atlases; run after data:import
+pnpm overlays:import   # validate and build private Racer-authored overlays
+pnpm overlays:publish -- --dry-run # verify before publishing overlays
+pnpm master:parity     # private migration proof, aggregates only in git
                     # chibis/stands/race faces: add `-- --source dir:~/Documents/uma-content` (owner's copy)
 ```
 
@@ -83,8 +84,8 @@ pnpm assets:import  # image sources → private WebP atlases; run after data:imp
   for the worktree's own API, started by `PORT=<api-port> pnpm --filter @racer/api start:dev` after
   `pnpm --filter @racer/domain build`). Check `lsof -iTCP:<port> -sTCP:LISTEN` and the PID's cwd before trusting a
   preview, and never kill another agent's server.
-- **Private content in a worktree:** symlink the primary checkout's `content/` (and `scripts/data/.cache` before
-  `pnpm data:import`). Never commit the links, and stage explicit paths instead of `git add -A`.
+- **Private content in a worktree:** link the primary checkout's `content/overrides` before `pnpm overlays:import`.
+  Master defaults to sibling `uma-platform/content/release` (`MASTER_DIR` overrides it). Never commit links.
 - **Verify UI changes at 390×844** in the browser preview, on the synthetic seeds:
   `/dev/seeds/<route>?seed=busy | fresh | quiet | gate | promote | tired | spent | stopped`, `&at=HH:MM` for the clock,
   `&canvas` so a screenshot captures the Hub (WebGL doesn't), `?save=device` for the device save. Dev builds expose
@@ -125,24 +126,24 @@ pnpm assets:import  # image sources → private WebP atlases; run after data:imp
 - **`content/overrides/flair.json` is Claude's to author and keep current** (D107): it maps race-series legs and the ten
   main venues, and without it every race-set title and Grand Tour is unearnable. It is private and gitignored; re-run the
   import after editing it.
-- Publish content-addressed files before the manifest by using the verified command. Run both importers first; the publisher
-  scopes every gcloud child process to the owner's default uma-racer configuration without changing the active account:
+- Build only authored overlays, then publish their immutable file before the index. Master imports belong to
+  uma-platform. Scoped cloud commands never change the active account/configuration:
 
   ```bash
-  pnpm data:import
-  pnpm assets:import
-  pnpm content:publish -- --dry-run
-  pnpm content:publish
+  pnpm overlays:import
+  pnpm overlays:publish -- --dry-run
+  pnpm overlays:publish
   ```
 
-  Old hashed objects are retained. Never delete the currently published manifest's files or use cache/save deletion as recovery.
+  Never delete active source files or use cache/save deletion as recovery. SE1's exact retired-master cleanup happens
+  only after the deployed new source verifies; see the release runbook.
 - **Reading production data is read-only and keeps no copy:** the scoped `gcloud auth print-access-token` against
   Firestore's REST API. Generation 2's save is `saves/{uid}/{kind}/{id}`; `players/` is empty since the purge
   (`saves/{uid}/meta/purge`: 30 collections, 3,676 documents). Sync health is `gcloud logging read` on `racer-api`.
 - **T144's step 10 is Claude's,** once the owner confirms in chat that the new account is theirs: remove
   `POST /api/legacy/purge` and the boot's purge call with their tests, deploy and verify (the route then answers 404),
-  delete M034's and T144's specs, mark phase 3 completed in the task plan, and write D362. The first-boot wipe and the
-  redirects stay until phase 4 or 5 (D365).
+  delete M034's and T144's specs, mark phase 3 completed in the task plan, and write D362. SE1 already retires the
+  separate first-boot device wipe and redirects (D365).
 - Never type credentials into sign-in pages. Sign-in checks stop at Google's account chooser.
 
 ## Art from ChatGPT

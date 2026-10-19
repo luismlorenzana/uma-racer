@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { ArtKind, LoadedContent } from '../content/runtime'
+import type { ArtKind, LoadedContent } from '../content/view'
 
 /**
  * Resolves an entry's large private art, or `null` until it arrives. Callers keep showing the icon

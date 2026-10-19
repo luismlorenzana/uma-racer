@@ -21,7 +21,6 @@ export { operationEnv } from './env'
 export { fold } from './fold'
 export { RECEIPTS_KEPT, resetSave, useSave, type SaveStore } from './store'
 export { DEBOUNCE_MS, PULL_KEY, PULL_OVERLAP_MS, RETRY_DELAYS_MS, RETRY_EVERY_MS } from './sync'
-export { WIPED_KEY, wipeOnce } from './wipe'
 
 /** The chip turns amber once a change has waited this long (02 §9, D157). */
 export const WAITING_MS = 24 * 60 * 60 * 1000

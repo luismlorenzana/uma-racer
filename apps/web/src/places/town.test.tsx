@@ -12,7 +12,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { G2Game } from '../app/game'
 import { createSaveApi } from '../save/api'
 import { createSaveGame } from '../save/index'
-import { FakeServer, fakeSignals, freshDb, memoryStorage, nextId, noWipe, ENV as SAVE_ENV } from '../save/__fixtures__/server'
+import { FakeServer, fakeSignals, freshDb, memoryStorage, nextId, ENV as SAVE_ENV } from '../save/__fixtures__/server'
 import { renderG2, seedGame, stubStorage } from '../__fixtures__/testing'
 import { kitKey } from '@luismlorenzana/uma-kit/ui'
 const ALBUM_KEY_PREFIX = kitKey('album:')
@@ -333,7 +333,7 @@ describe('offline and after a reload (02 §9)', () => {
     const db = freshDb()
     const storage = memoryStorage()
     const boot = () => createSaveGame({
-      env: SAVE_ENV, wipe: false, purge: false, wipeDeps: noWipe, newId: nextId, db, storage, signals: fakeSignals().signals,
+      env: SAVE_ENV, purge: false, newId: nextId, db, storage, signals: fakeSignals().signals,
       api: createSaveApi({ fetch: server.fetch as unknown as typeof fetch, base: '', token: async () => 't' }),
     })
     const first = boot()

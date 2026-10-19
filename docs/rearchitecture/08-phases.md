@@ -17,7 +17,7 @@ session first, and the racer then pins the released version.
 | **2** | **The rework's rules in the domain**, pure and tested, and `pnpm sim:loop` passing [game/12](../game/12-economy-and-pacing.md) §12. No UI and no save change | **Done, 2026-10-14 (D340–D351)** | — (new) |
 | **3** | **Clean slate and the new game:** generation-2 save in the rework's shape, the wipe and purge, every deletion (RPG, Spark, Puzzles, Friendship, CL, stars, tokens, today's Farm), the new game on plain DOM screens. **The owner starts playing here** | **Shipped 2026-10-15** (T134–T144, D352–D361; [M034](../tasks/M034-generation-2-cutover.md)): `ec5b1bd`, racer-api-00188, content `9ba4cdd37cca`, the owner's old save purged. Left: T144's step 10, the purge endpoint's removal | Phase 2 |
 | 4 | **Optional:** push notifications, a port of uma-rpg's, only if the owner asks | **Archived 2026-10-16** (D370); parked as sibling SE5 | — (new) |
-| 5 | Platform master data and the first shared packages | **Sibling packet SE1** (uma-platform P51) | Phase 3 |
+| 5 | Platform master data and the first shared packages | **SE1 implementation complete** (M035, T148–T151); deployment/cleanup gates in the [acceptance note](../research/se1-master-data/README.md) | Phase 3 |
 | **6** | The Hub: four pages, the place registry, art ([game/11](../game/11-hub-and-places.md)) | **Shipped 2026-10-15, ahead of phase 5** (T145, D363): uma-rpg's Phaser town, `b2cb668`, racer-api-00189; with its own uma-art 2.7.0 (A01–A02, D364), `1db8065`, racer-api-00190 | Phase 4 |
 | 7 | The Farm and Training Hub as pixel-art scenes on `uma-idle` | **Archived 2026-10-16** (D370) | Phase 5 |
 | 8 | The race on Phaser; PixiJS leaves the repo | **Archived 2026-10-16** (D370); PixiJS stays for the race | Phase 6 |
@@ -75,6 +75,12 @@ merge.
 - A second-device simulation: an old-protocol request gets 426.
 
 ## Phase 3: platform master data (now phase 5)
+
+**As built (SE1, D374):** `uma-data` 1.1.0 and one pure `@racer/domain/master` adapter on both web/API;
+`uma-server/content` 0.2.0 proxies and sources; Racer-only flair/card-focus overlay tools. No GameTora/wiki pipeline,
+no starter-card compatibility pack (generation 2 opens all SSRs), no device wipe or old-route redirects. Kit auth/UI
+already shipped in SD4/SB6. SE4's shared React content provider remains separate. Production deployment and exact
+retired-object cleanup are recorded in the acceptance note before the packet is marked Done.
 
 | Step | Repo | Change |
 |---|---|---|

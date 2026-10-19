@@ -13,6 +13,7 @@
     "icons": "node scripts/generate-icons.mjs"
   },
   "dependencies": {
+    "@luismlorenzana/uma-data": "1.1.0",
     "@luismlorenzana/uma-art": "2.7.0",
     "@luismlorenzana/uma-kit": "0.7.1",
     "@racer/domain": "workspace:*",

@@ -376,7 +376,7 @@ at a glance.
 
 | Pip | Looks like |
 |---|---|
-| **Busy** | The worker's face (release `character-faces`, falling back to her outfit icon) in a ring filled by the current output's or unlock's progress |
+| **Busy** | The worker's face (release `outfit-faces`, falling back to her outfit icon) in a ring filled by the current output's or unlock's progress |
 | **Ready** | The ring full and gold, with one small bounce as it turns ready (uma-kit's; none with reduced motion); the building gets a **Ready** badge with the count |
 | **Queued behind** | A "+2" chip on the busy pip's shoulder |
 | **Free** | A small dark dot, as uma-rpg draws an open slot |
@@ -463,46 +463,16 @@ unless a sub-page slot claims it first (the Stable's `needs`, `places/registry.t
 | `/farm/:building` | One of the ten Farm buildings, by uma-art id; `?job=…` opens the job sheet (§13) |
 | `/collection/reveal/uma/:umaId` | The reveal, full screen outside the shell; `?then=<id>,…&of=n` queues the next Umas |
 
-### 7.2 The old app's routes
+### 7.2 Retired routes (SE1, D365)
 
-Every route of the old app's router (at the `pre-split` tag), and where it goes now. The live router makes each "After"
-path a redirect (`app/redirects.ts`, T143), and a router test walks this table (§14):
+The one-release redirects shipped with generation 2 and retire with SE1, phase 5. The live router no longer holds
+the old app's route map. Old paths such as `/stable`, `/cards`, `/race`, `/constellation/*` and `/farm/district/*` now
+go to `/`, which applies the current start rule. `/farm` and the current Uma reveal already have valid modern paths
+and stay. Saved data holds no route paths, so no save migration is needed. Unknown paths also go to `/`.
 
-| Before | After |
-|---|---|
-| `/` (Home) | `/` (§2.4) |
-| `/stable` | `/town/stable` |
-| `/stable/:umaId`, `/stable/:umaId/skills` | `/town/stable/outfit/:umaId`, `…/skills` |
-| `/stable/:umaId/deck` (already a redirect) | `/training/dojo/:umaId` |
-| `/scenario/:umaId/start` (already a redirect) | `/racing/scenario-gate/:umaId` |
-| `/training/:umaId` (already a redirect, D120) | **Deleted, no redirect:** it has the same shape as `/training/:facility` and would shadow it |
-| `/race`, `/race/run` | `/racing/racecourse`, `/racing/racecourse/run` |
-| `/cards`, `/cards/:cardId` | `/town/card-library`, `/town/card-library/card/:cardId` |
-| `/cards/redeem` (already a redirect) | Deleted: coupons are gone (D329) |
-| `/badges`, `/trainer` | `/racing/trophy-hall`, `/racing/trophy-hall/trainer` |
-| `/settings` | `/town/account` |
-| `/constellation/:umaId` | `/training/observatory/:umaId` |
-| `/constellation/:umaId/cards` | `/training/dojo/:umaId` |
-| `/constellation/:umaId/inspiration` | `/training/lineage-hall/:umaId` |
-| `/constellation/:umaId/extra-stats` | `/training/gym/:umaId` |
-| `/farm` | `/farm` (now the Farm page) |
-| `/farm/district/:districtId` | `/farm` |
-| `/farm/crew` | `/town/stable` (Farm Level is on each profile) |
-| `/farm/recipes` | `/farm/kitchen` |
-| `/farm/wishlist` | `/town/stable/needs` |
-| `/farm/items` | `/town/warehouse` |
-| `/farm/section/:section`, `/farm/workers`, `/farm/crops` (old redirects), the Farm's `*` retry route | Deleted |
-| `/minigames/spark-match/:umaId`, `/minigames/friendship-training/:cardId`, `/minigames/bond-recall/:cardId?` | Deleted: no minigames remain ([13](../rework/13-removals-and-plan-changes.md) §1) |
-| `/rpg/*` (nine routes) | Deleted (D322) |
-| `/puzzles`, `/puzzles/*`, `/puzzles/content`, `/puzzles/practice` | Deleted (D326) |
-| `/collection/reveal/:kind/:id` | `/collection/reveal/uma/:umaId`; the `card` kind is deleted |
-| `/dev/*` (thirteen proof routes) | Deleted with their systems. New dev proofs live under `/dev/`, in dev builds only: the seeds' mount at `/dev/seeds/*` holds them (`/dev/seeds/dev/check-in`, T143) |
-
-**The redirect rule** (the re-architecture's, made concrete): each "After" path above is a redirect that **ships with
-phase 3** and **is deleted with the next phase that ships** (phase 4 is optional), by when the installed app, bookmarks
-and notification links all use the new paths. T145's Hub, phase 6 brought forward and shipped the same day as phase 3,
-didn't count: the redirects (and the first-boot wipe, which leaves with them) go with phase 4 if the owner asks for it,
-else phase 5 (D365). Saved data holds no paths, so nothing else changes. An unknown path goes to `/`.
+The first-boot device wipe retires at the same boundary; neither normal boot nor the obsolete `&wipe` dev query
+deletes databases, preferences or caches. The separate server-purge endpoint/call stays until T144 step 10 gets its
+own owner confirmation. Historical redirect mappings remain in git history, not a second live navigation model.
 
 ### 7.3 Dev builds: the seeds' mount
 
@@ -622,8 +592,8 @@ spots) and its seven region crests (United States, South Korea, Dubai, Hong Kong
 16 and 32 px) for [10](../rework/10-expeditions.md)'s Map. Their packet is written when phase 9 is specified.
 
 Uma art stays private: chibis only in the plaza, faces for small Umas and busts for large Umas and every race surface;
-outfit icons are the fallback. Faces still map to today's per-character pack until SE1 adopts the published
-`outfit-faces` family. The tier-3 wet
+outfit icons are the fallback. Faces map to published `outfit-faces` by outfit id, the same art as RPG (SE1).
+The tier-3 wet
 course ([10](../rework/10-expeditions.md)) is a palette parameter of the code-drawn race course, not new art.
 
 The racer checks every registry frame against the pinned index in a test, as uma-rpg's `frames.test.ts` does: a frame
@@ -723,7 +693,7 @@ interiors are.
 | A Peek is uma-rpg's side panel: modal, 88% wide from the right, Enter for the Page (T145; supersedes T137's non-modal half sheet and its second tap) | The owner asked for uma-rpg's navigation lifted and shifted (D363) |
 | Global sheets are `?sheet=` routes; Collect all's intent rides in navigation state (T137) | Back closes them, and a reload never collects again |
 | T137 places the featured Uma (cell, still art, sheet route); her card, sheet and picker are T138's | Animation was phase 6's (§11); T145 shipped phase 6 without it, so it waits for phase 5's `outfit-chibis` (§5). The profile, picker and `feature-uma` are the Stable's |
-| Faces are today's `face` art, then the outfit icon, then her initial (T137) | `character-faces` is phase 5's release; today's content stays until then (M034) |
+| Faces are platform `outfit-faces`, then the outfit icon, then her initial (SE1) | Same outfit identity/crop as RPG; no CSS zoom workaround |
 | Full screen is a slot's `fullScreen(rest)`; places take sub-page slots (T137) | §6's flows live inside place routes; the Needs views (T142) live under the Stable (T138) |
 | The hub view's counts are every place's default Counter; `useCounter` overrides one; 0 is hidden (T137) | One rule per counter, and only T141's two need data outside the work engine |
 | The seeds are a dev-only mount at `/dev/seeds/*` over `@racer/domain/sim`'s synthetic seeds: `main.tsx` loads `dev/main.tsx` behind `import.meta.env.DEV` and serves the live routes under that basename (T137's `g2.html` at `/dev/g2/*` until T143) | Every place link is absolute, so the seeds need a basename; production answers `/dev/seeds` as an unknown path, and `check-size.mjs` refuses a build holding any `src/dev/` module |
@@ -786,8 +756,7 @@ interiors are.
 ## 14. Done when
 
 - The app opens per §2.4. Every screen is reachable from a place, and every place from the ☰ menu.
-- Each "Before" path in §7.2 redirects to its "After" path in phase 3 (a router test walks the table), deleted paths
-  land on `/`, and the redirects are gone with the next phase that ships (phase 4 or 5, §7.2).
+- Retired routes land on `/`; the one-release redirects and first-boot wipe are gone with SE1 (§7.2).
 - The place registry is one table in `@racer/domain/hub`, and the live manual renders the same table.
 - At 390×844 every place button is at least 44 pt, swipes and tabs agree, and VoiceOver reads each place's name, lock,
   counter and pips.

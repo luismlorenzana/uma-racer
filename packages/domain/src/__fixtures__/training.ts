@@ -52,7 +52,7 @@ export function card(type: SupportCardType, era: number, suffix = '', extra: Par
   return {
     id, charaId: `chara-${id}`, charName: `Invented ${id}`, title: id, type, jpRelease: '2000-01-01', era, obtain: 'free', starter: true,
     hintSkillIds: [`hint1-${id}`, `hint2-${id}`], eventSkillIds: [`gold-${id}`], effectProfile: PROFILE(1), uniqueEffect: null,
-    imageSource: 'https://invalid.test/card.png', ...extra,
+    ...extra,
   }
 }
 

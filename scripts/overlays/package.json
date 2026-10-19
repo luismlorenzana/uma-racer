@@ -1,0 +1,10 @@
+{
+  "name": "@racer/overlays",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Racer-only private classifications and local master parity/release checks; no master importer.",
+  "scripts": { "lint": "tsc --noEmit", "test": "vitest run", "import": "tsx src/import.ts", "publish": "tsx src/publish-cli.ts", "parity": "tsx src/parity.ts" },
+  "dependencies": { "@luismlorenzana/uma-data": "1.1.0", "@racer/domain": "workspace:*" },
+  "devDependencies": { "@types/node": "^22.20.2", "tsx": "^4.20.6", "typescript": "~5.9.3", "vitest": "^3.2.7" }
+}
