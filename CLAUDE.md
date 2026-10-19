@@ -101,7 +101,7 @@ pnpm master:parity     # private migration proof, aggregates only in git
 | API | Cloud Run `racer-api` (us-central1), `https://racer-api-tmzkhylhfq-uc.a.run.app`; `/api/health` (not `/healthz`, which Cloud Run's front end reserves) |
 | GCP project | `uma-racer` (number 1026964321499), plus a private bucket `uma-racer-content` |
 | Deploy | `.github/workflows/deploy.yml`, keyless WIF. Repo variables: GCP_PROJECT_ID, WIF_PROVIDER, CONTENT_BUCKET, ALLOWED_EMAIL, DEPLOY_ENABLED |
-| Live on 2026-10-18 | `4885baf` (SB6, shared album/picker and race busts on uma-kit 0.7.1, D373), [deployment green](https://github.com/luismlorenzana/uma-racer/actions/runs/39145322463); API health/auth and Hosting smoke checks pass. Content unchanged (`9ba4cdd37cca`), uma-art 2.7.0. Local-only acceptance (P60); the owner checks phone edges |
+| Live on 2026-10-18 | `91b1b10` as racer-api-00199 (D375: meals for stats, tonics for nodes and slots, item-free bonds, *k* = 1.8; on top of SE1's master data, D374), [deployment green](https://github.com/luismlorenzana/uma-racer/actions/runs/39193904556); health 200, `/api/save` 401, Hosting `no-cache`, and a live chunk holds the tonics. uma-art 2.7.0; the tonics draw as plain tiles until A04 ships |
 
 - **Local gcloud has two accounts, and the active one is the owner's work account. Never change it.** Scope every uma-racer
   command with environment variables only:
@@ -167,7 +167,7 @@ crests (phase 9), and a calibration packet only if the owner chooses a pixel-art
 - **Light and dark:** draw in the theme's tokens; text on `bg-accent` is `text-accent-ink`, a surface that stays dark is
   `bg-stage` or `bg-scrim` (never `bg-ink`), and no `bg-white`, `text-black` or raw hex
   ([visual system](docs/design/visual-system.md#dark-mode)).
-- **Performance budgets** (`docs/research/game-web-tech.md`): main JS ≤ 180 KB gzip (149.76 KB on 2026-10-16), so
+- **Performance budgets** (`docs/research/game-web-tech.md`): main JS ≤ 180 KB gzip (153.26 KB on 2026-10-18), so
   keep Phaser, PixiJS and Firebase lazy. Phaser is uma-kit's, for the Hub's map only (its lazy scene chunk), PixiJS for
   the race scene only; no uma-racer module imports either outside `scenes/race`. Animate only transform/opacity. Use
   delta-time for every animation.
