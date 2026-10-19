@@ -18,7 +18,7 @@ import type { ScenarioAt } from '@racer/domain/state'
 import { deriveUmaPreset, type DerivedBuild } from '@racer/domain/training'
 import { collectBeforeRace, type WorkState } from '@racer/domain/work'
 import { createRng, simulateRace, type RaceInput, type RaceTimeline } from '@racer/race'
-import type { LoadedContent } from '../../content/runtime'
+import type { LoadedContent } from '../../content/view'
 import { accomplishmentFactsFromTimeline } from './race-facts'
 
 /** One runner as the scene, the feed and the result name her. */

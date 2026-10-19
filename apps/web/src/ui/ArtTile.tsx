@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import type { ContentAsset } from '../content/runtime'
+import type { ContentAsset } from '../content/view'
 import { AtlasSprite } from './AtlasSprite'
 import { Placeholder } from './Placeholder'
 

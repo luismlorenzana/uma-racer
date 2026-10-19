@@ -37,7 +37,6 @@ const uma = (id = 'u1'): UmaTemplate => ({
   awakeningSkillIds: [],
   realHorseSex: null,
   signatureRaceFamilyIds: [],
-  imageSource: 'https://invalid.test/synthetic.png',
 })
 
 const race: RaceTemplate = {

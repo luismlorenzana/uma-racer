@@ -42,7 +42,6 @@ const template: UmaTemplate = {
   baseStats: { speed: 100, stamina: 100, power: 100, guts: 100, wit: 100 },
   growthRates: { speed: 0, stamina: 0, power: 0, guts: 0, wit: 0 },
   aptitudes, uniqueSkillId: null, awakeningSkillIds: [], realHorseSex: 'male', signatureRaceFamilyIds: [],
-  imageSource: 'https://invalid.test/synthetic.png',
 }
 
 const base = umaFixture(template)

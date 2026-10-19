@@ -1,15 +1,17 @@
 // What the API answers after the generation-2 switch (T143 "Acceptance"; rearchitecture/06 §6): health, the save, sync,
 // the one-release purge and the private content, and no other route. Read from the mounted modules' route metadata.
 import 'reflect-metadata'
-import { RequestMethod, type Type } from '@nestjs/common'
+import { RequestMethod, type Type, type DynamicModule } from '@nestjs/common'
 import { METHOD_METADATA, MODULE_METADATA, PATH_METADATA } from '@nestjs/common/constants'
 import { describe, expect, it } from 'vitest'
 import { AppModule } from './app.module'
 
-function controllersOf(module: Type): Type[] {
-  const own = (Reflect.getMetadata(MODULE_METADATA.CONTROLLERS, module) ?? []) as Type[]
-  const imports = (Reflect.getMetadata(MODULE_METADATA.IMPORTS, module) ?? []) as unknown[]
-  return [...own, ...imports.filter((entry): entry is Type => typeof entry === 'function').flatMap(controllersOf)]
+function controllersOf(module: Type | DynamicModule): Type[] {
+  const target = typeof module === 'function' ? module : module.module
+  const own = (Reflect.getMetadata(MODULE_METADATA.CONTROLLERS, target) ?? []) as Type[]
+  const imports = [...(Reflect.getMetadata(MODULE_METADATA.IMPORTS, target) ?? []) as unknown[], ...(typeof module === 'function' ? [] : module.imports ?? [])]
+  return [...own, ...(typeof module === 'function' ? [] : module.controllers ?? []), ...imports
+    .filter((entry): entry is Type | DynamicModule => typeof entry === 'function' || typeof entry === 'object' && entry !== null && 'module' in entry).flatMap(controllersOf)]
 }
 
 function routesOf(controller: Type): string[] {
@@ -27,9 +29,9 @@ function routesOf(controller: Type): string[] {
 describe('the API', () => {
   it('answers only health, the save, sync, the purge and the content', () => {
     expect(controllersOf(AppModule).flatMap(routesOf).sort()).toEqual([
-      'GET /api/content/files/*path',
-      'GET /api/content/manifest',
+      'GET /api/content/*path',
       'GET /api/health',
+      'GET /api/master/*path',
       'GET /api/save',
       'POST /api/legacy/purge',
       'POST /api/sync',

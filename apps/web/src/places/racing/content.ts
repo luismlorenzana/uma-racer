@@ -6,7 +6,7 @@ import type { CourseTemplate, RaceTemplate } from '@racer/domain'
 import type { OperationEnv } from '@racer/domain/check-in'
 import { useMemo } from 'react'
 import type { ContentAtlas } from '@racer/domain'
-import type { LoadedContent } from '../../content/runtime'
+import type { LoadedContent } from '../../content/view'
 import { useG2Content } from '../../app/content'
 import { useGame } from '../../app/game'
 
@@ -40,7 +40,7 @@ export function devRaceContent(env: OperationEnv): LoadedContent {
   const registry = <T extends { id: string }>(items: readonly T[]) => ({ items, byId: new Map(items.map((item) => [item.id, item])) })
   return {
     origin: 'network',
-    manifest: { version: DEV_CONTENT_VERSION, generatedAt: '', source: {}, files: [] },
+    manifest: { version: DEV_CONTENT_VERSION },
     umas: registry(umas),
     cards: registry(cards),
     skills: registry(skills),

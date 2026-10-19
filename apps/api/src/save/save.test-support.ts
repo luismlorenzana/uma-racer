@@ -1,8 +1,6 @@
 // Test support for generation 2's API (T135): the domain's synthetic fixtures, a synthetic content folder and a strict
 // fake Firestore. Not built (tsconfig.build.json leaves `*.test-support.ts` out) and never imported by the module.
-import { createHash } from 'node:crypto'
-import { mkdir, writeFile } from 'node:fs/promises'
-import { join, resolve } from 'node:path'
+import { resolve } from 'node:path'
 import type { OperationEnv, OperationPacks } from '@racer/domain/save'
 
 // --- Synthetic fixtures ---------------------------------------------------------------------------------------------
@@ -21,22 +19,6 @@ export interface SaveFixtures {
 /** The domain's synthetic save fixtures, read from source: the built package leaves `__fixtures__` out. */
 export async function saveFixtures(): Promise<SaveFixtures> {
   return (await import(resolve(process.cwd(), '../../packages/domain/src/__fixtures__/save.ts'))) as SaveFixtures
-}
-
-/** A content folder as the importer writes it: the four packs, content-addressed, and a manifest at `version`. */
-export async function writeSyntheticContent(dir: string, packs: OperationPacks, version = 'a1b2c3d4e5f6',
-  omit: readonly (keyof OperationPacks)[] = []): Promise<void> {
-  await mkdir(join(dir, 'data'), { recursive: true })
-  const files: { path: string; bytes: number; sha256: string }[] = []
-  for (const [name, items] of Object.entries(packs)) {
-    if (omit.includes(name as keyof OperationPacks)) continue
-    const bytes = Buffer.from(JSON.stringify({ version: `synthetic-${version}`, items }))
-    const sha256 = createHash('sha256').update(bytes).digest('hex')
-    const path = `data/${name}.${sha256.slice(0, 8)}.json`
-    await writeFile(join(dir, path), bytes)
-    files.push({ path, bytes: bytes.length, sha256 })
-  }
-  await writeFile(join(dir, 'manifest.json'), JSON.stringify({ version, generatedAt: '2026-10-14T00:00:00.000Z', source: {}, files }))
 }
 
 // --- A fake Firestore -----------------------------------------------------------------------------------------------

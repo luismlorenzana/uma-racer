@@ -3,7 +3,7 @@
 import { useMemo, type ReactNode } from 'react'
 import { G2ContentContext } from '../app/content'
 import { useGame } from '../app/game'
-import type { ArtKind } from '../content/runtime'
+import type { ArtKind } from '../content/view'
 import { devRaceContent } from '../places/racing/content'
 
 function inventedArt(kind: ArtKind, id: string): string {

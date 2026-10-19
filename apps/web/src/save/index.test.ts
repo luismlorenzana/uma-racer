@@ -6,7 +6,7 @@ import { createSaveApi } from './api'
 import { chipOf, createSaveGame, WAITING_MS, type SaveGame } from './index'
 import { useSave, type SaveStore } from './store'
 import {
-  ENV, FakeServer, fakeSignals, freshDb, memoryStorage, nextId, noWipe, trainerBadge, turn, umaId, useClock,
+  ENV, FakeServer, fakeSignals, freshDb, memoryStorage, nextId, trainerBadge, turn, umaId, useClock,
 } from './__fixtures__/server'
 
 beforeEach(() => useClock())
@@ -14,7 +14,7 @@ afterEach(() => vi.useRealTimers())
 
 function saveGame(server: FakeServer, net = fakeSignals()): SaveGame {
   return createSaveGame({
-    env: ENV, wipe: false, purge: false, wipeDeps: noWipe, newId: nextId, db: freshDb(), storage: memoryStorage(), signals: net.signals,
+    env: ENV, purge: false, newId: nextId, db: freshDb(), storage: memoryStorage(), signals: net.signals,
     api: createSaveApi({ fetch: server.fetch as unknown as typeof fetch, base: '', token: async () => 't' }),
   })
 }
@@ -116,7 +116,7 @@ describe('the port', () => {
   it('pauses sync while signed out', async () => {
     const server = new FakeServer()
     const game = createSaveGame({
-      env: ENV, wipe: false, purge: false, wipeDeps: noWipe, newId: nextId, db: freshDb(), storage: memoryStorage(), signals: fakeSignals().signals,
+      env: ENV, purge: false, newId: nextId, db: freshDb(), storage: memoryStorage(), signals: fakeSignals().signals,
       api: createSaveApi({ fetch: server.fetch as unknown as typeof fetch, base: '' }), signedIn: false,
     })
     await settled(game)

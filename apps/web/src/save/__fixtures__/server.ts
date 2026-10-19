@@ -16,7 +16,6 @@ import { createSaveApi } from '../api'
 import { bootSave, type SaveBootOptions, type SaveSession } from '../boot'
 import { SaveDb } from '../db'
 import type { LaneSignals } from '../sync'
-import type { WipeDeps } from '../wipe'
 
 /** The rework sim's invented content; `dev` so `dev-grant` runs (M034's dev builds). */
 export const ENV: OperationEnv = Object.freeze({ content: SIM_CONTENT, dev: true })
@@ -245,16 +244,6 @@ export function fakeSignals() {
   }
 }
 
-/** Wipe deps that touch nothing: the boot tests that aren't about the wipe. */
-export const noWipe: WipeDeps = {
-  storage: null,
-  deleteDatabase: async () => {},
-  databaseNames: async () => [],
-  caches: null,
-  dev: false,
-  now: () => 0,
-}
-
 /** A trainer badge row's data, as `createTrainerBadgeState` makes it, with a name. */
 export function trainerBadge(name = 'Hana', at = 0): BadgeStateV1 {
   return {
@@ -310,7 +299,7 @@ export function device(server: FakeServer, options: DeviceOptions = {}): Device 
   const storage = options.storage ?? memoryStorage()
   const net = options.net ?? fakeSignals()
   const session = bootSave({
-    env: ENV, wipe: false, purge: false, wipeDeps: noWipe, newId: nextId,
+    env: ENV, purge: false, newId: nextId,
     api: createSaveApi({ fetch: server.fetch as unknown as typeof fetch, base: '', token: async () => 'token' }),
     ...options, db, storage, signals: net.signals,
   })

@@ -25,7 +25,7 @@ function umaTemplate(id: string): UmaTemplate {
     starter: true, baseStats: { speed: 100, stamina: 100, power: 100, guts: 100, wit: 100 },
     growthRates: { speed: 0, stamina: 0, power: 0, guts: 0, wit: 0 },
     aptitudes: { surface: { turf: 'A', dirt: 'G' }, distance: { sprint: 'A', mile: 'A', medium: 'A', long: 'A' }, strategy: { front: 'A', pace: 'A', late: 'A', end: 'A' } },
-    uniqueSkillId: null, awakeningSkillIds: [], realHorseSex: null, signatureRaceFamilyIds: [], imageSource: 'https://invalid.test/synthetic.png',
+    uniqueSkillId: null, awakeningSkillIds: [], realHorseSex: null, signatureRaceFamilyIds: [],
   }
 }
 
@@ -34,7 +34,7 @@ function cardTemplate(id: string, type: SupportCardTemplate['type']): SupportCar
     id, charaId: `chara-${id}`, charName: `Synthetic ${id}`, title: `Synthetic ${id}`, type, jpRelease: '2000-01-01',
     era: 1, obtain: 'gacha', starter: true, hintSkillIds: [], eventSkillIds: [],
     effectProfile: { trainingBonus: 0, friendshipBonus: 0, statBonus: 0, skillPointBonus: 0, specialtyPriority: 0, hintFrequency: 0, raceBonus: 0, initialStats: 0 },
-    uniqueEffect: null, imageSource: 'https://invalid.test/synthetic.png',
+    uniqueEffect: null,
   }
 }
 

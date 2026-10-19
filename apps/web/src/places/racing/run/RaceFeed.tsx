@@ -4,7 +4,7 @@
 import { ArrowDownIcon, ArrowUpIcon, BurstIcon, CrownIcon, GateIcon, type IconComponent, MoveToIcon, WarningIcon } from '@luismlorenzana/uma-kit/ui'
 import type { RacePackCue, RaceCue } from '../../../scenes/race/presentation'
 import { TypeIcon, type TypeIconKind } from '../../../ui/TypeIcon'
-import type { LoadedContent } from '../../../content/runtime'
+import type { LoadedContent } from '../../../content/view'
 import { UmaBust } from '../UmaBust'
 import type { RaceRunner } from '../prepare'
 import { effectLabel } from './labels'

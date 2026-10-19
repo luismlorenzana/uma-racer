@@ -69,7 +69,7 @@ runs the first deploy.
 - **Private bucket** with public access prevention enforced. Objects are only readable by the Cloud Run runtime service account.
 - **Every content and save endpoint is behind the `AuthGuard`** and its owner allowlist.
 - The Firebase Hosting bundle contains **no original-game assets**. It has only code, fonts, and original UI art.
-- Data and image pipeline scripts run locally with Application Default Credentials, like uma-planner's importers.
+- Only Racer-authored overlays publish locally; master-data/image pipelines belong to uma-platform (SE1).
 
 ## Environments
 
@@ -80,9 +80,9 @@ runs the first deploy.
 | Auth | `AUTH_MODE=disabled` (a fixed local user) | Firebase ID token + `ALLOWED_EMAIL` |
 | Saves | `PERSISTENCE=local` → `apps/api/.data/save-g2.json` (`LOCAL_SAVE_FILE`) | `PERSISTENCE=firestore` → `saves/{uid}` |
 | Dev operations | `DEV_OPERATIONS=true`, set by `pnpm dev` and `pnpm api` (the API's own `dev` and `start:dev` scripts), so `dev-grant` runs | Never set: no deploy, Dockerfile or Cloud Run setting sets it, so production refuses `dev-grant` |
-| Content | `CONTENT_SOURCE=local` → `content/` | `CONTENT_SOURCE=gcs` → private bucket `uma-racer-content` |
+| Content | `CONTENT_SOURCE=local`: sibling platform release (`MASTER_DIR`) + Racer overlay (`CONTENT_DIR`) | `CONTENT_SOURCE=gcs`: `uma-platform-master-data` read-only + `uma-racer-content` overlay |
 | Synthetic accounts | `/dev/seeds/*?seed=…` in dev builds ([architecture](../game/architecture.md#dev-seeds)) | None: production answers `/dev/seeds` as an unknown path |
-| iPhone testing | The dev server over the LAN, Safari Web Inspector over USB, iOS Simulator | Home Screen web app |
+| Phone checks | Local browser at phone width, no Simulator (P60) | Owner's Home Screen web app |
 
 `apps/api/.env` comes from `apps/api/.env.example` (auth off, local saves and content). A fresh git worktree has
 neither `.env` nor `content/`: copy the first, and link `content/` from the primary checkout (CLAUDE.md).
@@ -143,36 +143,48 @@ curl -sI https://uma-racer.web.app/ | grep -i '^cache-control: no-cache'
 - Only then is it deployed. The 2026-10-15 releases: `ec5b1bd` (generation 2) as racer-api-00188, `b2cb668` (the Hub)
   as racer-api-00189, `1db8065` (uma-art 2.7.0) as racer-api-00190.
 
-### 3. Build and publish private content when it changed
+### 3. Shared master data and Racer-only overlays (SE1)
 
-Generate the private, gitignored output first. Keep `content/overrides/flair.json` in place when rebuilding the data
-pack. From a worktree, link the primary checkout's `content/` and `scripts/data/.cache` in first, and never commit the
-links.
+The API reads uma-platform's schema-major-1 `latest` channel through published `uma-server/content` proxies.
+`CONTENT_SOURCE=gcs` selects production defaults: master bucket `uma-platform-master-data`, overlay bucket
+`uma-racer-content`. `MASTER_BUCKET` is optional; no workflow/env/Dockerfile change was needed. The sole new grant:
 
-```bash
-pnpm data:import
-pnpm assets:import
-pnpm content:publish -- --dry-run
-pnpm content:publish
+- `serviceAccount:racer-api-runtime@uma-racer.iam.gserviceaccount.com` has **roles/storage.objectViewer only** on
+  `gs://uma-platform-master-data`. Applied with config `default`, project `uma-platform-lm`; never switch the active
+  account or configuration. This matches RPG's read-only grant, not bucket write/admin access.
+- Storage reads at this single-player scale are expected within the free tier; no new bucket or service is created.
+
+Racer no longer imports/re-publishes master data or original images. Preserve private authored
+`content/overrides/flair.json` and `card-focus.json`; local master is sibling `uma-platform/content/release`
+(`MASTER_DIR` overrides it). `CONTENT_DIR` selects the overlay folder. From an isolated worktree, link only the
+authoring folder, never stage the link.
+
+```sh
+pnpm overlays:import
+pnpm overlays:publish -- --dry-run
+pnpm overlays:publish
 ```
 
-`content:publish` re-hashes every local manifest file and refuses missing, altered, or malformed output. It lists the private
-bucket once (D182; one lookup per file took over half an hour for ~2,000 files, a listing takes seconds), uploads only missing
-or size-mismatched content-addressed objects, and uploads `manifest.json` last. Old hashed objects
-are deliberately retained. Both modes print the local version, remote version before and after, uploaded/already-present
-counts, total bytes, and elapsed time. Publish after the code that reads a new pack shape has deployed; content the
-old code ignores may go first. The live manifest is `9ba4cdd37cca` (2026-10-15, T144: no retired kinds).
+Publication validates references and size/full hash, verifies the uploaded immutable file, then replaces
+`overlay.json` using a generation precondition. It invokes scoped credentials internally and prints no tokens.
+The new overlay is safe to publish before code because old clients ignore it. Missing required overlays fail visibly
+and operations return 503 before writes. Mutable metadata is no-cache; release files are immutable and private.
 
-The command always invokes gcloud with `CLOUDSDK_ACTIVE_CONFIG_NAME=default` and `CLOUDSDK_CORE_PROJECT=uma-racer` in its child
-environment. It never runs `gcloud config set` and never changes the owner's active work account. `--bucket`, `--project`, and
-`--content-dir` are available for recovery/testing; production defaults to `uma-racer-content`, `uma-racer`, and root
-`content/`.
+**Deployed verification before cleanup:** verify the exact-SHA workflow succeeds, its ready API revision/image,
+Hosting shell/chunks, health 200 and unauthenticated master/content/save routes 401. Verify `/api/master/` serves the
+published `latest` channel on the deployed API and check an outfit-face against its release SHA. Never disable auth
+for this check. Local browser acceptance is at phone width; the owner handles physical-iPhone edges (P60).
 
-After a real publish, open the hosted app while signed in. Confirm Account reports the published Content version from the
-network, then fetch `/api/content/manifest` through that same authenticated session. A null version means the bucket is empty;
-403 means the signed-in account is not allow-listed; a missing object, integrity failure, or network-only failure each receives
-a distinct diagnostic. A complete verified offline fallback remains a success state. None of these recovery paths clear,
-replace, or reseed the local save.
+**One-time retirement after those checks:** `pnpm --filter @racer/overlays exec tsx src/retire-cli.ts` inventories only
+the old five master packs, icon atlases, Uma/card/bust/chibi/dress/face generated images, and their old manifest.
+Private path/generation details stay in gitignored `content/review/`. Review counts/namespaces first, then run with
+`--delete` and explicit `VERIFIED_DEPLOY_SHA`, `VERIFIED_MASTER_VERSION`, `RETIRED_MASTER_VERSION`. The script checks
+the source pointers again and uses each exact object generation as a delete precondition. No root recursive delete.
+
+Overlays, authoring inputs, unrelated content and every save are excluded. Do not delete them or IndexedDB as release
+recovery. Bucket soft-delete/versioning policy must be checked before describing recovery; the replacement master
+release remains in the platform bucket. Retiring old master objects makes old pre-SE1 clients need an app update,
+not a save reset. Final counts/deploy evidence are in the [SE1 acceptance note](../research/se1-master-data/README.md).
 
 ### 4. Restart the installed app
 

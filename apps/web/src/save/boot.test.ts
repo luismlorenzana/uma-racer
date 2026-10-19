@@ -1,5 +1,5 @@
 // The save's boot (T136; docs/rearchitecture/01-target-architecture.md §4.3; 07 §2–§3): local first, an empty device
-// pulls or creates, the wipe runs before anything else, and the purge runs once in the background.
+// pulls or creates, and the purge runs once in the background. Device data is never wiped (SE1).
 import 'fake-indexeddb/auto'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { PURGED_KEY } from './boot'
@@ -8,7 +8,6 @@ import { useSave } from './store'
 import {
   device, FakeServer, flairEvent, freshDb, memoryStorage, nextId, settle, turn, umaId, useClock, type Device,
 } from './__fixtures__/server'
-import type { WipeDeps } from './wipe'
 
 beforeEach(() => useClock())
 afterEach(() => vi.useRealTimers())
@@ -154,19 +153,8 @@ describe('local-first boot', () => {
   })
 })
 
-describe('the wipe and the purge', () => {
-  function recordingWipe(log: string[]): WipeDeps {
-    return {
-      storage: memoryStorage(),
-      deleteDatabase: async (name) => void log.push(`delete ${name}`),
-      databaseNames: async () => ['farm-kitchen-proof-1', 'uma-racer-g2'],
-      caches: { delete: async (name) => (log.push(`cache ${name}`), true) },
-      dev: true,
-      now: () => 0,
-    }
-  }
-
-  it("wipes first, then calls the purge, then reads the save: the purge's request goes out first", async () => {
+describe('the retained server purge', () => {
+  it('calls the purge before reading the save, without deleting device data', async () => {
     const server = new FakeServer()
     const log: string[] = []
     const answer = server.fetch.getMockImplementation()!
@@ -174,10 +162,10 @@ describe('the wipe and the purge', () => {
       log.push(new URL(String(input), 'http://save.test').pathname)
       return answer(input, init)
     })
-    const phone = device(server, { wipe: true, purge: true, wipeDeps: recordingWipe(log) })
+    const phone = device(server, { purge: true })
     await settle(phone)
-    expect(log.slice(0, 6)).toEqual([
-      'delete uma-racer', 'delete farm-kitchen-proof-1', 'cache racer-content', '/api/legacy/purge', '/api/save', '/api/sync',
+    expect(log.slice(0, 3)).toEqual([
+      '/api/legacy/purge', '/api/save', '/api/sync',
     ])
     phone.session.stop()
   })

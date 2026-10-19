@@ -38,7 +38,6 @@ const template: UmaTemplate = {
   awakeningSkillIds: [],
   realHorseSex: null,
   signatureRaceFamilyIds: [],
-  imageSource: 'https://invalid.test/synthetic.png',
 }
 
 const facts: RaceAccomplishmentFactsV1 = {

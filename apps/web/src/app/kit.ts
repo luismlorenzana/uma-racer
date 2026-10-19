@@ -1,7 +1,6 @@
 // uma-kit's setup for uma-racer (T147; docs/game/architecture.md "uma-kit"): the shared shell, Hub and primitives keep
 // their device preferences (Appearance, reduced motion) under uma-racer's own `uma-racer:g2:` prefix, beside the game's
-// other device keys (race speed, last page, album prefs). The first-boot wipe deletes every `uma-racer:` key outside that
-// prefix (save/wipe.ts), so the kit's keys survive it, and the reduced-motion switch keeps the key it always had.
+// other device keys (race speed, last page, album prefs). SE1 retires the first-boot wipe without changing any key.
 // `setupKit` runs once at boot, before the first render: the prefix, then the stored Appearance on `<html data-theme>`.
 import { configureKit, initAppearance } from '@luismlorenzana/uma-kit/ui'
 

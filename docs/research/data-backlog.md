@@ -3,7 +3,7 @@
 Game data the design depends on. Everything extracted from the original game (character, card, and skill data,
 text, images) follows the same rule as assets: **local-only, never published**.
 
-**Most of this is already solved by uma-planner's importers** (GameTora datasets: 5★ stats, growth rates, aptitudes, release dates, `obtained`, hint skills, `gene_version` inherited uniques). See [`scripts/data/README.md`](../../scripts/data/README.md).
+**Most of this is already solved by uma-planner's importers** (GameTora datasets: 5★ stats, growth rates, aptitudes, release dates, `obtained`, hint skills, `gene_version` inherited uniques). SE1 now reads uma-platform releases; see [the adapter and overlay tools](../../scripts/overlays/README.md).
 
 Candidate sources: [GameTora](https://gametora.com/umamusume) (support, character, and skill databases),
 [Umamusume Wiki](https://umamusu.wiki), [uma.guide](https://uma.guide), [Game8](https://game8.co/games/Umamusume-Pretty-Derby).

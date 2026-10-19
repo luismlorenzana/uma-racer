@@ -14,7 +14,7 @@ import { act, cleanup, fireEvent, screen, waitFor } from '@testing-library/react
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createSaveApi } from '../../save/api'
 import { createSaveGame, type SaveGame } from '../../save/index'
-import { ENV, FakeServer, fakeSignals, freshDb, memoryStorage, nextId, noWipe, umaId } from '../../save/__fixtures__/server'
+import { ENV, FakeServer, fakeSignals, freshDb, memoryStorage, nextId, umaId } from '../../save/__fixtures__/server'
 import { renderG2, stubStorage } from '../../__fixtures__/testing'
 
 const UMA = umaId(1)
@@ -35,7 +35,7 @@ afterEach(() => {
 
 async function deviceOn(server: FakeServer): Promise<SaveGame> {
   const game = createSaveGame({
-    env: ENV, wipe: false, purge: false, wipeDeps: noWipe, newId: nextId, db: freshDb(), storage: memoryStorage(), signals: fakeSignals().signals,
+    env: ENV, purge: false, newId: nextId, db: freshDb(), storage: memoryStorage(), signals: fakeSignals().signals,
     api: createSaveApi({ fetch: server.fetch as unknown as typeof fetch, base: '', token: async () => 't' }),
   })
   games.push(game)

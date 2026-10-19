@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { ApiError } from '../api/client'
 import { diagnoseContentError, diagnoseLoadedContent, EMPTY_BUCKET_CONTENT, SIGNED_OUT_CONTENT } from './diagnostics'
 import { ContentFallbackError } from './errors'
-import type { LoadedContent } from './runtime'
+import type { LoadedContent } from './view'
 
 describe('content diagnostics', () => {
   it('distinguishes signed out, denied, empty, and a missing published object', () => {

@@ -1,5 +1,5 @@
 // The seeds' boot (T137, T136): seeds by default, the device save only when asked (`?save=device`, kept for the tab
-// until a `?seed=`), and the first-boot wipe and the purge only with `&wipe`, so opening `/dev/seeds/` never touches a
+// until a `?seed=`), with no wipe or purge, even under the obsolete `&wipe` query, so this never deletes a
 // developer's own data.
 import 'fake-indexeddb/auto'
 import Dexie from 'dexie'
@@ -58,15 +58,15 @@ describe("the seeds' mount", () => {
     expect('session' in (await bootGame('')).game).toBe(false)
   })
 
-  it('wipes and purges with `&wipe`', async () => {
+  it('ignores the retired `&wipe` switch, preserving device data', async () => {
     await oldDatabase()
     localStorage.setItem('uma-racer:last-sync', '1')
     const device = (await bootGame('?save=device&wipe')).save!
     await opened(device)
-    expect(await Dexie.exists('uma-racer')).toBe(false)
-    expect(localStorage.getItem('uma-racer:last-sync')).toBeNull()
-    expect(localStorage.getItem('uma-racer:g2:wiped')).not.toBeNull()
-    expect(fetch.mock.calls.map(([input]) => String(input)).some((url) => url.endsWith('/api/legacy/purge'))).toBe(true)
+    expect(await Dexie.exists('uma-racer')).toBe(true)
+    expect(localStorage.getItem('uma-racer:last-sync')).toBe('1')
+    expect(localStorage.getItem('uma-racer:g2:wiped')).toBeNull()
+    expect(fetch.mock.calls.map(([input]) => String(input)).some((url) => url.endsWith('/api/legacy/purge'))).toBe(false)
     device.stop()
   })
 })

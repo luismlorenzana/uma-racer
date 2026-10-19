@@ -2,14 +2,14 @@ import { emptySubject } from './__fixtures__/save'
 import { describe, expect, it } from 'vitest'
 import { createUmaBadgeState, createUmaSave, evaluateUmaFlair, buildUmaFlairCatalog, type ContentAtlas, type RaceTemplate, type UmaTemplate } from '@racer/domain'
 import { buildFlairFanfare, buildUmaFlairSummary } from './flair-view'
-import type { LoadedContent } from '../../content/runtime'
+import type { LoadedContent } from '../../content/view'
 
 const template: UmaTemplate = {
   id: 'flair-uma', charaId: 'flair-character', name: 'Flair Runner', outfit: null, jpRelease: '2000-01-01', globalRelease: null,
   starter: false, baseStats: { speed: 100, stamina: 100, power: 100, guts: 100, wit: 100 },
   growthRates: { speed: 0, stamina: 0, power: 0, guts: 0, wit: 0 },
   aptitudes: { surface: { turf: 'A', dirt: 'A' }, distance: { sprint: 'A', mile: 'A', medium: 'A', long: 'A' }, strategy: { front: 'A', pace: 'A', late: 'A', end: 'A' } },
-  uniqueSkillId: null, awakeningSkillIds: [], realHorseSex: null, signatureRaceFamilyIds: [], imageSource: 'https://invalid.test/flair.png',
+  uniqueSkillId: null, awakeningSkillIds: [], realHorseSex: null, signatureRaceFamilyIds: [],
 }
 
 const atlas = (kind: ContentAtlas['kind']): ContentAtlas => ({
@@ -17,7 +17,7 @@ const atlas = (kind: ContentAtlas['kind']): ContentAtlas => ({
   pages: [{ path: `${kind}.webp`, width: 128, height: 128 }], frames: {},
 })
 const loadedContent = (): LoadedContent => ({
-  manifest: { version: 'synthetic-v1', generatedAt: '2000-01-01T00:00:00Z', source: {}, files: [] },
+  manifest: { version: 'synthetic-v1' },
   origin: 'network',
   umas: { items: [template], byId: new Map([[template.id, template]]) },
   cards: { items: [], byId: new Map() },

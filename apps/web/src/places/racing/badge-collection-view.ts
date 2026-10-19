@@ -21,7 +21,7 @@ import {
   type UmaSave,
   type StableBadgeRarity,
 } from '@racer/domain'
-import type { LoadedContent } from '../../content/runtime'
+import type { LoadedContent } from '../../content/view'
 import { profilePath } from '../stable/model'
 import { badgeFrameStyle, type BadgeFrameStyle } from './badge-frame'
 import { resultPath, type LinkedRaceRecord } from './today'

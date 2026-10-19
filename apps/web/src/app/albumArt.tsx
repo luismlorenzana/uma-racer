@@ -1,15 +1,14 @@
 // SB6: uma-kit's album draws the art; only this adapter knows the racer's authenticated content runtime. Today's
-// face pack is per character (SB6's explicit SE1 fallback); busts and plaza chibis are per outfit. No public image URLs.
+// faces, busts and plaza chibis are per outfit from the platform release (SE1). No public image URLs.
 import { AlbumArtProvider, type AlbumArt, type UmaArtKind } from '@luismlorenzana/uma-kit/album'
 import { useEffect, useState, type ReactNode } from 'react'
-import type { ArtKind, ContentAsset, LoadedContent } from '../content/runtime'
+import type { ArtKind, ContentAsset, LoadedContent } from '../content/view'
 import { AtlasSprite } from '../ui/AtlasSprite'
 import { initialOf, useUmaName } from '../ui/uma'
 import { useG2Content } from './content'
 
 export function albumArtCandidates(content: LoadedContent, kind: UmaArtKind, outfitId: string): readonly { kind: ArtKind; id: string }[] {
-  const character = content.umas.byId.get(outfitId)?.charaId
-  if (kind === 'face') return character === undefined ? [] : [{ kind: 'face', id: character }]
+  if (kind === 'face') return content.umas.byId.has(outfitId) ? [{ kind: 'face', id: outfitId }] : []
   if (kind === 'bust') return [{ kind: 'bust', id: outfitId }]
   if (kind === 'chibi') return [{ kind: 'chibi', id: `${outfitId}-a` }, { kind: 'bust', id: outfitId }]
   return []

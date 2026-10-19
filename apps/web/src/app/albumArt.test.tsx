@@ -3,7 +3,7 @@
 import { FaceTile, UmaBust, UmaChibi } from '@luismlorenzana/uma-kit/album'
 import { act, cleanup, render, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { LoadedContent } from '../content/runtime'
+import type { LoadedContent } from '../content/view'
 import { seedGame } from '../__fixtures__/testing'
 import { devRaceContent } from '../places/racing/content'
 import { G2ContentContext } from './content'
@@ -23,9 +23,9 @@ function frame(data: LoadedContent, id: string, kind: 'face' | 'bust' | 'chibi' 
 }
 
 describe('the racer album art port', () => {
-  it('maps a face to its character, and a bust/chibi to its outfit without crossing art families', () => {
+  it('maps faces, busts and chibis to outfit identity without substituting character-level crops', () => {
     const data = content()
-    expect(albumArtCandidates(data, 'face', first)).toEqual([{ kind: 'face', id: data.umas.byId.get(first)!.charaId }])
+    expect(albumArtCandidates(data, 'face', first)).toEqual([{ kind: 'face', id: first }])
     expect(albumArtCandidates(data, 'face', 'absent')).toEqual([])
     expect(albumArtCandidates(data, 'bust', first)).toEqual([{ kind: 'bust', id: first }])
     expect(albumArtCandidates(data, 'chibi', first)).toEqual([{ kind: 'chibi', id: `${first}-a` }, { kind: 'bust', id: first }])
@@ -35,7 +35,7 @@ describe('the racer album art port', () => {
   it('holds art before loading, keeps a new outfit from flashing the old face, and releases each hold', async () => {
     const data = content()
     const release = vi.fn()
-    const character = data.umas.byId.get(first)!.charaId
+    const character = first
     let resolveSecond: (url: string | null) => void = () => {}
     const next = new Promise<string | null>((resolve) => { resolveSecond = resolve })
     const events: string[] = []

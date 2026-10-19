@@ -1,4 +1,4 @@
-// The app's boot (T143): the device save on the content, with the first-boot wipe and the purge call; its requests carry
+// The app's boot (SE1): preserve device data and retain the server-purge call; requests carry
 // the auth provider's token; Account's Sign in and Sign out are the provider's, absent with auth off; and a tap holds the
 // update prompt's restart until it has committed.
 import 'fake-indexeddb/auto'
@@ -37,7 +37,7 @@ async function opened(save: SaveGame): Promise<void> {
 }
 
 describe("the app's boot", () => {
-  it('wipes the old save once, purges, and sends the provider token with every request', async () => {
+  it('preserves device data, retains the server purge, and sends the provider token with every request', async () => {
     const old = new Dexie('uma-racer')
     old.version(1).stores({ profile: 'id' })
     await old.table('profile').put({ id: 'main' })
@@ -48,8 +48,8 @@ describe("the app's boot", () => {
     await opened(save!)
     expect(game.getSnapshot().status).toBe('ready')
     expect(game.getSnapshot().state?.profile.umaTickets).toBe(20)
-    expect(await Dexie.exists('uma-racer')).toBe(false)
-    expect(localStorage.getItem('uma-racer:last-sync')).toBeNull()
+    expect(await Dexie.exists('uma-racer')).toBe(true)
+    expect(localStorage.getItem('uma-racer:last-sync')).toBe('1')
     const purge = fetch.mock.calls.find(([input]) => String(input).endsWith('/api/legacy/purge'))
     expect(purge).toBeDefined()
     expect(new Headers(purge![1]?.headers).get('Authorization')).toBe('Bearer invented-token')
