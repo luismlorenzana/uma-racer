@@ -5,6 +5,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import type { ArtKind, ContentAsset, LoadedContent } from '../content/view'
 import { AtlasSprite } from '../ui/AtlasSprite'
 import { initialOf, useUmaName } from '../ui/uma'
+import { useArtCandidates } from '../ui/useContentArt'
 import { useG2Content } from './content'
 
 export function albumArtCandidates(content: LoadedContent, kind: UmaArtKind, outfitId: string): readonly { kind: ArtKind; id: string }[] {
@@ -53,35 +54,19 @@ function iconUrl(content: LoadedContent, outfitId: string): Promise<string | nul
 
 function useUrl(kind: UmaArtKind, outfitId: string): string | null {
   const content = useG2Content()
+  const shared = useArtCandidates(content, content === null ? [] : albumArtCandidates(content, kind, outfitId))
   const [loaded, setLoaded] = useState<{ content: LoadedContent; kind: UmaArtKind; id: string; url: string } | null>(null)
   useEffect(() => {
-    if (content === null) return
+    if (content === null || kind !== 'icon') return
     let live = true
-    const releases: (() => void)[] = []
     void (async () => {
-      if (kind === 'icon') {
-        const url = await iconUrl(content, outfitId)
-        if (live && url !== null) setLoaded({ content, kind, id: outfitId, url })
-        return
-      }
-      for (const candidate of albumArtCandidates(content, kind, outfitId)) {
-        if (!live) return
-        if (!content.art.has(candidate.kind, candidate.id)) continue
-        const release = content.art.hold?.(candidate.kind, candidate.id)
-        if (release !== undefined) releases.push(release)
-        try {
-          const url = await content.art.load(candidate.kind, candidate.id)
-          if (url !== null) {
-            if (live) setLoaded({ content, kind, id: outfitId, url })
-            return
-          }
-        } catch { /* A missing or unverifiable image keeps the outfit icon, not broken art. */ }
-      }
+      const url = await iconUrl(content, outfitId)
+      if (live && url !== null) setLoaded({ content, kind, id: outfitId, url })
     })()
-    return () => { live = false; for (const release of releases) release() }
+    return () => { live = false }
   }, [content, kind, outfitId])
   // Never flash a previous outfit's image while a new request is starting, including after a content refresh.
-  return loaded?.content === content && loaded.kind === kind && loaded.id === outfitId ? loaded.url : null
+  return kind !== 'icon' ? shared : loaded?.content === content && loaded.kind === kind && loaded.id === outfitId ? loaded.url : null
 }
 
 function Fallback({ outfitId, size }: { outfitId: string; size: number }) {

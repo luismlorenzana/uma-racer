@@ -5,7 +5,7 @@ import { cleanup, render, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { EMPTY_BUCKET_CONTENT, diagnoseContentError } from '../content/diagnostics'
 import type { ContentState } from '../content/ContentProvider'
-import { ApiError } from '../api/client'
+import { ContentError as ApiError, ContentFallbackError } from '@luismlorenzana/uma-kit/content'
 
 const auth = vi.hoisted(() => ({
   state: { ready: true, authRequired: true, user: { uid: 'owner', name: 'Owner', email: null } as { uid: string; name: string | null; email: string | null } | null, signIn: vi.fn(async () => {}), signOut: vi.fn(async () => {}) },

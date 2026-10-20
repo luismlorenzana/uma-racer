@@ -1,8 +1,7 @@
 import { hasBannedWord } from '@racer/domain/check-in'
 import { describe, expect, it } from 'vitest'
-import { ApiError } from '../api/client'
+import { ContentError as ApiError, ContentFallbackError } from '@luismlorenzana/uma-kit/content'
 import { diagnoseContentError, diagnoseLoadedContent, EMPTY_BUCKET_CONTENT, SIGNED_OUT_CONTENT } from './diagnostics'
-import { ContentFallbackError } from './errors'
 import type { LoadedContent } from './view'
 
 describe('content diagnostics', () => {
@@ -16,6 +15,7 @@ describe('content diagnostics', () => {
   it('distinguishes corrupt bytes from a network failure, including a failed cached fallback', () => {
     expect(diagnoseContentError(new Error('Content hash mismatch: data/synthetic.json')).code).toBe('corrupt-bytes')
     expect(diagnoseContentError(new TypeError('Failed to fetch')).code).toBe('network-failure')
+    expect(diagnoseContentError(new ApiError('overlay.json', 503))).toMatchObject({ code: 'network-failure', title: 'Can’t reach the game' })
     expect(diagnoseContentError(new ContentFallbackError(new TypeError('offline'), new Error('Content byte length mismatch'))).code)
       .toBe('corrupt-bytes')
   })

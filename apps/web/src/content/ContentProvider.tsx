@@ -1,19 +1,19 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { createContext, useCallback, useContext, useEffect, useMemo, type ReactNode } from 'react'
 import { useAuth } from '@luismlorenzana/uma-kit/auth'
+import { ContentProvider as SharedContentProvider, createContentClient } from '@luismlorenzana/uma-kit/content'
 import {
   diagnoseContentError,
   diagnoseLoadedContent,
-  EMPTY_BUCKET_CONTENT,
   SIGNED_OUT_CONTENT,
   type ContentDiagnostic,
 } from './diagnostics'
 import type { LoadedContent } from './view'
 
-let runtimePromise: Promise<typeof import('./master')> | undefined
+let runtimePromise: Promise<typeof import('../app/contentRuntime')> | undefined
 
 function loadRuntime() {
-  runtimePromise ??= import('./master')
+  runtimePromise ??= import('../app/contentRuntime')
   return runtimePromise
 }
 
@@ -25,6 +25,7 @@ export type ContentState =
   | { status: 'ready'; content: LoadedContent; diagnostic: ContentDiagnostic; retry: () => Promise<void> }
 
 const ContentContext = createContext<ContentState | null>(null)
+const bootClient = createContentClient({ token: async () => null, cache: null })
 
 // Content is network reference data, so TanStack Query owns loading while the game save remains in Zustand.
 export function ContentProvider({ children }: { children: ReactNode }) {
@@ -47,17 +48,18 @@ export function ContentProvider({ children }: { children: ReactNode }) {
 
   const retry = useCallback(async () => {
     await query.refetch()
-  }, [query])
+  }, [query.refetch])
+
+  const loaded = useMemo(() => query.data ? { ...query.data.value, origin: query.data.origin } : null, [query.data])
 
   const value = useMemo<ContentState>(() => {
     if (auth.ready && !signedIn) return { status: 'signed-out', diagnostic: SIGNED_OUT_CONTENT }
     if (query.isError) return { status: 'error', error: query.error, diagnostic: diagnoseContentError(query.error), retry }
-    if (!query.data) return { status: 'loading' }
-    if (query.data.status === 'empty') return { status: 'empty', diagnostic: EMPTY_BUCKET_CONTENT, retry }
-    return { status: 'ready', content: query.data.content, diagnostic: diagnoseLoadedContent(query.data.content), retry }
-  }, [auth.ready, query.data, query.error, query.isError, retry, signedIn])
+    if (!loaded) return { status: 'loading' }
+    return { status: 'ready', content: loaded, diagnostic: diagnoseLoadedContent(loaded), retry }
+  }, [auth.ready, loaded, query.error, query.isError, retry, signedIn])
 
-  return <ContentContext.Provider value={value}>{children}</ContentContext.Provider>
+  return <SharedContentProvider client={query.data?.client ?? bootClient}><ContentContext.Provider value={value}>{children}</ContentContext.Provider></SharedContentProvider>
 }
 
 export function useContent(): ContentState {

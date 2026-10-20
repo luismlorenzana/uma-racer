@@ -1,7 +1,7 @@
 # Architecture
 
 How the code that runs fits together: generation 2, since the phase-3 cutover (M034, D361), with phase 6's canvas Hub
-(T145, D363), uma-art 2.7.0 (D364), and shared uma-kit 0.7.1 (T147, D367; SD4, D372; the album, SB6, D373). The infrastructure values and the release runbook are
+(T145, D363), uma-art 2.7.0 (D364), and shared uma-kit 0.9.0 (T147, D367; SD4, D372; the album, SB6, D373). The infrastructure values and the release runbook are
 [technical/infrastructure.md](../technical/infrastructure.md); what is done and what comes next is
 [the task plan](../tasks/README.md), and the phases still ahead are [docs/rearchitecture/08](../rearchitecture/08-phases.md)
 with [rework/13](../rework/13-removals-and-plan-changes.md) §4.
@@ -176,8 +176,8 @@ loop itself runs on the domain's source, and its test runs the checks in CI.
 | `save/` | The device's generation-2 save and its one sync lane ([below](#the-save-and-sync)) |
 | `ui/` | Racer-owned work pieces (`ui/work/`: slot rows, Speed Tickets, Recall, queues and `useTap`), `ItemIcon`, `TreeGraph`, `BuildingSprite`, original type/focus icons and labels, `devicePrefs.ts`; `racerAlbum.tsx` projects game rows and callbacks into the kit's album and picker. `useContentArt.ts` is the card/reveal's private-art hook; the kit's art port is `app/albumArt.tsx`. No local album engine, grid, chrome, preferences or Uma picker implementation remains |
 | `scenes/race/` | The race scene: PixiJS 8, lazy, the only PixiJS in the repo until phase 8 ([below](#the-race)) |
-| `content/` | The private content runtime ([below](#private-content)) |
-| `api/client.ts` | The content client |
+| `content/` | Game-only projection (`adapt.ts`), view shapes, status/words; no local loader or byte/URL cache |
+| `app/contentRuntime.ts` | Lazy configuration of uma-kit's shared content runtime, with SE1-compatible storage keys |
 | `dev/` | The synthetic seeds' mount and the dev proofs, dev builds only ([below](#dev-seeds)) |
 | `__fixtures__/` | Test support (`testing.tsx`, `testing-ops.ts`); places keep their own under `places/*/__fixtures__/` |
 
@@ -213,7 +213,7 @@ loop itself runs on the domain's source, and its test runs the checks in CI.
 The shell, the Hub map and the primitives are **`@luismlorenzana/uma-kit`**, uma-platform's package that uma-racer and
 uma-rpg both run on (uma-platform P48, its sibling plan; D367). The uma-rpg session built it by moving this game's own
 code (as of `ff8b95a`) into uma-platform's `packages/kit` and making it game-agnostic: components take values, words and
-links as props, and keep no game state. uma-racer pins it exactly (0.7.1, from GitHub Packages like uma-art) and passes
+links as props, and keep no game state. uma-racer pins it exactly (0.9.0, from GitHub Packages like uma-art) and passes
 everything that is its own in as props. Since SD4 (sibling Phase D) the screens around the game are kit frames too, and
 the API's guard is `@luismlorenzana/uma-server` (below).
 
@@ -221,7 +221,8 @@ the API's guard is `@luismlorenzana/uma-server` (below).
 |---|---|
 | `theme.css`: the Paddock tokens in light and dark, base styles, utilities (`pt-safe`, `pb-safe`, `pb-bar-safe`, `mb-bar-safe`, `scroll-strip` …), and `fillScreen()` for iOS 26's Home Screen viewport | The fonts' `@font-face`, `--g2-room-friend`, the race feed's keyframes (`index.css`) |
 | `/ui`: the icon set, `UiMark` and `TierCrest`, `Button`, `Chip`, `Tabs`, `Panel`, `BottomSheet` and `Sheet`, `AnimatedNumber`, `MotionRoot`, reduced motion, Appearance, device preferences, `KitArtProvider` | Type/focus icons, `ItemIcon`, `BuildingSprite` and the work pieces |
-| `/roster` and `/album`: the pure query, level/work ordering and preference parsers; `AlbumChrome`, `AlbumGrid`, `VirtualGrid`, `UmaPicker`, `useAlbumPrefs`, `AlbumArtProvider`, `FaceTile`, `UmaBust`, `UmaChibi` | Stable/Card Library facets and sorts, tier-local display vs lifetime order, eligibility/refusal words, marks, unlock/reveal and follow-up actions (`ui/racerAlbum.tsx`); private art ids and loading (`app/albumArt.tsx`) |
+| `/roster` and `/album`: the pure query, level/work ordering and preference parsers; `AlbumChrome`, `AlbumGrid`, `VirtualGrid`, `UmaPicker`, `useAlbumPrefs`, `AlbumArtProvider`, `FaceTile`, `UmaBust`, `UmaChibi` | Stable/Card Library facets and sorts, tier-local display vs lifetime order, eligibility/refusal words, marks, unlock/reveal and follow-up actions (`ui/racerAlbum.tsx`); private art ids (`app/albumArt.tsx`), loaded/held by `/content` |
+| `/content` (SE4): `ContentProvider`, `createContentClient`, `createContentRuntime`, snapshot/cache verification, held art hooks and URLs, `AtlasFrame`/`AtlasSprite` | Master-to-game projection (`content/adapt.ts`, using `@racer/domain/master`), required overlay envelope, game-facing port and diagnostics; auth and existing storage keys passed as options |
 | `/shell`: `AppFrame`, `AccountBar`, `BottomBar`, `PlaceMenu`, `PeekPanel`, `PlaceHeader`, `FloatingPill`, and `withParam`, `navState`, `useLeave`, `peekPath` | `RacerShell` (the chips, the Sync chip, the tabs and badges, the menu's `?sheet=` link), the global sheets and their registry (`GlobalSheets`, `nav.ts`), `PlacePeek`, `PlacePageHeader`, the check-in sheet's navigation state (`collect`, `collectId`, `repeatId`) |
 | `/hub`: `HubMap` (the lazy Phaser canvas, the place links, swipes), `Pips`, the grid, `layTerrain`, the tile props, palettes and markers | Which places stand on which page and where (`@racer/domain/hub`, `AWAITING_ART`), `tilePageFor` (the ground each page draws), the rooms' pip colours (`ROOM_TONE`), the Town Hall plaza, the counters (`counts.ts`), the dev hooks' switch (`debug`, `?canvas`) |
 | `/auth`: `AuthProvider` (Google sign-in by redirect, Firebase loaded only by `import()`), `useAuth`, `idToken`, `signIn`, `signOut` | The Firebase config (`app/auth.ts`) |
@@ -383,10 +384,17 @@ API as built", "The web save as built"); this is the outline.
 - **Publishing:** `pnpm overlays:import` validates private authored inputs and writes an immutable hashed overlay plus
   `overlay.json`. `pnpm overlays:publish -- --dry-run` verifies bytes; publishing uploads the index last with generation
   preconditions. Racer never imports or republishes master data/art. Only these overlay paths are API-allowlisted.
-- **Device bridge** (`content/master.ts`): uma-data's client/parsers verify the release, then the shared pure adapter
-  creates game views. Atlas pages load at boot; image families load on demand. Every immutable byte is size/full-SHA-256
-  checked on download **and cache hit**. Last-good metadata is saved only after a complete boot, under
-  `uma-racer:g2:master-release`; verified bytes live in Cache Storage `uma-racer-master-v1`.
+- **Shared device loading (SE4):** uma-kit **0.9.0** `/content` owns authenticated transport, complete snapshots,
+  verified byte caching, held URLs, cancellation and responsive atlas rendering. `app/contentRuntime.ts` configures it
+  lazily; `content/ContentProvider.tsx` only projects its query/status into Racer's session and installs the kit's
+  `ContentProvider`. `content/adapt.ts` requests the release's sets/art and required overlay, then runs the one pure
+  adapter into game views; it owns no transport, fallback, cache or URL lifecycle. Atlas pages load/hold at boot;
+  image families load on demand. `AlbumArtProvider`, card/reveal art and race playback use the same shared client.
+- **Compatible persistence:** every immutable byte (including the enveloped overlay) is size/full-SHA-256 checked on
+  download **and cache hit**. Only a complete boot becomes last-good under `uma-racer:g2:master-release`, still the
+  `{ manifest, overlay }` snapshot. Cache Storage remains `uma-racer-master-v1`, keyed by
+  `https://uma-racer.invalid/master/<full-sha256>`. No migration, cache/save deletion or re-download is needed for
+  SE1's previously verified bytes. Held URLs stay valid while displayed/played; clear cancels and revokes the session.
 - **Offline:** a new runtime cold-starts on the last complete release and reloads previously viewed art from persistent
   bytes. Corrupt cache hits repair online; partial/corrupt downloads never replace last-good state. A 401 or 403 never
   bypasses auth by falling back. A first-time missing image keeps its icon/initial fallback.
@@ -398,7 +406,8 @@ API as built", "The web save as built"); this is the outline.
   authoring inputs, unrelated objects or saves are cleanup material. See the release runbook.
 - **Parity:** `pnpm master:parity` compares all five final Racer packs field by field; private details stay gitignored,
   only aggregates go in the [acceptance note](../research/se1-master-data/README.md). `sim:careers` reads this adapter,
-  not old packs. CI is synthetic. SE4's shared React provider adoption remains a separate packet.
+  not old packs. CI is synthetic. SE4 deletes the remaining web loader/cache and content HTTP client; API shared proxy configuration
+  already landed in SE1, so its routes, sources, allowlist and environment stay unchanged.
 
 ## The art
 
@@ -561,9 +570,9 @@ How generation 2 became the app (D361). The plan-level choices (the tag, the del
 | Package | Dependency | Version | Kind |
 |---|---|---|---|
 | uma-racer | turbo | ^2.10.13 | dev |
-| @racer/web | @luismlorenzana/uma-data | 1.1.0 | runtime |
 | @racer/web | @luismlorenzana/uma-art | 2.7.0 | runtime |
-| @racer/web | @luismlorenzana/uma-kit | 0.7.1 | runtime |
+| @racer/web | @luismlorenzana/uma-data | 1.1.0 | runtime |
+| @racer/web | @luismlorenzana/uma-kit | 0.9.0 | runtime |
 | @racer/web | @racer/domain | workspace:* | runtime |
 | @racer/web | @racer/race | workspace:* | runtime |
 | @racer/web | @tanstack/react-query | ^5.102.8 | runtime |

@@ -34,7 +34,7 @@ uma-platform's [queue](https://github.com/luismlorenzana/uma-platform/blob/main/
 |---|---|---|---|---|---|
 | [SE1](tasks/SE1-racer-phase-5.md) | Phase 5: uma-platform's master data and art; the GameTora pipeline goes | Claude | L | — | Ready |
 | [SC5](tasks/SC5-racer-on-uma-work.md) | Work on `@luismlorenzana/uma-work` and `uma-kit/work` | Either | L | SC1, SC2 | Waiting |
-| [SE4](tasks/SE4-racer-content.md) | Data and art through `uma-kit/content` and `uma-server/content` | Either | M | SE1, SE2 | Waiting |
+| SE4 | Data and art through `uma-kit/content` and `uma-server/content` | Either | M | SE1 merged, SE2 | Implementation complete; [delivery evidence](../research/se4-content/README.md), final deployment closeout pending |
 
 **Done (sibling packets)**
 

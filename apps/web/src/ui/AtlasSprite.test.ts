@@ -8,7 +8,7 @@ describe('atlas sprite math', () => {
         url: 'blob:synthetic',
         pageWidth: 512,
         pageHeight: 256,
-        frame: { page: 0, x: 256, y: 128, width: 128, height: 128 },
+        frame: { x: 256, y: 128, width: 128, height: 128 },
       }),
     ).toMatchObject({ width: '400%', height: '200%', left: '-200%', top: '-100%', maxWidth: 'none' })
   })

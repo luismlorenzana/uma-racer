@@ -34,8 +34,9 @@ and bonded per Uma, uma-rpg's farming catalogue, Prize Money and the Exchange, a
    removes `POST /api/legacy/purge` and the boot's purge call with their tests, deletes this folder's M034 and T144
    specs (D104), moves phase 3 to "Completed and removed", and writes the release decision. **D362 is reserved for that
    record.**
-2. **The sibling packets** (uma-platform P51): SA7, SD4 and SB6 are shipped; SE1, phase 5, is ready. SC5 and SE4
-   wait on their dependencies. The queue and its states are in [handoff](../handoff/README.md). The
+2. **The sibling packets** (uma-platform P51): SA7, SD4 and SB6 are shipped; SE1's implementation is merged/deployed,
+   with its exact cleanup/closeout still separate. SE4 adopts shared content loading; SC5 is ready on published
+   uma-kit 0.8.0 and uma-work 0.1.0. The queue and its states are in [handoff](../handoff/README.md). The
    redirects and the first-boot wipe leave with SE1, phase 5 (D365, D370).
 3. **Phase 9, World Expeditions,** due by about 2027-02-04 to 2027-03-04 and specified when it starts.
 4. **[A04](../handoff/tasks/A04-tonic-icons.md), the ten tonics' item icons** (D375, 2026-10-18), ready for ChatGPT;
@@ -57,7 +58,7 @@ The `pre-split` tag marks the old game.
 **Retired unbuilt (D339):** M024 (T081), M010 (T035) and M011 (T036–T039). The rework removes what they built on.
 Game feel and device acceptance for the new game are planned after phase 3.
 
-**Next free numbers: M036, T152 and D376** (D362 is reserved for T144's release record). Numbers are never reused, so
+**Next free numbers: M036, T152 and D377** (D362 is reserved for T144's release record). Numbers are never reused, so
 a decision that mentions T014 always means the same work. T057 was consumed by the per-scenario limit-break branch and
 is not reused.
 
@@ -67,8 +68,9 @@ Each row's specs are readable with `git show <commit>:docs/tasks/<file>`. Pages 
 are named by their old path (`design/uma-rpg.md` …); read them with `git show pre-split:docs/<path>`.
 
 | Work | Landed | Carried by | Last commit with the specs |
-| M035 / T148–T151 · SE1 platform master data | SE1; delivery evidence in the acceptance note | `@racer/domain/master`, API shared proxies, verified web cache, private overlay tools and the manual | `97f08f7` |
 |---|---|---|---|
+| SE4 (sibling handoff) — shared content runtime, held art and atlas rendering; existing SE1 cache/snapshot keys preserved | D376; [delivery evidence](../research/se4-content/README.md) | uma-kit 0.9.0 `/content`, uma-server 0.2.0 `/content`, game-only adapter and diagnostics | `1ed5b77` (`docs/handoff/tasks/`) |
+| M035 / T148–T151 · SE1 platform master data | SE1; delivery evidence in the acceptance note | `@racer/domain/master`, API shared proxies, verified web cache, private overlay tools and the manual | `97f08f7` |
 | SB6 (sibling handoff) — shared album and Uma pickers on uma-kit 0.7.1, faces when small and busts throughout races; saved preferences and racer operations preserved | 2026-10-18 | [game/11](../game/11-hub-and-places.md) §3.1, [architecture](../game/architecture.md#uma-kit), D373, [local acceptance and deployment](../research/sb6-album/README.md); `4885baf` | `4885baf` (`docs/handoff/tasks/`) |
 | A03 (ChatGPT handoff) — the four remaining Uma pickers open on level, with context sorts optional and Open goals as a Racing filter; the default Farm Uma follows the first row unless explicitly linked | 2026-10-16 | [game/07](../game/07-farm.md) §10, [game/05](../game/05-training-hub.md) §8, [game/11](../game/11-hub-and-places.md) §9.2, D368, [phone proof](../research/a03-level-rule/README.md) | `652cc58` (`docs/handoff/tasks/`) |
 | T147 — uma-racer on the shared uma-kit 0.1.2 (uma-platform P48, sibling step A6.2): the kit's theme, shell, Hub map and primitives with the racer's chips, tabs, sheets, ground and words passed in; the iPhone band fixed; dark mode and Appearance in Account | 2026-10-16 | [architecture](../game/architecture.md#uma-kit), [game/11](../game/11-hub-and-places.md) §1–§2, §12, [visual system](../design/visual-system.md#dark-mode), D367 | none (briefed in chat from uma-platform's sibling plan) |
