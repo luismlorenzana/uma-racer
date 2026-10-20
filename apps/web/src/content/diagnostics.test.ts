@@ -1,8 +1,7 @@
 import { hasBannedWord } from '@racer/domain/check-in'
 import { describe, expect, it } from 'vitest'
-import { ApiError } from '../api/client'
+import { ContentError as ApiError, ContentFallbackError } from '@luismlorenzana/uma-kit/content'
 import { diagnoseContentError, diagnoseLoadedContent, EMPTY_BUCKET_CONTENT, SIGNED_OUT_CONTENT } from './diagnostics'
-import { ContentFallbackError } from './errors'
 import type { LoadedContent } from './view'
 
 describe('content diagnostics', () => {

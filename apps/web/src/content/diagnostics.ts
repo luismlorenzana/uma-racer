@@ -2,8 +2,7 @@
 // can reach the session panel, so each is in plain words: none of 02 §9's banned words (`hasBannedWord`), and no
 // plumbing such as the manifest or the bucket (docs/game/02-check-ins-and-notifications.md §9).
 
-import { ApiError } from '../api/client'
-import { ContentFallbackError } from './errors'
+import { contentProblem, ContentFallbackError } from '@luismlorenzana/uma-kit/content'
 import type { LoadedContent } from './view'
 
 export type ContentDiagnosticCode =
@@ -34,37 +33,37 @@ function errors(value: unknown): unknown[] {
 
 export function diagnoseContentError(error: unknown): ContentDiagnostic {
   const causes = errors(error)
-  const api = causes.find((cause): cause is ApiError => cause instanceof ApiError)
+  const problems = causes.map((cause) => contentProblem(cause))
   const message = causes.map(String).join(' ')
-  if (api?.status === 401) {
+  if (problems.includes('signed-out')) {
     return {
       code: 'signed-out', success: false, title: 'Sign in again',
       message: 'You were signed out. Sign in again to keep playing; your progress on this phone is safe.',
       action: { kind: 'sign-out', label: 'Sign in again' },
     }
   }
-  if (api?.status === 403) {
+  if (problems.includes('not-allowed')) {
     return {
       code: 'not-allow-listed', success: false, title: 'This account can’t play',
       message: 'This Google account isn’t one that can play Uma Racer. Switch to the one that can.',
       action: { kind: 'sign-out', label: 'Switch account' },
     }
   }
-  if (api?.status === 404 && /^\/api\/(master|content)\//.test(api.path)) {
+  if (problems.includes('missing')) {
     return {
       code: 'missing-object', success: false, title: 'The game’s content is incomplete',
       message: 'Part of the game’s content is missing online. Your progress on this phone is safe.',
       action: { kind: 'retry', label: 'Try again' },
     }
   }
-  if (CORRUPT_PATTERN.test(message)) {
+  if (problems.includes('damaged') || CORRUPT_PATTERN.test(message)) {
     return {
       code: 'corrupt-bytes', success: false, title: 'The download was damaged',
       message: 'Some of the game’s content didn’t arrive intact. Your progress on this phone is safe.',
       action: { kind: 'retry', label: 'Download again' },
     }
   }
-  if (api?.status && api.status >= 500 || NETWORK_PATTERN.test(message) || error instanceof TypeError) {
+  if (problems.includes('offline') || NETWORK_PATTERN.test(message) || error instanceof TypeError) {
     return {
       code: 'network-failure', success: false, title: 'Can’t reach the game',
       message: 'The game’s content couldn’t load, and this phone has no full copy yet. Check the connection and try again.',

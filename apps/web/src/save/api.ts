@@ -1,5 +1,5 @@
 // The save's own small fetch (docs/rearchitecture/01-target-architecture.md §4.3, §6; docs/rearchitecture/07-data-
-// reset.md §3–§4; T135's routes; T136), following today's `api/client.ts`: `VITE_API_BASE_URL` (empty in dev, where
+// reset.md §3–§4; T135's routes; T136), using `VITE_API_BASE_URL` (empty in dev, where
 // Vite proxies `/api`), a pluggable token provider, and the stamp on every call: query parameters for the GET, the body
 // for the POSTs. Answers go through T134's parsers. A failure is one of seven kinds, never a status on a screen:
 // - `offline`: no answer at all (no network, or no reply within a minute);

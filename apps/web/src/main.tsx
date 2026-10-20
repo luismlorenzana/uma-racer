@@ -20,9 +20,8 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { RouterProvider } from 'react-router'
 import { registerSW } from 'virtual:pwa-register'
-import { setTokenProvider } from './api/client'
 import { RACER_ART } from './app/art'
-import { FIREBASE, ownerToken } from './app/auth'
+import { FIREBASE } from './app/auth'
 import { setupKit } from './app/kit'
 import { ContentProvider } from './content/ContentProvider'
 import { createLiveRouter, isSeedsPath } from './app/router'
@@ -40,7 +39,6 @@ if (import.meta.env.DEV && isSeedsPath(location.pathname)) {
     },
   })
   const router = createLiveRouter()
-  setTokenProvider(ownerToken)
   watchAppUpdates(registerSW)
   root.render(
     <StrictMode>
