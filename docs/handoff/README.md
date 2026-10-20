@@ -33,12 +33,12 @@ uma-platform's [queue](https://github.com/luismlorenzana/uma-platform/blob/main/
 | Id | Task | Who | Size | Needs | State |
 |---|---|---|---|---|---|
 | [SE1](tasks/SE1-racer-phase-5.md) | Phase 5: uma-platform's master data and art; the GameTora pipeline goes | Claude | L | — | Ready |
-| [SC5](tasks/SC5-racer-on-uma-work.md) | Work on `@luismlorenzana/uma-work` and `uma-kit/work` | Either | L | SC1, SC2 | Waiting |
 
 **Done (sibling packets)**
 
 | Id | Task | Commit |
 |---|---|---|
+| SC5 | Farm and Training on `@luismlorenzana/uma-work` 0.1.0 and `uma-kit/work` 0.9.1, retaining Racer rules, saves and planning (D377). [Local acceptance and successful production deployment](../research/sc5-work/README.md) | `8967e24` ([PR #124](https://github.com/luismlorenzana/uma-racer/pull/124)) |
 | SE4 | Shared data/art loading on uma-kit 0.9.0 and uma-server 0.2.0, with SE1-compatible offline/cache behavior (D376). [Local checks and verified production deployment](../research/se4-content/README.md) | `ad15cf0` ([PR #123](https://github.com/luismlorenzana/uma-racer/pull/123)) |
 | SA7 | The plaza crowd: small chibis on Town Hall (uma-kit 0.3.0, D371) | `9723a23` |
 | SD4 | Getting in, Account, Warehouse, Exchange and the profile on uma-kit 0.6.0; the API's guard from uma-server 0.2.0 (D372) | `7d2b757` |
