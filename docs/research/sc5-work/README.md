@@ -35,7 +35,15 @@ SC4 implementation is part of SC5.
 - Enabled Start uses gold accent background with accent ink (dark computed RGB 214/162/62 and 27/20/6); no competing
   panel class. RPG's existing shared Stable still renders/searches its loaded faces at 390px with no page overflow.
 
-Production status and final command totals are added after protected merge and the standard deployment succeeds.
+## Production
+
+- Protected PR [#124](https://github.com/luismlorenzana/uma-racer/pull/124) merged as `8967e24`; its required CI and
+  [standard production deployment](https://github.com/luismlorenzana/uma-racer/actions/runs/39461750899) passed.
+- An independent read-only production check identified `8967e246ea38` in the deployed web build, loaded the shared
+  building, provider, facility-header, check-in and job-sheet chunks, and found the SC5 slot, queue, restart and job
+  markers. Hosting returned 200 with `no-cache`.
+- The deployed API health check returned 200, while an unauthenticated save request returned 401. Production saves
+  were not read or changed.
 
 Upstream compatibility fixes: [platform #39](https://github.com/luismlorenzana/uma-platform/pull/39), merged
 `18abccf`; [uma-kit 0.9.1 publishing succeeded](https://github.com/luismlorenzana/uma-platform/actions/runs/39459898913),
