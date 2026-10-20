@@ -28,9 +28,10 @@ code or deployment is part of SE4.
   release, balances and cached profile bust; Account showed that release as offline. The API was then restarted.
   Original-art screenshots stay local, never in git.
 - Published exact pin (not a link): `pnpm docs:update`, `pnpm lint`, `pnpm test`, `pnpm test:ci` and `pnpm build`
-  pass. Startup **155.88 KB gzip / 180 KB**. No temporary link or upstream source is committed in Racer.
+  pass. Startup **155.89 KB gzip / 180 KB**. No temporary link or upstream source is committed in Racer.
 - Suites: domain 956, race 61, API 58, web 513 and overlays 2 tests pass. All 187 web source modules remain reachable;
   changed documentation links resolve; PixiJS remains race-only. No game source imports uma-work (SC5 stays separate).
+- `pnpm sim:loop` passes all pacing guards unchanged (tier 1 21.36 weeks; first unlock 5.40 hours).
 
 Owner iPhone/PWA edge feel remains the owner's check (P60). No screen layout or crop changes are intended.
 

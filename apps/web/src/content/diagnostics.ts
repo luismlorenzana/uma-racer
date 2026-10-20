@@ -63,7 +63,11 @@ export function diagnoseContentError(error: unknown): ContentDiagnostic {
       action: { kind: 'retry', label: 'Download again' },
     }
   }
-  if (problems.includes('offline') || NETWORK_PATTERN.test(message) || error instanceof TypeError) {
+  const serverFailure = causes.some((cause) => {
+    const status = (cause as { status?: unknown } | null)?.status
+    return typeof status === 'number' && status >= 500
+  })
+  if (serverFailure || problems.includes('offline') || NETWORK_PATTERN.test(message) || error instanceof TypeError) {
     return {
       code: 'network-failure', success: false, title: 'Can’t reach the game',
       message: 'The game’s content couldn’t load, and this phone has no full copy yet. Check the connection and try again.',
