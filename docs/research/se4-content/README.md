@@ -37,4 +37,19 @@ Owner iPhone/PWA edge feel remains the owner's check (P60). No screen layout or 
 
 ## Delivery
 
-Pending final checks, protected merge, production deployment verification and the program queue closeout.
+Feature [PR #123](https://github.com/luismlorenzana/uma-racer/pull/123) merged through protection as
+`ad15cf020be59563f045c117da0399bf04d33d09` after CI passed. The standard
+[production workflow](https://github.com/luismlorenzana/uma-racer/actions/runs/39460142245) succeeded, including both
+verification and deployment. Its deployed startup measurement is **156.36 KB gzip / 180 KB** (Node 22 runner).
+
+Read-only production checks on 2026-10-20:
+
+- Ready API revision `racer-api-00200-f28`; its immutable image digest matches the artifact tagged to the exact
+  merge commit (verified independently of the service's configured image tag).
+- API health 200; unauthenticated save, master channel and overlay index each 401.
+- Hosting shell 200 and `Cache-Control: no-cache`; its live entry contains build `ad15cf020be5`.
+- The live service worker lists `contentRuntime-CVFLdZ4V.js`; that public code contains the shared metadata config
+  and preserved SE1 snapshot/cache keys. No private original art or owner save was fetched for this check.
+
+The packet is deleted in the feature PR (D104). The game and platform queues record SE4 Done after this deployment;
+SE1's separately scoped bucket cleanup and T144's owner-confirmation follow-up are not claimed complete here.

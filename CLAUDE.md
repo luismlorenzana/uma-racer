@@ -11,7 +11,7 @@ Hub and primitives are uma-kit's, the app both Uma games share.
   Claude's production notes.
 - `docs/tasks/README.md` is the current plan: what shipped, what's open (T144's step 10, the sibling packets in
   `docs/handoff/` with phase 5 as SE1, and phase 9; phases 4, 7, 8 and the pixel-art question are archived, D370) and
-  the next free numbers (M036, T152, D377; **D362 is reserved for T144's release record**). A task spec is deleted once its work merges (D104), so that folder only holds work still ahead.
+  the next free numbers (M036, T152, D378; **D362 is reserved for T144's release record**). A task spec is deleted once its work merges (D104), so that folder only holds work still ahead.
 - **The docs are the source of truth:** [the manual](docs/game/README.md) (`docs/game/`) describes the game as it runs.
   Every screen, route and sheet is [11's menu tree](docs/game/11-hub-and-places.md#the-menu-tree-at-a-glance); the code
   by folder, the checks and the deploy are [the architecture](docs/game/architecture.md). Read the relevant page before
@@ -50,7 +50,7 @@ Hub and primitives are uma-kit's, the app both Uma games share.
 | `packages/domain` | Pure game rules, one subpath export per area (`@racer/domain/save`, `/state`, `/tiers`, `/items`, `/work`, `/farm`, `/training`, `/economy`, `/check-in`, `/planner`, `/sim`, `/builds`, `/hub`) beside the core. Vitest |
 | `packages/race` | Deterministic race engine (seeded, 15 Hz ticks, timeline + playback sampling). Vitest |
 | `apps/api` | NestJS 11: uma-server's `AuthGuard` on every route (`@luismlorenzana/uma-server/auth`: Firebase token + `ALLOWED_EMAIL`, 401 or 403), `/api/save`, `/api/sync` (generation 2, protocol 2), `/api/legacy/purge` (until T144's step 10), `/api/content/*`, `/api/health` |
-| `apps/web` | React 19 + Vite 7 + Tailwind 4 + Motion (`m.*` under `LazyMotion strict`) + PWA on uma-kit 0.7.1 (theme, shell, Hub map on Phaser 4, primitives, places and auth frames, and since SB6 the shared album/picker): `src/app` (routes, session, the `G2Game` port, kit setup and art providers), `hub` (racer shell/map adapters), `places`, `save` (Dexie `uma-racer-g2`, one sync lane), `ui` (racer-only pieces), `content`; PixiJS 8 only for `scenes/race`; dev-only seeds at `/dev/seeds/*` (`src/dev`) |
+| `apps/web` | React 19 + Vite 7 + Tailwind 4 + Motion (`m.*` under `LazyMotion strict`) + PWA on uma-kit 0.9.1 (theme, shell, Hub map on Phaser 4, primitives, places and auth frames, and since SB6 the shared album/picker): `src/app` (routes, session, the `G2Game` port, kit setup and art providers), `hub` (racer shell/map adapters), `places`, `save` (Dexie `uma-racer-g2`, one sync lane), `ui` (racer-only pieces), `content`; PixiJS 8 only for `scenes/race`; dev-only seeds at `/dev/seeds/*` (`src/dev`) |
 | `scripts/sim` | Headless balance runs (`pnpm sim:balance`, `sim:turns`, `sim:builds`, `sim:careers`, `sim:loop`) |
 | `scripts/overlays` | Racer-only private overlays; master data/art comes from uma-platform (SE1) |
 | `docs/handoff` | Packets for ChatGPT sessions and the master prompt |
@@ -101,7 +101,7 @@ pnpm master:parity     # private migration proof, aggregates only in git
 | API | Cloud Run `racer-api` (us-central1), `https://racer-api-tmzkhylhfq-uc.a.run.app`; `/api/health` (not `/healthz`, which Cloud Run's front end reserves) |
 | GCP project | `uma-racer` (number 1026964321499), plus a private bucket `uma-racer-content` |
 | Deploy | `.github/workflows/deploy.yml`, keyless WIF. Repo variables: GCP_PROJECT_ID, WIF_PROVIDER, CONTENT_BUCKET, ALLOWED_EMAIL, DEPLOY_ENABLED |
-| Live on 2026-10-18 | `91b1b10` as racer-api-00199 (D375: meals for stats, tonics for nodes and slots, item-free bonds, *k* = 1.8; on top of SE1's master data, D374), [deployment green](https://github.com/luismlorenzana/uma-racer/actions/runs/39193904556); health 200, `/api/save` 401, Hosting `no-cache`, and a live chunk holds the tonics. uma-art 2.7.0; the tonics draw as plain tiles until A04 ships |
+| Live on 2026-10-20 | `ad15cf0` as racer-api-00200-f28 (SE4, D376: shared content, preserving SE1 and D375), [deployment green](https://github.com/luismlorenzana/uma-racer/actions/runs/39460142245); health 200, save/master/overlay 401 without auth, Hosting `no-cache`, live build and shared runtime verified. uma-kit 0.9.0; startup 156.36 KB gzip. uma-art 2.7.0; tonic art adoption remains A04's game-side follow-up |
 
 - **Local gcloud has two accounts, and the active one is the owner's work account. Never change it.** Scope every uma-racer
   command with environment variables only:
