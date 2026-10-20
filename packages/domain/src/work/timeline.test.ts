@@ -6,7 +6,7 @@ import { clock, minutes } from '../__fixtures__/work'
 import { farmExpPerItem } from '../farm/level'
 import {
   applyTickets, chainTimes, endsAt, finishedCount, itemEnds, itemProgress, progress, remainingMs, SPEED_TICKET_MS, ticketsToFinish, type Timed,
-} from './timeline'
+} from './adapter'
 
 const POTATO = 95 * 60 // 07 §2: a grade-2 gather in base seconds
 const CARROT = 90 * 60

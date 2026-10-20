@@ -66,27 +66,27 @@ describe('planning a Farm job', () => {
     expect(tonics[0]).toEqual({
       seconds: 25_920,
       inputs: [{ item: 'chopped-carrot', qty: 1 }, { item: 'dried-button-mushroom', qty: 1 }, { item: 'wheat-flour', qty: 1 }],
-      output: { item: 'tonic-1' }, farmExp: 1_728,
+      output: { item: 'tonic-1' }, exp: 1_728,
     })
-    expect(items(plan(state, PLAIN.id, 'gather', 'carrot', 1, 'vegetable-garden'))[0]).toEqual({ seconds: 9_720, inputs: [], output: { item: 'carrot' }, farmExp: 648 })
+    expect(items(plan(state, PLAIN.id, 'gather', 'carrot', 1, 'vegetable-garden'))[0]).toEqual({ seconds: 9_720, inputs: [], output: { item: 'carrot' }, exp: 648 })
     expect(items(plan(state, PLAIN.id, 'craft', 'chopped-carrot', 2, 'pantry', 1.25))[1]).toEqual({
-      seconds: 1_944, inputs: [{ item: 'carrot', qty: 1 }], output: { item: 'chopped-carrot' }, farmExp: 162,
+      seconds: 1_944, inputs: [{ item: 'carrot', qty: 1 }], output: { item: 'chopped-carrot' }, exp: 162,
     })
   })
 
   it("pays EXP by the site's, the crafted item's or the dish's main family, never the side's", () => {
     // SPRINTS: Sweets S (18), Fish D (9), Fruits G (8), Herbs B (12), the rest C (10).
-    expect(items(plan(state, SPRINTS.id, 'gather', 'honeycomb', 1, 'sugar-grove'))[0]!.farmExp).toBe(1_166)
-    expect(items(plan(state, SPRINTS.id, 'craft', 'carp-fillet', 1, 'pantry'))[0]!.farmExp).toBe(146)
+    expect(items(plan(state, SPRINTS.id, 'gather', 'honeycomb', 1, 'sugar-grove'))[0]!.exp).toBe(1_166)
+    expect(items(plan(state, SPRINTS.id, 'craft', 'carp-fillet', 1, 'pantry'))[0]!.exp).toBe(146)
     // An Apple Tart's side is Herbs (B), but its family is Fruits (G): ×0.8.
     expect(expFamilies(itemById('dish-fruits-1')!)).toEqual(['fruits'])
-    expect(items(plan(state, SPRINTS.id, 'cook', 'dish-fruits-1', 1, 'kitchen'))[0]!.farmExp).toBe(1_382)
+    expect(items(plan(state, SPRINTS.id, 'cook', 'dish-fruits-1', 1, 'kitchen'))[0]!.exp).toBe(1_382)
     // A Duo or Feast takes the best of its main families: Fish D and Sweets S → ×1.8.
     const sixGrades = atFarmLevel(state, SPRINTS.id, 26)
     expect(expFamilies(itemById('duo-power-speed-3')!)).toEqual(['fish', 'sweets'])
     expect(bestExpTenths(ENV.content, SPRINTS.id, ['fish', 'sweets'])).toBe(18)
-    expect(items(plan(sixGrades, SPRINTS.id, 'cook', 'duo-power-speed-3', 1, 'kitchen'))[0]!.farmExp).toBe(Math.round((28_080 * 18) / 150))
-    expect(items(plan(sixGrades, SPRINTS.id, 'cook', 'feast-4', 1, 'kitchen'))[0]!.farmExp).toBe(Math.round((29_160 * 18) / 150))
+    expect(items(plan(sixGrades, SPRINTS.id, 'cook', 'duo-power-speed-3', 1, 'kitchen'))[0]!.exp).toBe(Math.round((28_080 * 18) / 150))
+    expect(items(plan(sixGrades, SPRINTS.id, 'cook', 'feast-4', 1, 'kitchen'))[0]!.exp).toBe(Math.round((29_160 * 18) / 150))
     // A tonic takes the best of Vegetables, Mushrooms and Grains: all C for her.
     expect(expFamilies(itemById('tonic-1')!)).toEqual(['vegetables', 'mushrooms', 'grains'])
   })

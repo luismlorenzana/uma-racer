@@ -7,8 +7,8 @@ import {
 import { ledgerTotal } from '../economy/ledger'
 import { farmItemSeconds } from '../farm/jobs'
 import { isRefusal } from '../state/types'
-import { collect, finish, MAX_ITEMS_PER_ENTRY, MAX_QUEUE, queue, recall, slotsOf, speedUp, start, upgrade } from './operations'
-import { endsAt } from './timeline'
+import { collect, finish, MAX_ITEMS_PER_ENTRY, MAX_QUEUE, queue, recall, slotsOf, speedUp, start, upgrade } from './adapter'
+import { endsAt } from './adapter'
 import type { FarmRequest, SlotRef, WorkState } from './types'
 
 const GARDEN: SlotRef = { building: 'vegetable-garden', slot: 0 }
@@ -38,7 +38,7 @@ describe('start', () => {
     expect(row).toMatchObject({ slot: PANTRY, queue: [], last: null, dropped: null })
     expect(row.entries).toEqual([{
       request: chopped(3), seconds: [2_430, 2_430, 2_430], inputs: Array(3).fill([{ item: 'carrot', qty: 1 }]),
-      outputs: Array(3).fill({ item: 'chopped-carrot' }), farmExp: [162, 162, 162], startedAt: T0, acceleratedMs: 0, collected: 0, speed: 1,
+      outputs: Array(3).fill({ item: 'chopped-carrot' }), exp: [162, 162, 162], startedAt: T0, acceleratedMs: 0, collected: 0, speed: 1,
       fromQueue: false,
     }])
   })

@@ -7,6 +7,7 @@ import { lazy, Suspense, type ComponentType, type LazyExoticComponent } from 're
 import { Navigate } from 'react-router'
 import type { PageProps } from '../registry'
 import FacilityPage from './facility/FacilityPage'
+import { withRacerWork } from '../../ui/work/Provider'
 
 export interface BuildViewProps {
   readonly place: PageProps['place']
@@ -20,7 +21,7 @@ const VIEWS: Readonly<Record<FacilityId, LazyExoticComponent<ComponentType<Build
   dojo: lazy(() => import('./dojo/BondsView')),
 }
 
-export default function TrainingPage({ place, rest }: PageProps) {
+function TrainingPage({ place, rest }: PageProps) {
   if (rest === '') return <FacilityPage place={place} />
   if (!/^[^/]+$/.test(rest)) return <Navigate to={place.route} replace />
   const View = VIEWS[place.id as FacilityId]
@@ -30,3 +31,5 @@ export default function TrainingPage({ place, rest }: PageProps) {
     </Suspense>
   )
 }
+
+export default withRacerWork(TrainingPage)

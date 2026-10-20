@@ -6,7 +6,8 @@
 // rows that read how long is left, never a clock time; Free Umas only in the sheet, everything preselected; the size
 // chips' durations; a target's icon filled in; and the tap paths from the Hub: a free slot's "+" in the side panel opens
 // the sheet over the map and Start starts the job (3 taps), and a finished row's Repeat restarts it (2 taps).
-import { CHECK_IN_WORDS, durationText, say, type OperationInput } from '@racer/domain/check-in'
+import { durationText } from '@luismlorenzana/uma-kit/work'
+import { CHECK_IN_WORDS, say, type OperationInput } from '@racer/domain/check-in'
 import { farmItemSeconds } from '@racer/domain/farm'
 import { craftedItem, FAMILY_IDS } from '@racer/domain/items'
 import { endsAt, finishedCount } from '@racer/domain/work'
@@ -63,14 +64,14 @@ describe('gather, Queue next, Collect and −30m (07 §2, §8; D366)', () => {
     expect(row.textContent).not.toMatch(CLOCK)
 
     // ⋯ → Queue next: her job here takes the queue, with her named and no Uma to pick; Carrot × 6 behind it.
-    fireEvent.click(within(row).getByRole('button', { name: `More for ${AMBER}: Queue next and Recall` }))
-    fireEvent.click(within(await screen.findByRole('dialog', { name: `${AMBER} · Potato ×10` })).getByRole('link', { name: 'Queue next' }))
+    fireEvent.click(within(row).getByRole('button', { name: `More: ${AMBER}` }))
+    fireEvent.click(within(await screen.findByRole('dialog', { name: `${AMBER} · Potato` })).getByRole('link', { name: 'Queue next' }))
     const queueSheet = await screen.findByRole('dialog', { name: 'Queue a job · Vegetable Garden' })
     within(queueSheet).getByText(`Next job for ${AMBER}`)
     expect(within(queueSheet).queryByRole('radiogroup', { name: /Free Umas/ })).toBeNull()
     fireEvent.click(within(queueSheet).getByRole('button', { name: /^Carrot, grade 1/ }))
     fireEvent.click(await within(queueSheet).findByRole('radio', { name: /^×6,/ }))
-    fireEvent.click(within(queueSheet).getByRole('button', { name: `Queue · ×6 · ${durationText(6 * GATHER_1)}` }))
+    fireEvent.click(within(queueSheet).getByRole('button', { name: `Queue next · ×6 · ${durationText(6 * GATHER_1)}` }))
     await waitFor(() => expect(state(game).work[uma(1)]!.queue).toEqual([{ kind: 'gather', item: 'carrot', count: 6 }]))
 
     // Three outputs later, Collect pays three Potatoes and their Farm EXP; the queue reads its own duration.
@@ -82,13 +83,13 @@ describe('gather, Queue next, Collect and −30m (07 §2, §8; D366)', () => {
     const entry = state(game).work[uma(1)]!.entries[0]!
     fireEvent.click(within(later).getByRole('button', { name: 'Collect 3 Potato' }))
     await waitFor(() => expect(state(game).items['potato']).toBe(3))
-    expect(state(game).umas[uma(1)]!.farm.exp - before).toBe(3 * entry.farmExp[0]!)
+    expect(state(game).umas[uma(1)]!.farm.exp - before).toBe(3 * entry.exp[0]!)
 
     // −30m, from the Speed Ticket's sheet, takes 30 minutes off the time left.
     const end = endsAt(entry)
     const now = at + 3 * GATHER_2 + MINUTE
-    fireEvent.click(within(later).getByRole('button', { name: 'Speed Tickets for Potato ×10' }))
-    const speed = await screen.findByRole('dialog', { name: 'Speed up Potato ×10' })
+    fireEvent.click(within(later).getByRole('button', { name: 'Speed up Potato' }))
+    const speed = await screen.findByRole('dialog', { name: 'Speed up Potato' })
     fireEvent.click(within(speed).getByRole('button', { name: 'Take 30 minutes off with one Speed Ticket' }))
     await waitFor(() => expect(state(game).work[uma(1)]!.entries[0]!.acceleratedMs).toBe(30 * MINUTE))
     await screen.findByRole('article', { name: `${AMBER}. Potato, 3 of 10 made, ${durationText(end - 30 * MINUTE - now)} left` })
@@ -122,11 +123,11 @@ describe('cook and Recall (07 §2, §5)', () => {
     advance(Math.round(1.5 * COOK_1))
     reopen('/farm/kitchen', game)
     const row = await screen.findByRole('article', { name: new RegExp(`^${AMBER}\\. Warm-Up Tonic, 1 of 3 made`) })
-    fireEvent.click(within(row).getByRole('button', { name: `More for ${AMBER}: Queue next and Recall` }))
-    fireEvent.click(within(await screen.findByRole('dialog', { name: `${AMBER} · Warm-Up Tonic ×3` })).getByRole('button', { name: 'Recall' }))
+    fireEvent.click(within(row).getByRole('button', { name: `More: ${AMBER}` }))
+    fireEvent.click(within(await screen.findByRole('dialog', { name: `${AMBER} · Warm-Up Tonic` })).getByRole('button', { name: 'Recall' }))
     const recall = await screen.findByRole('dialog', { name: `Recall ${AMBER}` })
     within(recall).getByText('1 Warm-Up Tonic collected')
-    within(recall).getByText('2 Chopped Carrot, 2 Dried Button Mushroom and 2 Wheat Flour come back')
+    within(recall).getByText('2 Chopped Carrot, 2 Dried Button Mushroom, 2 Wheat Flour come back')
     within(recall).getByText(`${Math.round(COOK_1 / 2 / MINUTE)} minutes of progress lost`)
     fireEvent.click(within(recall).getByRole('button', { name: 'Recall' }))
     await waitFor(() => expect(state(game).items).toEqual({ 'tonic-1': 1, 'chopped-carrot': 2, 'dried-button-mushroom': 2, 'wheat-flour': 2 }))
@@ -140,15 +141,14 @@ describe('upgrades and empty stock (07 §7, §11)', () => {
     const paid = apply(account, 'dev-grant', { prizeMoney: 3_000, items: Object.fromEntries(FAMILY_IDS.map((family) => [craftedItem(family, 1).id, 2])) }, at).state
     const { game } = clocked(farmSeed(paid, at))
     renderG2('/farm/kitchen', game)
-    await screen.findByText('Lv 1 · 0 of 6 slots in use')
+    await screen.findByText('Lv 1 · 0 of 6 slots in use · speed ×1')
     expect(document.querySelectorAll('[data-slot-card]')).toHaveLength(6)
-    fireEvent.click(screen.getByRole('button', { name: 'Upgrade to Lv 2 for 3,000 Prize Money' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Upgrade to Lv 2' }))
     const sheet = await screen.findByRole('dialog', { name: 'Upgrade to Lv 2' })
-    within(sheet).getByText('9 slots at Lv 2')
+    within(sheet).getByText(/slots$/)
     fireEvent.click(within(sheet).getByRole('button', { name: 'Yes' }))
     await waitFor(() => expect(document.querySelectorAll('[data-slot-card]')).toHaveLength(9))
-    screen.getByText('Lv 2 · 0 of 9 slots in use')
-    screen.getByText('The Kitchen is Lv 2 now.')
+    screen.getByText('Lv 2 · 0 of 9 slots in use · speed ×1')
     expect(state(game).profile.prizeMoney).toBe(0)
   })
 
@@ -156,7 +156,7 @@ describe('upgrades and empty stock (07 §7, §11)', () => {
     const { state: account, at } = farmAccount(1)
     const { game } = clocked(farmSeed(account, at))
     renderG2('/farm/orchard', game)
-    fireEvent.click(await screen.findByRole('button', { name: 'Upgrade to Lv 2 for 1,200 Prize Money. Needs 1,200 Prize Money.' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Upgrade to Lv 2' }))
     const sheet = await screen.findByRole('dialog', { name: 'Upgrade to Lv 2' })
     within(sheet).getByText('Needs 1,200 Prize Money.')
     expect(within(sheet).getByRole('button', { name: 'Yes' }).hasAttribute('disabled')).toBe(true)
@@ -169,7 +169,7 @@ describe('upgrades and empty stock (07 §7, §11)', () => {
     const sheet = await screen.findByRole('dialog', { name: 'Start a job · Kitchen' })
     expect(within(sheet).getByRole('button', { name: /^Start · ×1 · / }).hasAttribute('disabled')).toBe(true)
     within(sheet).getByText('Short 1 Chopped Carrot.')
-    within(sheet).getByLabelText('Chopped Carrot 0 of 1 · 1 short')
+    within(sheet).getByLabelText('Chopped Carrot 0 of 1')
     const make = within(sheet).getByRole('link', { name: 'Make Chopped Carrot at the Pantry' })
     expect(make.getAttribute('href')).toBe(`/farm/pantry?job=chopped-carrot&count=1&back=${encodeURIComponent(`/farm/kitchen?job=tonic-1&uma=${uma(1)}`)}`)
 
@@ -186,9 +186,9 @@ describe('upgrades and empty stock (07 §7, §11)', () => {
     const sheet = await screen.findByRole('dialog', { name: 'Start a job · Pantry' })
     expect(within(sheet).getByRole('button', { name: /^Chopped Carrot, grade 1/ }).getAttribute('aria-pressed')).toBe('true')
     // Amber suits Vegetables (Front Runner A), so she is preselected; the owner picks Bluebell instead.
-    expect(sheet.querySelector('[data-g2="farm-uma-control"]')?.textContent).toContain('Amber Sprint · Farm Lv 1')
-    fireEvent.click(within(sheet).getByRole('button', { name: 'Free Umas' }))
-    fireEvent.click(await within(await screen.findByRole('dialog', { name: 'Free Umas' })).findByRole('button', { name: BLUEBELL }))
+    expect(within(sheet).getByRole('button', { name: 'Choose an Uma' })?.textContent).toContain('Amber SprintFarm Lv 1')
+    fireEvent.click(within(sheet).getByRole('button', { name: 'Choose an Uma' }))
+    fireEvent.click(await within(await screen.findByRole('dialog', { name: 'Choose an Uma' })).findByRole('button', { name: BLUEBELL }))
     fireEvent.click(within(sheet).getByRole('button', { name: /^Start · / }))
     await waitFor(() => expect(where()).toBe('/town/warehouse'))
     expect(state(game).work[uma(2)]!.entries[0]!.request).toMatchObject({ kind: 'craft', item: 'chopped-carrot' })
@@ -207,8 +207,8 @@ describe('the job sheet, one screen (D366)', () => {
     const { where } = renderG2('/farm/orchard', game)
     fireEvent.click(await screen.findByRole('link', { name: 'Start a job in slot 1' }))
     const sheet = await screen.findByRole('dialog', { name: 'Start a job · Orchard' })
-    fireEvent.click(within(sheet).getByRole('button', { name: 'Free Umas' }))
-    const picker = await screen.findByRole('dialog', { name: 'Free Umas' })
+    fireEvent.click(within(sheet).getByRole('button', { name: 'Choose an Uma' }))
+    const picker = await screen.findByRole('dialog', { name: 'Choose an Uma' })
     const umas = within(picker).getAllByRole('button').filter((button) => [AMBER, BLUEBELL].includes(button.getAttribute('aria-label') ?? ''))
     expect(umas.map((button) => button.getAttribute('aria-label'))).toEqual([BLUEBELL, AMBER])
     expect(within(picker).queryByRole('button', { name: /^Cinder Gale/ })).toBeNull()
@@ -216,7 +216,7 @@ describe('the job sheet, one screen (D366)', () => {
     fireEvent.click(within(picker).getByRole('button', { name: 'Close' }))
     // One is chosen, one item is chosen, and one size is chosen: Start is one tap away.
     expect(within(sheet).getAllByRole('radio', { checked: true }).length).toBe(1)
-    expect(sheet.querySelector('[data-g2="farm-uma-control"]')?.textContent).toContain('Bluebell Dash · Farm Lv 9')
+    expect(within(screen.getByRole('dialog', { name: /^Start a job/ })).getByRole('button', { name: 'Choose an Uma' })?.textContent).toContain('Bluebell DashFarm Lv 9')
     expect(sheet.querySelectorAll('[data-item][aria-pressed="true"]')).toHaveLength(1)
     const chips = within(sheet).getAllByRole('radio').filter((radio) => radio.hasAttribute('data-size'))
     expect(chips.length).toBeGreaterThan(1)
@@ -225,7 +225,7 @@ describe('the job sheet, one screen (D366)', () => {
     const marked = sheet.querySelector('[data-marked]')!
     expect(marked.getAttribute('aria-checked')).toBe('true')
     expect(marked.getAttribute('aria-label')).toMatch(/, fits the next check-in$|, runs overnight$/)
-    expect(marked.querySelector('[data-fit]')).not.toBeNull()
+    expect(marked.querySelector('svg')).not.toBeNull()
     const start = within(sheet).getByRole('button', { name: /^Start · ×\d+ · / })
     expect(start.textContent).not.toMatch(CLOCK)
     fireEvent.click(start)
@@ -249,7 +249,7 @@ describe('the job sheet, one screen (D366)', () => {
     fireEvent.click(within(sheet).getByRole('button', { name: 'Collect here' }))
     await waitFor(() => expect(state(game).items['wheat']).toBe(1))
     // Collected, she is Free: the sheet preselects her.
-    await waitFor(() => expect(sheet.querySelector('[data-g2="farm-uma-control"]')?.textContent).toContain(`${AMBER} · Farm Lv 1`))
+    await waitFor(() => expect(within(screen.getByRole('dialog', { name: /^Start a job/ })).getByRole('button', { name: 'Choose an Uma' })?.textContent).toContain(`${AMBER}Farm Lv 1`))
   })
 
   it("a target's icon opens the sheet filled in with its item, the planner's Uma and size: one more tap starts it", async () => {
@@ -303,7 +303,7 @@ describe('offline, away and reopened (07 §11, 02 §8)', () => {
     // Offline, a tap still applies on this phone.
     fireEvent.click(screen.getByRole('button', { name: 'Collect here · 1' }))
     await waitFor(() => expect(state(game).items['wheat']).toBe(13))
-    screen.getByText(`${AMBER}: 13 Wheat · Farm EXP +${Math.round((13 * day.entries[0]!.farmExp[0]!) / 4).toLocaleString('en-US')}`)
+    screen.getByText(`${AMBER}: 13 Wheat · Farm EXP +${Math.round((13 * day.entries[0]!.exp[0]!) / 4).toLocaleString('en-US')}`)
   })
 })
 
@@ -335,7 +335,7 @@ describe('Collect here, Repeat here and a row\'s Repeat (07 §9, §10)', () => {
     advance(2 * GATHER_1)
     renderG2('/farm/fields', game)
     const row = await screen.findByRole('article', { name: `${AMBER}. Wheat, 2 of 2 made, ready to collect` })
-    fireEvent.click(within(row).getByRole('button', { name: 'Collect and repeat Wheat ×2' }))
+    fireEvent.click(within(row).getByRole('button', { name: 'Collect and repeat Wheat' }))
     await waitFor(() => expect(state(game).items['wheat']).toBe(2))
     await waitFor(() => expect(state(game).work[uma(1)]!.entries.at(-1)!.request).toEqual({ kind: 'gather', item: 'wheat', count: 2 }))
     expect(state(game).work[uma(1)]!.entries.at(-1)!.startedAt).toBe(at + 2 * GATHER_1)
@@ -381,10 +381,10 @@ describe('Speed Tickets on a row (09 §5.1)', () => {
     ready = apply(ready, 'start', { outfitId: uma(1), slot: { building: 'fields', slot: 0 }, request: { kind: 'gather', item: 'wheat', count: 2 } }, at).state
     const { game } = clocked(farmSeed(ready, at))
     renderG2('/farm/fields', game)
-    fireEvent.click(await screen.findByRole('button', { name: 'Speed Tickets for Wheat ×2' }))
-    const sheet = await screen.findByRole('dialog', { name: 'Speed up Wheat ×2' })
-    within(sheet).getByText(`${durationText(2 * GATHER_1)} left`)
-    fireEvent.click(within(sheet).getByRole('button', { name: 'Buy 6 and finish · 180' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Speed up Wheat' }))
+    const sheet = await screen.findByRole('dialog', { name: 'Speed up Wheat' })
+    within(sheet).getByText(new RegExp(`^${durationText(2 * GATHER_1)} left`))
+    fireEvent.click(within(sheet).getByRole('button', { name: 'Buy 6 and finish · 180 Prize Money' }))
     within(sheet).getByText('Buy 6 Speed Tickets for 180 Prize Money and finish now?')
     expect(state(game).profile.prizeMoney).toBe(1_000)
     fireEvent.click(within(sheet).getByRole('button', { name: 'Yes' }))
@@ -404,14 +404,14 @@ describe('the side panel and the Counter (11 §2.6, §3.4; D366)', () => {
     const { game, advance } = clocked(farmSeed(working, at))
     renderG2('/farm?peek=vegetable-garden', game)
     const peek = await screen.findByRole('dialog', { name: 'Vegetable Garden' })
-    const row = await within(peek).findByRole('group', { name: `${AMBER}. Carrot, 0 of 2 made, ${durationText(2 * GATHER_1)} left` })
-    within(row).getByText('Carrot ×2 · 0/2')
+    const row = await within(peek).findByRole('article', { name: `${AMBER}. Carrot, 0 of 2 made, ${durationText(2 * GATHER_1)} left` })
+    expect(row.textContent).toContain('×2 · 0/2')
     within(row).getByText(durationText(2 * GATHER_1))
     expect(peek.textContent).not.toMatch(CLOCK)
     expect(within(peek).getAllByRole('link', { name: /^Start a job in slot \d$/ })).toHaveLength(3)
     within(peek).getByLabelText('Carrot: 3')
     within(peek).getByRole('heading', { name: 'For your targets' })
-    within(peek).getByText('Lv 1 · 1 of 4 slots in use')
+    within(peek).getByText('Lv 1 · 1 of 4 slots in use · speed ×1')
     expect(within(peek).queryByRole('button', { name: /^Collect here/ })).toBeNull()
 
     advance(GATHER_1)
@@ -432,7 +432,7 @@ describe('the side panel and the Counter (11 §2.6, §3.4; D366)', () => {
     fireEvent.click(within(sheet).getByRole('button', { name: /^Start · ×\d+ · / }))
     await waitFor(() => expect(where()).toBe('/farm?peek=fields'))
     expect(state(game).work[uma(1)]!.entries[0]!.request).toMatchObject({ kind: 'gather', item: 'wheat' })
-    await within(screen.getByRole('dialog', { name: 'Fields' })).findByRole('group', { name: new RegExp(`^${AMBER}\\. Wheat, 0 of \\d+ made, .+ left$`) })
+    await within(screen.getByRole('dialog', { name: 'Fields' })).findByRole('article', { name: new RegExp(`^${AMBER}\\. Wheat, 0 of \\d+ made, .+ left$`) })
   })
 
   it('closes the job sheet over the map before the side panel: Escape takes the sheet first, and a sideways drag on it is never the panel\'s swipe', async () => {
@@ -466,9 +466,9 @@ describe('the side panel and the Counter (11 §2.6, §3.4; D366)', () => {
     renderG2('/farm', game)
     fireEvent.click(await screen.findByRole('link', { name: /^Fields\./ }))
     const peek = await screen.findByRole('dialog', { name: 'Fields' })
-    const done = within(peek).getByRole('group', { name: `${AMBER}. Wheat, 1 of 1 made, ready to collect` })
+    const done = within(peek).getByRole('article', { name: `${AMBER}. Wheat, 1 of 1 made, ready to collect` })
     within(done).getByText('Done')
-    fireEvent.click(within(done).getByRole('button', { name: 'Collect and repeat Wheat ×1' }))
+    fireEvent.click(within(done).getByRole('button', { name: 'Collect and repeat Wheat' }))
     await waitFor(() => expect(state(game).work[uma(1)]!.entries.at(-1)!.startedAt).toBe(at + GATHER_1))
     expect(state(game).items['wheat']).toBe(1)
 

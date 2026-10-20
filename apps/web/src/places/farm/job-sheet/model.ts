@@ -411,7 +411,7 @@ export function sheetPreview(view: WorkView, building: FarmBuildingId, outfitId:
   const plan = planned(view, building, outfitId, item, mode, slot)
   const seconds = plan?.map((one) => one.seconds) ?? Array.from({ length: MAX_ITEMS_PER_ENTRY }, () => farmItemSeconds(kind, def.grade, speedAt(settled, building)))
   const inputsEach = plan?.map((one) => one.inputs) ?? Array.from({ length: MAX_ITEMS_PER_ENTRY }, () => recipeOf(item)?.inputs ?? [])
-  const items: readonly PlannedItem[] = plan ?? inputsEach.map((inputs, i) => ({ seconds: seconds[i]!, inputs, output: { item }, farmExp: 0 }))
+  const items: readonly PlannedItem[] = plan ?? inputsEach.map((inputs, i) => ({ seconds: seconds[i]!, inputs, output: { item }, exp: 0 }))
   const max = Math.max(1, largestCoverable(settled.items, items))
   const n = Math.min(Math.max(1, count ?? 1), MAX_ITEMS_PER_ENTRY)
   const begin = mode === 'queue' && outfitId !== null ? freeAt(settled, outfitId, now, env) ?? now : now
@@ -429,7 +429,7 @@ export function sheetPreview(view: WorkView, building: FarmBuildingId, outfitId:
     minutesEach: seconds[0]! / 60,
     ms,
     endsAt: begin + ms,
-    farmExp: plan === null ? null : Math.round(plan.slice(0, n).reduce((sum, one) => sum + one.farmExp, 0) / QUARTERS_PER_EXP),
+    farmExp: plan === null ? null : Math.round(plan.slice(0, n).reduce((sum, one) => sum + one.exp, 0) / QUARTERS_PER_EXP),
     inputs,
   }
 }

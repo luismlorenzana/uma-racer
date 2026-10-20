@@ -5,16 +5,23 @@
 // marked size, never a clock time; and every template passes 02 §9's banned words.
 import { durationText, hasBannedWord, say, sizeChips } from '@racer/domain/check-in'
 import { FARM_BUILDING_IDS, farmItemSeconds, totalSlots, type BuildingLevel } from '@racer/domain/farm'
-import { endsAt, itemEnds, recall, WORK_REFUSALS, type WorkState } from '@racer/domain/work'
+import { endsAt, itemEnds, recall, sharedWorkEnv, WORK_REFUSALS, type WorkState } from '@racer/domain/work'
+import { recallLines as kitRecallLines, recallPreview as kitRecallPreview, speedUpModel as kitSpeedUpModel, speedUpQuestion as kitSpeedUpQuestion, workView as kitWorkView, workWords as kitWorkWords } from '@luismlorenzana/uma-kit/work'
 import { describe, expect, it } from 'vitest'
 import { apply, farmAccount, HOUR, MINUTE, uma, withFarmLevel } from '../../places/farm/__fixtures__/farm'
-import { recallLines } from './RecallSheet'
-import { speedUpQuestion } from './SpeedUpControls'
-import { queueChips, recallPreview, sizeChipsView, slotCards, speedUpModel } from './model'
+import { ticketOffer } from './actions'
+import { sizeChipsView, slotCards } from './model'
 import { workView } from './view'
-import { showWords, WORK_WORDS, workWords } from './words'
+import { itemsList, showWords, WORK_WORDS, workWords } from './words'
 
 const at = farmAccount(0).at
+const copy = kitWorkWords()
+const context = { umaName: () => '', utcOffsetMin: 0, now: at }
+const nativeEnv = sharedWorkEnv(farmAccount(1).env)
+const speedUpModel = (state: WorkState, id: string, now: number) => kitSpeedUpModel(state, id, now, nativeEnv, (n) => ticketOffer(state, n, now, context))
+const speedUpQuestion = (model: ReturnType<typeof speedUpModel>) => kitSpeedUpQuestion(model, copy)
+const recallPreview = (state: WorkState, id: string, now: number, env: Parameters<typeof sharedWorkEnv>[0]) => kitRecallPreview(state, id, now, sharedWorkEnv(env))
+const recallLines = (preview: ReturnType<typeof recallPreview>) => kitRecallLines(preview, copy, itemsList)
 
 describe('slot cards (07 §6, §10)', () => {
   it("follow each building's totalSlots at Lv 1, 2 and 3, all free on a new account", () => {
@@ -77,15 +84,15 @@ describe("SpeedUpControls' four states (07 §8, 09 §5.1)", () => {
 
   it('buy: too few tickets reads "Buy 6 and finish · 180" and asks once; short of money it says why', () => {
     const model = speedUpModel(running(5), uma(1), at)
-    expect(model).toMatchObject({ state: 'buy', finish: 11, have: 5, buy: 6, price: 180 })
-    expect(workWords('buy-finish', { n: model.buy, price: model.price })).toBe('Buy 6 and finish · 180')
+    expect(model).toMatchObject({ state: 'buy', finish: 11, have: 5, buy: 6, offer: { price: 180 } })
+    expect(workWords('buy-finish', { n: model.buy, price: model.offer!.price })).toBe('Buy 6 and finish · 180')
     expect(speedUpQuestion(model)).toBe('Buy 6 Speed Tickets for 180 Prize Money and finish now?')
     // One ticket is singular, in the question and in Finish's label.
-    expect(speedUpQuestion({ ...model, buy: 1, price: 30 })).toBe('Buy 1 Speed Ticket for 30 Prize Money and finish now?')
+    expect(speedUpQuestion({ ...model, buy: 1, offer: { price: 30, label: '30 Prize Money' } })).toBe('Buy 1 Speed Ticket for 30 Prize Money and finish now?')
     expect(workWords('finish-label-one')).toBe('Finish now with 1 Speed Ticket')
-    expect(model.buyRefusal).toEqual({ text: 'Need {n} more.', data: { n: 180 } })
+    expect(model.offer?.refusal).toBe('Need 180 more.')
     const rich = apply(running(5), 'dev-grant', { prizeMoney: 1_000 }, at).state
-    expect(speedUpModel(rich, uma(1), at).buyRefusal).toBeNull()
+    expect(speedUpModel(rich, uma(1), at).offer?.refusal).toBeNull()
   })
 
   it('waste: under 30 minutes left it shows the minutes the ticket wastes before it confirms', () => {
@@ -134,15 +141,17 @@ describe('queue chips (02 §3, D366)', () => {
     next = apply(next, 'queue', { outfitId: uma(1), add: { request: { kind: 'craft', item: 'wheat-flour', count: 2 }, building: 'pantry' } }, at).state
     const view = workView(next, at, env)
     const first = next.work[uma(1)]!.entries[0]!
-    const chips = queueChips(view.projection, view.warnings, uma(1))
+    const chips = kitWorkView(next, at, sharedWorkEnv(env)).queues(uma(1))
     expect(chips).toHaveLength(1)
     expect(chips[0]).toMatchObject({ index: 0, endsAt: null, ms: null })
-    expect(chips[0]!.warning).toEqual({ text: 'Short {n} {item}.', data: { n: 2, item: 'wheat' } })
+    expect(chips[0]!.short).toEqual([{ item: 'wheat', qty: 2 }])
+    expect(view.warnings[0]!.words).toEqual({ text: 'Short {n} {item}.', data: { n: 2, item: 'wheat' } })
 
     const stocked = apply(next, 'dev-grant', { items: { wheat: 2 } }, at).state
     const covered = workView(stocked, at, env)
-    const [chip] = queueChips(covered.projection, covered.warnings, uma(1))
-    expect(chip!.warning).toBeNull()
+    const [chip] = kitWorkView(stocked, at, sharedWorkEnv(env)).queues(uma(1))
+    expect(chip!.short).toEqual([])
+    expect(covered.warnings).toEqual([])
     expect(chip!.endsAt).toBe(endsAt(first) + 2 * farmItemSeconds('craft', 1) * 1000)
     expect(chip!.ms).toBe(2 * farmItemSeconds('craft', 1) * 1000)
   })

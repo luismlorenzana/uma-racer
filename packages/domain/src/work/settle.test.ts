@@ -6,9 +6,9 @@ import {
   clock, dishUnlock, ENV, farmAccount, HELPER, ok, PLAIN, SESSION_ENV, SPRINTS, STRONG, STUDENT, withStock,
 } from '../__fixtures__/work'
 import { farmItemSeconds } from '../farm/jobs'
-import { collect, queue, start } from './operations'
-import { settle } from './settle'
-import { endsAt } from './timeline'
+import { collect, queue, start } from './adapter'
+import { settle } from './adapter'
+import { endsAt } from './adapter'
 import type { FarmRequest, SlotRef, WorkRequest, WorkState } from './types'
 import type { WorkEnv } from './kinds'
 

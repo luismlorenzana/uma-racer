@@ -3,22 +3,16 @@
 // engine owns everything else: slots, reserving, the clock, queues, collect, recall and Speed Tickets. T127 registers
 // gather, craft and cook, and T128's `session` (rework/training) joins them; a caller may pass its own table in
 // `env.kinds` (the tests' synthetic session kind does).
-import { cookKind, craftKind, gatherKind } from '../farm/jobs'
-import { sessionKind } from '../training/sessions'
-import type { RecipeInput } from '../items/recipes'
+import type { PlannedItem as SharedPlannedItem } from '@luismlorenzana/uma-work'
+import { gatherKind } from './kinds/gather'
+import { craftKind } from './kinds/craft'
+import { cookKind } from './kinds/cook'
+import { sessionKind } from './kinds/session'
 import type { Refusal } from '../state/types'
 import type { SlotRef, WorkContent, WorkKind, WorkOutput, WorkRequest, WorkState } from './types'
 
 /** One planned item. */
-export interface PlannedItem {
-  /** Its seconds at the building's speed now: `workSeconds(base, speed)`. */
-  readonly seconds: number
-  /** What it takes from the Warehouse, reserved when its entry starts. */
-  readonly inputs: readonly RecipeInput[]
-  readonly output: WorkOutput
-  /** Farm EXP in quarter points, fixed now (07 §4); 0 for a session. */
-  readonly farmExp: number
-}
+export type PlannedItem = SharedPlannedItem
 
 /** What the engine tells a kind about the request it plans. */
 export interface PlanContext {

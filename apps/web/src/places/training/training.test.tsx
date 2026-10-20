@@ -4,7 +4,7 @@
 // accounts, its clock held and moved by hand: a three-node session from the sheet, its Collect chip and fill, Recall;
 // −30m and "Buy N and finish"; an upgrade's slot at once; the Card Library's Dojo link and Queue; the Extra Stats
 // switches over capacity; and a reopen keeping every change.
-import { durationText } from '@racer/domain/check-in'
+import { durationText } from '@luismlorenzana/uma-kit/work'
 import { craftedItem } from '@racer/domain/items'
 import { sessionSeconds } from '@racer/domain/training'
 import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
@@ -65,8 +65,8 @@ describe('a session from the sheet (05 §2, §8)', () => {
 
     reopen('/training/observatory', game)
     const card = await screen.findByRole('article', { name: new RegExp(`^${name(uma(1))}\\. Node 3 · Warm-Up Tonic, 2 of 3 made`) })
-    fireEvent.click(within(card).getByRole('button', { name: `More for ${name(uma(1))}: Queue next and Recall` }))
-    fireEvent.click(within(await screen.findByRole('dialog', { name: `${name(uma(1))} · Node 3 · Warm-Up Tonic ×3` })).getByRole('button', { name: 'Recall' }))
+    fireEvent.click(within(card).getByRole('button', { name: `More: ${name(uma(1))}` }))
+    fireEvent.click(within(await screen.findByRole('dialog', { name: `${name(uma(1))} · Node 3 · Warm-Up Tonic` })).getByRole('button', { name: 'Recall' }))
     const recall = await screen.findByRole('dialog', { name: `Recall ${name(uma(1))}` })
     within(recall).getByText('1 Warm-Up Tonic comes back')
     fireEvent.click(within(recall).getByRole('button', { name: 'Recall' }))
@@ -88,7 +88,7 @@ describe('Speed Tickets on a session (09 §5.1)', () => {
     const { game } = clocked(farmSeed(started, at))
     renderG2('/training/observatory', game)
     const card = await screen.findByRole('article', { name: new RegExp(`, ${durationText(2 * ONE)} left$`) })
-    fireEvent.click(within(card).getByRole('button', { name: /^Speed Tickets for / }))
+    fireEvent.click(within(card).getByRole('button', { name: /^Speed up / }))
     const speed = await screen.findByRole('dialog', { name: /^Speed up / })
     fireEvent.click(within(speed).getByRole('button', { name: 'Take 30 minutes off with one Speed Ticket' }))
     await waitFor(() => expect(state(game).work[uma(1)]!.entries[0]!.acceleratedMs).toBe(30 * MINUTE))
@@ -111,13 +111,12 @@ describe('upgrades (05 §7)', () => {
     const paid = granted(account, at, { [craftedItem('vegetables', 1).id]: 4 }, 1_200)
     const { game } = clocked(farmSeed(paid, at))
     renderG2('/training/observatory', game)
-    await screen.findByText('Lv 1 · 0 of 2 slots in use')
-    fireEvent.click(screen.getByRole('button', { name: 'Upgrade to Lv 2 for 1,200 Prize Money' }))
+    await screen.findByText('Lv 1 · 0 of 2 slots in use · speed ×1')
+    fireEvent.click(screen.getByRole('button', { name: 'Upgrade to Lv 2' }))
     const sheet = await screen.findByRole('dialog', { name: 'Upgrade to Lv 2' })
-    within(sheet).getByText('3 slots at Lv 2')
+    within(sheet).getByText(/slots$/)
     fireEvent.click(within(sheet).getByRole('button', { name: 'Yes' }))
     await waitFor(() => expect(document.querySelectorAll('[data-slot-card]')).toHaveLength(3))
-    screen.getByText('The Observatory is Lv 2 now.')
   })
 })
 

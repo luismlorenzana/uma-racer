@@ -7,7 +7,7 @@ import { account, clock, craft, ENV, gather, ok, slot, uma } from '../__fixtures
 import { buyPrice } from '../economy/exchange'
 import { projectWork, queueWarnings } from '../planner/project'
 import { isRefusal } from '../state/types'
-import { collect, queue, start } from '../work/operations'
+import { collect, queue, start } from '../work/adapter'
 import type { WorkRequest, WorkState } from '../work/types'
 import { collectAll } from './collect-all'
 import { dismissDropped, queueStopped, restartDropped } from './dropped'

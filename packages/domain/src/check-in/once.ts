@@ -18,7 +18,7 @@ import { advanceScenario, setActiveNodes, setAssignments, setCardSet, setLineage
 import type { TrainingContent } from '../training/derive'
 import { isRefusal, type OpResult, type Refusal } from '../state/types'
 import type { WorkEnv } from '../work/kinds'
-import { collect, finish, queue, recall, speedUp, start, upgrade, type QueueInput, type SpeedUpInput, type StartInput } from '../work/operations'
+import { collect, finish, queue, recall, speedUp, start, upgrade, type QueueInput, type SpeedUpInput, type StartInput } from '../work/adapter'
 import { SESSION_KIND, type WorkRequest, type WorkState } from '../work/types'
 import { setTargets } from '../planner/targets'
 import { collectAll } from './collect-all'

@@ -1,8 +1,8 @@
 // The loop simulation's two probes (T132's "Probes"; docs/game/12-economy-and-pacing.md §5, §6):
 // Farm Levels a day early in a tier, and the first unlock on a fresh account. Both run on the rules' operations only.
-import { collect, start } from '../work/operations'
-import { newWorkState } from '../work/state'
-import { itemEnds } from '../work/timeline'
+import { collect, start } from '../work/adapter'
+import { newWorkState } from '../work/adapter'
+import { itemEnds } from '../work/adapter'
 import { SESSION_KIND, type WorkState } from '../work/types'
 import { rawItem } from '../items/catalogue'
 import { highestOpenGrade } from '../items/grades'

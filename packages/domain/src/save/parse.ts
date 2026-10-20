@@ -30,7 +30,7 @@ import {
   type OperationRecord, type Preset, type Refusal, type ScenarioOfTier, type Tier, type TierHistoryEntry, type TierHistoryPreset,
   type UmaBuild, type UmaState,
 } from '../state/types'
-import { MAX_ITEMS_PER_ENTRY, MAX_QUEUE, MIN_ITEMS_PER_ENTRY } from '../work/operations'
+import { MAX_ITEMS_PER_ENTRY, MAX_QUEUE, MIN_ITEMS_PER_ENTRY } from '../work/adapter'
 import {
   SESSION_KIND, type DroppedQueue, type Entry, type LastWork, type SlotRef, type UnlockRef, type WorkOutput, type WorkRequest, type WorkRow,
 } from '../work/types'
@@ -372,22 +372,28 @@ function parseOutput(value: unknown): WorkOutput | null {
 const requestSize = (request: WorkRequest): number => (request.kind === SESSION_KIND ? request.unlocks.length : request.count)
 
 const ENTRY_KEYS = [
-  'request', 'seconds', 'inputs', 'outputs', 'farmExp', 'startedAt', 'acceleratedMs', 'collected', 'speed', 'fromQueue',
+  'request', 'seconds', 'inputs', 'outputs', 'exp', 'startedAt', 'acceleratedMs', 'collected', 'speed', 'fromQueue',
 ] as const satisfies readonly (keyof Entry)[]
 
 /** A started entry: its request's 1–10 items with every per-item array that long, and `collected` no more than them. */
 export function parseEntry(value: unknown): Entry | null {
+  // SC5: accept exactly one spelling, then validate the canonical row. Never rebuild the frozen plan from today's
+  // recipes: pre-D375 work can still finish with the inputs, output, duration and EXP it reserved.
+  if (isObject(value) && Object.hasOwn(value, 'farmExp') && !Object.hasOwn(value, 'exp')) {
+    const { farmExp, ...entry } = value
+    return parseEntry({ ...entry, exp: farmExp })
+  }
   if (!isObject(value) || !exactKeys(value, ENTRY_KEYS)) return null
   const request = parseWorkRequest(value.request)
   if (!request) return null
   const n = requestSize(request)
-  const lists = [value.seconds, value.inputs, value.outputs, value.farmExp]
+  const lists = [value.seconds, value.inputs, value.outputs, value.exp]
   if (!lists.every((list) => Array.isArray(list) && list.length === n)) return null
   const seconds = value.seconds as unknown[]
-  const farmExp = value.farmExp as unknown[]
+  const exp = value.exp as unknown[]
   const inputs = (value.inputs as unknown[]).map(parseRecipeInputs)
   const outputs = (value.outputs as unknown[]).map(parseOutput)
-  if (!seconds.every(isPositiveInt) || !farmExp.every(isNonNegativeInt) || inputs.some((row) => row === null) ||
+  if (!seconds.every(isPositiveInt) || !exp.every(isNonNegativeInt) || inputs.some((row) => row === null) ||
     outputs.some((output) => output === null)) return null
   if (!isTimestamp(value.startedAt) || !isNonNegativeInt(value.acceleratedMs) || !isIntIn(value.collected, 0, n) ||
     typeof value.speed !== 'number' || !Number.isFinite(value.speed) || value.speed <= 0 || typeof value.fromQueue !== 'boolean') return null
@@ -396,7 +402,7 @@ export function parseEntry(value: unknown): Entry | null {
     seconds: seconds as number[],
     inputs: inputs as RecipeInput[][],
     outputs: outputs as WorkOutput[],
-    farmExp: farmExp as number[],
+    exp: exp as number[],
     startedAt: value.startedAt,
     acceleratedMs: value.acceleratedMs,
     collected: value.collected,
@@ -424,7 +430,14 @@ function parseDropped(value: unknown): DroppedQueue | null {
   // The entry that couldn't start and every one behind it: up to the running one's queue of three, and the one it held.
   const requests = parseRequests(value.requests, 1, MAX_QUEUE + 1)
   const short = parseRecipeInputs(value.short)
-  const refused = value.refused === null ? null : parseRefusal(value.refused)
+  // Shared rows use `message`; legacy rows used `reason`. The global Racer operation receipt still uses `reason`.
+  const raw = value.refused
+  const refusal = isObject(raw) && Object.hasOwn(raw, 'message') && !Object.hasOwn(raw, 'reason')
+    ? (() => { const { message, ...rest } = raw; return parseRefusal({ ...rest, reason: message }) })()
+    : parseRefusal(raw)
+  const refused = refusal === null ? null : {
+    refused: true as const, code: refusal.code, message: refusal.reason, ...(refusal.data === undefined ? {} : { data: refusal.data }),
+  }
   if (!slot || !requests || !short || (value.refused !== null && !refused)) return null
   return { at: value.at, slot, requests, short, refused }
 }

@@ -15,6 +15,11 @@ This page owns the buildings, jobs, Farm Level, worker rules, slots and upgrades
 notifications and the "what she still needs" planner belong to [02](02-check-ins-and-notifications.md); the Hub's Farm
 page belongs to [11](11-hub-and-places.md); prices of Speed Tickets and sales belong to [09](09-racing-rewards-and-exchange.md).
 
+SC5 (D377) runs jobs and sessions on `@luismlorenzana/uma-work` 0.1.0 through `work/adapter.ts` and the Racer kinds in
+`work/kinds/`. `uma-kit/work` draws the building rows, side panels, job sheet, queue, speed-up, recall and upgrades.
+Racer supplies recipes, free-Uma/aptitude order, Farm Level, check-in fit, targets, words and real operations; no rule
+or cost changes. Existing frozen entries read `farmExp` as `exp` without replanning or resetting work.
+
 ## 1. The buildings
 
 Ten buildings, all on the Farm page, all open from the first day. Ids are uma-art building ids on its `farmlands`
@@ -435,7 +440,7 @@ It is uma-kit's shelf frame (`ShelfView`, SD4), filled with this game's stock:
   (they're inside their jobs), so they can't be sold; selling into what the planner needs asks first.
 
 **As built (T138).** A row's counts come from one projection of the work at the clock: **held** is the Warehouse
-settled to now; **reserved** is `reservedStock(state, now)` (`work/activity.ts`), the inputs of every item not yet
+settled to now; **reserved** is `reservedStock(state, now)` (uma-work via `work/adapter.ts`), the inputs of every item not yet
 made in a started entry, which is exactly what Recall would hand back; **coming** is `projectWork(...).coming` by item;
 **needed** is `neededFromStock` over the plan for `targetsOf`. The shelves list what's held (a stack only reserved,
 coming or needed shows in the Peek's shortfalls and the planner, not on a shelf), and an empty Warehouse reads
@@ -547,7 +552,7 @@ The old Farm, the Stable Kitchen (M031, D304–D320; deleted with the cutover, r
 | A row's ring is the current item's progress (`itemProgress`) round her face, as the Hub's pips are, redrawn on the 30-second clock (T140, D366) | One look for the pip and its row ([11](11-hub-and-places.md) §4) |
 | The quick look's stock by open grade runs up to the highest grade any current Uma has open; every building shows its targets as icons (T140, D366) | [11](11-hub-and-places.md) §3.4 says "by open grade"; the same reading as the Exchange's stock ([09](09-racing-rewards-and-exchange.md) §5.3) |
 | Collect here and Repeat here sit in the page's thumb zone; off, each says why on itself ("Nothing to collect", "Nobody to repeat"); their receipt lists each line and each skip in the rule's words, a restart with how long it takes (T140, D366) | §10 puts them beside the global ones; [02](02-check-ins-and-notifications.md) §5's "Kitchen full", "4 Honey short" |
-| `ui/work/` (SlotRow and PeekRow, PlaceStats, UpgradeButton, SpeedUpControls, RecallSheet, QueueChips, SizeChips) and `ui/ItemIcon` are shared with Training and the check-in; the job sheet's selected-Uma control opens the kit's picker (SB6) | One look for every timed thing and every item; the Farm makes the items |
+| `uma-kit/work` draws SlotRow/PeekRow, FacilityHeader, SpeedUpControls, RecallSheet, QueueChips, SizeChips, StoppedQueueCard, TargetsStrip and JobSheet (SC5); Racer injects `ui/ItemIcon` and its recipe/picker rules | One shared timed-work UI, no local component copies; Training and check-ins use the same pieces |
 | **Every Farm screen shows how long work takes or has left, never the clock time it ends:** rows ("1h 20m", **Done**), size chips ("×4 · 10h 48m"), Start ("Start · ×4 · 10h 48m"), queue chips ("then Carrot ×4 · 10h 48m"), no-slot words and Repeat's receipt, all through the domain's `durationText` (D366) | The owner: "I don't like that you show the hour the job finishes instead of the time the job is going to take" |
 | **The sheet preselects everything:** the first Free Uma in level order unless a link names her; the planner's item and size when they belong to her, else `bestItem` and the fitted size; a link's item and count are kept (D368) | "Less clicks": a free slot's job is one tap from the open sheet, with its Uma matching the new order |
 | **Repeat on a finished row** is `collect`, then `repeat { outfitIds: [her] }`, two operations; the profile's Repeat sizing (same or fit, [02](02-check-ins-and-notifications.md) §5) applies as it does to Repeat here (D366) | The domain's Repeat, for one Uma; nothing restarts outside it (§9) |

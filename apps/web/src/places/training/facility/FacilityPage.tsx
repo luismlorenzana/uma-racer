@@ -16,17 +16,15 @@ import { useGame } from '../../../app/game'
 import { ItemIcon } from '../../../ui/ItemIcon'
 import { duration } from '../../../ui/labels'
 import { PlacePageHeader } from '../../PlacePageHeader'
-import { PlaceStats } from '../../../ui/work/PlaceStats'
-import { SlotRow } from '../../../ui/work/SlotRow'
+import { FacilityHeader, SlotRow } from '@luismlorenzana/uma-kit/work'
 import { TapNoteLine } from '../../../ui/work/TapNote'
-import { UpgradeButton } from '../../../ui/work/Upgrade'
 import { useTap, useWordsContext, type Tap } from '../../../ui/work/useTap'
 import { useWorkView } from '../../../ui/work/view'
 import { showWords, type WordsContext } from '../../../ui/work/words'
 import { dishWords, sessionPath, type Content } from '../common'
 import { readSessionQuery, withoutSession } from '../session/query'
 import { trainingWords } from '../words'
-import { currentUnlock, facilityView, queuedWords, unlockLine, type FacilityView } from './model'
+import { currentUnlock, facilityView, unlockLine, type FacilityView } from './model'
 
 const SessionSheet = lazy(() => import('../session/SessionSheet'))
 
@@ -34,10 +32,7 @@ const BUTTON = 'font-display inline-flex min-h-11 items-center justify-center ro
 
 function Header({ model }: { model: FacilityView }) {
   return (
-    <section aria-label={model.name} data-g2="facility-header" className="flex min-h-13 items-center gap-2 border-b border-hairline px-4 py-1">
-      <PlaceStats level={model.level} used={model.used} slots={model.slots} speed={model.speed} className="flex-1" />
-      {model.upgrade !== null && <UpgradeButton upgrade={model.upgrade} building={model.facility} name={model.name} />}
-    </section>
+    <FacilityHeader building={model.facility} className="px-4" />
   )
 }
 
@@ -98,11 +93,10 @@ function Slots({ model, content }: { model: FacilityView; content: Content | nul
             return (
               <SlotRow
                 key={`${room.room ?? ''}:${card.slot.slot}`}
-                card={card}
+                slot={card.slot}
                 startLabel={trainingWords('start-session')}
                 startTo={sessionPath(facility, { room: room.room, slot: card.slot.slot })}
                 queueTo={card.kind === 'held' ? sessionPath(facility, { uma: card.outfitId, room: room.room, queue: true }) : undefined}
-                queueLabel={(request) => queuedWords(request, content)}
                 what={held === null || line === null ? undefined : { icon: held.dishId === null ? null : <ItemIcon item={held.dishId} decorative />, name: line }}
               />
             )

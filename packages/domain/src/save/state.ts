@@ -5,7 +5,7 @@
 // restart and a promoted Uma's dropped work row still syncs.
 import { BUILDING_IDS, INITIAL_BUILDINGS, type BuildingId, type BuildingLevel } from '../farm/buildings'
 import type { LedgerEntry, LedgerReason, OperationRecord, UmaState } from '../state/types'
-import { emptyRow } from '../work/state'
+import { emptyRow } from '../work/adapter'
 import type { WorkRow, WorkState } from '../work/types'
 import { isEntityKind, KIND_ORDER, type EntityKind } from './kinds'
 import { entityDraft, type EntityDraft, type EntityRef, type LogRef } from './rows'

@@ -8,8 +8,8 @@ import { useMemo } from 'react'
 import type { PeekProps } from '../registry'
 import { ItemIcon } from '../../ui/ItemIcon'
 import { useGame } from '../../app/game'
-import { PlaceStats } from '../../ui/work/PlaceStats'
-import { PeekRow } from '../../ui/work/SlotRow'
+import { PlaceStats, PeekRow } from '@luismlorenzana/uma-kit/work'
+import { withRacerWork } from '../../ui/work/Provider'
 import { useWordsContext } from '../../ui/work/useTap'
 import { useWorkView } from '../../ui/work/view'
 import { grouped } from '../../ui/work/words'
@@ -19,7 +19,7 @@ import { trainingWords } from './words'
 /** Names a Peek lists before "and N more". */
 export const PEEK_NAMES = 3
 
-export default function TrainingPeek({ place }: PeekProps) {
+function TrainingPeek({ place }: PeekProps) {
   const facility = place.id as FacilityId
   const view = useWorkView()
   const context = useWordsContext()
@@ -43,7 +43,7 @@ export default function TrainingPeek({ place }: PeekProps) {
           return (
             <PeekRow
               key={`${card.slot.room ?? ''}:${card.slot.slot}`}
-              card={card}
+              slot={card.slot}
               what={now === null || line === null ? undefined : { icon: now.dishId === null ? null : <ItemIcon item={now.dishId} decorative />, name: line }}
             />
           )
@@ -87,3 +87,5 @@ export default function TrainingPeek({ place }: PeekProps) {
     </div>
   )
 }
+
+export default withRacerWork(TrainingPeek)

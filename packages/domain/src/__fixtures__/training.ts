@@ -7,7 +7,7 @@ import { newAccount, unlockUma } from '../tiers/roster'
 import type { TrainingContent } from '../training/derive'
 import { isRefusal, type ReworkState } from '../state/types'
 import type { WorkEnv } from '../work/kinds'
-import { newWorkState } from '../work/state'
+import { newWorkState } from '../work/adapter'
 import type { SlotRef, WorkState } from '../work/types'
 import { CONTENT as TIER_CONTENT, COLT, SPRINTER, DIRT_PARENT_A, DIRT_PARENT_B, DIRT_PARENT_C, template } from './tiers'
 

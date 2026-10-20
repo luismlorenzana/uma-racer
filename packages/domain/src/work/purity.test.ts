@@ -9,10 +9,10 @@ import { deepFreeze } from '../__fixtures__/tiers'
 import { clock, ENV, farmAccount, HELPER, node, PLAIN, SESSION_ENV, STUDENT, withNodes, withPrizeMoney, withStock } from '../__fixtures__/work'
 import { codeOnly } from '../__fixtures__/code-only'
 import { isRefusal, type OpResult } from '../state/types'
-import { collectBeforeRace } from './activity'
-import { collect, finish, queue, recall, speedUp, start, upgrade } from './operations'
+import { collectBeforeRace } from './index'
+import { collect, finish, queue, recall, speedUp, start, upgrade } from './adapter'
 import { WORK_REFUSALS } from './refusals'
-import { settle } from './settle'
+import { settle } from './adapter'
 import type { WorkState } from './types'
 
 const HERE = fileURLToPath(new URL('.', import.meta.url))
@@ -20,7 +20,7 @@ const FARM = fileURLToPath(new URL('../farm/', import.meta.url))
 
 describe('purity', () => {
   it('reads no clock, rolls no dice and does no I/O in rework/work or rework/farm', () => {
-    const sources = [HERE, FARM].flatMap((dir) => readdirSync(dir).filter((f) => f.endsWith('.ts') && !f.endsWith('.test.ts')).map((f) => join(dir, f)))
+    const sources = [HERE, FARM].flatMap((dir) => readdirSync(dir, { recursive: true }).filter((f): f is string => typeof f === 'string' && f.endsWith('.ts') && !f.endsWith('.test.ts')).map((f) => join(dir, f)))
     expect(sources.length).toBeGreaterThan(12)
     for (const file of sources) {
       const code = codeOnly(readFileSync(file, 'utf8'))

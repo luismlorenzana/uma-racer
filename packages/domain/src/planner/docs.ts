@@ -5,7 +5,7 @@
 import { cookBaseMinutes, craftBaseMinutes, gatherBaseMinutes } from '../items/work'
 import { SECONDS_PER_MINUTE } from '../state/time'
 import { sessionBaseMinutes } from '../training/unlocks'
-import { MAX_ITEMS_PER_ENTRY, MAX_QUEUE } from '../work/operations'
+import { MAX_ITEMS_PER_ENTRY, MAX_QUEUE } from '../work/adapter'
 import { clockTime, DEFAULT_CHECK_INS, MINUTES_PER_DAY, sizeChips } from '../check-in/schedule'
 
 type Cell = string | number

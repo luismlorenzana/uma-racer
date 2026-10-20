@@ -6,7 +6,7 @@ import { BUILDING_IDS, totalSlots, type BuildingId, type BuildingLevel } from '.
 import { itemById } from '../items/catalogue'
 import { FAMILY_IDS, type FamilyId } from '../items/families'
 import type { PurseBand } from '../economy/purse'
-import { endsAt } from '../work/timeline'
+import { endsAt } from '../work/adapter'
 import type { WorkState } from '../work/types'
 import type { ScenarioOfTier, Tier } from '../state/types'
 import { dayOf, LOOP_EPOCH, MS_PER_DAY, MS_PER_HOUR, MS_PER_MINUTE } from './clock'
