@@ -9,9 +9,9 @@ import type { ItemId } from '../items/catalogue'
 import type { RecipeInput } from '../items/recipes'
 import type { Refusal } from '../state/types'
 import type { WorkEnv } from '../work/kinds'
-import { settle } from '../work/settle'
-import { slotOrder } from '../work/state'
-import { endsAt, itemEnds } from '../work/timeline'
+import { racerRefusal, settle } from '../work/adapter'
+import { slotOrder } from '../work/adapter'
+import { endsAt, itemEnds } from '../work/adapter'
 import type { ItemStock, SlotRef, WorkRequest, WorkState } from '../work/types'
 import { say, type Words } from '../check-in/words'
 import { WORK_REFUSALS } from '../work/refusals'
@@ -72,7 +72,7 @@ export function projectWork<S extends WorkState>(state: S, now: number, env: Wor
     })),
     ...report.dropped.flatMap((drop) => drop.requests.map((request, i): ProjectedEntry => ({
       outfitId: drop.outfitId, slot: drop.slot, request, startsAt: null, dropsAt: drop.at,
-      short: i === 0 ? drop.short : [], refused: i === 0 ? drop.refused : null,
+      short: i === 0 ? drop.short : [], refused: i === 0 && drop.refused !== null ? racerRefusal(drop.refused) : null,
     }))),
   ].sort((a, b) => (a.startsAt ?? a.dropsAt!) - (b.startsAt ?? b.dropsAt!) || slotOrder(a.slot, b.slot))
 

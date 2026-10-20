@@ -132,7 +132,7 @@ describe('the policies', () => {
     const at = LOOP_EPOCH
     const entry = (kind: 'session' | 'gather', startedAt: number, seconds: number) => ({
       request: kind === 'session' ? { kind: SESSION_KIND, unlocks: [] } : { kind, item: 'carrot', count: 1 },
-      seconds: [seconds], inputs: [[]], outputs: [{ item: 'carrot' }], farmExp: [0], startedAt, acceleratedMs: 0, collected: 0, speed: 1, fromQueue: false,
+      seconds: [seconds], inputs: [[]], outputs: [{ item: 'carrot' }], exp: [0], startedAt, acceleratedMs: 0, collected: 0, speed: 1, fromQueue: false,
     })
     const row = (outfitId: string, building: string, e: ReturnType<typeof entry>) => ({ outfitId, slot: { building, slot: 0 }, entries: [e], queue: [], last: null, dropped: null })
     const state = {

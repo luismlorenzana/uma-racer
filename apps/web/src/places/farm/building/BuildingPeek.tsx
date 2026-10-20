@@ -11,12 +11,12 @@ import { lazy, Suspense, useMemo } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router'
 import type { PeekProps } from '../../registry'
 import { ItemIcon } from '../../../ui/ItemIcon'
-import { PlaceStats } from '../../../ui/work/PlaceStats'
-import { PeekRow } from '../../../ui/work/SlotRow'
+import { PlaceStats, PeekRow } from '@luismlorenzana/uma-kit/work'
+import { withRacerWork } from '../../../ui/work/Provider'
 import { TapNoteLine } from '../../../ui/work/TapNote'
 import { useTap, useWordsContext } from '../../../ui/work/useTap'
 import { useWorkView } from '../../../ui/work/view'
-import { grouped, itemName, workWords } from '../../../ui/work/words'
+import { grouped, itemName } from '../../../ui/work/words'
 import { readSheetQuery, withoutSheet } from '../job-sheet/model'
 import { farmWords } from '../words'
 import { buildingView, sheetQuery, stockByGrade, withSheet } from './model'
@@ -24,7 +24,7 @@ import { TargetStrip } from './TargetStrip'
 
 const JobSheet = lazy(() => import('../job-sheet/JobSheet'))
 
-export default function BuildingPeek({ place }: PeekProps) {
+function BuildingPeek({ place }: PeekProps) {
   const building = place.id as FarmBuildingId
   const view = useWorkView()
   const context = useWordsContext()
@@ -49,11 +49,8 @@ export default function BuildingPeek({ place }: PeekProps) {
         {model.cards.map((card) => (
           <PeekRow
             key={card.slot.slot}
-            card={card}
+            slot={card.slot}
             repeat
-            text={card.kind === 'held' && card.request.kind !== 'session'
-              ? `${itemName(card.request.item)} ×${card.count} · ${workWords('made', { made: card.made, count: card.count })}`
-              : undefined}
             startTo={over(sheetQuery({ job: null, slot: card.slot.slot }))}
           />
         ))}
@@ -97,3 +94,5 @@ export default function BuildingPeek({ place }: PeekProps) {
     </div>
   )
 }
+
+export default withRacerWork(BuildingPeek)

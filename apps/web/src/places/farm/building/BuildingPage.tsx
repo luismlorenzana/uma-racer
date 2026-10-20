@@ -15,11 +15,10 @@ import { lazy, Suspense, useMemo, useState } from 'react'
 import { Navigate, useLocation, useNavigate, useSearchParams } from 'react-router'
 import type { PageProps } from '../../registry'
 import { PlacePageHeader } from '../../PlacePageHeader'
-import { PlaceStats } from '../../../ui/work/PlaceStats'
-import { SlotRow } from '../../../ui/work/SlotRow'
+import { FacilityHeader, SlotRow } from '@luismlorenzana/uma-kit/work'
+import { withRacerWork } from '../../../ui/work/Provider'
 import { TapNoteLine } from '../../../ui/work/TapNote'
 import { useTap, useWordsContext, type Tap } from '../../../ui/work/useTap'
-import { UpgradeButton } from '../../../ui/work/Upgrade'
 import { useWorkView } from '../../../ui/work/view'
 import { grouped, itemName, itemsList, showWords, type WordsContext } from '../../../ui/work/words'
 import { readSheetQuery, withoutSheet } from '../job-sheet/model'
@@ -90,7 +89,7 @@ function HereActions({ model, tap, now }: { model: BuildingView; tap: Tap; now: 
   )
 }
 
-export default function BuildingPage({ place, rest }: PageProps) {
+function BuildingPage({ place, rest }: PageProps) {
   const building = place.id as FarmBuildingId
   const view = useWorkView()
   const context = useWordsContext()
@@ -116,17 +115,14 @@ export default function BuildingPage({ place, rest }: PageProps) {
       <PlacePageHeader place={place} rest={rest} lines={help} />
       {model !== null && view !== null && (
         <>
-          <section aria-label={model.name} data-g2="farm-header" className="flex min-h-13 items-center gap-2 border-b border-hairline px-4 py-1">
-            <PlaceStats level={model.level} used={model.used} slots={model.slots} speed={model.speed} className="flex-1" />
-            {model.upgrade !== null && <UpgradeButton upgrade={model.upgrade} building={model.building} name={model.name} />}
-          </section>
+          <FacilityHeader building={building} className="px-4" />
           <TargetStrip lines={model.lines} sheetTo={(line) => `${place.route}${line.sheet}`} className="px-4 pt-2.5" />
           <section aria-labelledby="farm-slots" className="flex-1 space-y-1.5 px-4 py-2.5">
             <h2 id="farm-slots" className="sr-only">{farmWords('slots-title')}</h2>
             {model.cards.map((card) => (
               <SlotRow
                 key={card.slot.slot}
-                card={card}
+                slot={card.slot}
                 repeat
                 startTo={`${place.route}${sheetQuery({ job: null, slot: card.slot.slot })}`}
                 queueTo={card.kind === 'held'
@@ -146,3 +142,5 @@ export default function BuildingPage({ place, rest }: PageProps) {
     </div>
   )
 }
+
+export default withRacerWork(BuildingPage)

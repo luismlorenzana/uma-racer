@@ -46,6 +46,11 @@ Items are named by [08](08-item-catalogue-and-recipes.md)'s ids: a stat meal is 
 
 ## 2. Sessions
 
+SC5 (D377) registers Racer's session kind in `work/kinds/session.ts` on the shared uma-work engine; the old
+`training/sessions.ts` import remains a public re-export. Farm EXP, card/unlock eligibility, item stand-ins and
+pre-race collection remain Racer's. Kit work rows, side panels, facility headers and recall read that same state;
+Training's unlock/card authoring sheet stays game-owned.
+
 A **session** is one Uma at one facility slot, working through **1–10 unlocks one after another**. It is the Training
 Hub's version of a Farm job ([07](07-farm.md)).
 
@@ -888,7 +893,7 @@ facility `upgrade`. Each is checked by the domain on the API and returns its fir
 | A gold position whose filler has fewer natural golds than it needs warns in §3's words ("This parent has one natural gold; gold 2 pays nothing until a parent with two fills slot A."), gold 1 too for one with none (T139) | §3's warning names gold 2; the same reading covers gold 1 |
 | What a node pays (`nodeSkillIds`) and what an Uma pays from a slot (`lineagePays`: her golds by position and her inherited unique) are the derivation's own readings in `training/derive.ts`, which its skill library uses too (T139) | A screen restates no rule (M034); the node sheet and the lineage map need them |
 | Meals and tonics show by name and grade with their icon, never by id: §8's "`tonic-3` (Paddock Tonic)" reads "Paddock Tonic (grade 3)" (T139) | [08](08-item-catalogue-and-recipes.md) §10 shows an item by name; [02](02-check-ins-and-notifications.md) §9 keeps ids off the screen |
-| Speed up, Recall, queue chips and the slot row are T140's shared `ui/work/` pieces, compact since D366; T139 adds the shared **Upgrade** (moved from the Farm page, a header button since D366) and a slot row's `startLabel` ("Start a session"); a facility's row has no Repeat, as the page has no Repeat here (T139, D366) | One look for every timed thing an Uma does ([07](07-farm.md) §2, §11); one Upgrade for every building |
+| Speed up, Recall, queue chips, slot/peek rows and FacilityHeader are `uma-kit/work` pieces (SC5); a facility's row has no Repeat, as the page has no Repeat here (T139, D366) | One shared work UI; Racer keeps the session sheet's unlock/card choices and operation rules |
 | Every Training screen reads how long work takes or has left, never the clock time it ends: rows, the Peek, the sheet's finishes, "Busy · 2h 10m left", "frees in 1h 20m" and "opens in 1h 20m" (D366) | The owner's rule for the Farm, and the facilities share its pieces |
 
 ## 12. Done when

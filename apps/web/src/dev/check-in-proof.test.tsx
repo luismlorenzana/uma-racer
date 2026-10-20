@@ -87,7 +87,7 @@ describe('queues (02 §3, D366)', () => {
 describe('stopped queues (02 §4)', () => {
   it("show every stopped queue's card on the stopped seed", async () => {
     const { page } = await proof(seed('stopped'))
-    expect([...page.querySelectorAll<HTMLElement>('[data-g2="stopped-queue"]')].map((card) => card.dataset.outfit).sort()).toEqual(['sim-uma-01', 'sim-uma-15', 'sim-uma-20'])
+    expect([...page.querySelectorAll<HTMLElement>('[data-kit="stopped-queue"]')].map((card) => card.dataset.outfit).sort()).toEqual(['sim-uma-01', 'sim-uma-15', 'sim-uma-20'])
     within(page).getByRole('button', { name: 'Buy 10 and restart · 1,620' })
     expect(screen.getByRole('link', { name: /^Collect all · \d+ ready$/ }).getAttribute('href')).toBe('/dev/check-in?sheet=check-in')
   })

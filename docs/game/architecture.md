@@ -1,7 +1,7 @@
 # Architecture
 
 How the code that runs fits together: generation 2, since the phase-3 cutover (M034, D361), with phase 6's canvas Hub
-(T145, D363), uma-art 2.7.0 (D364), and shared uma-kit 0.9.0 (T147, D367; SD4, D372; the album, SB6, D373). The infrastructure values and the release runbook are
+(T145, D363), uma-art 2.7.0 (D364), shared uma-kit 0.9.1 and uma-work 0.1.0 (SC5, D377; content, SE4, D376; the album, SB6, D373). The infrastructure values and the release runbook are
 [technical/infrastructure.md](../technical/infrastructure.md); what is done and what comes next is
 [the task plan](../tasks/README.md), and the phases still ahead are [docs/rearchitecture/08](../rearchitecture/08-phases.md)
 with [rework/13](../rework/13-removals-and-plan-changes.md) §4.
@@ -82,7 +82,7 @@ globals. Time comes in as `now`, integer milliseconds; randomness from the race 
 | `@racer/domain/state` | The shared state shapes and the one time factor (`types.ts`, `time.ts`): the only path to them | `src/state/index.ts` |
 | `@racer/domain/tiers` | The tier map, Racing Level, careers, advancing, promotion, Uma Tickets and Shards, tier scaling, rivals, the stand-in Expedition | `src/tiers/index.ts` |
 | `@racer/domain/items` | The 8 × 10 catalogue, crafted items, planet dishes (30 retired), Duos, Feasts and tonics, recipes, stand-ins, grade gates, work values | `src/items/index.ts` |
-| `@racer/domain/work` | The one-after-another work engine: jobs and sessions, queues, collect, recall, Speed Tickets, the clock | `src/work/index.ts` |
+| `@racer/domain/work` | Racer's adapter to `@luismlorenzana/uma-work`: its buildings, Speed Ticket warehouse, Farm EXP and ledger; Racer's gather/craft/cook/session kinds and pre-race collection | `src/work/index.ts`, `adapter.ts`, `kinds/`, `collect-before-race.ts` |
 | `@racer/domain/farm` | The Farm's buildings and slots, Farm Level, Farm jobs | `src/farm/index.ts` |
 | `@racer/domain/training` | The Training Hub's facilities, layers and unlock order, the Extra Stats map, bonds, presets, buffs, derived stats, and the re-authored trees (`training/trees/`) | `src/training/index.ts` |
 | `@racer/domain/economy` | Prize Money, the Daily Purse, featured races, the Exchange and selling (09 §10–§11) | `src/economy/index.ts` |
@@ -113,7 +113,7 @@ operations and queries; no screen or API handler restates a rule or a number.
 | `state` | The shared state (`ReworkState`, the profile, `UmaState`, work rows) and `TIME_FACTOR` |
 | `tiers` | The tier map, Racing Level per tier, careers, advancing, promotion, Uma Tickets and Shards, tier scaling, rivals |
 | `items` | The 8 × 10 catalogue, crafted items, planet dishes (30 retired), Duos, Feasts and tonics, recipes, stand-ins, grade gates, work values |
-| `work`, `farm` | The one-after-another work engine (jobs and sessions, queues, collect, recall, Speed Tickets), buildings, Farm Level |
+| `work`, `farm` | The shared uma-work engine through Racer's adapter and kinds; Racer's building tables and Farm Level |
 | `training` | The Training Hub's facilities, layers and unlock order, the Extra Stats map, bonds, presets, buffs, derived stats; `training/trees/` the re-authored trees, their sizes and the validator |
 | `economy` | Prize Money, the Daily Purse, featured races, the Exchange and selling |
 | `check-in`, `planner` | Every operation and its plain words, Collect all, Repeat, batch sizing, the check-in summary, the planner's needs and suggestions |
@@ -141,6 +141,12 @@ The rules every area follows:
 - **The live manual.** Each area exports `LIVE_BLOCKS` from its `docs.ts`; `src/docs/render.ts` joins them as
   `AREA_BLOCKS` beside the manual's own keys, and `src/docs/docs.test.ts` checks every page of `docs/game/` and
   `docs/rework/` against them. `pnpm docs:update` rewrites the blocks.
+
+SC5 keeps the save generation and schema. The strict work-entry reader accepts old `farmExp` arrays and writes
+canonical `exp` arrays; old stopped-refusal `reason` becomes `message`. Frozen plans, clocks, inputs, outputs,
+collected progress and queues are never recalculated during this migration. External operation receipts retain
+Racer's `farmExp`, level/grade changes and Prize Money ledger fields. The adapter grants only actually credited
+Farm EXP, including zero at the cap, and records an upgrade charge without spending twice.
 
 ### The balance sims
 
@@ -174,7 +180,7 @@ loop itself runs on the domain's source, and its test runs the checks in CI.
 | `hub/` | The racer's adapters to uma-kit's shell and Hub ([11](11-hub-and-places.md) §2, [below](#uma-kit)): `RacerShell.tsx` (the kit's frame, account bar and bottom bar with the racer's chips, Sync chip and tabs), `HubPage.tsx` (the kit's map with each page's places, pips, counters and plaza, and the floating pill), `racerHub.ts` (each page's tile page and palette, `tilePageFor`, and the pips' room colours), `PlacePeek.tsx` (the kit's side panel with the registry's Peek), the global sheets with the ☰ menu (`GlobalSheets.tsx` on the kit's sheet and place menu, `SheetHost.tsx`), the global sheets' names and navigation state (`nav.ts`) and counters (`counts.ts`) |
 | `places/` | Every place's Peek, Page, sub-pages and sheets, filled through `places/registry.tsx` (`PLACE_UI`, `SHEET_UI`, `TOWN_PLAZA`, `FLOW_UI`, `PROFILE_UI`; each a lazy chunk): `stable`, `reveal`, `warehouse`, `exchange`, `card-library`, `account`, `training`, `farm`, `racing` (its slots in `racing/ui.ts`), `check-in`, `needs`; `PlacePageHeader.tsx` is the kit's place header with a place's words, and `Unfilled.tsx` the fallback for a slot with nothing in it (none today). Each screen draws a pure view model (`model.ts`) over the rules' state |
 | `save/` | The device's generation-2 save and its one sync lane ([below](#the-save-and-sync)) |
-| `ui/` | Racer-owned work pieces (`ui/work/`: slot rows, Speed Tickets, Recall, queues and `useTap`), `ItemIcon`, `TreeGraph`, `BuildingSprite`, original type/focus icons and labels, `devicePrefs.ts`; `racerAlbum.tsx` projects game rows and callbacks into the kit's album and picker. `useContentArt.ts` is the card/reveal's private-art hook; the kit's art port is `app/albumArt.tsx`. No local album engine, grid, chrome, preferences or Uma picker implementation remains |
+| `ui/` | `ui/work/` injects Racer's operation port, vocabulary, check-in sizing and recovery suggestions into `uma-kit/work`; the kit draws rows, queues, speed-up, recall, upgrades, targets and the Farm job sheet. `ItemIcon`, `TreeGraph`, `BuildingSprite`, original type/focus icons and labels, `devicePrefs.ts`; `racerAlbum.tsx` projects game rows and callbacks into the kit's album and picker. `useContentArt.ts` is the card/reveal's private-art hook; the kit's art port is `app/albumArt.tsx`. No local album or work-component fork remains |
 | `scenes/race/` | The race scene: PixiJS 8, lazy, the only PixiJS in the repo until phase 8 ([below](#the-race)) |
 | `content/` | Game-only projection (`adapt.ts`), view shapes, status/words; no local loader or byte/URL cache |
 | `app/contentRuntime.ts` | Lazy configuration of uma-kit's shared content runtime, with SE1-compatible storage keys |
@@ -572,7 +578,8 @@ How generation 2 became the app (D361). The plan-level choices (the tag, the del
 | uma-racer | turbo | ^2.10.13 | dev |
 | @racer/web | @luismlorenzana/uma-art | 2.7.0 | runtime |
 | @racer/web | @luismlorenzana/uma-data | 1.1.0 | runtime |
-| @racer/web | @luismlorenzana/uma-kit | 0.9.0 | runtime |
+| @racer/web | @luismlorenzana/uma-kit | 0.9.1 | runtime |
+| @racer/web | @luismlorenzana/uma-work | 0.1.0 | runtime |
 | @racer/web | @racer/domain | workspace:* | runtime |
 | @racer/web | @racer/race | workspace:* | runtime |
 | @racer/web | @tanstack/react-query | ^5.102.8 | runtime |
@@ -618,6 +625,7 @@ How generation 2 became the app (D361). The plan-level choices (the tag, the del
 | @racer/api | typescript | ~5.9.3 | dev |
 | @racer/api | vitest | ^3.2.7 | dev |
 | @racer/domain | @luismlorenzana/uma-data | 1.1.0 | runtime |
+| @racer/domain | @luismlorenzana/uma-work | 0.1.0 | runtime |
 | @racer/domain | @luismlorenzana/uma-art | 2.7.0 | dev |
 | @racer/domain | typescript | ~5.9.3 | dev |
 | @racer/domain | vitest | ^3.2.7 | dev |

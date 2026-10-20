@@ -6,9 +6,9 @@ import {
   atFarmLevel, clock, ENV, farmAccount, minutes, node, ok, PLAIN, SESSION_ENV, STUDENT, withNodes, withStock,
 } from '../__fixtures__/work'
 import { farmItemSeconds } from '../farm/jobs'
-import { reservedStock } from './activity'
-import { collect, finish, queue, recall, speedUp, start } from './operations'
-import { endsAt } from './timeline'
+import { reservedStock } from './index'
+import { collect, finish, queue, recall, speedUp, start } from './adapter'
+import { endsAt } from './adapter'
 import type { FarmRequest, SlotRef } from './types'
 
 describe("07 §2: Gather Potato × 10 at 08:00, at k = 1.8", () => {

@@ -7,7 +7,7 @@ import {
 } from '../__fixtures__/check-in'
 import { buyPrice } from '../economy/exchange'
 import { farmItemSeconds } from '../farm/jobs'
-import { collect, queue, recall, start } from '../work/operations'
+import { collect, queue, recall, start } from '../work/adapter'
 import type { SlotRef, WorkRequest, WorkState } from '../work/types'
 import { collectAll } from './collect-all'
 import { repeat, setRepeatSizing } from './repeat'

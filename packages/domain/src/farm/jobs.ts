@@ -7,16 +7,15 @@
 import { workSeconds } from '../state/time'
 import { isKitchenItem, isRetired, itemById, type ItemDef, type ItemGrade } from '../items/catalogue'
 import { FAMILY_IDS, type FamilyId } from '../items/families'
-import { canWorkGrade, gradeOpensAtFarmLevel } from '../items/grades'
-import { dishFamilies, recipeOf } from '../items/recipes'
+import { dishFamilies } from '../items/recipes'
 import { cookBaseMinutes, craftBaseMinutes, gatherBaseMinutes } from '../items/work'
-import { tierRefusal } from '../tiers/refusals'
-import type { Refusal } from '../state/types'
-import type { PlanContext, PlannedItem, WorkKindRules } from '../work/kinds'
-import { workRefusal } from '../work/refusals'
-import { SESSION_KIND, type FarmKind, type ItemStock, type WorkContent, type WorkOutput, type WorkRequest, type WorkState } from '../work/types'
+import type { FarmKind, WorkContent } from '../work/types'
 import { BUILDINGS, FARM_BUILDING_IDS, type BuildingId, type FarmBuildingId } from './buildings'
-import { familyAptitude, farmExpMultiplier, farmExpPerItem, SUITED_LETTERS } from './level'
+import { familyAptitude, farmExpMultiplier, SUITED_LETTERS } from './level'
+
+export { gatherKind } from '../work/kinds/gather'
+export { craftKind } from '../work/kinds/craft'
+export { cookKind } from '../work/kinds/cook'
 
 /** Each family's site (07 §1, README's family table): T127 owns this map. */
 export const FAMILY_SITE: Readonly<Record<FamilyId, FarmBuildingId>> = Object.freeze(Object.fromEntries(FAMILY_IDS.map((family) => {
@@ -68,36 +67,3 @@ export function suits(content: WorkContent, outfitId: string, families: readonly
   if (!template) throw new RangeError(`No Uma template ${outfitId}`)
   return families.some((family) => SUITED_LETTERS.includes(familyAptitude(template.aptitudes, family)))
 }
-
-function planFarm(kind: FarmKind) {
-  return (state: WorkState, outfitId: string, request: WorkRequest, _now: number, context: PlanContext): readonly PlannedItem[] | Refusal => {
-    if (request.kind === SESSION_KIND || request.kind !== kind) return workRefusal('not-here')
-    const item = itemById(request.item)
-    if (item === undefined || item.kind === 'ticket' || !makesHere(kind, item, context.slot.building)) return workRefusal('not-here')
-    const uma = state.umas[outfitId]
-    if (!uma) return tierRefusal('unknown-uma', { uma: outfitId })
-    if (!canWorkGrade(uma.farm.level, item.grade)) return workRefusal('grade', { level: gradeOpensAtFarmLevel(item.grade), grade: item.grade })
-    const base = stepBaseMinutes(kind, item.grade)
-    const planned: PlannedItem = Object.freeze({
-      seconds: workSeconds(base, context.speed),
-      inputs: recipeOf(item.id)?.inputs ?? [],
-      output: Object.freeze({ item: item.id }),
-      farmExp: farmExpPerItem(workSeconds(base), bestExpTenths(context.env.content, outfitId, expFamilies(item))),
-    })
-    return Array.from({ length: request.count }, () => planned)
-  }
-}
-
-/** Finished Farm items go into the Warehouse's free stock (07 §2 "Collect"). */
-function payItems<S extends WorkState>(state: S, _outfitId: string, outputs: readonly WorkOutput[]): { readonly state: S } {
-  const items: Record<string, number> = { ...state.items }
-  for (const output of outputs) {
-    if (!('item' in output)) throw new RangeError('A Farm job pays items only')
-    items[output.item] = (items[output.item] ?? 0) + 1
-  }
-  return { state: { ...state, items: items as ItemStock } }
-}
-
-export const gatherKind: WorkKindRules = Object.freeze({ plan: planFarm('gather'), pay: payItems })
-export const craftKind: WorkKindRules = Object.freeze({ plan: planFarm('craft'), pay: payItems })
-export const cookKind: WorkKindRules = Object.freeze({ plan: planFarm('cook'), pay: payItems })

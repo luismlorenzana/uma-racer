@@ -9,7 +9,7 @@ import { emptyBuild, isRefusal, type OpResult, type Refusal, type ReworkState, t
 import { freezeCareer, umaTemplate, type TierContent } from './career'
 import { assertNow, payOnce, withUma } from './ledger'
 import { TODAY_CATALOGUE, isLastScenario, lastGate, scenarioNumber, type ScenarioCatalogue } from './map'
-import { isFree } from '../work/activity'
+import { isFree } from '../work/index'
 import { tierRefusal } from './refusals'
 
 /** A promotion pays one Uma Ticket, and so does entering the Hall of Fame (04 §3, §6, §10). */

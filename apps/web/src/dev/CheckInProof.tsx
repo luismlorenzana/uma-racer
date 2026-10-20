@@ -9,9 +9,10 @@ import { sessionSeconds } from '@racer/domain/training'
 import { useState } from 'react'
 import { Link } from 'react-router'
 import { useGame, useHub } from '../app/game'
-import { QueueChips } from '../ui/work/QueueChips'
-import { SizeChips } from '../ui/work/SizeChips'
-import { StoppedQueueCard } from '../ui/work/StoppedQueueCard'
+import { QueueChips, SizeChips } from '@luismlorenzana/uma-kit/work'
+import { QueueRecoveryCard as StoppedQueueCard } from '../ui/work/QueueRecoveryCard'
+import { withRacerWork } from '../ui/work/Provider'
+import { racerSizeRule } from '../ui/work/size'
 import { useWordsContext } from '../ui/work/useTap'
 import { useWorkView } from '../ui/work/view'
 
@@ -27,15 +28,17 @@ const LINK = 'font-display inline-flex min-h-11 items-center rounded-sm border b
 
 function Chips({ label, start, seconds }: { label: string; start: number; seconds: readonly number[] }) {
   const [size, setSize] = useState<number | null>(null)
+  const times = useGame((snapshot) => snapshot.state?.profile.checkIns ?? [])
+  const context = useWordsContext()
   return (
     <div data-proof-kind={label} className="space-y-1">
       <h3 className="text-[13px] font-semibold">{label}</h3>
-      <SizeChips start={start} itemSeconds={seconds} max={10} value={size} onChange={setSize} />
+      <SizeChips start={start} itemSeconds={seconds} max={10} value={size} onChange={setSize} rule={racerSizeRule(times, context.utcOffsetMin)} />
     </div>
   )
 }
 
-export default function CheckInProof() {
+function CheckInProof() {
   const view = useWorkView()
   const hub = useHub()
   const context = useWordsContext()
@@ -89,3 +92,5 @@ export default function CheckInProof() {
     </div>
   )
 }
+
+export default withRacerWork(CheckInProof)

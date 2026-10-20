@@ -10,7 +10,7 @@ import { SPEED_TICKET_ID } from '../items/catalogue'
 import { secondsToMs } from '../state/time'
 import { isRefusal, type OpResult, type ReworkState, type UmaBuild } from '../state/types'
 import { WORK_KINDS, type PlanContext } from '../work/kinds'
-import { collect, queue, recall, speedUp, start } from '../work/operations'
+import { collect, queue, recall, speedUp, start } from '../work/adapter'
 import type { SlotRef, WorkRequest, WorkState } from '../work/types'
 import { commitUnlocks } from './build'
 import { nextUnlocks } from './order'
@@ -54,7 +54,7 @@ describe('the session kind', () => {
     const state = account(1, nodes(5))
     const items = plan(state, 'observatory', undefined, [node(6), node(7), node(8)])
     if (isRefusal(items)) throw new Error(items.reason)
-    expect(items.map((item) => [item.inputs, item.seconds, item.farmExp])).toEqual([
+    expect(items.map((item) => [item.inputs, item.seconds, item.exp])).toEqual([
       [[{ item: 'tonic-1', qty: 1 }], 19_440, 0],
       [[{ item: 'tonic-2', qty: 1 }], 21_060, 0],
       [[{ item: 'tonic-2', qty: 1 }], 21_060, 0],

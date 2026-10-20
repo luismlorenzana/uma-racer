@@ -4,8 +4,7 @@
 // and Dismiss. Every number is the domain's.
 import { durationText, type StoppedQueue, type Words } from '@racer/domain/check-in'
 import { SESSION_KIND } from '@racer/domain/work'
-import { requestWords } from './QueueChips'
-import { itemsList, placeName, workWords, type WordsContext } from './words'
+import { requestWords, itemsList, placeName, workWords, type WordsContext } from './words'
 
 export interface StoppedCardView {
   readonly outfitId: string

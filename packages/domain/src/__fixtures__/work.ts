@@ -9,7 +9,7 @@ import { FACILITY_IDS, type BuildingId, type BuildingLevel } from '../farm/build
 import { farmExpAtLevel, QUARTERS_PER_EXP } from '../farm/level'
 import { itemById, tonicItem, type ItemGrade } from '../items/catalogue'
 import { WORK_KINDS, type PlannedItem, type WorkEnv, type WorkKindRules } from '../work/kinds'
-import { newWorkState } from '../work/state'
+import { newWorkState } from '../work/adapter'
 import type { UnlockRef, WorkState } from '../work/types'
 
 /** Running aptitudes: distances sprint, mile, medium, long; styles front, pace, late, end. */
@@ -103,7 +103,7 @@ export const SYNTHETIC_SESSION: WorkKindRules = {
       }
       const grade = itemById(dish)
       if (grade === undefined || (grade.kind !== 'dish' && grade.kind !== 'tonic')) return refuse('not-here', "That isn't made here.")
-      items.push({ seconds: baseSessionSeconds(grade.grade, context.speed), inputs: [{ item: dish, qty: 1 }], output: { unlock }, farmExp: 0 })
+      items.push({ seconds: baseSessionSeconds(grade.grade, context.speed), inputs: [{ item: dish, qty: 1 }], output: { unlock }, exp: 0 })
     }
     return items
   },

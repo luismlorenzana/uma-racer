@@ -21,7 +21,8 @@ import { useGame, useHub, useNow, useRuntime, type G2Answer } from '../../app/ga
 import type { G2NavState } from '../../hub/nav'
 import type { CheckInSheetProps } from '../registry'
 import { FaceTile } from '@luismlorenzana/uma-kit/album'
-import { StoppedQueueCard } from '../../ui/work/StoppedQueueCard'
+import { QueueRecoveryCard as StoppedQueueCard } from '../../ui/work/QueueRecoveryCard'
+import { withRacerWork } from '../../ui/work/Provider'
 import { TapNoteLine } from '../../ui/work/TapNote'
 import { useTaps, useWordsContext, type Taps } from '../../ui/work/useTap'
 import { useWorkView } from '../../ui/work/view'
@@ -42,6 +43,8 @@ const SECONDARY = `${BUTTON} border border-hairline-strong bg-panel text-ink`
 const SYNC_ROW = '/town/account?row=sync'
 const SIZINGS = [{ value: 'same', label: summaryWords('same') }, { value: 'fit', label: summaryWords('fit') }] as const
 const LINK = 'inline-flex min-h-11 items-center rounded-sm border border-hairline-strong bg-panel px-3 text-[14px] font-semibold shadow-1'
+
+export default withRacerWork(CheckInSheet)
 
 function Section({ kind, title, collapsed, onToggle, action, children }: {
   kind: SheetSection
@@ -205,7 +208,7 @@ function SkipRow({ skip, taps, context, asking, setAsking, words, onBuyRepeat, o
 }
 
 
-export default function CheckInSheet({ collect }: CheckInSheetProps) {
+function CheckInSheet({ collect }: CheckInSheetProps) {
   const { game } = useRuntime()
   const state = useGame((snapshot) => snapshot.state)
   const env = useGame((snapshot) => snapshot.env)

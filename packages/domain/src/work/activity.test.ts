@@ -11,8 +11,8 @@ import { advanceScenario } from '../tiers/advance'
 import { recordExpeditionRace } from '../tiers/expedition'
 import { promote, promotionReadiness } from '../tiers/promotion'
 import { isRefusal } from '../state/types'
-import { collectBeforeRace, freeAt, isFree, workState } from './activity'
-import { collect, queue, recall, start } from './operations'
+import { collectBeforeRace, freeAt, isFree, workState } from './index'
+import { collect, queue, recall, start } from './adapter'
 import type { FarmRequest, SlotRef, WorkState } from './types'
 
 const T0 = clock('08:00')

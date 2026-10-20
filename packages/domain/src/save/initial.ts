@@ -5,7 +5,7 @@
 // server builds these rows itself, so the device never uploads a balance.
 import { BUILDING_IDS } from '../farm/buildings'
 import { newAccount } from '../tiers/roster'
-import { newWorkState } from '../work/state'
+import { newWorkState } from '../work/adapter'
 import { entityDraft, logDraft, type EntityDraft, type LogDraft } from './rows'
 import type { SaveState } from './state'
 

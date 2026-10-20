@@ -146,3 +146,10 @@ export function itemsList(rows: readonly { readonly item: string; readonly qty: 
   if (parts.length <= 1) return parts.join('')
   return `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}`
 }
+
+/** Racer's check-in/planner label for its closed request union. */
+export function requestWords(request: import('@racer/domain/work').WorkRequest): string {
+  return request.kind === 'session'
+    ? workWords(request.unlocks.length === 1 ? 'what-session-one' : 'what-session', { n: request.unlocks.length })
+    : workWords('what-farm', { item: itemName(request.item), n: request.count })
+}
