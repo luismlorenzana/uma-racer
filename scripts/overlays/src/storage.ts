@@ -1,15 +1,14 @@
 // Scoped maintenance transport. No gcloud configuration is changed; tokens never enter output or files (SE1).
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
+import { storageRequest } from './storage-request'
 const exec = promisify(execFile)
 export async function storage(project: string, bucket: string) {
   const { stdout } = await exec('gcloud', ['auth', 'print-access-token'], { env: { ...process.env, CLOUDSDK_ACTIVE_CONFIG_NAME: 'default', CLOUDSDK_CORE_PROJECT: project } })
   const token = stdout.trim()
   const base = `https://storage.googleapis.com/storage/v1/b/${encodeURIComponent(bucket)}/o`
   const request = async (url: string, init: RequestInit = {}) => {
-    const response = await fetch(url, { ...init, headers: { ...init.headers, Authorization: `Bearer ${token}` } })
-    if (!response.ok && response.status !== 404) throw new Error(`Storage request failed (${response.status})`)
-    return response
+    return storageRequest(url, { ...init, headers: { ...init.headers, Authorization: `Bearer ${token}` } })
   }
   return {
     async read(path: string): Promise<Uint8Array | null> {

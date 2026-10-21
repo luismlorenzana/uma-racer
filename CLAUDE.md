@@ -9,9 +9,8 @@ Hub and primitives are uma-kit's, the app both Uma games share.
 - `README.md`: status, how to run and verify, the documentation map. Then `AGENTS.md`, the shared guide for every
   agent, including delegated ChatGPT tasks (branch + PR, no pushes to `main`), with the shared workflows. This file adds
   Claude's production notes.
-- `docs/tasks/README.md` is the current plan: what shipped, what's open (T144's step 10, the sibling packets in
-  `docs/handoff/` with phase 5 as SE1, and phase 9; phases 4, 7, 8 and the pixel-art question are archived, D370) and
-  the next free numbers (M036, T152, D379; **D362 is reserved for T144's release record**). A task spec is deleted once its work merges (D104), so that folder only holds work still ahead.
+- `docs/tasks/README.md` is the current plan: what shipped, what's open (T144's step 10, phase 9; all Racer sibling packets in `docs/handoff/` are shipped; phases 4, 7, 8 and the pixel-art question are archived, D370) and
+  the next free numbers (M036, T152, D380; **D362 is reserved for T144's release record**). A task spec is deleted once its work merges (D104), so that folder only holds work still ahead.
 - **The docs are the source of truth:** [the manual](docs/game/README.md) (`docs/game/`) describes the game as it runs.
   Every screen, route and sheet is [11's menu tree](docs/game/11-hub-and-places.md#the-menu-tree-at-a-glance); the code
   by folder, the checks and the deploy are [the architecture](docs/game/architecture.md). Read the relevant page before
@@ -101,7 +100,7 @@ pnpm master:parity     # private migration proof, aggregates only in git
 | API | Cloud Run `racer-api` (us-central1), `https://racer-api-tmzkhylhfq-uc.a.run.app`; `/api/health` (not `/healthz`, which Cloud Run's front end reserves) |
 | GCP project | `uma-racer` (number 1026964321499), plus a private bucket `uma-racer-content` |
 | Deploy | `.github/workflows/deploy.yml`, keyless WIF. Repo variables: GCP_PROJECT_ID, WIF_PROVIDER, CONTENT_BUCKET, ALLOWED_EMAIL, DEPLOY_ENABLED |
-| Live on 2026-10-20 | `ad15cf0` as racer-api-00200-f28 (SE4, D376: shared content, preserving SE1 and D375), [deployment green](https://github.com/luismlorenzana/uma-racer/actions/runs/39460142245); health 200, save/master/overlay 401 without auth, Hosting `no-cache`, live build and shared runtime verified. uma-kit 0.9.0; startup 156.36 KB gzip. uma-art 2.7.0; tonic art adoption remains A04's game-side follow-up |
+| Live on 2026-10-21 | `be16a6d` as racer-api-00202-fdz (A04, D378), [deployment green](https://github.com/luismlorenzana/uma-racer/actions/runs/39633395549); exact image digest, live build/tonic chunk, health 200, save/master/overlay 401 without auth, Hosting no-cache verified. uma-kit 0.9.1; uma-art 2.10.0; startup 156.78 KB gzip. SE1 retired 2,076 generated bucket objects, preserving both active overlay objects (D379) |
 
 - **Local gcloud has two accounts, and the active one is the owner's work account. Never change it.** Scope every uma-racer
   command with environment variables only:
@@ -135,8 +134,7 @@ pnpm master:parity     # private migration proof, aggregates only in git
   pnpm overlays:publish
   ```
 
-  Never delete active source files or use cache/save deletion as recovery. SE1's exact retired-master cleanup happens
-  only after the deployed new source verifies; see the release runbook.
+  Never delete active source files or use cache/save deletion as recovery. SE1's exact retired-master cleanup completed after deployed-source verification on 2026-10-21 (D379); see the release runbook. Never rerun a new inventory to delete unrelated objects.
 - **Reading production data is read-only and keeps no copy:** the scoped `gcloud auth print-access-token` against
   Firestore's REST API. Generation 2's save is `saves/{uid}/{kind}/{id}`; `players/` is empty since the purge
   (`saves/{uid}/meta/purge`: 30 collections, 3,676 documents). Sync health is `gcloud logging read` on `racer-api`.

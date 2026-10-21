@@ -407,9 +407,10 @@ API as built", "The web save as built"); this is the outline.
 - **Sources:** production reads `uma-platform-master-data` and Racer's private overlay bucket through published
   uma-server 0.2.0 proxies. Locally `MASTER_DIR` defaults to sibling `uma-platform/content/release`, `CONTENT_DIR` to
   root `content/`; `CONTENT_SOURCE=gcs` selects buckets. No new deployment setting is required.
-- **Retirement:** old GameTora/wiki code, runtime/parsers, importer tests and `imageSource` fields are removed. Generated
-  bucket objects retire only **after deployment verification**, from exact generation-pinned targets. No overlays,
-  authoring inputs, unrelated objects or saves are cleanup material. See the release runbook.
+- **Retirement:** old GameTora/wiki code, runtime/parsers, importer tests and `imageSource` fields are removed. On
+  2026-10-21, after deployed-source verification, 2,076 retired generated bucket objects (65,767,727 bytes) were removed
+  with exact generation preconditions (D379). Zero retired objects remain; both active overlay objects retain their
+  original generations/sizes. Authoring inputs, unrelated objects and saves are excluded. See the release runbook.
 - **Parity:** `pnpm master:parity` compares all five final Racer packs field by field; private details stay gitignored,
   only aggregates go in the [acceptance note](../research/se1-master-data/README.md). `sim:careers` reads this adapter,
   not old packs. CI is synthetic. SE4 deletes the remaining web loader/cache and content HTTP client; API shared proxy configuration
