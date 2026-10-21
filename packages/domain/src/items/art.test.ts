@@ -1,5 +1,5 @@
 // The uma-art check (docs/game/08-item-catalogue-and-recipes.md §10, §13; M033 "Art ids"): every id and name the
-// catalogue holds against the installed @luismlorenzana/uma-art 2.7.0 indexes (2.7.0 adds A02's Speed Ticket item).
+// catalogue holds against the installed @luismlorenzana/uma-art 2.10.0 indexes (A04's ten tonic frames).
 // Only this test reads the art package; the catalogue is frozen data and never imports it.
 import { readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
@@ -39,13 +39,13 @@ function frames<F extends object>(path: string): Readonly<Record<string, F>> {
 const ITEM_FRAMES = frames<ItemFrame>('items/atlas.json')
 const DISH_FRAMES = frames<DishFrame>('dishes/atlas.json')
 
-describe('uma-art 2.7.0', () => {
+describe('uma-art 2.10.0', () => {
   it('is the exact-pinned dev dependency', () => {
-    expect((reads('package.json') as { version: string }).version).toBe('2.7.0')
+    expect((reads('package.json') as { version: string }).version).toBe('2.10.0')
     const domain = JSON.parse(readFileSync(new URL('../../package.json', import.meta.url), 'utf8')) as {
       dependencies?: Record<string, string>; devDependencies?: Record<string, string>
     }
-    expect(domain.devDependencies?.[ART]).toBe('2.7.0')
+    expect(domain.devDependencies?.[ART]).toBe('2.10.0')
     expect(domain.dependencies?.[ART]).toBeUndefined()
   })
 
@@ -82,10 +82,10 @@ describe('uma-art 2.7.0', () => {
     }
   })
 
-  it('uses 160 of 320 material item frames (plus the Speed Ticket\'s) and 92 of 100 dish frames; the unused dishes are the four non-stat bridges', () => {
+  it('keeps the 320 material frames, ticket and ten tonics, and uses 92 of 100 dish frames', () => {
     const used = (atlas: 'items' | 'dishes') => new Set(ITEMS.flatMap((item) => (item.art?.atlas === atlas ? [item.art.frame] : [])))
-    expect(Object.keys(ITEM_FRAMES)).toHaveLength(321)
-    expect(Object.keys(ITEM_FRAMES).filter((id) => id !== SPEED_TICKET_ID)).toHaveLength(320)
+    expect(Object.keys(ITEM_FRAMES)).toHaveLength(331)
+    expect(Object.keys(ITEM_FRAMES).filter((id) => id !== SPEED_TICKET_ID && !TONICS.some((tonic) => tonic.id === id))).toHaveLength(320)
     expect(Object.keys(DISH_FRAMES)).toHaveLength(100)
     expect(used('items').size).toBe(160)
     expect(used('dishes').size).toBe(92)
@@ -104,13 +104,20 @@ describe('uma-art 2.7.0', () => {
   })
 
   it('draws the Speed Ticket from the release\'s own ticket frame (A02), and never reads the effect field', () => {
-    // The catalogue keeps no art for it, nor for the tonics, which uma-art doesn't draw yet (D375); the web draws the
-    // release's `speed-ticket` frame (`ui/ItemIcon`) and a tonic's frame once a release has one.
+    // These stable definitions remain unchanged; ItemIcon resolves ticket and tonic art by id (A02, A04).
     expect(ITEMS.filter((item) => item.art === null).map((item) => item.id)).toEqual([...TONICS.map((tonic) => tonic.id), SPEED_TICKET_ID])
-    for (const tonic of TONICS) expect(ITEM_FRAMES[tonic.id], tonic.id).toBeUndefined()
     expect(DISH_FRAMES[SPEED_TICKET_ID]).toBeUndefined()
     expect(ITEM_FRAMES[SPEED_TICKET_ID]).toMatchObject({ kind: 'ticket' })
     // The guard above is live: a read of `effect` would have thrown in the checks before.
     expect(() => (ITEM_FRAMES.honey as unknown as { effect: string }).effect).toThrow(/effect field was read/)
+  })
+
+  it('draws all ten tonics as distinct 32 px items frames with their existing names and grades', () => {
+    const tonicFrames = TONICS.map((tonic) => {
+      const frame = ITEM_FRAMES[tonic.id]
+      expect(frame, tonic.id).toMatchObject({ kind: 'tonic', name: tonic.name, grade: tonic.grade, w: 32, h: 32 })
+      return frame as unknown as { x: number; y: number }
+    })
+    expect(new Set(tonicFrames.map(({ x, y }) => `${x},${y}`)).size).toBe(10)
   })
 })

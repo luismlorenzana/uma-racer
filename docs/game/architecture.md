@@ -1,7 +1,7 @@
 # Architecture
 
 How the code that runs fits together: generation 2, since the phase-3 cutover (M034, D361), with phase 6's canvas Hub
-(T145, D363), uma-art 2.7.0 (D364), shared uma-kit 0.9.1 and uma-work 0.1.0 (SC5, D377; content, SE4, D376; the album, SB6, D373). The infrastructure values and the release runbook are
+(T145, D363), uma-art 2.10.0 (A04, D378), shared uma-kit 0.9.1 and uma-work 0.1.0 (SC5, D377; content, SE4, D376; the album, SB6, D373). The infrastructure values and the release runbook are
 [technical/infrastructure.md](../technical/infrastructure.md); what is done and what comes next is
 [the task plan](../tasks/README.md), and the phases still ahead are [docs/rearchitecture/08](../rearchitecture/08-phases.md)
 with [rework/13](../rework/13-removals-and-plan-changes.md) §4.
@@ -419,7 +419,7 @@ API as built", "The web save as built"); this is the outline.
 
 Two sources, kept apart:
 - **Original pixel art** is uma-platform's `@luismlorenzana/uma-art`, drawn from code and public to the owner's games.
-  The racer pins **2.7.0** exactly (D364): a runtime dependency of `@racer/web`, which bundles its atlases, and a dev
+  The racer pins **2.10.0** exactly (A04, D378): a runtime dependency of `@racer/web`, which bundles its atlases, and a dev
   dependency of `@racer/domain`, whose tests check every id against its indexes.
 - **Uma art** (icons, busts, faces, chibis, portraits) and card art are the original game's, so they come only from
   the private platform release ([above](#private-content)). Without content (the dev seeds)
@@ -430,7 +430,7 @@ Two sources, kept apart:
 | `buildings` (48×48, ground line at 44) | uma-kit's Hub scene on the map (through `KitArtProvider`, `app/art.ts`); `ui/BuildingSprite.tsx` in the DOM at 2× (96 pt) | Every place's building ([11](11-hub-and-places.md) §10.1) |
 | `tiles` (16 px) | uma-kit's `layTerrain` and Hub scene, on each page's tile page (`hub/racerHub.ts`) | Each page's ground, paths and props: `town`, `learning` (Training), `racing`, `farmlands` (Farm) |
 | `ui` | uma-kit's `UiMark` and `TierCrest` | The currency marks at 16 pt and the tier crests at 24 pt |
-| `items`, `dishes` (32 px) | `ui/ItemIcon.tsx` | Every catalogue item, dish and the Speed Ticket; a tonic once `items` holds a frame of its id (D375), its name on a plain tile until then |
+| `items`, `dishes` (32 px) | `ui/ItemIcon.tsx` | Every catalogue item, dish, the Speed Ticket and all ten tonics by id (`tonic-1` … `tonic-10`, A04) |
 
 **How a frame reaches the Hub.** Each place in the registry (`@racer/domain/hub`) names its `buildings` frame and its
 `at` position. `HubPage` passes them to uma-kit's map, whose scene loads the atlases `app/art.ts` hands it, snaps each
@@ -576,7 +576,7 @@ How generation 2 became the app (D361). The plan-level choices (the tag, the del
 | Package | Dependency | Version | Kind |
 |---|---|---|---|
 | uma-racer | turbo | ^2.10.13 | dev |
-| @racer/web | @luismlorenzana/uma-art | 2.7.0 | runtime |
+| @racer/web | @luismlorenzana/uma-art | 2.10.0 | runtime |
 | @racer/web | @luismlorenzana/uma-data | 1.1.0 | runtime |
 | @racer/web | @luismlorenzana/uma-kit | 0.9.1 | runtime |
 | @racer/web | @luismlorenzana/uma-work | 0.1.0 | runtime |
@@ -626,7 +626,7 @@ How generation 2 became the app (D361). The plan-level choices (the tag, the del
 | @racer/api | vitest | ^3.2.7 | dev |
 | @racer/domain | @luismlorenzana/uma-data | 1.1.0 | runtime |
 | @racer/domain | @luismlorenzana/uma-work | 0.1.0 | runtime |
-| @racer/domain | @luismlorenzana/uma-art | 2.7.0 | dev |
+| @racer/domain | @luismlorenzana/uma-art | 2.10.0 | dev |
 | @racer/domain | typescript | ~5.9.3 | dev |
 | @racer/domain | vitest | ^3.2.7 | dev |
 | @racer/race | @racer/domain | workspace:* | runtime |

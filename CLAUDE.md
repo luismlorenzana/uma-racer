@@ -11,7 +11,7 @@ Hub and primitives are uma-kit's, the app both Uma games share.
   Claude's production notes.
 - `docs/tasks/README.md` is the current plan: what shipped, what's open (T144's step 10, the sibling packets in
   `docs/handoff/` with phase 5 as SE1, and phase 9; phases 4, 7, 8 and the pixel-art question are archived, D370) and
-  the next free numbers (M036, T152, D378; **D362 is reserved for T144's release record**). A task spec is deleted once its work merges (D104), so that folder only holds work still ahead.
+  the next free numbers (M036, T152, D379; **D362 is reserved for T144's release record**). A task spec is deleted once its work merges (D104), so that folder only holds work still ahead.
 - **The docs are the source of truth:** [the manual](docs/game/README.md) (`docs/game/`) describes the game as it runs.
   Every screen, route and sheet is [11's menu tree](docs/game/11-hub-and-places.md#the-menu-tree-at-a-glance); the code
   by folder, the checks and the deploy are [the architecture](docs/game/architecture.md). Read the relevant page before
@@ -156,8 +156,8 @@ uma-platform's `scripts/pixel-art` and publishes a `@luismlorenzana/uma-art` rel
 3. updates [11](docs/game/11-hub-and-places.md) §10, the architecture's art section and a decision;
 4. deletes the packet and logs it in the handoff README.
 
-A04, the ten tonics' item icons (D375), is ready in `docs/handoff/tasks/`; `ui/ItemIcon` takes their frames by id, so
-pinning the release is the whole racer side. The next packets after it are the Expedition world map and its region
+A04's ten tonic icons are active in the pinned uma-art 2.10.0 (D378); `ui/ItemIcon` takes their frames by id. The
+upstream packet is retired and [acceptance](docs/research/a04-tonics/README.md) records Racer's adoption. Next are the Expedition world map and its region
 crests (phase 9), and a calibration packet only if the owner chooses a pixel-art interface.
 
 ## Conventions

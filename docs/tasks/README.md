@@ -39,8 +39,7 @@ and bonded per Uma, uma-rpg's farming catalogue, Prize Money and the Exchange, a
    uma-kit 0.8.0 and uma-work 0.1.0. The queue and its states are in [handoff](../handoff/README.md). The
    redirects and the first-boot wipe leave with SE1, phase 5 (D365, D370).
 3. **Phase 9, World Expeditions,** due by about 2027-02-04 to 2027-03-04 and specified when it starts.
-4. **[A04](../handoff/tasks/A04-tonic-icons.md), the ten tonics' item icons** (D375, 2026-10-18), ready for ChatGPT;
-   until uma-art ships them, a tonic draws as its name on a plain tile.
+4. **A04's tonic icons are active** in the pinned uma-art 2.10.0 (D378); [acceptance](../research/a04-tonics/README.md).
 
 **Archived 2026-10-16 (D370), the owner's cleanup of open items unrelated to the sibling work:**
 
@@ -58,7 +57,7 @@ The `pre-split` tag marks the old game.
 **Retired unbuilt (D339):** M024 (T081), M010 (T035) and M011 (T036–T039). The rework removes what they built on.
 Game feel and device acceptance for the new game are planned after phase 3.
 
-**Next free numbers: M036, T152 and D378** (D362 is reserved for T144's release record). Numbers are never reused, so
+**Next free numbers: M036, T152 and D379** (D362 is reserved for T144's release record). Numbers are never reused, so
 a decision that mentions T014 always means the same work. T057 was consumed by the per-scenario limit-break branch and
 is not reused.
 

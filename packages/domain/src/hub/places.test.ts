@@ -129,8 +129,8 @@ describe('frames (game/11 §10)', () => {
     'trophy-hall': 'racing', ...Object.fromEntries(FARM_BUILDING_IDS.map((building) => [building, 'farmlands'])),
   }
 
-  it('reads the pinned 2.7.0 release', () => {
-    expect(art.version).toBe('2.7.0')
+  it('reads the pinned 2.10.0 release', () => {
+    expect(art.version).toBe('2.10.0')
   })
 
   it("finds every frame in the pinned index, 48 × 48 on §10.1's atlas page, but AWAITING_ART's", () => {

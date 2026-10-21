@@ -1,7 +1,7 @@
 # 11 · Hub and places
 
 > **Status: as built, phase 3 (generation 2, D361) with phase 6's canvas Hub (T145, D363), the racer's own uma-art
-> 2.7.0 (D364) and the shared uma-kit 0.7.1 (SB6, D373; the shared places, D372; the docked bar, D369; the plaza crowd, D371); first written 2026-10-13 (D333).** The Hub's four pages, every
+> 2.10.0 (A04, D378) and the shared uma-kit 0.9.1 (SC5, D377; SB6, D373; the shared places, D372; the docked bar, D369; the plaza crowd, D371); first written 2026-10-13 (D333).** The Hub's four pages, every
 > place on them, the menu, the routes, the two play modes as tap-by-tap flows, and the art. The registry and Hub view
 > are `@racer/domain/hub` (T137, D353); the routes, redirects and boot `apps/web/src/app/`; the shell and the map are
 > uma-kit's, fed by uma-racer's adapters in `hub/`; every Peek, Page and sheet `places/` (T138–T142). Each page is
@@ -570,10 +570,10 @@ class halls, which read as magic, combat or worship; and the ten `wilds` frames 
 | Racing | `racing/*`, uma-art 2.6.0 (A01) | Turf ground ×4; a dirt-track path set (`path-0…15`, the same edge masks, never closing a 2×2); props: white rail, furlong post (16×32), pennant (16×32), flower box. Pinned since 2.6.0; before it the page drew on `town/*` (§10.4) |
 | Farm | `farmlands/*` | As uma-rpg's Farmlands |
 
-### 10.3 The racer's own art, as built (uma-art 2.6.0 and 2.7.0)
+### 10.3 The racer's own art, as built (uma-art 2.10.0)
 
 ChatGPT drew it in uma-platform's `scripts/pixel-art` (original, deterministic, in git) from the packets A01 and A02,
-and uma-art published it as two minor releases (uma-platform P45, P46). The racer pins **2.7.0** (D364):
+and uma-art published it as two minor releases (uma-platform P45, P46). A04 adds the ten tonics (P62). The racer pins **2.10.0** (D378):
 
 | What | Ids | Size | Where it shows |
 |---|---|---|---|
@@ -583,9 +583,9 @@ and uma-art published it as two minor releases (uma-platform P45, P46). The race
 | Tier crests (2.7.0) | `tier/1`, `tier/2`, `tier/3` in `ui` (bronze, silver, gold) | 12×12, drawn at 24 pt | Uma tiles, the featured Uma, her profile (`TierCrest`, read as "Tier N") |
 | Speed Ticket item (2.7.0) | `speed-ticket` in `items`, `kind: 'ticket'` | 32×32 | The Warehouse, job cards and prices (`ui/ItemIcon` takes the release's frame; the catalogue keeps no art for it) |
 
-**Not drawn yet: the ten tonics** (`tonic-1` … `tonic-10`, D375), one 32×32 frame each in `items` under its id, as the
-Speed Ticket is. Until a release ships them, `ui/ItemIcon` draws a tonic as its name on a plain tile; it takes a frame of
-the tonic's id as soon as the pinned `items` index has one. Their packet is next in `docs/handoff/tasks/`.
+**The ten tonics** (`tonic-1` … `tonic-10`, D375, A04) each have a 32×32 frame in `items` under their id, as the
+Speed Ticket does. `ui/ItemIcon` uses them in the Kitchen, Warehouse, session sheets and slot rows at 16, 24, 32 and
+64 pt, with the existing name and grade for VoiceOver. The bottle's colour and details rise with its grade.
 
 **Not drawn yet (phase 9):** the Expedition world map (a composition like `world`'s islands: seven regions with pin
 spots) and its seven region crests (United States, South Korea, Dubai, Hong Kong, Australia, Britain, France/Europe, at

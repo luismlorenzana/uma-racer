@@ -67,8 +67,8 @@ importers:
   apps/web:
     dependencies:
       '@luismlorenzana/uma-art':
-        specifier: 2.7.0
-        version: 2.7.0
+        specifier: 2.10.0
+        version: 2.10.0
       '@luismlorenzana/uma-data':
         specifier: 1.1.0
         version: 1.1.0
@@ -174,8 +174,8 @@ importers:
         version: 0.1.0
     devDependencies:
       '@luismlorenzana/uma-art':
-        specifier: 2.7.0
-        version: 2.7.0
+        specifier: 2.10.0
+        version: 2.10.0
       typescript:
         specifier: ~5.9.3
         version: 5.9.3
@@ -1408,8 +1408,8 @@ packages:
   '@js-sdsl/ordered-map@4.4.2':
     resolution: {integrity: sha512-iUKgm52T8HOE/makSxjqoWhe95ZJA1/G1sYsGev2JDKUSS14KAgg1LHb+Ba+IPow0xflbnSkOsZcO08C7w1gYw==}
 
-  '@luismlorenzana/uma-art@2.7.0':
-    resolution: {integrity: sha512-ZFjknTvKpQF3cqyVTKF7FLa1lwIBTIeptyKoTwJyPo3K+rXwlpi/2ewZWvLiUc5U+Y463HPlUzA4EJWghYmXGQ==, tarball: https://npm.pkg.github.com/download/@luismlorenzana/uma-art/2.7.0/cd3bf70afec024fed01ab39b87264c18439e4d3b}
+  '@luismlorenzana/uma-art@2.10.0':
+    resolution: {integrity: sha512-fcP+yqSfINTM9hN8zITTmpi6OtS24oWqhRzBRx0uvp5eW9iqg/do17Maihq3R2PbC8lMxhp4oSm7o0UQO/VAoA==, tarball: https://npm.pkg.github.com/download/@luismlorenzana/uma-art/2.10.0/dd37dc215e4fd337ce5536c62df04823f3941f4f}
 
   '@luismlorenzana/uma-data@1.1.0':
     resolution: {integrity: sha512-0sWzgTFG1m2KN2kMNhuCX1ym7t4lTAMfYWv23BzDFf+UsHn2JKcvtlBzvNt5xdTN5Ky8rTQNnRYsLzTEDUZ/Ag==, tarball: https://npm.pkg.github.com/download/@luismlorenzana/uma-data/1.1.0/a6426b9baef7602dae0bf1bfea71862b4e7857cf}
@@ -1426,6 +1426,15 @@ packages:
       react: ^19.3.0
       react-dom: ^19.3.0
       react-router: ^7.18.3
+    peerDependenciesMeta:
+      '@luismlorenzana/uma-data':
+        optional: true
+      '@luismlorenzana/uma-work':
+        optional: true
+      firebase:
+        optional: true
+      phaser:
+        optional: true
 
   '@luismlorenzana/uma-server@0.2.0':
     resolution: {integrity: sha512-oU3EFFy2Q3cGpWWt0HwKaUJfgwWxpdNHXyhOXIahfT3Ra9G4gNMkCgSupX9/yDVMb9gZo0/jK2tESC1EmToW6w==, tarball: https://npm.pkg.github.com/download/@luismlorenzana/uma-server/0.2.0/f63b474d50618e16ea23cba7f8e1145509539951}
@@ -6005,20 +6014,21 @@ snapshots:
   '@js-sdsl/ordered-map@4.4.2':
     optional: true
 
-  '@luismlorenzana/uma-art@2.7.0': {}
+  '@luismlorenzana/uma-art@2.10.0': {}
 
   '@luismlorenzana/uma-data@1.1.0': {}
 
   '@luismlorenzana/uma-kit@0.9.1(@luismlorenzana/uma-data@1.1.0)(@luismlorenzana/uma-work@0.1.0)(firebase@12.19.0)(motion@12.43.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(phaser@4.2.1)(react-dom@19.3.0(react@19.3.0))(react-router@7.18.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react@19.3.0)':
     dependencies:
-      '@luismlorenzana/uma-data': 1.1.0
-      '@luismlorenzana/uma-work': 0.1.0
-      firebase: 12.19.0
       motion: 12.43.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      phaser: 4.2.1
       react: 19.3.0
       react-dom: 19.3.0(react@19.3.0)
       react-router: 7.18.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+    optionalDependencies:
+      '@luismlorenzana/uma-data': 1.1.0
+      '@luismlorenzana/uma-work': 0.1.0
+      firebase: 12.19.0
+      phaser: 4.2.1
 
   '@luismlorenzana/uma-server@0.2.0(@google-cloud/storage@7.22.0)(@nestjs/common@11.2.4(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.2.4)(firebase-admin@13.10.0(@firebase/app-compat@0.5.18)(@firebase/app@0.16.2))(rxjs@7.8.2)':
     dependencies:

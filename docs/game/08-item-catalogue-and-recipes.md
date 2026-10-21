@@ -28,7 +28,7 @@ consumables for stats or consumables for the rest of the build:
 | Planet dishes | 80 (8 families × 10 grades; 30 retired, D375) | uma-art `dishes`: `dish-<family>-<grade>` |
 | Duo dishes | 8 (4 stat Duos × grades 3 and 5) | `duo-<stat>-<stat>-<grade>`, drawn with uma-art `duo-…` frames (§4.3) |
 | Feasts | 4 (grades 4, 6, 8, 10) | uma-art `feast-4` … `feast-10` |
-| Tonics | 10 (grades 1–10) | `tonic-1` … `tonic-10`, no art yet (§4.5) |
+| Tonics | 10 (grades 1–10) | uma-art items `tonic-1` … `tonic-10` (§4.5) |
 | Speed Ticket | 1 | `speed-ticket` (§9) |
 | **Total** | **263 definitions** | |
 <!-- /live -->
@@ -337,8 +337,8 @@ its grade ([05](05-training-hub.md) §3); its grade opens at the same Farm Level
 | `tonic-10` | Legend's Tonic | 10 | Pumpkin Purée + Reishi Powder + Sunwheat Flour |
 <!-- /live -->
 
-Tonic ids are this game's own (`tonic-<grade>`). uma-art has no tonic frames yet, so a tonic draws as its name on a
-plain tile until a ChatGPT packet adds them to the `items` atlas ([11](11-hub-and-places.md) §10).
+Tonic ids are this game's own (`tonic-<grade>`). Since A04 the pinned uma-art 2.10.0 draws each as a 32×32 frame of
+that id in `items`, also used at 16 and 24 pt in chips ([11](11-hub-and-places.md) §10).
 
 <!-- live:feast-recipes -->
 | Id | Name | Grade | Recipe |
@@ -484,7 +484,7 @@ The value is the same for every family at a grade. Building speed and Speed Tick
 
 | Thing | Kind | Rules |
 |---|---|---|
-| **Speed Ticket** (`speed-ticket`) | An item in the Warehouse | Bought at the Exchange for 30 Prize Money; takes 30 minutes off one running job or session ([07](07-farm.md) §8, [09](09-racing-rewards-and-exchange.md)). Today's Energy, renamed. uma-art has no ticket icon: a new one is on [11](11-hub-and-places.md)'s art list |
+| **Speed Ticket** (`speed-ticket`) | An item in the Warehouse | Bought at the Exchange for 30 Prize Money; takes 30 minutes off one running job or session ([07](07-farm.md) §8, [09](09-racing-rewards-and-exchange.md)). Its own item icon shipped in A02 |
 | **Uma Ticket** | A profile currency, not an item | Unlocks into tier 1 only: 20 at the start, 5 Uma Shards each (1 per scenario gate), one per promotion; never sold ([04](04-tiers-and-promotion.md) §6) |
 | **Prize Money** | A profile currency | Races and sales ([09](09-racing-rewards-and-exchange.md)) |
 
@@ -505,8 +505,8 @@ items ([13](../rework/13-removals-and-plan-changes.md)).
   ("Warm-Up Tonic · Nodes & Inspiration slots · grade 1"), and a retired dish "Stands in for a tonic" or "Retired ·
   sell it".
 - **Art:** `items/atlas.png` (32 × 32, ten grades across, one row per family side), `dishes/atlas.png` (one row per
-  family, then Duos and Feasts). Uses 160 of 320 item frames and 92 of 100 dish frames. The tonics have none yet
-  (§4.5).
+  family, then Duos and Feasts). Uses 160 of 320 material item frames, the Speed Ticket and all ten tonic frames,
+  and 92 of 100 dish frames (§4.5, A04).
 
 ## 11. What this replaces
 
@@ -540,7 +540,7 @@ signatures × 3 blocks) and Energy, 1,169 in all, drawn as original SVG marks. A
 
 - The domain catalogue holds exactly 263 definitions: 80 raw, 80 crafted, 80 planet dishes (30 of them retired),
   8 Duos, 4 Feasts, 10 tonics and the Speed Ticket. A test checks every id against uma-art's `items` and `dishes`
-  indexes (the Duos through their frame map, the tonics art-free) and that no gathering-side id appears.
+  indexes (the Duos through their frame map, the tonics and ticket by id) and that no gathering-side id appears.
 - A test pins every recipe: four of the family plus the §4.2 side for each planet dish, the §4.3 Duos, §4.4 Feasts
   and §4.5 tonics, no side from Vegetables or Mushrooms, no side of the dish's own family; the Kitchen cooks no
   retired dish.

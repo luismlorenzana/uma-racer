@@ -54,7 +54,7 @@ function catalogue(): string {
       '`duo-<stat>-<stat>-<grade>`, drawn with uma-art `duo-…` frames (§4.3)'],
     ['Feasts', `${count('dish', 'feast')} (grades ${FEAST_GRADES.join(', ')})`,
       `uma-art ${code(FEASTS[0]!.id)} … ${code(FEASTS[FEASTS.length - 1]!.id)}`],
-    ['Tonics', `${count('tonic')} (grades 1–${ITEM_GRADES})`, `${code(TONICS[0]!.id)} … ${code(TONICS[TONICS.length - 1]!.id)}, no art yet (§4.5)`],
+    ['Tonics', `${count('tonic')} (grades 1–${ITEM_GRADES})`, `uma-art items ${code(TONICS[0]!.id)} … ${code(TONICS[TONICS.length - 1]!.id)} (§4.5)`],
     ['Speed Ticket', count('ticket'), `${code(SPEED_TICKET_ID)} (§9)`],
     ['**Total**', `**${ITEMS.length} definitions**`, ''],
   ])
