@@ -15,7 +15,7 @@ import { bootSave, type SaveBootOptions, type SaveSession } from './boot'
 import { useSave, type SaveStore } from './store'
 
 export { createSaveApi, setSaveTokenProvider, type SaveApi, type SaveFailure } from './api'
-export { bootSave, PURGED_KEY, type SaveBootOptions, type SaveSession } from './boot'
+export { bootSave, type SaveBootOptions, type SaveSession } from './boot'
 export { SAVE_DB_NAME, SaveDb } from './db'
 export { operationEnv } from './env'
 export { fold } from './fold'
@@ -67,7 +67,7 @@ export interface SaveGame extends G2Game {
   stop(): void
 }
 
-/** The device save behind the shell's port: boots at once (wipe, purge, open) and publishes as the store changes. */
+/** The device save behind the shell's port: opens local first, without any cutover writes and publishes as the store changes. */
 export function createSaveGame(options: SaveBootOptions): SaveGame {
   const clock = options.now ?? (() => Date.now())
   const session = bootSave(options)

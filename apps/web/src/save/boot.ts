@@ -1,9 +1,6 @@
 // The save's boot (docs/rearchitecture/01-target-architecture.md §4.3; docs/rearchitecture/07-data-reset.md §2–§3;
-// docs/game/02-check-ins-and-notifications.md §8, §11; T136), in this order:
-// 1. The purge, unless `uma-racer:g2:purged` is set: `POST /api/legacy/purge` in the background once signed in, again
-//    at the next boot or back online after a failure. It never blocks play, and it touches only `players/`, so it can
-//    run before or after the create; online, its request goes first (07 §3's order).
-// 2. Open, local first (the first-boot device wipe retired with SE1, D365):
+// docs/game/02-check-ins-and-notifications.md §8, §11; T136, T144):
+// Open, local first. The device wipe retired with SE1; the server purge retired with D362.
 //    - a save on the device (a profile row, or a create in the outbox): fold, ready at once, then flush and pull;
 //    - empty: pull every page from 0. With rows, the store opens once the pages have brought the kinds the rules read,
 //      and the history keeps loading behind it. With none, `initialSave(now)` is queued as the create, and it opens;
@@ -18,12 +15,8 @@ import { browserSignals, forgetPull, SyncLane, type LaneSignals } from './sync'
 import { browserStorage } from './storage'
 import { SAVE_WORDS } from './words'
 
-export const PURGED_KEY = 'uma-racer:g2:purged'
-
 export interface SaveBootOptions {
   readonly env: OperationEnv
-  /** The purge call stays until the separate owner confirmation (07 §6). */
-  readonly purge: boolean
   /** Whether sync may run yet; T143 follows the auth provider with `setSignedIn`. */
   readonly signedIn?: boolean
   readonly api?: SaveApi
@@ -55,31 +48,6 @@ export function bootSave(options: SaveBootOptions): SaveSession {
   const serial = createSerial()
   resetSave({ signedIn: options.signedIn ?? true })
 
-  let purging = false
-  function purge(): void {
-    if (!options.purge || purging || !useSave.getState().signedIn) return
-    try {
-      if (storage?.getItem(PURGED_KEY) != null) return
-    } catch {
-      return
-    }
-    purging = true
-    api.purge().then(
-      (answer) => {
-        try {
-          storage?.setItem(PURGED_KEY, JSON.stringify({ status: answer.status, at: answer.at }))
-        } catch {
-          // Asked again next boot; the server answers `already` at once.
-        }
-      },
-      () => {
-        // Tried again at the next boot, or when back online.
-      },
-    ).finally(() => {
-      purging = false
-    })
-  }
-
   const lane: SyncLane = new SyncLane({
     db, api, env, serial, storage, now,
     signals: options.signals ?? browserSignals,
@@ -89,7 +57,6 @@ export function bootSave(options: SaveBootOptions): SaveSession {
       resetSave({ signedIn: useSave.getState().signedIn })
     }),
     reopen: () => open().catch(failed),
-    onOnline: purge,
   }, createSerial())
 
   const actions = createActions({ db, env, serial, now, newId: options.newId ?? randomId, lane })
@@ -138,7 +105,6 @@ export function bootSave(options: SaveBootOptions): SaveSession {
   }
 
   const opened = (async () => {
-    purge()
     await db.open()
     await open()
   })().catch(failed)
@@ -152,7 +118,6 @@ export function bootSave(options: SaveBootOptions): SaveSession {
       if (useSave.getState().signedIn === signedIn) return
       useSave.setState({ signedIn })
       if (!signedIn) return
-      purge()
       void lane.request({ pull: true })
     },
     stop() {

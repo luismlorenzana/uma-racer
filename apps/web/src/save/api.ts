@@ -8,7 +8,7 @@
 // After a 426 the client asks nothing more until the app restarts: the server has moved on, and the update prompt
 // brings the new app.
 import {
-  parsePurgeResponse, parseSaveSnapshotV2, parseSyncResponseV2, snapshotQuery, STAMP, type PurgeResponse, type SaveSnapshotV2, type SyncChange,
+  parseSaveSnapshotV2, parseSyncResponseV2, snapshotQuery, STAMP, type SaveSnapshotV2, type SyncChange,
   type SyncRequestV2, type SyncResponseV2,
 } from '@racer/domain/save'
 
@@ -28,8 +28,6 @@ export interface SaveApi {
   snapshot(since: number, cursor: string | null): Promise<SaveSnapshotV2>
   /** `POST /api/sync`: the outbox's batch, answered change by change. */
   sync(changes: readonly SyncChange[]): Promise<SyncResponseV2>
-  /** `POST /api/legacy/purge`: today's save deleted once, server side (07 §3). */
-  purge(): Promise<PurgeResponse>
 }
 
 let tokenProvider: () => Promise<string | null> = async () => null
@@ -102,6 +100,5 @@ export function createSaveApi(options: SaveApiOptions = {}): SaveApi {
       const body: SyncRequestV2 = { ...STAMP, changes }
       return call('/api/sync', { method: 'POST', body: JSON.stringify(body) }, parseSyncResponseV2)
     },
-    purge: () => call('/api/legacy/purge', { method: 'POST', body: JSON.stringify(STAMP) }, parsePurgeResponse),
   }
 }

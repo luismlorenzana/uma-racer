@@ -58,7 +58,7 @@ describe('the routes', () => {
     const routes = Object.getOwnPropertyNames(SaveController.prototype)
       .filter((name) => Reflect.getMetadata(METHOD_METADATA, (SaveController.prototype as unknown as Record<string, object>)[name]!) !== undefined)
       .map((name) => Reflect.getMetadata(PATH_METADATA, (SaveController.prototype as unknown as Record<string, object>)[name]!) as string)
-    expect(routes.sort()).toEqual(['legacy/purge', 'save', 'sync'])
+    expect(routes.sort()).toEqual(['save', 'sync'])
   })
 
   it('answers 426 for any stamp but protocol 2 and generation 2, reading and writing nothing', async () => {
@@ -68,18 +68,16 @@ describe('the routes', () => {
     }
     for (const stamp of [{}, { protocol: 1, generation: 2 }, { protocol: 2, generation: 3 }, { protocol: '2', generation: '2' }]) {
       expect(await thrown(() => controller.sync('u1', { ...stamp, changes: [{ type: 'create', createdAt: 1 }] })), JSON.stringify(stamp)).toEqual(upgrade)
-      expect(await thrown(() => controller.purge('u1', stamp)), JSON.stringify(stamp)).toEqual(upgrade)
     }
     for (const body of [undefined, null, 'v2', []]) {
       expect(await thrown(() => controller.sync('u1', body))).toEqual(upgrade)
-      expect(await thrown(() => controller.purge('u1', body))).toEqual(upgrade)
     }
     expect(fake.log).toEqual([])
     expect(fake.reads + fake.writes).toBe(0)
     expect(envLoads).toBe(0)
   })
 
-  it("answers 400 for what T134's parsers refuse: a profile or Uma write, every bound, a bad query or purge body", async () => {
+  it("answers 400 for what T134's parsers refuse: a profile or Uma write, every bound, a bad query", async () => {
     const bad = async (run: () => unknown) => expect((await thrown(run)).status).toBe(400)
     const sync = (changes: unknown[]) => () => controller.sync('u1', { ...STAMP, changes })
     await bad(sync([{ type: 'upsert', kind: 'profile', id: 'main', baseVersion: 1, data: {} }]))
@@ -94,7 +92,6 @@ describe('the routes', () => {
     await bad(sync([{ type: 'append', kind: 'flairEvents', id: 'x'.repeat(SAVE_LIMITS.idLength + 1), at: 1, data: {} }]))
     await bad(() => controller.snapshot('u1', { ...{ protocol: '2', generation: '2' }, since: '-1' }))
     await bad(() => controller.snapshot('u1', { protocol: '2', generation: '2', cursor: 'umas~1' }))
-    await bad(() => controller.purge('u1', { ...STAMP, force: true }))
     expect(fake.log).toEqual([])
   })
 
@@ -139,7 +136,7 @@ describe('the routes', () => {
     }
   })
 
-  it('returns the snapshot, the sync and the purge as T134 types them', async () => {
+  it('returns the snapshot and the sync as T134 types them', async () => {
     const created = await controller.sync('u1', { ...STAMP, changes: [{ type: 'create', createdAt: 1 }, op(1, 'unlock-uma', { outfitId: F.uma(1) }, 2)] })
     expect(created.results.map((result) => result.status)).toEqual(['created', 'applied'])
     expect(envLoads).toBe(1)
@@ -147,7 +144,6 @@ describe('the routes', () => {
     expect(page).toMatchObject({ ...STAMP, cursor: null })
     // The profile, 14 buildings and her Uma; two ledger rows and the operation's receipt.
     expect([page.entities.length, page.logs.length]).toEqual([16, 3])
-    expect(await controller.purge('u1', { ...STAMP })).toMatchObject({ ...STAMP, status: 'purged', counts: { collections: 0, documents: 0 } })
   })
 })
 
@@ -202,15 +198,22 @@ describe('over HTTP', () => {
     for (const response of await Promise.all([
       fetch(`${api}/save`), fetch(`${api}/save?protocol=1&generation=2`), fetch(`${api}/save?protocol=2&generation=2`),
       post(`${api}/sync`, { protocol: 1, generation: 2, changes: [] }), post(`${api}/sync`, { ...STAMP, changes: [] }),
-      post(`${api}/legacy/purge`, {}), post(`${api}/legacy/purge`, STAMP),
     ])) expect(response.status).toBe(401)
+  })
+
+  it('returns 404 for the retired migration endpoint with auth on or off, without touching a save', async () => {
+    for (const mode of ['on', 'disabled'] as const) {
+      const api = await start(mode)
+      const response = await post(`${api}/${['legacy', 'purge'].join('/')}`, STAMP)
+      expect(response.status).toBe(404)
+    }
   })
 
   it('answers 426 to a stale client and plays a new account over the wire', async () => {
     const api = await start('disabled')
     for (const response of await Promise.all([
       fetch(`${api}/save?protocol=1&generation=2`), post(`${api}/sync`, { protocol: 1, generation: 2, changes: [] }),
-      post(`${api}/sync`, { protocol: 2, generation: 3, changes: [] }), post(`${api}/legacy/purge`, { protocol: 1, generation: 1 }),
+      post(`${api}/sync`, { protocol: 2, generation: 3, changes: [] }),
     ])) {
       expect(response.status).toBe(426)
       expect(await response.json()).toEqual({ code: 'upgrade-required', protocol: 2, generation: 2 })

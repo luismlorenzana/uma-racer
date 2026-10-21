@@ -1,6 +1,6 @@
 // Sync v2 on the wire (docs/rearchitecture/01-target-architecture.md §4.3; docs/rearchitecture/07-data-reset.md §3–§4;
 // T134): wrong stamps, a create that isn't first, a device write of any kind but badges and flair, and every bound are
-// refused; responses answer every change in order; pages and the purge are stamped too.
+// refused; responses answer every change in order; pages are stamped too.
 import { describe, expect, it } from 'vitest'
 import { clock, opId } from '../__fixtures__/save'
 import { createTrainerBadgeState, type FlairEventV1 } from '../badges'
@@ -9,7 +9,7 @@ import { initialSave } from './initial'
 import { SAVE_LIMITS } from './kinds'
 import { logDraft, stampEntity, stampLog } from './rows'
 import {
-  answersRequest, isCurrentStamp, parsePurgeRequest, parsePurgeResponse, parseSaveSnapshotV2, parseSnapshotQuery, parseSyncRequestV2,
+  answersRequest, isCurrentStamp, parseSaveSnapshotV2, parseSnapshotQuery, parseSyncRequestV2,
   parseSyncResponseV2, snapshotQuery, type SyncChange,
 } from './wire'
 
@@ -36,7 +36,6 @@ describe('the stamp', () => {
     for (const stamp of [{}, { protocol: 1, generation: 2 }, { protocol: 2, generation: 1 }, { protocol: 2, generation: 3 }, { protocol: '2', generation: '2' }, null, 'v2']) {
       expect(isCurrentStamp(stamp), JSON.stringify(stamp)).toBe(false)
       expect(typeof parseSyncRequestV2({ ...(stamp as object), changes: [] })).toBe('string')
-      expect(typeof parsePurgeRequest(stamp)).toBe('string')
     }
   })
 })
@@ -130,7 +129,7 @@ describe('the sync response', () => {
   })
 })
 
-describe('pages and the purge', () => {
+describe('pages', () => {
   const save = initialSave(T0)
   const entities = save.entities.map((draft) => stampEntity(draft, 1, T0))
   const page = { ...STAMP, serverTime: T0, entities, logs: [], cursor: null }
@@ -155,15 +154,5 @@ describe('pages and the purge', () => {
     expect(parseSnapshotQuery({ protocol: '1', generation: '2' })).toBeUndefined()
     expect(parseSnapshotQuery({})).toBeUndefined()
     expect(typeof parseSnapshotQuery({ protocol: '2', generation: '2', since: '-5' })).toBe('string')
-  })
-
-  it('stamps the purge both ways', () => {
-    expect(parsePurgeRequest(STAMP)).toEqual(STAMP)
-    expect(typeof parsePurgeRequest({ ...STAMP, uid: 'x' })).toBe('string')
-    const purged = { ...STAMP, status: 'purged', at: T0, counts: { collections: 12, documents: 3_456 } }
-    expect(parsePurgeResponse(purged)).toEqual(purged)
-    expect(parsePurgeResponse({ ...purged, status: 'already' })).toEqual({ ...purged, status: 'already' })
-    expect(typeof parsePurgeResponse({ ...purged, status: 'done' })).toBe('string')
-    expect(typeof parsePurgeResponse({ ...purged, counts: { collections: -1, documents: 0 } })).toBe('string')
   })
 })

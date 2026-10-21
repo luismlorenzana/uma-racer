@@ -333,7 +333,7 @@ describe('offline and after a reload (02 §9)', () => {
     const db = freshDb()
     const storage = memoryStorage()
     const boot = () => createSaveGame({
-      env: SAVE_ENV, purge: false, newId: nextId, db, storage, signals: fakeSignals().signals,
+      env: SAVE_ENV, newId: nextId, db, storage, signals: fakeSignals().signals,
       api: createSaveApi({ fetch: server.fetch as unknown as typeof fetch, base: '', token: async () => 't' }),
     })
     const first = boot()

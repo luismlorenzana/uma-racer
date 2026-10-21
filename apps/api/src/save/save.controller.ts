@@ -1,11 +1,11 @@
 // Generation 2's routes (docs/rearchitecture/01-target-architecture.md §6; docs/rearchitecture/07-data-reset.md §3–§4;
-// docs/rework/13-removals-and-plan-changes.md §6, §8; T135): `GET /api/save`, `POST /api/sync` and
-// `POST /api/legacy/purge`, all behind `AuthGuard`. Each runs the guard, then the stamp (anything but protocol 2 and
+// docs/rework/13-removals-and-plan-changes.md §6, §8; T135, T144): `GET /api/save` and `POST /api/sync`,
+// both behind `AuthGuard`. Each runs the guard, then the stamp (anything but protocol 2 and
 // generation 2 is 426, with nothing read or written), then T134's parser. Error bodies are developer text; the web turns
 // every status into plain words (T136).
 import { BadRequestException, Body, Controller, Get, HttpCode, HttpException, Inject, Post, Query, UseGuards } from '@nestjs/common'
 import {
-  isCurrentStamp, parsePurgeRequest, parseSnapshotQuery, parseSyncRequestV2, SAVE_GENERATION, SAVE_PROTOCOL, type PurgeResponse,
+  isCurrentStamp, parseSnapshotQuery, parseSyncRequestV2, SAVE_GENERATION, SAVE_PROTOCOL,
   type SaveSnapshotV2, type SyncResponseV2,
 } from '@racer/domain/save'
 import { AuthGuard, CurrentUid } from '@luismlorenzana/uma-server/auth'
@@ -53,13 +53,4 @@ export class SaveController {
     return result
   }
 
-  /** The one-time wipe of the owner's generation-1 save (07 §3); a second call answers `already` at once. */
-  @Post('legacy/purge')
-  @HttpCode(200)
-  purge(@CurrentUid() uid: string, @Body() body: unknown): Promise<PurgeResponse> {
-    if (!isCurrentStamp(body)) throw upgradeRequired()
-    const request = parsePurgeRequest(body)
-    if (typeof request === 'string') throw new BadRequestException(request)
-    return this.saves.purge(uid)
-  }
 }

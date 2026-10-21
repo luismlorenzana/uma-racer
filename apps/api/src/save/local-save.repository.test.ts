@@ -1,11 +1,10 @@
-// The local repository in a temporary folder (T135): its file shape, serialized calls, and the purge of the old dev
-// file's entry for the uid, at a path that can never be the generation-2 file.
+// Local persistence after T144: serialized calls preserve the account and its historical cutover audit record.
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { parseSyncRequestV2, type SyncRequestV2 } from '@racer/domain/save'
-import { LEGACY_LOCAL_SAVE_FILE, LocalSaveRepository } from './local-save.repository'
+import { LocalSaveRepository } from './local-save.repository'
 import { saveFixtures, type SaveFixtures } from './save.test-support'
 
 let F: SaveFixtures
@@ -28,7 +27,7 @@ beforeEach(async () => {
   file = join(dir, '.data', 'save-g2.json')
   legacy = join(dir, '.data', 'save.json')
   await mkdir(join(dir, '.data'))
-  repo = new LocalSaveRepository(file, legacy, () => 1_800_000_000_000)
+  repo = new LocalSaveRepository(file, () => 1_800_000_000_000)
 })
 afterEach(async () => rm(dir, { recursive: true, force: true }))
 
@@ -49,33 +48,15 @@ describe('the local repository', () => {
     expect(saved.u1.purge).toBeUndefined()
   })
 
-  it("purges the uid's entry from the old dev file, counting its rows by kind, then writes the marker", async () => {
-    await writeFile(legacy, JSON.stringify({
-      u1: { entities: { 'profile/main': {}, 'umas/a': {}, 'umas/b': {} }, logs: { 'ledger/x': {}, 'raceResults/r': {} } },
-      u2: { entities: { 'profile/main': {} }, logs: {} },
-    }))
+  it('preserves the historical audit marker and never reads or alters the retired dev file', async () => {
+    const audit = { generation: 2, at: 42, collections: 3, documents: 5 }
+    await writeFile(file, JSON.stringify({ u1: { rows: {}, purge: audit } }))
+    // Invalid JSON proves the retired file is not even parsed during normal sync.
+    await writeFile(legacy, 'retired data: do not read or change')
     await repo.sync('u1', request([{ type: 'create', createdAt: F.clock('07:00') }]), async () => F.ENV)
-    const rows = (await readJson(file)).u1.rows
-    const response = await repo.purge('u1')
-    expect(response).toEqual({ ...STAMP, status: 'purged', at: 1_800_000_000_000, counts: { collections: 4, documents: 5 } })
-    expect(await readJson(legacy)).toEqual({ u2: { entities: { 'profile/main': {} }, logs: {} } })
-    expect(await readJson(file)).toEqual({ u1: { rows, purge: { generation: 2, at: 1_800_000_000_000, collections: 4, documents: 5 } } })
-    // Called again, it answers at once from the marker, and touches neither file.
-    await writeFile(legacy, JSON.stringify({ u1: { entities: { 'profile/main': {} }, logs: {} } }))
-    expect(await repo.purge('u1')).toEqual({ ...response, status: 'already' })
-    expect(Object.keys(await readJson(legacy))).toEqual(['u1'])
-  })
-
-  it('purges with zero counts when there is no old dev file, or no entry for the uid', async () => {
-    expect((await repo.purge('u1')).counts).toEqual({ collections: 0, documents: 0 })
-    await writeFile(legacy, JSON.stringify({ u2: { entities: {}, logs: {} } }))
-    expect((await repo.purge('u3')).counts).toEqual({ collections: 0, documents: 0 })
-    expect(Object.keys(await readJson(legacy))).toEqual(['u2'])
-  })
-
-  it('refuses to purge when the old dev path is the generation-2 file', async () => {
-    const same = new LocalSaveRepository(file, join(dir, '.data', '..', '.data', 'save-g2.json'))
-    await expect(same.purge('u1')).rejects.toThrow('cannot be the generation-2 file')
-    expect(LEGACY_LOCAL_SAVE_FILE).toBe('.data/save.json')
+    await repo.sync('u1', request([op(1, 'unlock-uma', { outfitId: F.uma(1) }, F.clock('07:01'))]), async () => F.ENV)
+    expect((await readJson(file)).u1.purge).toEqual(audit)
+    expect(await readFile(legacy, 'utf8')).toBe('retired data: do not read or change')
+    expect((await repo.snapshot('u1', 0, null)).entities.some((row) => row.kind === 'umas')).toBe(true)
   })
 })

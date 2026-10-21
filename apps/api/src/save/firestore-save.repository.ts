@@ -1,23 +1,17 @@
 // Production persistence for generation 2 (docs/rework/13-removals-and-plan-changes.md §6; docs/rearchitecture/07-data-
 // reset.md §3; T135): `saves/{uid}/{kind}/{id}`, one small document per row, stored through the codec (a work row's
-// arrays of arrays become `dataJson`, D151). A sync is one transaction, every read before the first write. The purge
-// deletes `players/{uid}` and writes `saves/{uid}/meta/purge`; `meta` is no save kind, so no pull returns it.
+// arrays of arrays become `dataJson`, D151). A sync is one transaction, every read before the first write. Historical
+// `meta` audit records are not save kinds: neither sync nor pulls read or change them (T144, D362).
 import * as admin from 'firebase-admin'
-import { KIND_ORDER, rowKey, RULE_LEDGER_REASONS, SAVE_GENERATION, SAVE_LIMITS, type PurgeResponse, type SaveSnapshotV2,
+import { KIND_ORDER, rowKey, RULE_LEDGER_REASONS, SAVE_LIMITS, type SaveSnapshotV2,
   type SyncRequestV2, type SyncResponseV2 } from '@racer/domain/save'
 import { fromStored, toStored } from './firestore-codec'
 import { needsOperationEnv, NO_SAVE, parseCursor, pullFloor, resolveSync, selectReadSet, snapshotPage, syncReadSet, type NoSave,
   type SaveRow } from './resolve'
-import { parsePurgeMarker, purgeResponse, type OperationEnvLoader, type PurgeMarker, type SaveRepository } from './save.repository'
+import type { OperationEnvLoader, SaveRepository } from './save.repository'
 
 type Firestore = admin.firestore.Firestore
 type Data = Record<string, unknown>
-
-/** Firestore's ALREADY_EXISTS, as the admin SDK reports it. */
-const alreadyExists = (error: unknown): boolean => {
-  const code = (error as { code?: unknown } | null)?.code
-  return code === 6 || code === 'already-exists' || code === 'ALREADY_EXISTS'
-}
 
 export class FirestoreSaveRepository implements SaveRepository {
   constructor(private readonly injectedDb?: Firestore, private readonly clock: () => number = Date.now) {}
@@ -78,30 +72,4 @@ export class FirestoreSaveRepository implements SaveRepository {
     })
   }
 
-  async purge(uid: string): Promise<PurgeResponse> {
-    const marker = this.save(uid).collection('meta').doc('purge')
-    const first = await marker.get()
-    if (first.exists) return purgeResponse('already', parsePurgeMarker(first.data()))
-
-    const player = this.db.collection('players').doc(uid)
-    const [subcollections, parent] = await Promise.all([player.listCollections(), player.get()])
-    // `recursiveDelete` deletes the parent document whether or not it exists; it counts only if it did.
-    let documents = parent.exists ? 1 : 0
-    const writer = this.db.bulkWriter()
-    writer.onWriteResult((written) => { if (written.path !== player.path) documents += 1 })
-    try {
-      await this.db.recursiveDelete(player, writer)
-    } finally {
-      await writer.close()
-    }
-    const record: PurgeMarker = { generation: SAVE_GENERATION, at: this.clock(), collections: subcollections.length, documents }
-    try {
-      await marker.create(record)
-    } catch (error) {
-      // Another device's purge wrote the marker first: its record stands.
-      if (!alreadyExists(error)) throw error
-      return purgeResponse('already', parsePurgeMarker((await marker.get()).data()))
-    }
-    return purgeResponse('purged', record)
-  }
 }

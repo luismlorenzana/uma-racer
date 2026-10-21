@@ -15,23 +15,19 @@ afterEach(() => {
 describe('the save api', () => {
   it('stamps the GET in its query and each POST in its body, with the token', async () => {
     const fetch = vi.fn(async (url: string) => new Response(JSON.stringify(url.includes('/api/save') ? snapshot
-      : url.includes('purge') ? { ...STAMP, status: 'purged', at: 1, counts: { collections: 0, documents: 0 } }
         : { ...STAMP, serverTime: 5, results: [], entities: [], logs: [] }), { status: 200 }))
     const api = createSaveApi({ fetch: fetch as unknown as typeof globalThis.fetch, base: 'https://api.test', token: async () => 'abc' })
     expect(await api.snapshot(0, null)).toEqual(snapshot)
     await api.snapshot(1_000, 'umas~5~sim-uma-01')
     await api.sync([])
-    await api.purge()
     const calls = fetch.mock.calls as unknown as [string, RequestInit][]
     expect(calls.map(([url]) => url)).toEqual([
       'https://api.test/api/save?protocol=2&generation=2&since=0',
       'https://api.test/api/save?protocol=2&generation=2&since=1000&cursor=umas%7E5%7Esim-uma-01',
       'https://api.test/api/sync',
-      'https://api.test/api/legacy/purge',
     ])
-    expect(calls.map(([, init]) => init.method)).toEqual(['GET', 'GET', 'POST', 'POST'])
+    expect(calls.map(([, init]) => init.method)).toEqual(['GET', 'GET', 'POST'])
     expect(JSON.parse(calls[2]![1].body as string)).toEqual({ protocol: 2, generation: 2, changes: [] })
-    expect(JSON.parse(calls[3]![1].body as string)).toEqual({ protocol: 2, generation: 2 })
     expect(calls.every(([, init]) => (init.headers as Record<string, string>).Authorization === 'Bearer abc')).toBe(true)
   })
 
@@ -59,7 +55,7 @@ describe('the save api', () => {
     const old = createSaveApi({ fetch: answered(200, { protocol: 1, generation: 1, entities: [] }) as unknown as typeof globalThis.fetch, base: '' })
     await expect(old.snapshot(0, null)).rejects.toMatchObject({ failure: 'invalid' })
     const text = createSaveApi({ fetch: vi.fn(async () => new Response('<html>', { status: 200 })) as unknown as typeof globalThis.fetch, base: '' })
-    await expect(text.purge()).rejects.toMatchObject({ failure: 'invalid' })
+    await expect(text.sync([])).rejects.toMatchObject({ failure: 'invalid' })
     expect(failureOf(new Error('anything'))).toBe<SaveFailure>('server')
   })
 
@@ -79,7 +75,6 @@ describe('the save api', () => {
     const api = createSaveApi({ fetch: fetch as unknown as typeof globalThis.fetch, base: '' })
     await expect(api.sync([])).rejects.toMatchObject({ failure: 'upgrade' })
     await expect(api.snapshot(0, null)).rejects.toMatchObject({ failure: 'upgrade' })
-    await expect(api.purge()).rejects.toMatchObject({ failure: 'upgrade' })
     expect(fetch).toHaveBeenCalledTimes(1)
   })
 })

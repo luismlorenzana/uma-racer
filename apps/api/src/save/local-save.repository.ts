@@ -1,24 +1,19 @@
 // Local dev persistence for generation 2 (docs/rework/13-removals-and-plan-changes.md §6; docs/rearchitecture/07-data-
 // reset.md §2–§3; T135): one JSON file, `.data/save-g2.json`, shaped `{ [uid]: { rows: { 'kind/id': row }, purge? } }`,
 // written atomically (a temporary file, then a rename) with calls serialized in-process, on the same `resolve.ts` as
-// Firestore. Its purge clears the uid's entry from the old dev file, at a fixed path and never an env var.
+// Firestore. Historical audit metadata is preserved but never acted on (T144, D362).
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
-import { dirname, resolve } from 'node:path'
-import { rowKey, SAVE_GENERATION, type PurgeResponse, type SaveSnapshotV2, type SyncRequestV2, type SyncResponseV2 } from '@racer/domain/save'
+import { dirname } from 'node:path'
+import { rowKey, type SaveSnapshotV2, type SyncRequestV2, type SyncResponseV2 } from '@racer/domain/save'
 import { needsOperationEnv, NO_SAVE, resolveSync, selectReadSet, snapshotPage, syncReadSet, type NoSave, type SaveRow } from './resolve'
-import { parsePurgeMarker, purgeResponse, type OperationEnvLoader, type PurgeMarker, type SaveRepository } from './save.repository'
-
-/** The old dev store (07 §2), relative to the API's working directory. */
-export const LEGACY_LOCAL_SAVE_FILE = '.data/save.json'
+import type { OperationEnvLoader, SaveRepository } from './save.repository'
 
 interface UserFile {
   rows: Record<string, SaveRow>
-  purge?: PurgeMarker
+  /** An inert record from the completed cutover; sync preserves it unchanged. */
+  purge?: unknown
 }
 type FileShape = Record<string, UserFile>
-
-/** Today's dev file: `{ [uid]: { entities: { 'kind/id': row }, logs: { 'kind/id': row } } }`. */
-type LegacyFileShape = Record<string, { entities?: Record<string, unknown>; logs?: Record<string, unknown> }>
 
 async function readJson<T>(file: string, empty: T): Promise<T> {
   try {
@@ -39,9 +34,7 @@ async function writeJson(file: string, data: unknown): Promise<void> {
 export class LocalSaveRepository implements SaveRepository {
   private queue: Promise<unknown> = Promise.resolve()
 
-  /** `legacyFile` is `LEGACY_LOCAL_SAVE_FILE` under the working directory; tests pass a temporary one. */
-  constructor(private readonly file: string, private readonly legacyFile: string = resolve(process.cwd(), LEGACY_LOCAL_SAVE_FILE),
-    private readonly clock: () => number = Date.now) {}
+  constructor(private readonly file: string, private readonly clock: () => number = Date.now) {}
 
   private serialize<T>(fn: () => Promise<T>): Promise<T> {
     const run = this.queue.then(fn, fn)
@@ -74,26 +67,4 @@ export class LocalSaveRepository implements SaveRepository {
     })
   }
 
-  purge(uid: string): Promise<PurgeResponse> {
-    return this.serialize(async () => {
-      if (resolve(this.legacyFile) === resolve(this.file)) throw new Error('The old dev save cannot be the generation-2 file')
-      const all = await this.read()
-      const done = all[uid]?.purge
-      if (done !== undefined) return purgeResponse('already', parsePurgeMarker(done))
-
-      const legacy = await readJson<LegacyFileShape>(this.legacyFile, {})
-      const old = Object.hasOwn(legacy, uid) ? legacy[uid] : undefined
-      const keys = [...Object.keys(old?.entities ?? {}), ...Object.keys(old?.logs ?? {})]
-      if (old !== undefined) {
-        delete legacy[uid]
-        await writeJson(this.legacyFile, legacy)
-      }
-      const marker: PurgeMarker = {
-        generation: SAVE_GENERATION, at: this.clock(), collections: new Set(keys.map((key) => key.split('/')[0])).size, documents: keys.length,
-      }
-      ;(all[uid] ??= { rows: {} }).purge = marker
-      await writeJson(this.file, all)
-      return purgeResponse('purged', marker)
-    })
-  }
 }

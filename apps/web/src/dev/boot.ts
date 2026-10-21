@@ -21,7 +21,7 @@ export async function bootGame(search: string): Promise<G2Boot> {
   const params = new URLSearchParams(search)
   if (devSaveAsked(params)) {
     // `dev` as `operationEnv` sets it: a dev build runs `dev-grant` (M034), so Account's dev section works here too.
-    return bootDevice(async () => ({ env: { ...(await import('./seed')).SEED_ENV, dev: import.meta.env.DEV }, purge: false }))
+    return bootDevice(async () => ({ env: { ...(await import('./seed')).SEED_ENV, dev: import.meta.env.DEV } }))
   }
   const [{ createMemoryGame }, { SEEDS, rememberSeed, seedFor }, { RULES }] = await Promise.all([import('./memory'), import('./seed'), import('../app/rules')])
   // Account's dev section loads any seed in place (T138); the tab then reopens on it after a reload, as `?seed=` would.

@@ -35,7 +35,7 @@ afterEach(() => {
 
 async function deviceOn(server: FakeServer): Promise<SaveGame> {
   const game = createSaveGame({
-    env: ENV, purge: false, newId: nextId, db: freshDb(), storage: memoryStorage(), signals: fakeSignals().signals,
+    env: ENV, newId: nextId, db: freshDb(), storage: memoryStorage(), signals: fakeSignals().signals,
     api: createSaveApi({ fetch: server.fetch as unknown as typeof fetch, base: '', token: async () => 't' }),
   })
   games.push(game)

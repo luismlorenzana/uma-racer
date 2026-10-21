@@ -1,5 +1,5 @@
 // What the API answers after the generation-2 switch (T143 "Acceptance"; rearchitecture/06 §6): health, the save, sync,
-// the one-release purge and the private content, and no other route. Read from the mounted modules' route metadata.
+// the private content, and no other route. Read from the mounted modules' route metadata.
 import 'reflect-metadata'
 import { RequestMethod, type Type, type DynamicModule } from '@nestjs/common'
 import { METHOD_METADATA, MODULE_METADATA, PATH_METADATA } from '@nestjs/common/constants'
@@ -27,13 +27,12 @@ function routesOf(controller: Type): string[] {
 }
 
 describe('the API', () => {
-  it('answers only health, the save, sync, the purge and the content', () => {
+  it('answers only health, the save, sync and the content', () => {
     expect(controllersOf(AppModule).flatMap(routesOf).sort()).toEqual([
       'GET /api/content/*path',
       'GET /api/health',
       'GET /api/master/*path',
       'GET /api/save',
-      'POST /api/legacy/purge',
       'POST /api/sync',
     ])
   })

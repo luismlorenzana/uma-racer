@@ -108,8 +108,6 @@ export interface LaneDeps {
   readonly dropSave: () => Promise<void>
   /** Then boot again as a new device. */
   readonly reopen: () => Promise<void>
-  /** Back online: the purge's retry rides along. */
-  readonly onOnline?: () => void
 }
 
 interface Sent {
@@ -159,7 +157,6 @@ export class SyncLane {
           void this.request({ pull: visible })
         }),
         this.deps.signals.onOnline(() => {
-          this.deps.onOnline?.()
           void this.request({ pull: true })
         }),
       ]
