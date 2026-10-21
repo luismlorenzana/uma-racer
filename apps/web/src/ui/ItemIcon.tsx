@@ -2,7 +2,7 @@
 // T140, D366): the catalogue's `art` frame from uma-art's `items` or `dishes` atlas, a CSS sprite with its pixels kept
 // crisp, named for VoiceOver ("Warm-Up Tonic, grade 1"). 32 pt is the cell; the compact Farm and Training rows also draw
 // it at 16 and 24 pt in chips and badges. The Speed Ticket is the `items` atlas's `speed-ticket` frame (uma-art 2.7.0),
-// and a tonic (D375) its own id's frame there once a release draws it; an item a release lacks is its name on a plain
+// and every tonic (D375, A04) its own id's frame there (uma-art 2.10.0). An item a release lacks is its name on a plain
 // tile. Imported only by lazy chunks, so neither atlas weighs on the entry.
 import { itemById, type ItemDef } from '@racer/domain/items'
 import dishesUrl from '@luismlorenzana/uma-art/dishes/atlas.png?url'
