@@ -46,7 +46,7 @@ uma-platform's [queue](https://github.com/luismlorenzana/uma-platform/blob/main/
 
 ## For ChatGPT, in order
 
-1. [A04](tasks/A04-tonic-icons.md): the ten tonics' 32×32 item icons in uma-art's `items` atlas (D375). Ready.
+Nothing is ready for ChatGPT here now.
 
 The owner authorized A03's implementation, merge and deployment in chat; its proof records the checks and pending
 device acceptance. The shared shell remains uma-kit's (T147, D367), not a local fork.
@@ -56,6 +56,7 @@ device acceptance. The shared shell remains uma-kit's (T147, D367), not a local 
 | A03 | Farm, Training, Lineage and Racing pickers open on level; context sorts and Open goals stay optional | D368; [07](../game/07-farm.md) §10, [05](../game/05-training-hub.md) §8, [11](../game/11-hub-and-places.md) §9.2; [synthetic phone proof](../research/a03-level-rule/README.md). Last packet: `652cc58:docs/handoff/tasks/A03-iphone-band-and-level-rule.md` |
 | A01 | The racer's four buildings and the Racing page's tiles | uma-art 2.6.0 (uma-platform #19, P45), pinned in the racer by D364 |
 | A02 | The account bar's currency marks, tier crests and the Speed Ticket icon | uma-art 2.7.0 (uma-platform #20, P46), pinned by D364 |
+| A04 | The ten tonics' 32×32 item icons in uma-art's `items` atlas (D375) | uma-art 2.10.0 (uma-platform `7ed5bce`, P62); **not pinned yet**: the web app is on uma-art 2.7.0 |
 
 The packets are readable with `git show d25d4e9:docs/handoff/tasks/<file>`.
 
