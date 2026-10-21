@@ -60,3 +60,42 @@ precache, not claimed from a dev-server test.
 Full lint/test/test:ci/build passed locally. Startup: **153.23 KB gzip / 180 KB**. No production infrastructure files
 changed; the only new IAM grant is runtime objectViewer on the shared bucket. A cleanup dry run also found two old
 unreferenced type-icon atlas files; those are included in the narrow retired namespace, never new overlays.
+
+## Production and final cleanup — 2026-10-21 (D379)
+
+The source was already merged and deployed; this closes its remaining operational gate. The deployed-source proof
+was refreshed against A04's descendant `be16a6d2a53ace5dc08082c97856c3a2936bca89`, ready API `racer-api-00202-fdz`:
+
+- [Standard production workflow green](https://github.com/luismlorenzana/uma-racer/actions/runs/39633395549), both
+  jobs successful. The ready revision's immutable digest matches the artifact tagged to that exact SHA.
+- Health 200; unauthenticated save/master channel/overlay each 401. Hosting shell 200/no-cache, live build
+  `be16a6d2a53a` and the service-worker-listed new ItemIcon chunk verified. Deployed startup **156.78 KB gzip / 180 KB**.
+- The shared bucket's channel remains **`f8ab287029e8`**. API request logs independently show successful authenticated
+  master-channel and outfit-face requests on `racer-api-00199-kqq` (2026-10-19); no new owner session was created or
+  owner save/private image downloaded for this closeout. The existing local full-hash art/offline acceptance above
+  remains the visual/integrity proof. SE4 retains its snapshot and cache keys, without clearing device data.
+
+Exact retirement of old Racer release **`9ba4cdd37cca`**:
+
+| Scope | Removed objects |
+|---|---:|
+| Bust / card / chibi / dress / face / Uma generated images | 2,041 |
+| Old icon atlas JSON and pages | 12 |
+| Old master-data pack versions | 22 |
+| Retired manifest | 1 |
+| **Total** | **2,076 · 65,767,727 bytes** |
+
+The original reviewed inventory's exact object generations were used; the old pointer was deleted last. Transient
+Storage 503s stopped the first passes safely. Bounded transport retries were added and tested against synthetic
+network/HTTP responses (four attempts; auth and generation refusals never retry). Resuming the **same** inventory
+completed at `2026-10-21T16:29:18Z`. Final inventory: **zero retired targets**; the **two retained overlay objects** have
+identical names, generations and sizes to their pre-cleanup baseline. Private inventories stay under gitignored
+`content/review/`; no object paths or original-game rows are in this record.
+
+The bucket's seven-day soft-delete policy was checked before removal (604,800 seconds); recovery is possible within
+that retention period. Platform replacement files, authored sources, unrelated objects and all saves are untouched.
+No local art caches or owner documents were removed. The API's required overlay remains available.
+
+Fresh worktree `pnpm lint`, `pnpm test:ci`, `pnpm build` pass (startup 156.34 KB gzip locally); the six new maintenance
+tests bring overlay tests to eight. The SE1 packet is retired and both queues close through protected PRs. T144's
+purge endpoint/call retirement remains a separate, owner-authorized follow-up, not part of this cleanup.

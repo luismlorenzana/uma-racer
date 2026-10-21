@@ -18,4 +18,11 @@ catalogue records, recipes, saves and game rules do not change. The upstream pac
 ![Light Kitchen, synthetic account](racer-a04-tonic-kitchen-light.png)
 ![Dark Kitchen, synthetic account](racer-a04-tonic-kitchen-dark.png)
 
-Production delivery is recorded after the protected merge and deployment verification.
+## Production
+
+[PR #127](https://github.com/luismlorenzana/uma-racer/pull/127) merged as `be16a6d2a53ace5dc08082c97856c3a2936bca89`.
+The standard [production workflow](https://github.com/luismlorenzana/uma-racer/actions/runs/39633395549) passed both
+jobs; its deployed startup is **156.78 KB gzip / 180 KB**. Ready revision `racer-api-00202-fdz` has the immutable image
+digest of that exact SHA. Health 200, unauthenticated save/master/overlay 401, Hosting shell 200/no-cache. Live entry
+`index-C8ImYzpb.js` contains the expected build, and the service-worker-listed ItemIcon chunk includes all ten new
+frames. No owner save or original-game images were downloaded or changed for these checks.

@@ -32,12 +32,13 @@ uma-platform's [queue](https://github.com/luismlorenzana/uma-platform/blob/main/
 
 | Id | Task | Who | Size | Needs | State |
 |---|---|---|---|---|---|
-| [SE1](tasks/SE1-racer-phase-5.md) | Phase 5: uma-platform's master data and art; the GameTora pipeline goes | Claude | L | — | Ready |
+| — | No remaining sibling packet in Racer | — | — | — | — |
 
 **Done (sibling packets)**
 
 | Id | Task | Commit |
 |---|---|---|
+| SE1 | Shared master data/art migration and retired-content cleanup complete (D374, D379). [Verified release and cleanup](../research/se1-master-data/README.md) | Implementation `efd36c4` ([#122](https://github.com/luismlorenzana/uma-racer/pull/122)); cleanup 2026-10-21 |
 | SC5 | Farm and Training on `@luismlorenzana/uma-work` 0.1.0 and `uma-kit/work` 0.9.1, retaining Racer rules, saves and planning (D377). [Local acceptance and successful production deployment](../research/sc5-work/README.md) | `8967e24` ([PR #124](https://github.com/luismlorenzana/uma-racer/pull/124)) |
 | SE4 | Shared data/art loading on uma-kit 0.9.0 and uma-server 0.2.0, with SE1-compatible offline/cache behavior (D376). [Local checks and verified production deployment](../research/se4-content/README.md) | `ad15cf0` ([PR #123](https://github.com/luismlorenzana/uma-racer/pull/123)) |
 | SA7 | The plaza crowd: small chibis on Town Hall (uma-kit 0.3.0, D371) | `9723a23` |
@@ -56,7 +57,7 @@ device acceptance. The shared shell remains uma-kit's (T147, D367), not a local 
 | A03 | Farm, Training, Lineage and Racing pickers open on level; context sorts and Open goals stay optional | D368; [07](../game/07-farm.md) §10, [05](../game/05-training-hub.md) §8, [11](../game/11-hub-and-places.md) §9.2; [synthetic phone proof](../research/a03-level-rule/README.md). Last packet: `652cc58:docs/handoff/tasks/A03-iphone-band-and-level-rule.md` |
 | A01 | The racer's four buildings and the Racing page's tiles | uma-art 2.6.0 (uma-platform #19, P45), pinned in the racer by D364 |
 | A02 | The account bar's currency marks, tier crests and the Speed Ticket icon | uma-art 2.7.0 (uma-platform #20, P46), pinned by D364 |
-| A04 | The ten tonics' 32×32 item icons, drawn at every Kitchen, Warehouse and Training size (D378) | uma-art 2.10.0 (uma-platform `7ed5bce`, P62), pinned in Racer; [acceptance](../research/a04-tonics/README.md) |
+| A04 | The ten tonics' 32×32 item icons, drawn at every Kitchen, Warehouse and Training size (D378) | uma-art 2.10.0 (uma-platform `7ed5bce`, P62), pinned and deployed in Racer as `be16a6d` ([#127](https://github.com/luismlorenzana/uma-racer/pull/127)); [acceptance](../research/a04-tonics/README.md) |
 
 The packets are readable with `git show d25d4e9:docs/handoff/tasks/<file>`.
 

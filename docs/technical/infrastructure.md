@@ -175,15 +175,19 @@ Hosting shell/chunks, health 200 and unauthenticated master/content/save routes 
 published `latest` channel on the deployed API and check an outfit-face against its release SHA. Never disable auth
 for this check. Local browser acceptance is at phone width; the owner handles physical-iPhone edges (P60).
 
-**One-time retirement after those checks:** `pnpm --filter @racer/overlays exec tsx src/retire-cli.ts` inventories only
+**One-time retirement, completed 2026-10-21 (D379):** 2,076 generated objects / 65,767,727 bytes removed, zero
+retired targets remain, both active overlay objects' generations and sizes unchanged. The bucket's seven-day soft-delete
+policy permits recovery during that retention period; the platform replacement is unaffected. Private inventories stay
+in gitignored `content/review/`; the [acceptance note](../research/se1-master-data/README.md) records only aggregates.
+The command used after the checks: `pnpm --filter @racer/overlays exec tsx src/retire-cli.ts` inventories only
 the old five master packs, icon atlases, Uma/card/bust/chibi/dress/face generated images, and their old manifest.
 Private path/generation details stay in gitignored `content/review/`. Review counts/namespaces first, then run with
 `--delete` and explicit `VERIFIED_DEPLOY_SHA`, `VERIFIED_MASTER_VERSION`, `RETIRED_MASTER_VERSION`. The script checks
 the source pointers again and uses each exact object generation as a delete precondition. No root recursive delete.
 
 Overlays, authoring inputs, unrelated content and every save are excluded. Do not delete them or IndexedDB as release
-recovery. Bucket soft-delete/versioning policy must be checked before describing recovery; the replacement master
-release remains in the platform bucket. Retiring old master objects makes old pre-SE1 clients need an app update,
+recovery. The maintenance transport bounds each request and retries transient network/429/5xx failures four times, without
+changing generation preconditions; 401/403/412 still stop immediately. The replacement master release remains in the platform bucket. Retiring old master objects makes old pre-SE1 clients need an app update,
 not a save reset. Final counts/deploy evidence are in the [SE1 acceptance note](../research/se1-master-data/README.md).
 
 ### 4. Restart the installed app
