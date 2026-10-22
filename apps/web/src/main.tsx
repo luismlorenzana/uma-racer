@@ -5,8 +5,8 @@
 //   loaded lazily) and the content provider, whose requests carry the owner's token;
 // - the kit's motion root (`LazyMotion strict`, so only `m.*` draws, and the reduced-motion setting) and its art
 //   provider (uma-art's atlases, `app/art.ts`);
-// - the session (`app/session.tsx`): the boot uma-kit's gates run (the device save opened on the content with the
-//   retained server-purge call), its requests on the owner's token, sync following the auth state;
+// - the session (`app/session.tsx`): the boot uma-kit's gates run (the device save opened local first on the content),
+//   its requests on the owner's token, sync following the auth state;
 // - the live router (`app/router.tsx`: the current routes inside the kit's `BootGates`), and the
 //   kit's update prompt, fed by vite-plugin-pwa's `registerSW` (SD4).
 // Dev builds mount the synthetic seeds instead at `/dev/seeds/*` (`dev/main.tsx`); a production build holds none of it.

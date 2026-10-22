@@ -1,5 +1,5 @@
 // Both generation-2 repositories on one script (T135): a synthetic day of creates, device rows and operations, its
-// pulls and the purge, run on the fake Firestore and on a temporary JSON file, give the same answers.
+// pulls, run on the fake Firestore and on a temporary JSON file, give the same answers.
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -41,7 +41,7 @@ async function backend(kind: 'local' | 'firestore', clock = ticking()): Promise<
     return { repo: new FirestoreSaveRepository(fake.asFirestore, clock), fake, cleanup: async () => undefined }
   }
   const dir = await mkdtemp(join(tmpdir(), 'racer-g2-'))
-  return { repo: new LocalSaveRepository(join(dir, 'save-g2.json'), join(dir, 'save.json'), clock), cleanup: () => rm(dir, { recursive: true, force: true }) }
+  return { repo: new LocalSaveRepository(join(dir, 'save-g2.json'), clock), cleanup: () => rm(dir, { recursive: true, force: true }) }
 }
 
 const op = (n: number, name: string, input: unknown, at: number) => ({ type: 'operation', operation: { id: F.opId(n), name, input, at } })
@@ -102,8 +102,6 @@ async function scriptedDay(repo: SaveRepository): Promise<unknown[]> {
   await step([{ type: 'upsert', kind: 'badges', id: 'trainer', baseVersion: 1, data: createTrainerBadgeState(F.clock('14:10')) }])
   await step([{ type: 'upsert', kind: 'badges', id: 'trainer', baseVersion: 1, data: createTrainerBadgeState(F.clock('14:11')) }])
   answers.push(await pull(repo))
-  answers.push(await repo.purge('u1'))
-  answers.push(await repo.purge('u1'))
   answers.push(await pull(repo))
   return answers
 }
@@ -126,8 +124,7 @@ describe('the scripted day', () => {
       expect(statuses(7)).toEqual(['applied', 'refused'])
       expect(statuses(8)).toEqual(['applied'])
       expect(statuses(9)).toEqual(['conflict'])
-      expect(a[11]).toMatchObject({ status: 'purged', counts: { collections: 0, documents: 0 } })
-      expect(a[12]).toMatchObject({ status: 'already', at: (a[11] as { at: number }).at })
+      expect(a[11]).toEqual(expect.any(Array))
     } finally {
       await local.cleanup()
       await firestore.cleanup()

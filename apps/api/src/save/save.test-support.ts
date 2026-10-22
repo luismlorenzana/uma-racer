@@ -105,28 +105,6 @@ export class FakeDocRef {
     this.db.reads += 1
     return this.snapshot()
   }
-  async create(data: Data): Promise<void> {
-    this.db.log.push(`create ${this.path}`)
-    await this.db.beforeCreate?.(this)
-    if (this.db.docs.has(this.path)) throw Object.assign(new Error('6 ALREADY_EXISTS: Document already exists'), { code: 6 })
-    assertStorable(data)
-    this.db.docs.set(this.path, structuredClone(data))
-    this.db.writes += 1
-  }
-  async listCollections(): Promise<FakeQuery[]> {
-    this.db.log.push(`listCollections ${this.path}`)
-    const prefix = `${this.path}/`
-    const names = new Set([...this.db.docs.keys()].filter((path) => path.startsWith(prefix)).map((path) => path.slice(prefix.length).split('/')[0]!))
-    return [...names].sort().map((name) => this.collection(name))
-  }
-}
-
-export class FakeBulkWriter {
-  private readonly results: ((ref: FakeDocRef) => void)[] = []
-  closed = false
-  onWriteResult(callback: (ref: FakeDocRef) => void): void { this.results.push(callback) }
-  wrote(ref: FakeDocRef): void { for (const callback of this.results) callback(ref) }
-  async close(): Promise<void> { this.closed = true }
 }
 
 export interface FakeTransaction {
@@ -137,38 +115,15 @@ export interface FakeTransaction {
 
 export class FakeFirestore {
   readonly docs = new Map<string, Data>()
-  /** Every call, in order: `query <path>`, `get <path>`, `getAll <n>`, `set <path>`, `create <path>`, `delete <path>`. */
+  /** Every call, in order: `query <path>`, `get <path>`, `getAll <n>`, `set <path>`. */
   readonly log: string[] = []
   reads = 0
   writes = 0
   /** Throw at this transaction write (from 0), or at commit, after the callback resolved. */
   failAt: number | 'commit' | null = null
-  /** Runs before a `create()` checks its document: a test writes a racing marker here. */
-  beforeCreate: ((ref: FakeDocRef) => Promise<void> | void) | null = null
-  readonly writers: FakeBulkWriter[] = []
   private queue: Promise<unknown> = Promise.resolve()
 
   collection(path: string): FakeQuery { return new FakeQuery(this, path) }
-
-  bulkWriter(): FakeBulkWriter {
-    const writer = new FakeBulkWriter()
-    this.writers.push(writer)
-    return writer
-  }
-
-  /** Deletes the document and everything under it, reporting each delete (the document's own, existing or not). */
-  async recursiveDelete(ref: FakeDocRef, writer: FakeBulkWriter): Promise<void> {
-    for (const path of [...this.docs.keys()].filter((p) => p.startsWith(`${ref.path}/`)).sort()) {
-      this.log.push(`delete ${path}`)
-      this.docs.delete(path)
-      this.writes += 1
-      writer.wrote(new FakeDocRef(this, path))
-    }
-    this.log.push(`delete ${ref.path}`)
-    this.docs.delete(ref.path)
-    this.writes += 1
-    writer.wrote(ref)
-  }
 
   runTransaction<T>(fn: (tx: FakeTransaction) => Promise<T>): Promise<T> {
     const run = this.queue.then(async () => {

@@ -2,7 +2,7 @@
 // in is uma-kit's `BootGates` (splash → sign-in → boot → start page; uma-racer has no first-launch step), and this
 // provider is what the gates' boot runs.
 // - The boot waits for the private content (`ContentProvider`, on the owner's token), opens the device save on it
-//   (`bootSaveGame`: the server-purge call, local first) and waits for its first snapshot. A page holds
+//   (`bootSaveGame`, local first) and waits for its first snapshot. A page holds
 //   one save, so a later content version or a second render keeps it.
 // - Then the start rule (`start.ts`) reads the opened save: a new account opens the Stable's Locked tab, a pending tap
 //   the Farm, else the last page.

@@ -240,13 +240,12 @@ layer (T136) build on it.
 T143 deleted the old one and moved it). The server is the authority: it re-runs every operation with `commitOperation`
 on its own rows, so the device's numbers and the server's come from one function.
 
-- **Routes.** All three sit behind `AuthGuard`. Each runs the guard first, then the stamp, then T134's parser:
+- **Routes.** Both sit behind `AuthGuard`. Each runs the guard first, then the stamp, then T134's parser:
 
   | Route | Stamp | Answers |
   |---|---|---|
   | `GET /api/save` | In the query: `protocol=2&generation=2`, with `since` (whole ms, default 0) and `cursor` | 200 `SaveSnapshotV2` |
   | `POST /api/sync` | In the `SyncRequestV2` body | 200 `SyncResponseV2`, every change answered in order. 409 `{ code: 'no-save' }` with no save and no create. 503 `{ code: 'content-unavailable' }` when an operation's content can't load, with nothing written |
-  | `POST /api/legacy/purge` | The body is exactly `{ protocol: 2, generation: 2 }` | 200 `PurgeResponse` |
 
   Without a token, every route is 401. Any stamp but 2 and 2 is 426 `{ code: 'upgrade-required', protocol: 2,
   generation: 2 }`, with nothing read or written. A body or query that T134's parsers refuse is 400, with developer text.
@@ -279,15 +278,10 @@ on its own rows, so the device's numbers and the server's come from one function
   by its hash, checked as the web checks it, and built with `buildOperationEnv`. The env is cached per manifest version,
   and the manifest is re-read at most once a minute. The env's `dev` is `DEV_OPERATIONS === 'true'`. No deploy sets
   that variable, so production refuses `dev-grant`.
-- **The purge** ([rearchitecture/07](../rearchitecture/07-data-reset.md) §3):
-  1. If `saves/{uid}/meta/purge` exists, it answers `already` with the first purge's record.
-  2. Otherwise it counts `players/{uid}`'s subcollections and deletes the tree with `recursiveDelete`, counting each
-     document through the bulk writer.
-  3. It then `create()`s the marker `{ generation: 2, at, collections, documents }`. A device that loses the race to
-     write the marker answers `already` with the stored record.
-
-  Nothing else under `saves/` is touched. `meta` is not a save kind, so no pull returns it. The local repository clears
-  the uid's entry from the old dev file at the fixed path `.data/save.json`, counting its rows by kind.
+- **The completed cutover (T144, D362):** the old purge endpoint, repository deletion code and client calls are
+  retired after the owner's explicit authorization. The Firestore `meta/purge` record is untouched and never pulled;
+  the local repository retains any historical `purge` field as inert audit metadata. No current save or cache is
+  cleared. The historical protocol is described in [rearchitecture/07](../rearchitecture/07-data-reset.md).
 
 ### The web save as built (T136)
 

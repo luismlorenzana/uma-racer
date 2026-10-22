@@ -253,31 +253,3 @@ export function parseSnapshotQuery(query: Readonly<Record<string, unknown>>): Sn
   if (query.cursor !== undefined && !isCursor(query.cursor)) return 'an invalid cursor'
   return { ...STAMP, since, cursor: (query.cursor as string | undefined) ?? null }
 }
-
-// --- The purge ------------------------------------------------------------------------------------------------------
-
-/** `POST /api/legacy/purge` (07 §3): exactly the stamp. */
-export type PurgeRequest = Stamp
-
-export interface PurgeResponse extends Stamp {
-  readonly status: 'purged' | 'already'
-  /** When the purge ran: now, or the first purge's time. */
-  readonly at: number
-  readonly counts: { readonly collections: number; readonly documents: number }
-}
-
-export function parsePurgeRequest(value: unknown): PurgeRequest | string {
-  if (!isCurrentStamp(value)) return 'protocol 2 and generation 2 only'
-  return exactKeys(value as Record<string, unknown>, ['protocol', 'generation']) ? { ...STAMP } : 'a purge is exactly { protocol, generation }'
-}
-
-export function parsePurgeResponse(value: unknown): PurgeResponse | string {
-  if (!isCurrentStamp(value)) return 'protocol 2 and generation 2 only'
-  const body = value as Record<string, unknown>
-  if (!exactKeys(body, ['protocol', 'generation', 'status', 'at', 'counts']) || (body.status !== 'purged' && body.status !== 'already') ||
-    !isTimestamp(body.at)) return 'a purge answer is exactly { protocol, generation, status, at, counts }'
-  const counts = body.counts
-  if (!isObject(counts) || !exactKeys(counts, ['collections', 'documents']) || !isNonNegativeInt(counts.collections) ||
-    !isNonNegativeInt(counts.documents)) return 'invalid purge counts'
-  return { ...STAMP, status: body.status, at: body.at, counts: { collections: counts.collections, documents: counts.documents } }
-}

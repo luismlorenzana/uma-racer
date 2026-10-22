@@ -205,17 +205,18 @@ Never delete IndexedDB, the service-worker content cache, old bucket objects, or
 
 ### Generation 2's one-time steps (T144, done 2026-10-15)
 
-The cutover release added three steps that no later release repeats ([T144](../tasks/T144-the-release.md) has the
-commands):
+The cutover release added three steps that no later release repeats (the original T144 commands remain in git
+history at `9370e0a:docs/tasks/T144-the-release.md`; [closeout evidence](../research/t144-closeout/README.md)):
 - **The purge, verified read-only.** The owner's first generation-2 boot called `POST /api/legacy/purge`. Checked with
   the scoped token against Firestore's REST API: `players/` holds no documents, `saves/{uid}/meta/purge` records 30
   collections and 3,676 documents, and the request log shows one purge doing the work.
 - **The retired bucket objects deleted,** only after the purge and the new manifest verified: nothing under
   `data/rpg-*`, `data/puzzles-*`, `data/spark-rivals.*`, `atlases/puzzles-*` or `art/priconne/` remains, and a dry run
   uploads nothing. The retired private sources left the owner's machine too.
-- **Still to come, T144's step 10:** once the owner confirms the new account is theirs, a release removes the purge
-  endpoint and the boot's call; it then checks that `git grep -n "legacy/purge" -- apps packages` prints nothing and a
-  `POST /api/legacy/purge` on the Cloud Run URL answers 404.
+- **T144's follow-up completed, 2026-10-21 (D362):** remove the purge endpoint, destructive repository methods,
+  client protocol and boot/reconnect calls. The retired route answers 404 before auth in both local modes and in the
+  verified production release. No new purge is run; existing audit markers remain. `git grep -n "legacy/purge" --
+  apps packages` prints nothing; the HTTP regression constructs the retired path from its two components.
 
 ### Rollback
 

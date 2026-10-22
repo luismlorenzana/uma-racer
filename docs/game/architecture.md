@@ -29,7 +29,7 @@ A pnpm 10 workspace with Turbo, on Node 22, in strict TypeScript.
 | `packages/domain` (`@racer/domain`) | Every game rule, pure with no I/O ([below](#the-domain-package)). Vite, Vitest and `tsc` read its TypeScript source; `pnpm --filter @racer/domain build` also emits a CommonJS `dist/cjs` that the API imports |
 | `packages/race` (`@racer/race`) | The deterministic race engine: a seeded RNG (never `Math.random`), one-second turns recorded as a timeline at 15 samples a second, which the scene plays back |
 | `apps/web` (`@racer/web`) | React 19, Vite 7, Tailwind 4, Motion (`m.*` under `LazyMotion strict`), Zustand + Dexie, uma-kit's theme, shell, Hub map (Phaser 4, lazy) and primitives, PixiJS 8 for the race scene only, a PWA ([below](#the-web-app)) |
-| `apps/api` (`@racer/api`) | NestJS 11 on Cloud Run: the auth guard, the generation-2 save and sync, the one-release purge, private content ([below](#the-api)) |
+| `apps/api` (`@racer/api`) | NestJS 11 on Cloud Run: the auth guard, the generation-2 save and sync, private content ([below](#the-api)) |
 | `scripts/overlays` | Only Racer's private flair/card-focus overlays, publishing and master parity checks; no GameTora or image importer (SE1) |
 | `scripts/sim` | Headless balance runs (`pnpm sim:*`, [below](#the-balance-sims)) |
 | `scripts/check-size.mjs` | The startup JS budget, and the dev-only check ([below](#budgets-and-checks)) |
@@ -330,14 +330,13 @@ API as built", "The web save as built"); this is the outline.
   2 minutes, then every 5 minutes while visible. A 426 stops the lane until the app restarts; a 409 drops the device's
   save and boots it as a new device. The Sync chip says offline, paused (signed out), amber (waiting over a day, D157)
   or red.
-- **The boot** (`save/boot.ts`): the retained server-purge call, then open, local first. An empty device pulls
+- **The boot** (`save/boot.ts`): open, local first, without any cutover request or write. An empty device pulls
   every page; one that can't reach the save creates its own and adopts the server's on a later `exists`.
 - **No device wipe.** SE1 retires the first-boot wipe and the old redirects at their D365 boundary. Existing saves,
   preferences and caches are not deleted. The old `&wipe` dev switch is ignored.
-- **The purge** (`POST /api/legacy/purge`, for one release): once signed in, the device asks the API to delete the old
-  save's `players/{uid}` tree; the API records `saves/{uid}/meta/purge`, and a second device gets `already`. The device
-  marks `uma-racer:g2:purged`. The owner's purge ran on 2026-10-15 (30 collections, 3,676 documents; `players/` is
-  empty). T144's step 10 removes the endpoint and the call once the owner confirms the new account is theirs.
+- **The completed cutover (T144, D362):** the temporary purge endpoint, repository deletion code, wire parsers and
+  boot/reconnect calls are removed. Normal boot only requests save/sync. The historical `saves/{uid}/meta/purge`
+  document and any inert device/local-file markers stay untouched; no migration, wipe, reset or cache deletion runs.
 - **On the server** (`apps/api/src/save/`): `saves/{uid}/{kind}/{id}` in Firestore, one small document per row through
   the Firestore codec (a row whose data nests arrays is stored as JSON text, D151); a sync is one transaction with every
   read before the first write. Local dev keeps one file, `apps/api/.data/save-g2.json`.
@@ -349,7 +348,6 @@ API as built", "The web save as built"); this is the outline.
 | `GET /api/health` | Liveness. The only route without auth |
 | `GET /api/save` | A page of the save's rows since `since` (protocol and generation as query parameters) |
 | `POST /api/sync` | The outbox in order: the create, badge upserts, flair appends and operations, each answered in order |
-| `POST /api/legacy/purge` | Deletes the old save once (until T144's step 10 removes it) |
 | `GET /api/master/*path` | uma-platform's schema-major-1 channel, manifests and immutable release files |
 | `GET /api/content/*path` | Only `overlay.json` and `overlays/racer.<hash16>.json` from the private racer bucket |
 
@@ -357,14 +355,14 @@ API as built", "The web save as built"); this is the outline.
   games' (SD4): a Firebase ID token whose email matches `ALLOWED_EMAIL`. No token or an invalid one is 401, a valid token
   for anyone else 403, and Firebase Admin failing to start 500. In development, `AUTH_MODE=disabled` lets every request
   in as `local-dev`.
-- **Stamps.** The save's three routes run the guard, then the stamp: anything but `protocol: 2` and `generation: 2` is
+- **Stamps.** The save's two routes run the guard, then the stamp: anything but `protocol: 2` and `generation: 2` is
   426 with nothing read or written, so a stale app can't write. Bodies are checked by the domain's parsers (400).
 - **Operations run on the same adapter as the browser:** `MasterContent` verifies the release and required private
   overlay, then `buildOperationEnv` constructs the rule inputs. Cache identity includes both release versions; mutable
   pointers are re-read at most once a minute. Failure gives 503 before any save write and retries immediately.
 - **`dev-grant`** runs only when the API starts with `DEV_OPERATIONS=true`. `pnpm dev` and `pnpm api` set it through
   the API's package scripts; no deploy, Dockerfile or Cloud Run setting does, so production refuses it.
-- `app.module.test.ts` holds the API to exactly these six route patterns; HTTP tests pin both proxy guards and allowlists.
+- `app.module.test.ts` holds the API to exactly these five route patterns; HTTP tests pin both proxy guards and allowlists.
 - **Modules** (`apps/api/src/`): `AppModule` imports a global `ConfigModule`, uma-server's `AuthModule` (`authModule()`:
   the guard on every route, its options read from `AUTH_MODE` and `ALLOWED_EMAIL`), `SaveModule` and uma-server's
   `ReleaseProxyModule`/`PrivatePackModule`,
@@ -479,7 +477,7 @@ What CI enforces on every push and pull request:
 | **The live manual** | Every `<!-- live:… -->` block in `docs/game/` and `docs/rework/` equals what the code renders | `packages/domain/src/docs/docs.test.ts`; `pnpm docs:update` rewrites them |
 | **Frames** | Every registry frame and catalogue art id is in the pinned uma-art | `hub/places.test.ts`, `items/art.test.ts` |
 | **Retired routes** | SE1 removes redirects; old and unknown paths land on `/` | `apps/web/src/app/router.test.tsx` |
-| **The API's routes** | Exactly the six routes [above](#the-api) | `apps/api/src/app.module.test.ts` |
+| **The API's routes** | Exactly the five routes [above](#the-api) | `apps/api/src/app.module.test.ts` |
 
 What a change that moves files or imports checks by hand (T143's checks, still true on 2026-10-15):
 - **Reach.** Every web source file is reachable from `src/main.tsx`, and every domain source file from an export entry
@@ -565,7 +563,7 @@ How generation 2 became the app (D361). The plan-level choices (the tag, the del
 | The old race plan, fit and facts, goals, flair, badge-collection and trainer views and badge frame moved to `places/racing/`; the album query moved to `ui/album/` at the switch and then to uma-kit in SB6; the Root and Account read the build id through `app/build.ts` | A module lives with the place that uses it, or in the shared kit when both games share it |
 | The build-beside boundaries test went whole | With one app, the reach check and the PixiJS check hold what remains |
 | The icon set loses the five icons that drew only retired things; the new game's four join the set | Whole deletion for retired systems; generic icons stay as the visual system's |
-| The API keeps the Firestore codec (D151), moved into the save module; `app.module.test.ts` holds it to six routes | Generation 2's repository stores work rows through it; the API answers only those routes |
+| The API keeps the Firestore codec (D151), moved into the save module; `app.module.test.ts` held it to six routes at the switch (five after D362 retires the purge) | Generation 2's repository stores work rows through it; the API answers only those routes |
 | `pnpm dev` and `pnpm api` start the API with `DEV_OPERATIONS=true`; `.env.example` documents it, commented out | `dev-grant` works locally without a hand-edited `.env`; nothing that deploys sets it |
 | A data import keeps only the atlases and art families `scripts/assets` builds | T144 needs a manifest with none of the retired art, and naming the kept families keeps retired names out of code |
 | The domain's reach check roots at every export entry plus `src/docs/render.ts` | The renderer and each area's `docs.ts` run only under `pnpm docs:update` and the docs test |

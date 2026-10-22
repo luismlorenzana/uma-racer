@@ -471,8 +471,9 @@ go to `/`, which applies the current start rule. `/farm` and the current Uma rev
 and stay. Saved data holds no route paths, so no save migration is needed. Unknown paths also go to `/`.
 
 The first-boot device wipe retires at the same boundary; neither normal boot nor the obsolete `&wipe` dev query
-deletes databases, preferences or caches. The separate server-purge endpoint/call stays until T144 step 10 gets its
-own owner confirmation. Historical redirect mappings remain in git history, not a second live navigation model.
+deletes databases, preferences or caches. T144's owner-authorized follow-up also removes the server-purge endpoint,
+its deletion code and client calls (D362); historical audit markers remain untouched. Historical redirect mappings
+remain in git history, not a second live navigation model.
 
 ### 7.3 Dev builds: the seeds' mount
 

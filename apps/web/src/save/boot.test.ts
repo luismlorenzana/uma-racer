@@ -1,8 +1,7 @@
 // The save's boot (T136; docs/rearchitecture/01-target-architecture.md §4.3; 07 §2–§3): local first, an empty device
-// pulls or creates, and the purge runs once in the background. Device data is never wiped (SE1).
+// pulls or creates. Cutover writes are retired; device data and inert markers are kept (SE1, D362).
 import 'fake-indexeddb/auto'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { PURGED_KEY } from './boot'
 import { CREATE_KEY } from './db'
 import { useSave } from './store'
 import {
@@ -37,9 +36,6 @@ function requestsWhenReady(server: FakeServer): { readonly value: number | null 
   return seen
 }
 
-/** Every purge request the device made, answered or not. */
-const purgeCalls = (server: FakeServer): number => server.fetch.mock.calls.filter(([input]) => String(input).endsWith('/api/legacy/purge')).length
-
 async function stop(...devices: Device[]): Promise<void> {
   for (const each of devices) {
     await settle(each)
@@ -48,6 +44,30 @@ async function stop(...devices: Device[]): Promise<void> {
 }
 
 describe('local-first boot', () => {
+  it.each([false, true])('only requests save/sync on boot, reconnect and sign-in, with historical markers present: %s', async (marked) => {
+    const server = serverWithSave()
+    const storage = memoryStorage()
+    if (marked) storage.setItem('uma-racer:g2:purged', 'historical audit')
+    const phone = device(server, { storage })
+    await settle(phone)
+    expect([tickets(), umas()]).toEqual([19, [umaId(1)]])
+    phone.net.online()
+    await settle(phone)
+    phone.session.setSignedIn(false)
+    phone.session.setSignedIn(true)
+    await settle(phone)
+    expect(server.requests.length).toBeGreaterThan(0)
+    expect(server.requests.every(({ path }) => path === '/api/save' || path === '/api/sync')).toBe(true)
+    expect(storage.getItem('uma-racer:g2:purged')).toBe(marked ? 'historical audit' : null)
+    await stop(phone)
+    const again = device(server, { db: phone.db, storage })
+    await settle(again)
+    expect([tickets(), umas()]).toEqual([19, [umaId(1)]])
+    expect(server.requests.every(({ path }) => path === '/api/save' || path === '/api/sync')).toBe(true)
+    expect(storage.getItem('uma-racer:g2:purged')).toBe(marked ? 'historical audit' : null)
+    again.session.stop()
+  })
+
   it('opens a device that holds a save before any network call, then flushes and pulls', async () => {
     const server = new FakeServer()
     const first = device(server)
@@ -150,77 +170,6 @@ describe('local-first boot', () => {
     expect(useSave.getState()).toMatchObject({ lifecycle: 'error', words: "That didn't work. Try again." })
     expect((await first.db.profile.get('main'))?.data.umaTickets).toBe(-1)
     again.session.stop()
-  })
-})
-
-describe('the retained server purge', () => {
-  it('calls the purge before reading the save, without deleting device data', async () => {
-    const server = new FakeServer()
-    const log: string[] = []
-    const answer = server.fetch.getMockImplementation()!
-    server.fetch.mockImplementation(async (input, init) => {
-      log.push(new URL(String(input), 'http://save.test').pathname)
-      return answer(input, init)
-    })
-    const phone = device(server, { purge: true })
-    await settle(phone)
-    expect(log.slice(0, 3)).toEqual([
-      '/api/legacy/purge', '/api/save', '/api/sync',
-    ])
-    phone.session.stop()
-  })
-
-  it('calls the purge once: its marker stops later calls', async () => {
-    const server = new FakeServer()
-    const phone = device(server, { purge: true })
-    await stop(phone)
-    expect(server.count('/api/legacy/purge')).toBe(1)
-    expect(JSON.parse(phone.storage.getItem(PURGED_KEY)!)).toEqual({ status: 'purged', at: Date.now() })
-    const again = device(server, { purge: true, db: phone.db, storage: phone.storage })
-    await stop(again)
-    expect(server.count('/api/legacy/purge')).toBe(1)
-  })
-
-  it('never blocks the boot: a failed purge is tried again back online, and at the next boot', async () => {
-    const server = new FakeServer()
-    let release = () => {}
-    const held = new Promise<void>((resolve) => (release = resolve))
-    server.fetch.mockImplementationOnce(async () => {
-      await held
-      return new Response('{}', { status: 503 })
-    })
-    const phone = device(server, { purge: true })
-    await settle(phone)
-    expect(useSave.getState().lifecycle).toBe('ready')
-    release()
-    await turn()
-    expect(phone.storage.getItem(PURGED_KEY)).toBeNull()
-    phone.net.online()
-    await settle(phone)
-    expect(purgeCalls(server)).toBe(2)
-    expect(phone.storage.getItem(PURGED_KEY)).not.toBeNull()
-    phone.session.stop()
-
-    const failing = new FakeServer()
-    failing.fetch.mockImplementationOnce(async () => Promise.reject(new TypeError('offline')))
-    const next = device(failing, { purge: true, db: freshDb() })
-    await stop(next)
-    expect(next.storage.getItem(PURGED_KEY)).toBeNull()
-    const reboot = device(failing, { purge: true, db: next.db, storage: next.storage })
-    await stop(reboot)
-    expect(purgeCalls(failing)).toBe(2)
-    expect(reboot.storage.getItem(PURGED_KEY)).not.toBeNull()
-  })
-
-  it('waits to be signed in', async () => {
-    const server = new FakeServer()
-    const phone = device(server, { purge: true, signedIn: false })
-    await settle(phone)
-    expect(server.count('/api/legacy/purge')).toBe(0)
-    phone.session.setSignedIn(true)
-    await settle(phone)
-    expect(server.count('/api/legacy/purge')).toBe(1)
-    phone.session.stop()
   })
 })
 

@@ -66,7 +66,7 @@ describe("the seeds' mount", () => {
     expect(await Dexie.exists('uma-racer')).toBe(true)
     expect(localStorage.getItem('uma-racer:last-sync')).toBe('1')
     expect(localStorage.getItem('uma-racer:g2:wiped')).toBeNull()
-    expect(fetch.mock.calls.map(([input]) => String(input)).some((url) => url.endsWith('/api/legacy/purge'))).toBe(false)
+    expect(fetch.mock.calls.map(([input]) => new URL(String(input), 'https://save.test').pathname).every((path) => path === '/api/save' || path === '/api/sync')).toBe(true)
     device.stop()
   })
 })

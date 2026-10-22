@@ -8,7 +8,7 @@ import {
 import type { BadgeStateV1, FlairEventV1 } from '@racer/domain'
 import { SIM_CONTENT, SIM_UMAS } from '@racer/domain/sim'
 import {
-  entityChanges, flairEventId, initialSave, isCurrentStamp, logDraft, parsePurgeRequest, parseSnapshotQuery, parseSyncRequestV2, rowKey, STAMP,
+  entityChanges, flairEventId, initialSave, isCurrentStamp, logDraft, parseSnapshotQuery, parseSyncRequestV2, rowKey, STAMP,
   stampEntity, stampLog, type OperationEnv, type SaveState, type SyncChange, type SyncRequestV2,
 } from '@racer/domain/save'
 import { vi } from 'vitest'
@@ -37,7 +37,6 @@ const json = (status: number, body: unknown): Response =>
 export class FakeServer {
   readonly rows = new Map<string, SaveRow>()
   readonly requests: Request[] = []
-  purgeMarker: { readonly at: number } | null = null
   /** Rows per pulled page, below T134's 1,000, to test paging. */
   pageRows: number | null = null
   private failures: Outcome[] = []
@@ -62,7 +61,6 @@ export class FakeServer {
     if (typeof failure === 'number') return json(failure, { code: 'failure' })
     if (request.path === '/api/save' && request.method === 'GET') return this.snapshot(request)
     if (request.path === '/api/sync' && request.method === 'POST') return this.sync(request)
-    if (request.path === '/api/legacy/purge' && request.method === 'POST') return this.purge(request)
     return json(404, { code: 'not-found' })
   })
 
@@ -177,14 +175,6 @@ export class FakeServer {
     }
     return json(200, resolved.response)
   }
-
-  private purge(request: Request): Response {
-    if (!isCurrentStamp(request.body)) return json(426, { code: 'upgrade-required', ...STAMP })
-    if (typeof parsePurgeRequest(request.body) === 'string') return json(400, { message: 'bad purge' })
-    if (this.purgeMarker !== null) return json(200, { ...STAMP, status: 'already', at: this.purgeMarker.at, counts: { collections: 3, documents: 12 } })
-    this.purgeMarker = { at: this.now() }
-    return json(200, { ...STAMP, status: 'purged', at: this.purgeMarker.at, counts: { collections: 3, documents: 12 } })
-  }
 }
 
 /** Storage in memory. */
@@ -293,13 +283,13 @@ export interface Device {
 
 export type DeviceOptions = Partial<SaveBootOptions> & { readonly net?: ReturnType<typeof fakeSignals>; readonly storage?: Storage }
 
-/** Boots a device on `server`, with no wipe and no purge unless asked. */
+/** Boots a device on `server`, without any cutover wipe or purge. */
 export function device(server: FakeServer, options: DeviceOptions = {}): Device {
   const db = options.db ?? freshDb()
   const storage = options.storage ?? memoryStorage()
   const net = options.net ?? fakeSignals()
   const session = bootSave({
-    env: ENV, purge: false, newId: nextId,
+    env: ENV, newId: nextId,
     api: createSaveApi({ fetch: server.fetch as unknown as typeof fetch, base: '', token: async () => 'token' }),
     ...options, db, storage, signals: net.signals,
   })

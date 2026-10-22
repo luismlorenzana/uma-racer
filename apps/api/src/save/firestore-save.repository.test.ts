@@ -1,5 +1,5 @@
 // The Firestore repository on a strict fake (T135): the layout and codec, one transaction with every read before the
-// first write, the read set, atomicity, the pull's queries and the purge.
+// first write, the read set, atomicity and the pull's queries.
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { createTrainerBadgeState } from '@racer/domain'
 import { rawItem } from '@racer/domain/items'
@@ -111,57 +111,12 @@ describe('the pull', () => {
     expect(fake.log[0]).toBe('query saves/u1/umas')
     expect(fake.log).toHaveLength(9)
     // `meta` is not a kind, so the purge's marker never comes back.
-    await repo.purge('u1')
+    const audit = { generation: 2, at: now, collections: 3, documents: 5 }
+    fake.docs.set('saves/u1/meta/purge', audit)
     const after = await repo.snapshot('u1', 0, null)
     expect([...after.entities, ...after.logs].some((row) => (row.kind as string) === 'meta')).toBe(false)
-  })
-})
-
-describe('the purge', () => {
-  /** A synthetic generation-1 tree: subcollections, a nested one, and the owner's other save untouched. */
-  function seedPlayers(): void {
-    fake.docs.set('players/u1/profile/main', { kind: 'profile', id: 'main' })
-    fake.docs.set('players/u1/umas/uma-01', { kind: 'umas', id: 'uma-01' })
-    fake.docs.set('players/u1/umas/uma-02', { kind: 'umas', id: 'uma-02' })
-    fake.docs.set('players/u1/farm/main', { kind: 'farm', id: 'main' })
-    fake.docs.set('players/u1/farm/main/pages/p1', { page: 1 })
-    fake.docs.set('players/u2/profile/main', { kind: 'profile', id: 'main' })
-  }
-
-  it('deletes players/{uid}, counts it, writes the marker and leaves saves/ alone', async () => {
-    await account()
-    seedPlayers()
-    const saves = new Map([...fake.docs].filter(([path]) => path.startsWith('saves/')))
-    const response = await repo.purge('u1')
-    expect(response).toEqual({ ...STAMP, status: 'purged', at: now, counts: { collections: 3, documents: 5 } })
-    expect(paths('players/u1')).toEqual([])
-    expect(paths('players/u2')).toEqual(['players/u2/profile/main'])
-    expect(fake.docs.get('saves/u1/meta/purge')).toEqual({ generation: 2, at: now, collections: 3, documents: 5 })
-    expect(new Map([...fake.docs].filter(([path]) => path.startsWith('saves/') && path !== 'saves/u1/meta/purge'))).toEqual(saves)
-    expect(fake.writers.every((writer) => writer.closed)).toBe(true)
-  })
-
-  it('answers a second call `already` with the first record, deleting nothing', async () => {
-    seedPlayers()
-    const first = await repo.purge('u1')
-    fake.docs.set('players/u1/profile/main', { kind: 'profile', id: 'main' })
-    fake.log.length = 0
-    const second = await repo.purge('u1')
-    expect(second).toEqual({ ...first, status: 'already' })
-    expect(fake.log).toEqual(['get saves/u1/meta/purge'])
-    expect(paths('players/u1')).toEqual(['players/u1/profile/main'])
-  })
-
-  it('counts a parent document only if it existed, and nothing for an empty uid', async () => {
-    fake.docs.set('players/u1', { owner: true })
-    fake.docs.set('players/u1/umas/uma-01', { kind: 'umas' })
-    expect((await repo.purge('u1')).counts).toEqual({ collections: 1, documents: 2 })
-    expect((await new FirestoreSaveRepository(fake.asFirestore, () => now).purge('u3')).counts).toEqual({ collections: 0, documents: 0 })
-  })
-
-  it('answers `already` with the stored record when another device wrote the marker first', async () => {
-    seedPlayers()
-    fake.beforeCreate = (ref) => { fake.docs.set(ref.path, { generation: 2, at: 42, collections: 3, documents: 5 }) }
-    expect(await repo.purge('u1')).toEqual({ ...STAMP, status: 'already', at: 42, counts: { collections: 3, documents: 5 } })
+    await sync([op(8, 'set-repeat-sizing', { sizing: 'fit' }, now)])
+    expect(fake.docs.get('saves/u1/meta/purge')).toEqual(audit)
+    expect(fake.log.some((line) => line.includes('/meta/'))).toBe(false)
   })
 })
