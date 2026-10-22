@@ -97,5 +97,16 @@ that retention period. Platform replacement files, authored sources, unrelated o
 No local art caches or owner documents were removed. The API's required overlay remains available.
 
 Fresh worktree `pnpm lint`, `pnpm test:ci`, `pnpm build` pass (startup 156.34 KB gzip locally); the six new maintenance
-tests bring overlay tests to eight. The SE1 packet is retired and both queues close through protected PRs. T144's
-purge endpoint/call retirement remains a separate, owner-authorized follow-up, not part of this cleanup.
+tests bring overlay tests to eight. The SE1 packet is retired and both queues are closed through protected PRs.
+The central closeout is [uma-platform #44](https://github.com/luismlorenzana/uma-platform/pull/44), `bc363e1`, with
+both PR and main CI green. T144's purge endpoint/call retirement is a separate, owner-authorized follow-up, not
+part of this cleanup; [its production verification](../t144-closeout/README.md) is recorded separately.
+
+The cleanup implementation itself merged as `9370e0a4340d7def17928927960afecb1e2d2ea4`
+([PR #128](https://github.com/luismlorenzana/uma-racer/pull/128)). Its
+[standard production deployment](https://github.com/luismlorenzana/uma-racer/actions/runs/39636290115) passed:
+ready API `racer-api-00203-rwx`, immutable image digest
+`sha256:eb6b87d6410a6dc8ca08d526516dadc1be17c46ed4aa02375414420a0c1129c5`, matching the exact merge artifact.
+Hosting served build `9370e0a4340d` at `/assets/index-BelxrNmE.js`, precached by the live worker. Health was 200;
+unauthenticated save/master/overlay were 401; the shell was 200/no-cache and the published tonic frames remained
+in the hosted item chunk. These read-only checks did not access or mutate an owner save.

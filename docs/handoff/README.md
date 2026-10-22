@@ -38,7 +38,7 @@ uma-platform's [queue](https://github.com/luismlorenzana/uma-platform/blob/main/
 
 | Id | Task | Commit |
 |---|---|---|
-| SE1 | Shared master data/art migration and retired-content cleanup complete (D374, D379). [Verified release and cleanup](../research/se1-master-data/README.md) | Implementation `efd36c4` ([#122](https://github.com/luismlorenzana/uma-racer/pull/122)); cleanup 2026-10-21 |
+| SE1 | Shared master data/art migration and retired-content cleanup complete (D374, D379). [Verified release and cleanup](../research/se1-master-data/README.md) | Implementation `efd36c4` ([#122](https://github.com/luismlorenzana/uma-racer/pull/122)); cleanup `9370e0a` ([#128](https://github.com/luismlorenzana/uma-racer/pull/128)), production verified 2026-10-21 |
 | SC5 | Farm and Training on `@luismlorenzana/uma-work` 0.1.0 and `uma-kit/work` 0.9.1, retaining Racer rules, saves and planning (D377). [Local acceptance and successful production deployment](../research/sc5-work/README.md) | `8967e24` ([PR #124](https://github.com/luismlorenzana/uma-racer/pull/124)) |
 | SE4 | Shared data/art loading on uma-kit 0.9.0 and uma-server 0.2.0, with SE1-compatible offline/cache behavior (D376). [Local checks and verified production deployment](../research/se4-content/README.md) | `ad15cf0` ([PR #123](https://github.com/luismlorenzana/uma-racer/pull/123)) |
 | SA7 | The plaza crowd: small chibis on Town Hall (uma-kit 0.3.0, D371) | `9723a23` |

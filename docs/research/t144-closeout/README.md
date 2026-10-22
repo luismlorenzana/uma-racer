@@ -33,5 +33,25 @@ D362 was reserved for this record and is appended without rewriting earlier deci
 
 `pnpm docs:update`, `pnpm lint`, `pnpm test:ci` and `pnpm build` pass on the rebased worktree: domain 961, race 61,
 API 53, web 530 and overlays 8 tests. Startup **156.33 KB gzip / 180 KB** locally. No infrastructure, game constants,
-save schema, current account or original-game content changed. Production evidence is added after the protected
-merge and verified deployment; owner iPhone/PWA checks remain pending.
+save schema, current account or original-game content changed. Owner iPhone/PWA checks remain pending.
+
+## Protected merge and production
+
+[PR #129](https://github.com/luismlorenzana/uma-racer/pull/129) passed required CI and merged as
+`bdeb4fca3d3d5082e3cc6459be849af34394eb0a`. Both jobs of its standard
+[production workflow](https://github.com/luismlorenzana/uma-racer/actions/runs/39705734143) passed. Deployed startup:
+**156.80 KB gzip / 180 KB**, one static startup chunk.
+
+Independent post-deploy checks, 2026-10-21 (local date):
+
+- Latest created and latest ready revision both `racer-api-00204-qvd`; the ready image matches the artifact tagged
+  to that exact merge SHA, digest `sha256:12d1a42ad7a94adf92825d7044c7bb2f5abc4f3ea612551d4aa9a044abc39472`.
+- API health 200; unauthenticated save/master channel/overlay each 401; retired migration endpoint **404**.
+- Hosting shell 200/no-cache, `/assets/index-B6ILVhMp.js` contains build `bdeb4fca3d3d`, and the live service worker
+  precaches that entry. Its ItemIcon chunk still includes all ten published tonic frames.
+- No owner session, save access, purge, reset or private image download was used for verification. Physical
+  iPhone/PWA feel and sign-in checks remain with the owner (P60); local proof is recorded above.
+
+A04 and SE1 are also Done in the central program queue through
+[uma-platform PR #44](https://github.com/luismlorenzana/uma-platform/pull/44), merge `bc363e1`, with both PR and main
+CI green. Shared push stays parked. This status-only closeout publishes no package and changes no infrastructure.
