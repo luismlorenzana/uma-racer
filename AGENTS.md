@@ -61,7 +61,7 @@ before opening a PR. CI runs the same.
 |---|---|---|
 | `packages/domain` | Pure game rules and shared types | No I/O. Everything unit-tested. One subpath export per area (`@racer/domain/save`, `/state`, `/tiers`, `/training`, `/farm` …) |
 | `packages/race` | Deterministic race engine | Seeded RNG only, never `Math.random`. One-second turns, a timeline at 15 samples a second |
-| `apps/api` | NestJS 11 API for Cloud Run | `AuthGuard` (Firebase token + allowlist), `/api/save`, `/api/sync`, `/api/legacy/purge` (one release), `/api/content/*`, `/api/health` |
+| `apps/api` | NestJS 11 API for Cloud Run | `AuthGuard` (Firebase token + allowlist), `/api/save`, `/api/sync`, `/api/content/*`, `/api/health` |
 | `apps/web` | React 19 + Vite 7 + Tailwind 4 + Motion PWA on `@luismlorenzana/uma-kit` (the theme in light and dark, the shell, the Hub map on Phaser 4, the primitives and icons); PixiJS 8 for the race scene only (`src/scenes/race`) | Mobile-first (390×844 portrait). `src/app` (routes, session, port, the kit's setup), `hub` (the racer's adapters to the kit's shell and map), `places`, `save`, `ui` (the racer's own pieces), `content`, dev-only `dev` |
 | `scripts/sim` | Balance simulations | |
 | `scripts/overlays` | Racer-only private overlays and master parity; no master importer | Output goes to gitignored `/content/` |

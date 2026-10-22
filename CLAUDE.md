@@ -9,8 +9,8 @@ Hub and primitives are uma-kit's, the app both Uma games share.
 - `README.md`: status, how to run and verify, the documentation map. Then `AGENTS.md`, the shared guide for every
   agent, including delegated ChatGPT tasks (branch + PR, no pushes to `main`), with the shared workflows. This file adds
   Claude's production notes.
-- `docs/tasks/README.md` is the current plan: what shipped, what's open (T144's step 10, phase 9; all Racer sibling packets in `docs/handoff/` are shipped; phases 4, 7, 8 and the pixel-art question are archived, D370) and
-  the next free numbers (M036, T152, D380; **D362 is reserved for T144's release record**). A task spec is deleted once its work merges (D104), so that folder only holds work still ahead.
+- `docs/tasks/README.md` is the current plan: what shipped, what's open (phase 9; all Racer sibling packets in `docs/handoff/` are shipped; phases 4, 7, 8 and the pixel-art question are archived, D370) and
+  the next free numbers (M036, T152, D380; **D362 closes T144's release**). A task spec is deleted once its work merges (D104), so that folder only holds work still ahead.
 - **The docs are the source of truth:** [the manual](docs/game/README.md) (`docs/game/`) describes the game as it runs.
   Every screen, route and sheet is [11's menu tree](docs/game/11-hub-and-places.md#the-menu-tree-at-a-glance); the code
   by folder, the checks and the deploy are [the architecture](docs/game/architecture.md). Read the relevant page before
@@ -48,7 +48,7 @@ Hub and primitives are uma-kit's, the app both Uma games share.
 |---|---|
 | `packages/domain` | Pure game rules, one subpath export per area (`@racer/domain/save`, `/state`, `/tiers`, `/items`, `/work`, `/farm`, `/training`, `/economy`, `/check-in`, `/planner`, `/sim`, `/builds`, `/hub`) beside the core. Vitest |
 | `packages/race` | Deterministic race engine (seeded, 15 Hz ticks, timeline + playback sampling). Vitest |
-| `apps/api` | NestJS 11: uma-server's `AuthGuard` on every route (`@luismlorenzana/uma-server/auth`: Firebase token + `ALLOWED_EMAIL`, 401 or 403), `/api/save`, `/api/sync` (generation 2, protocol 2), `/api/legacy/purge` (until T144's step 10), `/api/content/*`, `/api/health` |
+| `apps/api` | NestJS 11: uma-server's `AuthGuard` on every route (`@luismlorenzana/uma-server/auth`: Firebase token + `ALLOWED_EMAIL`, 401 or 403), `/api/save`, `/api/sync` (generation 2, protocol 2), `/api/content/*`, `/api/health` |
 | `apps/web` | React 19 + Vite 7 + Tailwind 4 + Motion (`m.*` under `LazyMotion strict`) + PWA on uma-kit 0.9.1 (theme, shell, Hub map on Phaser 4, primitives, places and auth frames, and since SB6 the shared album/picker): `src/app` (routes, session, the `G2Game` port, kit setup and art providers), `hub` (racer shell/map adapters), `places`, `save` (Dexie `uma-racer-g2`, one sync lane), `ui` (racer-only pieces), `content`; PixiJS 8 only for `scenes/race`; dev-only seeds at `/dev/seeds/*` (`src/dev`) |
 | `scripts/sim` | Headless balance runs (`pnpm sim:balance`, `sim:turns`, `sim:builds`, `sim:careers`, `sim:loop`) |
 | `scripts/overlays` | Racer-only private overlays; master data/art comes from uma-platform (SE1) |
@@ -138,10 +138,9 @@ pnpm master:parity     # private migration proof, aggregates only in git
 - **Reading production data is read-only and keeps no copy:** the scoped `gcloud auth print-access-token` against
   Firestore's REST API. Generation 2's save is `saves/{uid}/{kind}/{id}`; `players/` is empty since the purge
   (`saves/{uid}/meta/purge`: 30 collections, 3,676 documents). Sync health is `gcloud logging read` on `racer-api`.
-- **T144's step 10 is Claude's,** once the owner confirms in chat that the new account is theirs: remove
-  `POST /api/legacy/purge` and the boot's purge call with their tests, deploy and verify (the route then answers 404),
-  delete M034's and T144's specs, mark phase 3 completed in the task plan, and write D362. SE1 already retires the
-  separate first-boot device wipe and redirects (D365).
+- **T144's follow-up is complete (D362):** the owner authorized it in chat on 2026-10-21. The temporary purge
+  endpoint, deletion code and boot/reconnect calls are removed; historical audit markers and every current save stay.
+  The retired route answers 404, and M034/T144's specs are deleted. [Acceptance](docs/research/t144-closeout/README.md).
 - Never type credentials into sign-in pages. Sign-in checks stop at Google's account chooser.
 
 ## Art from ChatGPT

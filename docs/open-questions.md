@@ -1,6 +1,6 @@
 # Open Questions
 
-One item waits on the owner, with a recommendation. The game rework is built and shipped: its rules in phase 2
+No item currently waits on the owner. The game rework is built and shipped: its rules in phase 2
 (D340–D351), the new game on generation 2 in phase 3 (D352–D361, released by T144 on 2026-10-15), and the canvas Hub
 with its own art (T145, D363, D364). New questions land here with a recommendation, get resolved in the same session
 where possible, and then move to the [decisions log](decisions.md). The state of the plan is [tasks](tasks/README.md).
@@ -10,12 +10,10 @@ code. `pnpm sim:loop` measures the pacing ([the rework modules](game/architectur
 
 ## Needs you
 
-1. **Is the new account yours?** Say so in chat once the installed app shows your generation-2 account (the Stable
-   with the Umas you unlocked, your Prize Money, the Sync chip clear). That confirmation runs T144's step 10: Claude
-   removes the one-release purge endpoint (`POST /api/legacy/purge`) and the boot's purge call, deletes M034's and
-   T144's specs, and writes the release decision (D362). The purge already ran (30 collections, 3,676 documents), so
-   nothing else is lost or changed by it.
-   **Recommendation:** confirm after your first full check-in and race on the iPhone; there is no reason to wait longer.
+None. The owner explicitly authorized T144's follow-up retirement on 2026-10-21 alongside A04 and SE1 (D362).
+That removes the temporary purge capability; it does not rerun the old purge or reset the current account. Physical
+iPhone/PWA checks remain the owner's validation, not a claim of automated device acceptance.
+
 Archived (D370): whether the whole interface moves to a pixel-art look. It stays in `git show 3236188:docs/open-questions.md`; if you want it, it's a "Both apps:" request ([change protocol](change-protocol.md)).
 
 ## Done
@@ -25,6 +23,8 @@ Archived (D370): whether the whole interface moves to a pixel-art look. It stays
   ([GCP Setup Guide — Part 7](technical/gcp-setup-guide.md#part-7--install-on-your-iphone-after-claude-confirms-the-deploy)).
 - ✅ Phase 3's start of the new game: the owner said go, and the cutover deployed and wiped the old save once
   (T144, 2026-10-15).
+
+- ✅ T144 follow-up authorized 2026-10-21: temporary purge endpoint/call retired; audit markers and current account retained (D362).
 
 ### Closed by the wipe (D339)
 

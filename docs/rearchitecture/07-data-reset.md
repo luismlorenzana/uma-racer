@@ -6,8 +6,9 @@ with **20 Uma Tickets**. The owner accepts the loss of everything earned so far.
 
 > **Done 2026-10-15 (T144).** The owner's first generation-2 boot wiped the phone and purged `players/{uid}` (30
 > collections, 3,676 documents); `players/` is empty and the marker is `saves/{uid}/meta/purge`. "Today" below means
-> the old app, before the wipe. The purge endpoint and the boot's call leave with T144's step 10; the device wipe stays
-> until the redirects leave (phase 4 or 5, D365).
+> the old app, before the wipe; the sections below preserve the historical cutover design. **T144 completed on
+> 2026-10-21 (D362):** the purge endpoint, deletion code and boot call are removed. SE1 already removed the device
+> wipe and redirects (D365). Current boot/save sync never deletes cutover data; audit markers stay untouched.
 
 ## 1. Why a new generation instead of a migration
 
@@ -50,8 +51,8 @@ The server-side delete runs **inside the new API, for the signed-in owner only**
 3. Called again, from a second device or a retry, it sees the marker and returns at once.
 4. The app then creates the new account's save (§5) locally and syncs it.
 
-The endpoint and its client call are deleted in the release after the owner confirms the purge ran. The marker
-document stays as a record.
+The endpoint and its client call **were removed** by the owner-authorized T144 follow-up (D362). The marker
+document stays as a record. The request/response description below is historical, not a live API contract.
 
 > **As built (T135, [rework/13](../rework/13-removals-and-plan-changes.md) §6).** The request is exactly
 > `{ protocol: 2, generation: 2 }`, and the answer is `{ status: 'purged' | 'already', at, counts: { collections,
@@ -144,7 +145,7 @@ removed from production builds and kept behind `import.meta.env.DEV` for local t
 
 ## 6. Order of the cutover
 
-All in one release (phase 3 in [08](08-phases.md)'s revised table, [M034](../tasks/M034-generation-2-cutover.md)):
+All in one release (phase 3 in [08](08-phases.md)'s revised table, [M034 release record](../research/t144-closeout/README.md)):
 1. Tag `pre-split` on today's `main`.
 2. Merge the generation-2 cutover: new save, new database, protocol v2, the purge endpoint, the RPG deleted.
 3. CI verifies and deploys the API and the web app together.
