@@ -11,49 +11,34 @@ This folder holds **only work that is planned or in progress**. A task spec is a
 
 ## Current plan
 
-**The game rework (D326–D336, D338) on the re-architecture's revised phases** ([08](../rearchitecture/08-phases.md),
-[rework/13](../rework/13-removals-and-plan-changes.md) §4). [The rework](../rework/README.md) turned Uma Racer into
-Race, Farm, Train: three tiers of five scenarios, one Training Hub unlock model paid with meals and tonics, or nothing (D375), every card open
-and bonded per Uma, uma-rpg's farming catalogue, Prize Money and the Exchange, and World Expeditions (phase 9).
-[The re-architecture](../rearchitecture/README.md) rebuilds the code underneath it on uma-platform's shared foundation.
+**The restart (D380, 2026-11-04).** The game as built is retired. Uma Racer is redesigned as a clock-free game:
+- careers of mini-game seasons;
+- resources spent by hand in trees priced with the real support cards;
+- the race engine kept.
 
-| Phase | Milestone | State |
+[The drawing board v3](../research/drawing-board/README.md) is the design, and its §7 is the roadmap.
+
+| Release | Milestone | State |
 |---|---|---|
-| 1 | M032 — a sound base: the API on the workspace domain, the startup budget, GitHub Packages, the live manual | **Done, 2026-10-14** (D337) |
-| 2 | M033 — the rework's rules and `sim:loop` (T125–T133) | **Done, 2026-10-14** (D340–D351) |
-| 3 | M034 — generation-2 cutover and the new game | **Completed, 2026-10-21** (D362). Released 2026-10-15 as `ec5b1bd`; temporary purge endpoint/call retired without touching generation-2 saves. [Release record](../research/t144-closeout/README.md) |
-| 6 | The Hub: uma-rpg's Phaser town on the four pages | **Shipped 2026-10-15, ahead of phase 5** (T145, D363): `b2cb668`, racer-api-00189. Its own art (four buildings, the Racing ground, currency marks, tier crests) landed as uma-art 2.7.0 from ChatGPT's packets A01 and A02 (D364): `1db8065`, racer-api-00190 |
-| 4 | Push notifications, a port of uma-rpg's | **Archived 2026-10-16** (D370). Parked as sibling SE5 until the owner asks for push (uma-platform P51, P11) |
-| 5 | M035 — platform master data (T148–T151, SE1) | **Done, 2026-10-21** (D374, D379): shared source deployed and verified; 2,076 retired generated objects removed with exact generation preconditions, active overlays unchanged. [Acceptance](../research/se1-master-data/README.md) |
-| 7 | The Farm and Training places as pixel-art scenes | **Archived 2026-10-16** (D370) |
-| 8 | The race on Phaser; PixiJS leaves the repo | **Archived 2026-10-16** (D370). PixiJS stays for the race scene |
-| 9 | World Expeditions | **Kept through the 2026-10-16 cleanup** (D370): without it the first Uma to finish tier 1's last career has nowhere to go. Not specified yet. It must land within about 16–20 weeks of 2026-10-15 (by about 2027-02-04 to 2027-03-04), before the first Uma finishes tier 1's last career |
+| 1 | [M036 — URA Finale, the new game](M036-ura-finale-slice.md) (T152–T159): generation 3 with a full wipe, Training Yard and Furlong Hand, the tree, deck, bonds and skills, URA Finale careers | **Specified 2026-11-04.** Built on `restart/g3`; ships to production in one release |
+| 2 | Team Showdown: Shards, Umas earned in play; Unity Cup's careers | Planned |
+| 3 | Fan Festival: Scout points, cards earned in play, the refit; Trackblazer's and Our Grand Concert's careers | Planned |
+| 4 | Summer Camp: aptitude points; Grand Masters' careers; promotion to tier 2 | Planned |
+| 5 | Festival Kitchen: dishes; tier 2's careers | Planned |
 
-**Still open, as of 2026-10-21:**
-1. **Phase 9, World Expeditions,** due by about 2027-02-04 to 2027-03-04 and specified when it starts.
+**Retired by the restart (D380):**
+- the rework's game (D326–D338);
+- the re-architecture's phases 4–9, World Expeditions and its deadline included;
+- sibling SE5 (shared push), which stays parked.
 
-The shipped sibling packets (SA7, SD4, SB6, SC5, SE4 and SE1) are closed in [handoff](../handoff/README.md).
-A04's tonic art is active in uma-art 2.10.0 (D378); [verified deployment](../research/a04-tonics/README.md).
+The rework phases that shipped (1–3, 5 and 6) are in the history, with their records below.
 
-**Archived 2026-10-16 (D370), the owner's cleanup of open items unrelated to the sibling work:**
+The `pre-split` tag marks the generation-1 game. Generation 2's last state on `main` is `c592ccd`; the restart deletes
+it.
 
-| Item | Where it lives |
-|---|---|
-| Phase 4, push notifications | Sibling SE5, parked until the owner asks (uma-platform P51) |
-| Phase 7, the Farm and Training as pixel-art scenes | [rearchitecture/08](../rearchitecture/08-phases.md) "Phase 5: the Farm" and `git show 3236188:docs/tasks/README.md` |
-| Phase 8, the race on Phaser | [rearchitecture/08](../rearchitecture/08-phases.md) and `git show 3236188:docs/tasks/README.md` |
-| The whole interface in pixel art (the owner's open direction) | `git show 3236188:docs/open-questions.md`; if wanted, it's a "Both apps:" request ([change protocol](../change-protocol.md)) |
-
-A revived item starts as a new spec or packet with a new number.
-
-The `pre-split` tag marks the old game.
-
-**Retired unbuilt (D339):** M024 (T081), M010 (T035) and M011 (T036–T039). The rework removes what they built on.
-Game feel and device acceptance for the new game are planned after phase 3.
-
-**Next free numbers: M036, T152 and D380** (the reserved D362 closes T144). Numbers are never reused, so
-a decision that mentions T014 always means the same work. T057 was consumed by the per-scenario limit-break branch and
-is not reused.
+**Next free numbers: M037, T160 and D389** (D381–D388 are reserved for M036's parts). Numbers are never reused, so a
+decision that mentions T014 always means the same work. T057 was consumed by the per-scenario limit-break branch and is
+not reused.
 
 ## Completed and removed
 

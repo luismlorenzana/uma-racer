@@ -9,8 +9,14 @@ Hub and primitives are uma-kit's, the app both Uma games share.
 - `README.md`: status, how to run and verify, the documentation map. Then `AGENTS.md`, the shared guide for every
   agent, including delegated ChatGPT tasks (branch + PR, no pushes to `main`), with the shared workflows. This file adds
   Claude's production notes.
-- `docs/tasks/README.md` is the current plan: what shipped, what's open (phase 9; all Racer sibling packets in `docs/handoff/` are shipped; phases 4, 7, 8 and the pixel-art question are archived, D370) and
-  the next free numbers (M036, T152, D380; **D362 closes T144's release**). A task spec is deleted once its work merges (D104), so that folder only holds work still ahead.
+- **The restart (D380, 2026-11-04):** the game as built is retired. The new design is
+  [the drawing board v3](docs/research/drawing-board/README.md): a clock-free game of mini-game careers and
+  hand-allocated trees on the real card numbers. Its first release is
+  [M036, URA Finale](docs/tasks/M036-ura-finale-slice.md), built on `restart/g3` and shipped straight to production
+  with a full wipe. Until M036 ships, the manual below describes the retired generation 2.
+- `docs/tasks/README.md` is the current plan: the restart's releases, and the next free numbers (M037, T160, D389;
+  D381–D388 are reserved for M036's parts). A task spec is deleted once its work merges (D104), so that folder only
+  holds work still ahead.
 - **The docs are the source of truth:** [the manual](docs/game/README.md) (`docs/game/`) describes the game as it runs.
   Every screen, route and sheet is [11's menu tree](docs/game/11-hub-and-places.md#the-menu-tree-at-a-glance); the code
   by folder, the checks and the deploy are [the architecture](docs/game/architecture.md). Read the relevant page before
