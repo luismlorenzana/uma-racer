@@ -245,7 +245,7 @@ until T159.
 
 | Part | What | After | Decision |
 |---|---|---|---|
-| [**T152**](T152-clean-slate.md) | **The clean slate.** Delete §"Deleted at the switch" and cut the kept modules loose; generation 3's records, stamps, operation registry (every slice operation declared), API path and Dexie g3 with the g2 wipe; the master adapter's real card effects; tickets and unlocks; a green app that signs in to Town Hall → Account | — | D381 |
+| **T152** ✓ | **Done (D381).** **The clean slate.** Delete §"Deleted at the switch" and cut the kept modules loose; generation 3's records, stamps, operation registry (every slice operation declared), API path and Dexie g3 with the g2 wipe; the master adapter's real card effects; tickets and unlocks; a green app that signs in to Town Hall → Account | — | D381 |
 | [**T153**](T153-the-build.md) | **The build.** Deck, posting, the tree and the session formula, bond tracks, skills, the racing build; card power (05's reference session, for the later refit); `sim:decks` | T152 | D382 |
 | [**T154**](T154-the-career.md) | **The career.** Calendar placement, the season machine, objectives on the engine, the URA Finals, rewards; the rivals' re-tune with T153's sim | T152, T153's types | D383 |
 | [**T155**](T155-stages-and-training-yard.md) | **The stage framework and Training Yard:** contract, host, journal, settle, `sim:stages`; the Yard's rules, bots and view | T152 | D384 |
