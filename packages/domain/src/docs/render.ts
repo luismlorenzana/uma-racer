@@ -6,21 +6,10 @@
 // Each area renders its own tables too (docs/game/architecture.md#the-rework-modules): an area exports
 // `LIVE_BLOCKS: Record<key, () => string>` from its `docs.ts`, and one import plus one argument to `AREA_BLOCKS` below
 // joins it. A key used twice fails at load, so two areas can't fight over a block. The manual's own keys below are
-// the race's (docs/game/racing.md) and the dependencies (docs/game/architecture.md); the old fourteen-scenario ladder,
-// caps, buffs and level table left with generation 2, whose pages render the tier rules' (T143).
-import { LIVE_BLOCKS as BUILDS_BLOCKS } from '../builds/docs'
-import { LIVE_BLOCKS as CHECK_IN_BLOCKS } from '../check-in/docs'
-import { LIVE_BLOCKS as EXCHANGE_BLOCKS } from '../economy/docs'
-import { LIVE_BLOCKS as FARM_BLOCKS } from '../farm/docs'
-import { LIVE_BLOCKS as HUB_BLOCKS } from '../hub/docs'
-import { LIVE_BLOCKS as ITEM_BLOCKS } from '../items/docs'
-import { LIVE_BLOCKS as PLANNER_BLOCKS } from '../planner/docs'
-import { LIVE_BLOCKS as LOOP_BLOCKS } from '../sim/docs'
+// the race's (docs/game/racing.md) and the dependencies (docs/game/architecture.md). Generation 2's area blocks left
+// with it (D381); the restart's areas add theirs as they land (T153–T158).
 import { LIVE_BLOCKS as TIER_BLOCKS } from '../tiers/docs'
-import { LIVE_BLOCKS as TRAINING_BLOCKS } from '../training/docs'
-import { LIVE_BLOCKS as CONSTELLATION_BLOCKS } from '../training/trees/docs'
 import { GRADE_HANDICAP, RIVAL_REFERENCE_METERS, RIVAL_SKILL_RANGE, RIVAL_STAT_FLOOR, STYLE_COUNT_RANGE } from '../opponents'
-import { raceExp } from '../progression'
 import { RACE_GRADES } from '../types'
 
 export type LiveBlocks = Readonly<Record<string, () => string>>
@@ -37,10 +26,7 @@ export function joinBlocks(...tables: readonly LiveBlocks[]): LiveBlocks {
 }
 
 /** Every area's live blocks, joined. */
-export const AREA_BLOCKS: LiveBlocks = joinBlocks(
-  TIER_BLOCKS, ITEM_BLOCKS, CONSTELLATION_BLOCKS, EXCHANGE_BLOCKS, FARM_BLOCKS, TRAINING_BLOCKS, PLANNER_BLOCKS, BUILDS_BLOCKS, LOOP_BLOCKS,
-  CHECK_IN_BLOCKS, HUB_BLOCKS,
-)
+export const AREA_BLOCKS: LiveBlocks = joinBlocks(TIER_BLOCKS)
 
 type Cell = string | number
 /** A Markdown table; pipes in cells are escaped. */
@@ -54,9 +40,8 @@ const GRADE_LABEL: Readonly<Record<string, string>> = { debut: 'Debut', maiden: 
 
 // --- Racing ---------------------------------------------------------------------------------------------------------
 
-function raceRewards(): string {
-  return table(['Grade', 'Win EXP', '2nd or 3rd', 'Rival handicap'],
-    RACE_GRADES.map((grade) => [GRADE_LABEL[grade] ?? grade, raceExp(grade, 1), raceExp(grade, 2), pct(GRADE_HANDICAP[grade])]))
+function rivalHandicaps(): string {
+  return table(['Grade', 'Rival handicap'], RACE_GRADES.map((grade) => [GRADE_LABEL[grade] ?? grade, pct(GRADE_HANDICAP[grade])]))
 }
 
 function rivals(): string {
@@ -80,7 +65,7 @@ function dependencies(pkgs: readonly { path: string; json: PackageJson }[]): str
 
 export function renderBlock(key: string, context: { packages: readonly { path: string; json: PackageJson }[] }): string | null {
   switch (key) {
-    case 'race-rewards': return raceRewards()
+    case 'rival-handicaps': return rivalHandicaps()
     case 'rivals': return rivals()
     case 'dependencies': return dependencies(context.packages)
     default: return AREA_BLOCKS[key]?.() ?? null

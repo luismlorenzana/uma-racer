@@ -1,6 +1,5 @@
 // The game's interpretation, not a second master-data importer (SE1; uma-platform/docs/racer-mapping.md).
 import type { MasterData, Skill, SupportCard } from '@luismlorenzana/uma-data'
-import { sourceCardEffect, type CardEffect } from '../cards'
 import type { CourseTemplate, RaceDirection, RaceTemplate, SkillKind, SkillTemplate, SupportCardObtain, SupportCardTemplate, UmaTemplate } from '../content'
 import { distanceCategory } from '../types'
 import { eraOf, SCENARIOS } from '../scenarios'
@@ -10,7 +9,6 @@ import type { RacerOverlays } from './overlays'
 
 export interface RacerContent { umas: UmaTemplate[]; cards: SupportCardTemplate[]; skills: SkillTemplate[]; races: RaceTemplate[]; courses: CourseTemplate[] }
 export interface AdaptedMaster { content: RacerContent; warnings: string[]; scenarioIds: ReadonlyMap<string, string> }
-const EFFECTS: readonly CardEffect[] = ['trainingBonus', 'friendshipBonus', 'statBonus', 'skillPointBonus', 'specialtyPriority', 'hintFrequency', 'raceBonus', 'initialStats']
 // Keep the racer's existing catalogue. Platform also names international tracks, which are not regular racer races.
 const RACER_TRACKS = new Set([10001, 10002, 10003, 10004, 10005, 10006, 10007, 10008, 10009, 10010, 10101, 10103, 10104, 10105, 10201])
 const GRADES = { 100: 'g1', 200: 'g2', 300: 'g3', 400: 'op', 700: 'pre-op' } as const
@@ -48,34 +46,33 @@ export function masterSkills(source: readonly Skill[]): SkillTemplate[] {
   })
 }
 
-function effects(card: SupportCard): Partial<Record<CardEffect, number>> {
-  const values: Partial<Record<CardEffect, number>> = {}
+/** Each effect's value at the card's top level: the last value the source gives (null keeps the one before). */
+function topLevelEffects(card: SupportCard): Record<number, number> {
+  const values: Record<number, number> = {}
   for (const row of card.effects) {
-    const effect = sourceCardEffect(row.type, card.type)
     const present = row.values.filter((value): value is number => value !== null && value !== -1)
-    if (effect !== null && present.length) values[effect] = Math.max(values[effect] ?? -Infinity, ...present)
+    if (present.length > 0) values[row.type] = present.at(-1)!
   }
   return values
 }
 
+/** SSRs only (D381, v3 §8): each with its real top-level effects, unique effect and hint rewards (05 §1). */
 function masterCards(source: readonly SupportCard[]): SupportCardTemplate[] {
-  const cards = source.filter((card) => card.rarity === 3)
-  const values = cards.map(effects)
-  const medians = Object.fromEntries(EFFECTS.map((effect) => {
-    const sorted = values.flatMap((value) => value[effect] === undefined ? [] : [value[effect]!]).sort((a, b) => a - b)
-    const middle = Math.floor(sorted.length / 2)
-    return [effect, sorted.length === 0 ? 0 : sorted.length % 2 ? sorted[middle]! : (sorted[middle - 1]! + sorted[middle]!) / 2]
-  })) as Record<CardEffect, number>
-  return cards.map((card, index) => {
+  return source.filter((card) => card.rarity === 3).map((card) => {
     const obtain: SupportCardObtain = card.obtain === 'gacha' ? 'gacha' : card.obtain === 'story_event' ? 'event'
       : ['promo', 'limited_quest', 'shop'].includes(card.obtain) ? 'free' : 'unknown'
     return {
       id: String(card.id), charaId: String(card.characterId), charName: card.characterName.en ?? '', title: card.title.en ?? '',
       type: card.type, jpRelease: card.release.jp, era: eraOf(card.release.jp), obtain, starter: obtain === 'event' || obtain === 'free',
-      hintSkillIds: ids(card.hints.skillIds), eventSkillIds: ids(card.globalEventSkillIds ?? card.eventSkillIds),
-      effectProfile: Object.fromEntries(EFFECTS.map((effect) => [effect, values[index]![effect] === undefined || medians[effect] === 0 ? 0
-        : Math.round(Math.min(1.5, Math.max(0.5, values[index]![effect]! / medians[effect])) * 100) / 100])) as Record<CardEffect, number>,
-      uniqueEffect: card.uniqueEffect === null ? null : { level: card.uniqueEffect.level, effects: card.uniqueEffect.effects.map(({ type, value }) => ({ type, value })) },
+      hintSkillIds: ids(card.hints.skillIds),
+      hintOthers: card.hints.others.map(({ type, value, minLevel }) => ({ type, value, minLevel })),
+      eventSkillIds: ids(card.globalEventSkillIds ?? card.eventSkillIds),
+      effects: topLevelEffects(card),
+      uniqueEffect: card.uniqueEffect === null ? null : {
+        level: card.uniqueEffect.level,
+        description: card.uniqueEffect.description,
+        effects: card.uniqueEffect.effects.map(({ type, value, params }) => ({ type, value, params: [...params] })),
+      },
     }
   })
 }

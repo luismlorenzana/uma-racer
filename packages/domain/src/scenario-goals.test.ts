@@ -1,19 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
-  addUmaRaceExp,
-  awaitingAdvance,
-  CAREER_STAGE_LEVELS,
   careerComplete,
-  careerHoldLevel,
-  careerOpenAtGate,
   careerProfile,
   careerStage,
-  createScenarioTraining,
-  createUmaSave,
-  expToNextUmaLevel,
   flairSeriesLegId,
   goalRaceIds,
-  parseScenarioJourney,
   planScenarioCareer,
   recommendedRacePreferences,
   scenarioJourneySummary,
@@ -25,7 +16,6 @@ import {
   type ScenarioGoal,
   type ScenarioJourney,
   type Surface,
-  type UmaSave,
   type UmaTemplate,
 } from './index'
 
@@ -121,15 +111,8 @@ const FILLY = template('filly', grades(['C', 'A', 'A', 'C']), { realHorseSex: 'f
 const SPRINTER = template('sprinter', grades(['A', 'B', 'C', 'G']), { realHorseSex: 'male' })
 const DIRT = template('dirt', grades(['B', 'A', 'C', 'G'], ['C', 'A']), { realHorseSex: 'male' })
 
-const atTier = (uma: UmaTemplate, tier: number): UmaSave => ({
-  ...createUmaSave(uma),
-  level: (tier - 1) * 10 + 1,
-  unlockedTier: tier,
-  scenarios: Array.from({ length: tier }, (_, index) => ({ ...createScenarioTraining(index + 1), started: true })),
-})
-
 function career(uma: UmaTemplate, tier = 1, races: readonly RaceTemplate[] = RACES) {
-  return planScenarioCareer({ uma: atTier(uma, tier), umaTemplate: uma, aptitudes: uma.aptitudes, races })
+  return planScenarioCareer({ T: tier, umaTemplate: uma, aptitudes: uma.aptitudes, races })
 }
 
 const racesOf = (goals: readonly ScenarioGoal[]) => goals.flatMap(goalRaceIds).map((id) => byId.get(id)!)
@@ -154,8 +137,8 @@ describe('career profile', () => {
       .toEqual({ strategy: 'pace', distance: 'long', surface: 'turf' })
     expect(careerProfile(COLT.aptitudes, COLT, RACES, { distance: 'sprint', surface: 'dirt' }))
       .toMatchObject({ band: 'sprint-mile', surface: 'dirt' })
-    const chosen = { ...atTier(COLT, 1), racePreferences: { strategy: 'front' as const, distance: 'sprint' as const, surface: 'dirt' as const } }
-    expect(planScenarioCareer({ uma: chosen, umaTemplate: COLT, aptitudes: COLT.aptitudes, races: RACES }).profile)
+    const preferences = { strategy: 'front' as const, distance: 'sprint' as const, surface: 'dirt' as const }
+    expect(planScenarioCareer({ T: 1, preferences, umaTemplate: COLT, aptitudes: COLT.aptitudes, races: RACES }).profile)
       .toMatchObject({ band: 'sprint-mile', surface: 'dirt' })
   })
 })
@@ -173,7 +156,6 @@ describe('career generation', () => {
     expect(journey.goals[3]).toMatchObject({ kind: 'win-series', series: { tag: 'triple-crown' } })
     expect(racesOf(journey.goals.filter((goal) => goal.slot === 'main')).map((entry) => entry.id))
       .toEqual(['satsuki-sho', 'tokyo-yushun', 'kikuka-sho'])
-    expect(parseScenarioJourney(journey)).toEqual(journey)
   })
 
   it('rotates the main set by scenario and tops a two-leg set up from her own G1s', () => {
@@ -230,71 +212,3 @@ describe('career generation', () => {
     expect(() => career(COLT, 1, RACES.filter((entry) => entry.grade !== 'g3'))).toThrow(/cannot supply a career/)
   })
 })
-
-function withJourney(uma: UmaSave, journey: ScenarioJourney): UmaSave {
-  return { ...uma, scenarios: uma.scenarios.map((run) => run.tier === journey.tier ? { ...run, started: true, journey } : run) }
-}
-
-const complete = (journey: ScenarioJourney, stages: readonly ScenarioGoal['slot'][]): ScenarioJourney => ({
-  ...journey,
-  goals: journey.goals.map((goal) => !stages.includes(goal.slot) ? goal : {
-    ...goal,
-    status: 'completed',
-    completedRaceResultId: 'race:colt:0',
-    completedAt: 10,
-    series: goal.series ? { ...goal.series, legs: goal.series.legs.map((entry) => ({ ...entry, status: 'completed' as const, completedRaceResultId: 'race:colt:0', completedAt: 10 })) } : null,
-  }),
-})
-
-describe('career stages', () => {
-  const fresh = career(COLT, 2).journey
-
-  it('holds levels 2 and 5 of the scenario until their goals are won', () => {
-    expect(CAREER_STAGE_LEVELS).toEqual({ maiden: { first: 1, last: 2 }, trials: { first: 3, last: 5 }, main: { first: 6, last: 10 } })
-    expect(careerStage(fresh)).toBe('maiden')
-    expect(careerHoldLevel(fresh, 11)).toBe(12)
-    // An Uma already past a hold is never pushed back: the next unfinished stage holds her instead.
-    expect(careerHoldLevel(fresh, 14)).toBe(15)
-    expect(careerHoldLevel(fresh, 16)).toBeNull()
-    const maidenWon = complete(fresh, ['maiden'])
-    expect(careerStage(maidenWon)).toBe('trials')
-    expect(careerHoldLevel(maidenWon, 12)).toBe(15)
-    const trialsWon = complete(fresh, ['maiden', 'trials'])
-    expect(careerStage(trialsWon)).toBe('main')
-    expect(careerHoldLevel(trialsWon, 15)).toBeNull()
-    expect(careerComplete(complete(fresh, ['maiden', 'trials', 'main']))).toBe(true)
-    expect(scenarioJourneySummary(complete(fresh, ['maiden', 'trials', 'main'])).honors).toBe(true)
-  })
-
-  it('banks EXP just short of the next level while held, and releases it once the hold lifts', () => {
-    const uma = { ...atTier(COLT, 2), level: 11, exp: 0 }
-    const held = addUmaRaceExp(uma, 10_000, careerHoldLevel(fresh, 11))
-    expect(held.uma).toMatchObject({ level: 12, exp: expToNextUmaLevel(12) - 1 })
-    expect(held.levelsGained).toEqual([12])
-    const still = addUmaRaceExp(held.uma, 500, careerHoldLevel(fresh, 12))
-    expect(still.uma).toEqual(held.uma)
-    const released = addUmaRaceExp(held.uma, 1, careerHoldLevel(complete(fresh, ['maiden']), 12))
-    expect(released.uma.level).toBe(13)
-    expect(released.levelsGained).toEqual([13])
-  })
-
-  it('keeps an unfinished career racing at the gate and gates the advance on it', () => {
-    const gate = withJourney({ ...atTier(COLT, 2), level: 20, exp: 0 }, complete(fresh, ['maiden', 'trials']))
-    expect(careerOpenAtGate(activeJourney(gate))).toBe(true)
-    expect(awaitingAdvance(gate)).toBe(false)
-    const done = withJourney(gate, complete(fresh, ['maiden', 'trials', 'main']))
-    expect(awaitingAdvance(done)).toBe(true)
-  })
-})
-
-const activeJourney = (uma: UmaSave) => uma.scenarios.find((run) => run.tier === uma.unlockedTier)?.journey ?? null
-
-describe('every scenario costs the same EXP (D241)', () => {
-  it('costs 100 to 300 EXP a level in every scenario, 1,800 for its nine', () => {
-    expect([1, 9, 10, 11, 19, 131, 139].map(expToNextUmaLevel)).toEqual([100, 300, 325, 100, 300, 100, 300])
-    const scenario = (tier: number) => Array.from({ length: 9 }, (_, step) => expToNextUmaLevel((tier - 1) * 10 + 1 + step))
-      .reduce((sum, value) => sum + value, 0)
-    expect([1, 2, 7, 14].map(scenario)).toEqual([1_800, 1_800, 1_800, 1_800])
-  })
-})
-

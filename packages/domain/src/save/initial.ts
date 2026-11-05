@@ -1,31 +1,18 @@
-// The new account as rows (docs/rework/13-removals-and-plan-changes.md §5; docs/rearchitecture/07-data-reset.md §5; T134).
-// Its values are `newWorkState(newAccount(now))`'s, restated nowhere here: 20 Uma Tickets under `initial-uma-tickets`,
-// no Umas, no work, an empty Warehouse and every building at Lv 1, with the purse, the Exchange's grade, automatic
-// targets, the default check-ins and Repeat's size as the rules start them. The create carries only `createdAt`; the
-// server builds these rows itself, so the device never uploads a balance.
-import { BUILDING_IDS } from '../farm/buildings'
-import { newAccount } from '../tiers/roster'
-import { newWorkState } from '../work/adapter'
-import { entityDraft, logDraft, type EntityDraft, type LogDraft } from './rows'
+// A new account (D381, M036 "Unlocks"): 20 Uma Tickets, 24 Card Tickets, and nothing unlocked. The server builds these
+// rows from a create's `createdAt`; the device builds the same ones while it can't reach the server.
+import { INITIAL_CARD_TICKETS, INITIAL_UMA_TICKETS } from '../account/ops'
+import { entityDraft, type EntityDraft, type LogDraft } from './rows'
 import type { SaveState } from './state'
 
 export interface InitialSave {
   readonly state: SaveState
-  /** `profile/main` and the 14 `buildings` rows. */
   readonly entities: readonly EntityDraft[]
-  /** The ledger row `initial-uma-tickets`. */
   readonly logs: readonly LogDraft[]
 }
 
-/** The rows of a new account created at `now`. */
 export function initialSave(now: number): InitialSave {
-  const state = newWorkState(newAccount(now))
-  return {
-    state,
-    entities: [
-      entityDraft('profile', 'main', state.profile),
-      ...BUILDING_IDS.map((id) => entityDraft('buildings', id, state.buildings[id])),
-    ],
-    logs: state.ledger.map((row) => logDraft('ledger', row.id, row.at, row)),
-  }
+  if (!Number.isSafeInteger(now) || now < 0) throw new RangeError('An account needs a creation time')
+  const account = { createdAt: now, umaTickets: INITIAL_UMA_TICKETS, cardTickets: INITIAL_CARD_TICKETS }
+  const state: SaveState = { account, umas: {}, cards: {}, careers: {}, bonds: {} }
+  return { state, entities: [entityDraft('account', 'main', account)], logs: [] }
 }

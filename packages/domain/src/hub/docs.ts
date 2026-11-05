@@ -10,7 +10,7 @@ function at(place: Place): string {
 }
 
 function placesTable(): string {
-  const head = ['Page', 'Place', 'Id', 'Kind', 'Route', 'Counter', 'Frame', 'Pips', 'At (x, y)']
+  const head = ['Page', 'Place', 'Id', 'Kind', 'Route', 'Counter', 'Frame', 'At (x, y)']
   const rows = PLACES.map((place) => [
     HUB_PAGE_NAMES[place.page],
     `${place.name}${place.direct ? ' (direct)' : ''}${place.hidden ? ' (hidden)' : ''}`,
@@ -19,7 +19,6 @@ function placesTable(): string {
     code(place.route),
     place.counter === null ? '—' : code(place.counter),
     place.frame === null ? '—' : `${code(place.frame)}${AWAITING_ART.includes(place.frame) ? ' (**new**)' : ''}`,
-    place.pips ? 'yes' : '—',
     at(place),
   ])
   return [`| ${head.join(' | ')} |`, `|${head.map(() => '---').join('|')}|`, ...rows.map((row) => `| ${row.join(' | ')} |`)].join('\n')

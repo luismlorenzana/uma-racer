@@ -1,8 +1,7 @@
 // Racer-only views of platform master data (SE1; docs/game/architecture.md#private-content).
 
-import type { CardEffect } from './cards'
 import type { CardFocusOverride } from './card-focus'
-import type { FlairSeriesTag } from './badges'
+import type { FlairSeriesTag } from './race-series'
 import type { Aptitudes, DistanceCategory, RaceGrade, StatKey, Stats, Surface } from './types'
 
 export interface UmaTemplate {
@@ -36,7 +35,17 @@ export type SupportCardObtain = 'gacha' | 'event' | 'free' | 'unknown'
 
 export interface SupportCardUniqueEffect {
   level: number
-  effects: { type: number; value: number }[]
+  /** The source's English description, where it has one. */
+  description: string | null
+  /** `params` holds the source's extra values, read by the conditional effect types (05 §1). */
+  effects: { type: number; value: number; params: number[] }[]
+}
+
+/** A non-skill hint reward: the original's type id (stats 1–5, skill points 30) and amount, level-gated when set. */
+export interface SupportCardHintReward {
+  type: number
+  value: number
+  minLevel: number | null
 }
 
 export interface SupportCardTemplate {
@@ -50,8 +59,14 @@ export interface SupportCardTemplate {
   obtain: SupportCardObtain
   starter: boolean
   hintSkillIds: string[]
+  /** The card's non-skill hint rewards. */
+  hintOthers: SupportCardHintReward[]
   eventSkillIds: string[]
-  effectProfile: Record<CardEffect, number>
+  /**
+   * The card's real effects at its maximum level (an SSR's level 50), by the original's effect id (D381; ids in
+   * docs/research/drawing-board/05-card-mechanics.md §1). Private pack values only; tests use invented ones.
+   */
+  effects: Readonly<Record<number, number>>
   uniqueEffect: SupportCardUniqueEffect | null
   /** An authored correction of the card's derived focus (D201); a pack without it keeps working. */
   focus?: CardFocusOverride

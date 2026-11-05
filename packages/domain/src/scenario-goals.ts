@@ -5,10 +5,9 @@ import {
   FLAIR_SERIES_TAGS,
   parseFlairSeriesLegId,
   type FlairSeriesTag,
-} from './badges'
+} from './race-series'
 import type { RaceTemplate, UmaTemplate } from './content'
 import {
-  activeScenario,
   CAREER_STAGES,
   SAVE_ID_PATTERN,
   type CareerStage,
@@ -16,13 +15,12 @@ import {
   type ScenarioGoalLeg,
   type ScenarioJourney,
   type RacePreferences,
-  type UmaSave,
 } from './career-shapes'
-import { isGateLevel, scenarioForTier, tierOfLevel } from './scenarios'
+import { scenarioForTier } from './scenarios'
 import { isCareerJourney } from './career-stages'
 
 // The stage rules live in a leaf module, which the career shapes read too (D241).
-export { CAREER_STAGE_LEVELS, careerHoldLevel, isCareerJourney, isCareerStage } from './career-stages'
+export { isCareerJourney, isCareerStage } from './career-stages'
 import {
   GRADES,
   RACE_GRADES,
@@ -88,14 +86,6 @@ export function careerStage(journey: ScenarioJourney | null | undefined): Career
 
 export const careerComplete = (journey: ScenarioJourney | null | undefined): boolean =>
   isCareerJourney(journey) && journey.goals.every((goal) => goal.status === 'completed')
-
-/** At the gate level an unfinished career keeps racing. Everything else waits for the scenario to advance. */
-export const careerOpenAtGate = (journey: ScenarioJourney | null | undefined): boolean =>
-  isCareerJourney(journey) && journey.state === 'active' && !careerComplete(journey)
-
-/** The Uma is at her gate with nothing left to race for: the next step is advancing (or, at the last tier, done). */
-export const awaitingAdvance = (uma: UmaSave): boolean =>
-  isGateLevel(uma.level) && !careerOpenAtGate(activeScenario(uma).journey)
 
 /** Every race a goal names: its single race, or each leg of its set. */
 export const goalRaceIds = (goal: ScenarioGoal): string[] =>
@@ -315,8 +305,11 @@ export function assertScenarioGoalContent(umas: readonly UmaTemplate[], races: r
 }
 
 export interface GenerateScenarioJourneyInput {
-  uma: UmaSave
+  /** The game's scenario number T the career is frozen for (D380: careers rotate their races by T). */
+  T: number
   umaTemplate: UmaTemplate
+  /** Her race preferences, when she has any; the generator's defaults otherwise. */
+  preferences?: RacePreferences
   /** Post-lineage aptitudes from the constellation the career is being frozen against (D121). */
   aptitudes: Aptitudes
   races: readonly RaceTemplate[]
@@ -371,12 +364,11 @@ export interface CareerPlan {
  * no engine RNG, clock, or input order.
  */
 export function planScenarioCareer(input: GenerateScenarioJourneyInput): CareerPlan {
-  if (input.uma.templateId !== input.umaTemplate.id) throw new Error('Scenario goal Uma is malformed')
-  const tier = tierOfLevel(input.uma.level)
+  const tier = input.T
   if (!scenarioForTier(tier)) throw new Error('Scenario goal tier is unknown')
   assertScenarioGoalContent([input.umaTemplate], input.races)
   const races = [...input.races].sort((left, right) => left.id.localeCompare(right.id))
-  const profile = careerProfile(input.aptitudes, input.umaTemplate, races, input.uma.racePreferences)
+  const profile = careerProfile(input.aptitudes, input.umaTemplate, races, input.preferences)
   const ctx: CareerContext = { template: input.umaTemplate, aptitudes: input.aptitudes, races, tier, profile }
   const taken = new Set<string>()
 
