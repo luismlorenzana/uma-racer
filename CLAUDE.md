@@ -110,7 +110,7 @@ pnpm master:parity     # private migration proof, aggregates only in git
 | API | Cloud Run `racer-api` (us-central1), `https://racer-api-tmzkhylhfq-uc.a.run.app`; `/api/health` (not `/healthz`, which Cloud Run's front end reserves) |
 | GCP project | `uma-racer` (number 1026964321499), plus a private bucket `uma-racer-content` |
 | Deploy | `.github/workflows/deploy.yml`, keyless WIF. Repo variables: GCP_PROJECT_ID, WIF_PROVIDER, CONTENT_BUCKET, ALLOWED_EMAIL, DEPLOY_ENABLED |
-| Live on 2026-11-05 | `1f4b481` as racer-api-00205-gfj: **M036, generation 3** (D388), [deployment green](https://github.com/luismlorenzana/uma-racer/actions/runs/42051491305). Image tagged with the SHA, health 200, save 401 without auth, Hosting no-cache, live chunks carry `uma-racer-g3` and Furlong Hand. Generation 2's `saves/` deleted (635 documents, no backup); `g3/` holds only what the owner creates. uma-kit 0.9.1; uma-art 2.10.0; startup 151.87 KB gzip |
+| Live on 2026-11-05 | `4b348e9` as racer-api-00206-sf4: A05's marks on uma-art 2.21.0 (D389), on **M036, generation 3** (`1f4b481`, D388), [deployment green](https://github.com/luismlorenzana/uma-racer/actions/runs/42051491305). Image tagged with the SHA, health 200, save 401 without auth, Hosting no-cache, live chunks carry `uma-racer-g3` and Furlong Hand. Generation 2's `saves/` deleted (635 documents, no backup); `g3/` holds only what the owner creates. uma-kit 0.9.1; uma-art 2.21.0; startup 149.51 KB gzip |
 
 - **Local gcloud has two accounts, and the active one is the owner's work account. Never change it.** Scope every uma-racer
   command with environment variables only:

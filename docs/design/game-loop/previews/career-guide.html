@@ -1,0 +1,1011 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Uma Racer — Career Guide</title>
+<!-- Uma Racer's player guide: the game loop and how to play a full URA Finale career, as released (generation 3, M036,
+     D388). Every number is a rule from the manual (docs/game/) and the domain code (packages/domain/src: build/, career/,
+     stages/, account/ops.ts); no real card or Uma values. Colours: uma-kit's tokens, light and dark by
+     prefers-color-scheme. Mobile first (390 px). No external scripts, fonts or images; diagrams are inline SVG. -->
+<style>
+  :root {
+    --page: #edf1f6; --panel: #ffffff; --raised: #f3f6fa; --sunken: #e4eaf2;
+    --ink: #101a24; --ink-soft: #5a6b84; --ink-faint: #8a98ac;
+    --accent: #d39a2b; --accent-strong: #b87f18; --accent-wash: #fbf1dd; --accent-ink: #1b1406;
+    --grid: #e3e8ef; --axis: #c3cbd6; --neutral: #a9b4c2; --neutral-strong: #7d8a9b;
+    --hairline: rgb(16 26 36 / 0.08); --hairline-strong: rgb(16 26 36 / 0.16);
+    --spd: #0980e6; --sta: #dd4433; --pow: #e66e00; --gut: #f1368b; --wit: #05a371;
+    --bronze: #b07a46; --silver: #9aa6b5; --gold: #d9a62b;
+    --ticket: #c9961c; --success: #2f7a4f; --warning: #d08a0e; --danger: #c23b33; --info: #2f6fe0; --turf: #2f7a4f;
+    color-scheme: light dark;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --page: #0f1620; --panel: #17202b; --raised: #1f2a37; --sunken: #0b1118;
+      --ink: #e9eef4; --ink-soft: #a6b3c2; --ink-faint: #6f7d8e;
+      --accent: #d6a23e; --accent-strong: #e8b65a; --accent-wash: #2b2312;
+      --grid: #243041; --axis: #34445a; --neutral: #4a586b; --neutral-strong: #6b7a8e;
+      --hairline: rgb(255 255 255 / 0.08); --hairline-strong: rgb(255 255 255 / 0.16);
+      --ticket: #f2c94c; --success: #4fb37a; --warning: #e0a33a; --danger: #e0645c; --info: #5b8def;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+  body { margin: 0; background: var(--page); color: var(--ink); font: 14px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 1240px; margin: 0 auto; padding: 32px 40px 80px; }
+  h1 { font-size: 28px; line-height: 1.15; margin: 0 0 6px; }
+  h2 { font-size: 20px; line-height: 1.25; margin: 0 0 4px; }
+  h3 { font-size: 15px; margin: 0 0 6px; }
+  p { margin: 0; }
+  p + p { margin-top: 8px; }
+  ul, ol { margin: 6px 0 0; padding-left: 20px; }
+  li + li { margin-top: 4px; }
+  a { color: inherit; }
+  .lead { color: var(--ink-soft); max-width: 860px; }
+  .sub { color: var(--ink-soft); margin-bottom: 16px; max-width: 900px; }
+  .muted { color: var(--ink-faint); }
+  .small { font-size: 12.5px; }
+  section { margin-top: 44px; scroll-margin-top: 64px; }
+  .panel { background: var(--panel); border-radius: 14px; padding: 18px 22px; box-shadow: 0 1px 0 var(--hairline-strong); min-width: 0; }
+  .panel + .panel { margin-top: 14px; }
+  .panel p, .panel li { color: var(--ink); }
+  .panel .sub { margin-bottom: 10px; }
+
+  nav.top { position: sticky; top: 0; z-index: 5; background: color-mix(in srgb, var(--page) 92%, transparent);
+    -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+    margin: 20px -40px 0; padding: 10px 40px; display: flex; gap: 6px; flex-wrap: wrap; border-bottom: 1px solid var(--hairline); }
+  nav.top a { padding: 5px 12px; border-radius: 999px; background: var(--panel); color: var(--ink); text-decoration: none; font-size: 13px; font-weight: 600; box-shadow: 0 1px 0 var(--hairline-strong); white-space: nowrap; }
+  nav.top a:hover { background: var(--raised); }
+  nav.top a:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* KPI tiles */
+  .kpis { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin-top: 18px; }
+  .kpi { background: var(--panel); border-radius: 12px; padding: 14px 16px; box-shadow: 0 1px 0 var(--hairline-strong); }
+  .kpi .label { font-size: 12px; color: var(--ink-soft); display: flex; align-items: center; gap: 6px; }
+  .kpi .value { font-size: 22px; font-weight: 650; margin-top: 4px; line-height: 1.2; }
+  .kpi .delta { font-size: 12px; color: var(--ink-soft); margin-top: 2px; }
+  .sw { width: 9px; height: 9px; border-radius: 3px; display: inline-block; flex: none; }
+
+  /* Layout grids */
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .grid2 > *, .grid3 > *, .grid4 > * { min-width: 0; }
+  .grid2 .panel + .panel, .grid3 .panel + .panel, .grid4 .panel + .panel, .loop .panel + .panel { margin-top: 0; }
+  .loop { display: grid; grid-template-columns: minmax(0, 440px) 1fr; gap: 20px; align-items: start; }
+
+  /* Tables */
+  .tbl { overflow-x: auto; -webkit-overflow-scrolling: touch; margin-top: 8px; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  .tbl table { min-width: 520px; }
+  .tbl.narrow table { min-width: 0; }
+  .tbl.wide table { min-width: 680px; }
+  th, td { padding: 7px 10px; border-bottom: 1px solid var(--hairline); text-align: left; vertical-align: top; }
+  th { color: var(--ink-soft); font-weight: 600; font-size: 12.5px; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  tr:last-child td { border-bottom: 0; }
+  .foot { font-size: 12px; color: var(--ink-faint); margin-top: 10px; }
+  details { margin-top: 10px; }
+  summary { cursor: pointer; color: var(--ink-soft); font-size: 12.5px; font-weight: 600; }
+
+  /* Small pieces */
+  .tag { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 750; text-transform: uppercase; letter-spacing: .05em;
+    padding: 1px 8px; border-radius: 6px; background: var(--raised); color: var(--ink-soft); border: 1px solid var(--hairline-strong); white-space: nowrap; }
+  .tag.dec { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+  .tag.plan { background: transparent; border-style: dashed; }
+  .gr { display: inline-grid; place-items: center; min-width: 24px; height: 22px; padding: 0 5px; border-radius: 6px; font-weight: 800; font-size: 12px;
+    background: var(--raised); border: 1px solid var(--hairline-strong); color: var(--ink); }
+  .gr.s { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; flex: none; background: var(--c); }
+  .note { font-size: 12.5px; color: var(--ink-soft); background: var(--raised); border-radius: 10px; padding: 10px 14px; margin-top: 12px; }
+  .callout { border-left: 4px solid var(--accent); background: var(--accent-wash); padding: 12px 16px; border-radius: 10px; color: var(--ink); margin-top: 14px; }
+  .callout b:first-child { display: block; margin-bottom: 2px; }
+  .steps-mini { counter-reset: s; list-style: none; padding: 0; }
+  .steps-mini li { position: relative; padding-left: 30px; }
+  .steps-mini li::before { counter-increment: s; content: counter(s); position: absolute; left: 0; top: 1px; width: 20px; height: 20px; border-radius: 50%;
+    background: var(--accent); color: var(--accent-ink); font-size: 11px; font-weight: 800; display: grid; place-items: center; }
+  .tips li { margin-top: 6px; }
+  .panel h3 .tag { margin-left: 6px; vertical-align: 1px; }
+
+  /* Diagrams */
+  svg { display: block; width: 100%; height: auto; }
+  svg.tree { max-width: 480px; }
+  svg text { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .nd { fill: var(--raised); stroke: var(--hairline-strong); stroke-width: 1; }
+  .nd.hi { fill: var(--accent-wash); stroke: var(--accent); stroke-width: 1.5; }
+  .loopbox { fill: none; stroke: var(--accent); stroke-width: 1.5; stroke-dasharray: 5 4; }
+  .nt { fill: var(--ink); font-size: 14px; font-weight: 700; text-anchor: middle; }
+  .ns { fill: var(--ink-soft); font-size: 11px; text-anchor: middle; }
+  .lbl { fill: var(--ink-soft); font-size: 10.5px; font-weight: 750; letter-spacing: .06em; }
+  .ln { stroke: var(--ink-soft); stroke-width: 1.6; fill: none; }
+  .ah { fill: var(--ink-soft); }
+  .bdg { fill: var(--accent); }
+  .bt { fill: var(--accent-ink); font-size: 10.5px; font-weight: 800; text-anchor: middle; }
+  .pip-off { fill: var(--sunken); stroke: var(--hairline-strong); }
+  .ax { fill: var(--ink-soft); font-size: 10.5px; }
+  .axb { fill: var(--ink); font-size: 11px; font-weight: 650; text-anchor: middle; }
+  .camp { fill: var(--accent-wash); stroke: var(--accent); stroke-dasharray: 4 3; }
+  .camp.off { fill: var(--raised); stroke: var(--hairline-strong); }
+  .trk { fill: var(--sunken); }
+  .fill { fill: var(--accent); }
+  .tick { stroke: var(--ink-soft); stroke-width: 1.5; }
+  .tick.big { stroke: var(--ink); stroke-width: 2; }
+
+  /* Loop explanations */
+  .arrows { list-style: none; padding: 0; margin: 0; }
+  .arrows li { display: grid; grid-template-columns: 26px 1fr; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--hairline); margin: 0; }
+  .arrows li:last-child { border-bottom: 0; }
+  .arrows .n { width: 22px; height: 22px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; font-size: 11px; font-weight: 800; margin-top: 1px; }
+  .arrows b { display: block; }
+  .arrows span.t { color: var(--ink-soft); font-size: 13px; }
+
+  /* The calendar strip */
+  .cal { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)) minmax(0, 1.5fr); gap: 6px; margin-top: 4px; }
+  .cal .yr { font-size: 11px; font-weight: 750; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-soft); padding: 0 2px 4px;
+    border-bottom: 2px solid var(--hairline-strong); grid-row: 1; }
+  .cal .y1 { grid-column: 1 / 5; } .cal .y2 { grid-column: 5 / 9; } .cal .y3 { grid-column: 9 / 13; } .cal .y4 { grid-column: 13 / 14; border-bottom-color: var(--accent); }
+  .cell { grid-row: 2; background: var(--raised); border-radius: 10px; padding: 8px 8px 10px; display: flex; flex-direction: column; gap: 5px; min-height: 104px; border: 1px solid var(--hairline); }
+  .cell .sn { font-size: 12px; font-weight: 700; display: flex; justify-content: space-between; gap: 4px; }
+  .cell .sn i { font-style: normal; color: var(--ink-faint); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .cell .g { font-size: 11px; color: var(--ink-soft); display: flex; align-items: center; gap: 5px; line-height: 1.25; }
+  .cell .g .dot { width: 8px; height: 8px; }
+  .cell.obj { background: var(--panel); border: 1.5px solid var(--hairline-strong); }
+  .cell.fin { background: var(--accent-wash); border: 1.5px solid var(--accent); }
+  .ob { font-size: 11px; font-weight: 750; padding: 2px 6px; border-radius: 6px; background: var(--ink); color: var(--panel); align-self: flex-start; line-height: 1.3; }
+  .ob.g3 { background: var(--raised); color: var(--ink); border: 1.5px solid var(--neutral-strong); }
+  .ob.g2 { background: var(--neutral-strong); color: #fff; }
+  .ob.g1 { background: var(--ink); color: var(--panel); }
+  .fh { width: 10px; height: 10px; border-radius: 2px; background: var(--turf); display: inline-block; flex: none; transform: rotate(45deg); }
+  .c1 { grid-column: 1; } .c2 { grid-column: 2; } .c3 { grid-column: 3; } .c4 { grid-column: 4; } .c5 { grid-column: 5; } .c6 { grid-column: 6; } .c7 { grid-column: 7; }
+  .c8 { grid-column: 8; } .c9 { grid-column: 9; } .c10 { grid-column: 10; } .c11 { grid-column: 11; } .c12 { grid-column: 12; } .c13 { grid-column: 13; }
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 12px; color: var(--ink-soft); margin: 12px 0 0; align-items: center; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+
+  /* Year cards */
+  .yc { border-top: 4px solid var(--tc, var(--neutral-strong)); }
+  .yc .n { font-size: 11px; font-weight: 750; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-soft); }
+  .yc b.big { display: block; font-size: 16px; margin: 2px 0 6px; }
+  .yc p { font-size: 13px; }
+
+  /* Training Yard ladder and Furlong chain */
+  .ladder { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 8px 0 4px; }
+  .rung { display: inline-flex; flex-direction: column; align-items: center; min-width: 62px; padding: 6px 8px; border-radius: 9px; background: var(--raised);
+    border: 2px solid var(--rc, var(--hairline-strong)); font-size: 11px; color: var(--ink-soft); line-height: 1.3; }
+  .rung b { color: var(--ink); font-size: 12.5px; }
+  .ladder .ar { color: var(--ink-faint); font-size: 12px; }
+  .chain { display: flex; gap: 6px; flex-wrap: wrap; margin: 8px 0 4px; align-items: center; }
+  .card { width: 38px; height: 52px; border-radius: 7px; display: grid; place-items: center; font-weight: 800; font-size: 17px; color: #fff; background: var(--c);
+    box-shadow: inset 0 0 0 2px rgb(255 255 255 / .25); }
+  .chain .ar { color: var(--ink-faint); font-size: 12px; }
+
+  /* Formula chain */
+  .formula { display: flex; flex-wrap: wrap; gap: 6px; align-items: stretch; margin-top: 10px; }
+  .formula .f { background: var(--raised); border-radius: 10px; padding: 8px 10px; font-size: 12.5px; border: 1px solid var(--hairline-strong); flex: 1 1 150px; }
+  .formula .f b { display: block; font-size: 13px; }
+  .formula .f span { color: var(--ink-soft); }
+  .formula .op { align-self: center; font-weight: 800; color: var(--ink-faint); }
+
+  /* Rival strength bars (one series: the field's stat before its grade's handicap) */
+  .bars { display: grid; gap: 4px; margin-top: 8px; }
+  .br { display: grid; grid-template-columns: 112px 1fr 40px; gap: 8px; align-items: center; font-size: 12.5px; }
+  .br .bl { color: var(--ink-soft); white-space: nowrap; }
+  .br .btk { height: 12px; display: block; }
+  .br .btk i { display: block; height: 12px; background: var(--accent); border-radius: 0 4px 4px 0; }
+  .br .bv { text-align: right; font-variant-numeric: tabular-nums; font-weight: 650; }
+  .br.yr-gap { margin-top: 6px; }
+  .br:hover .btk i { background: var(--accent-strong); }
+
+  /* Walkthrough */
+  .walk { list-style: none; padding: 0; margin: 0; counter-reset: w; }
+  .walk > li { position: relative; background: var(--panel); border-radius: 12px; padding: 12px 16px 12px 54px; box-shadow: 0 1px 0 var(--hairline-strong); margin-top: 10px; }
+  .walk > li::before { counter-increment: w; content: counter(w); position: absolute; left: 14px; top: 12px; width: 28px; height: 28px; border-radius: 50%;
+    background: var(--ink); color: var(--panel); font-weight: 800; font-size: 13px; display: grid; place-items: center; }
+  .walk > li b.h { display: block; font-size: 14.5px; margin-bottom: 2px; }
+  .walk > li p { color: var(--ink-soft); font-size: 13px; }
+  .walk > li .tag { margin-top: 6px; }
+  .walk .dec-line { display: block; margin-top: 6px; font-size: 13px; color: var(--ink); }
+
+  /* Tips and roadmap */
+  .tip b { display: block; font-size: 14px; margin-bottom: 3px; }
+  .tip p { font-size: 13px; color: var(--ink-soft); }
+  .rm { border: 1.5px dashed var(--hairline-strong); background: transparent; box-shadow: none; }
+  .rm .top { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .rm b.big { font-size: 16px; }
+  .rm p { font-size: 13px; color: var(--ink-soft); }
+
+  @media (max-width: 1100px) {
+    .kpis { grid-template-columns: repeat(3, 1fr); }
+    .grid4 { grid-template-columns: repeat(2, 1fr); }
+    .grid3 { grid-template-columns: repeat(2, 1fr); }
+    .cal { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .cal > * { grid-column: auto !important; grid-row: auto !important; }
+    .cal .yr { grid-column: 1 / -1 !important; margin-top: 6px; }
+    .cal .cell.fin { grid-column: 1 / -1 !important; min-height: 0; }
+  }
+  @media (max-width: 900px) {
+    .loop { grid-template-columns: 1fr; }
+    .loop .panel:first-child svg { max-width: 440px; margin: 0 auto; }
+  }
+  @media (max-width: 700px) {
+    main { padding: 20px 16px 64px; }
+    h1 { font-size: 24px; }
+    h2 { font-size: 18px; }
+    nav.top { margin: 14px -16px 0; padding: 8px 16px; gap: 5px; }
+    nav.top a { font-size: 12px; padding: 4px 10px; }
+    section { margin-top: 36px; scroll-margin-top: 112px; }
+    .panel { padding: 14px 16px; }
+    .kpis { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .kpi { padding: 12px 14px; }
+    .kpi .value { font-size: 20px; }
+    .grid2, .grid3, .grid4 { grid-template-columns: 1fr; }
+    .cell { min-height: 0; padding: 7px 7px 9px; }
+    .cal .cell.fin { flex-direction: row; flex-wrap: wrap; align-items: center; }
+    .cal .cell.fin .sn { flex-basis: 100%; }
+    .cell .g { font-size: 10.5px; }
+    .ob { font-size: 10.5px; padding: 1px 5px; }
+    .br { grid-template-columns: 96px 1fr 34px; font-size: 12px; }
+    .walk > li { padding: 12px 14px 12px 50px; }
+    .walk > li::before { left: 12px; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>Uma Racer: the career guide</h1>
+  <p class="lead">How the game fits together and how to take an Uma from her first unlock to a finished URA Finale career. Every
+    number here is one of the game's own rules, as released on 2026-11-05.</p>
+  <nav class="top" aria-label="Sections">
+    <a href="#now">Overview</a><a href="#loop">The loop</a><a href="#start">Getting started</a><a href="#calendar">Seasons</a>
+    <a href="#play">Play</a><a href="#upgrade">Upgrade</a><a href="#race">Race</a><a href="#resources">Resources</a>
+    <a href="#walkthrough">Walkthrough</a><a href="#tips">Tips</a><a href="#coming">Coming</a>
+  </nav>
+
+  <!-- 1. What Uma Racer is now -->
+  <section id="now" style="margin-top:24px">
+    <h2>What Uma Racer is now</h2>
+    <p class="sub">A racing game where each Uma's career is a run of short mini-games. You unlock Umas and support cards with
+      tickets, then take one Uma through three school years. Each season you play a stage, spend what it paid on her training
+      tree, and race her objectives. Win the URA Finals and her racing build is kept for good, and the tickets you earn unlock
+      the next Uma. There is no clock: nothing runs on timers, nothing refills overnight, and nothing limits how much you play.</p>
+    <div class="kpis">
+      <div class="kpi"><div class="label"><span class="sw" style="background:var(--ticket)"></span>Starting tickets</div>
+        <div class="value">20 · 24</div><div class="delta">Uma · Card Tickets</div></div>
+      <div class="kpi"><div class="label"><span class="sw" style="background:var(--accent)"></span>Seasons a career</div>
+        <div class="value">12 + Finale</div><div class="delta">3 school years × 4</div></div>
+      <div class="kpi"><div class="label"><span class="sw" style="background:var(--spd)"></span>Sessions in a tree</div>
+        <div class="value">108</div><div class="delta">100 pips + 2 Camps of 4</div></div>
+      <div class="kpi"><div class="label"><span class="sw" style="background:var(--wit)"></span>A stage</div>
+        <div class="value">3–7 min</div><div class="delta">turn-based; resumes if the app closes</div></div>
+      <div class="kpi"><div class="label"><span class="sw" style="background:var(--ink)"></span>Objectives</div>
+        <div class="value">6</div><div class="delta">1 G3 · 2 G2 · 3 G1, then the Finals</div></div>
+      <div class="kpi"><div class="label"><span class="sw" style="background:var(--neutral-strong)"></span>Timers</div>
+        <div class="value">None</div><div class="delta">no energy, no refills, no waiting</div></div>
+    </div>
+  </section>
+
+  <!-- 2. The game loop -->
+  <section id="loop">
+    <h2>The game loop</h2>
+    <p class="sub">One career is one Uma in one scenario. This release opens URA Finale. Follow the numbers.</p>
+    <div class="loop">
+      <div class="panel">
+        <svg viewBox="0 0 372 600" role="img" aria-labelledby="loop-t loop-d">
+          <title id="loop-t">The game loop</title>
+          <desc id="loop-d">Unlock Umas and cards with tickets, start a career, then each of twelve seasons loops Play, Upgrade, Race and Next season. After Senior Winter come the URA Finals, then the career is complete: her build is frozen and tickets are paid, which unlock the next Uma.</desc>
+          <defs>
+            <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0 0 L10 5 L0 10 z" class="ah"/>
+            </marker>
+          </defs>
+          <!-- Unlock -->
+          <rect x="50" y="10" width="230" height="56" rx="12" class="nd"/>
+          <text x="165" y="34" class="nt">Unlock</text>
+          <text x="165" y="53" class="ns">Umas and cards, one ticket each</text>
+          <line x1="165" y1="66" x2="165" y2="95" class="ln" marker-end="url(#arr)"/>
+          <circle cx="187" cy="81" r="9" class="bdg"/><text x="187" y="85" class="bt">1</text>
+          <!-- Start -->
+          <rect x="50" y="98" width="230" height="50" rx="12" class="nd"/>
+          <text x="165" y="119" class="nt">Start a career</text>
+          <text x="165" y="137" class="ns">her six objectives frozen</text>
+          <line x1="165" y1="148" x2="165" y2="179" class="ln" marker-end="url(#arr)"/>
+          <circle cx="187" cy="164" r="9" class="bdg"/><text x="187" y="168" class="bt">2</text>
+          <!-- The season loop -->
+          <rect x="8" y="182" width="314" height="222" rx="16" class="loopbox"/>
+          <text x="22" y="201" class="lbl">EACH SEASON · 12 TIMES</text>
+          <rect x="22" y="212" width="120" height="68" rx="12" class="nd"/>
+          <text x="82" y="236" class="nt">Play</text>
+          <text x="82" y="254" class="ns">one 3–7 min stage</text>
+          <text x="82" y="269" class="ns">graded D to S</text>
+          <rect x="188" y="212" width="120" height="68" rx="12" class="nd"/>
+          <text x="248" y="236" class="nt">Upgrade</text>
+          <text x="248" y="254" class="ns">pips in her tree</text>
+          <text x="248" y="269" class="ns">bonds · skills</text>
+          <rect x="188" y="322" width="120" height="68" rx="12" class="nd"/>
+          <text x="248" y="346" class="nt">Race</text>
+          <text x="248" y="364" class="ns">her objectives</text>
+          <text x="248" y="379" class="ns">retries are free</text>
+          <rect x="22" y="322" width="120" height="68" rx="12" class="nd"/>
+          <text x="82" y="346" class="nt">Next season</text>
+          <text x="82" y="364" class="ns">once every</text>
+          <text x="82" y="379" class="ns">objective is won</text>
+          <line x1="142" y1="246" x2="185" y2="246" class="ln" marker-end="url(#arr)"/>
+          <circle cx="164" cy="230" r="9" class="bdg"/><text x="164" y="234" class="bt">3</text>
+          <line x1="248" y1="280" x2="248" y2="319" class="ln" marker-end="url(#arr)"/>
+          <circle cx="268" cy="300" r="9" class="bdg"/><text x="268" y="304" class="bt">4</text>
+          <line x1="188" y1="356" x2="145" y2="356" class="ln" marker-end="url(#arr)"/>
+          <circle cx="164" cy="372" r="9" class="bdg"/><text x="164" y="376" class="bt">5</text>
+          <line x1="82" y1="322" x2="82" y2="283" class="ln" marker-end="url(#arr)"/>
+          <circle cx="62" cy="302" r="9" class="bdg"/><text x="62" y="306" class="bt">6</text>
+          <!-- The Finals -->
+          <line x1="165" y1="404" x2="165" y2="435" class="ln" marker-end="url(#arr)"/>
+          <circle cx="187" cy="420" r="9" class="bdg"/><text x="187" y="424" class="bt">7</text>
+          <text x="152" y="424" class="ns" style="text-anchor:end">after Senior Winter</text>
+          <rect x="50" y="438" width="230" height="56" rx="12" class="nd"/>
+          <text x="165" y="462" class="nt">URA Finals</text>
+          <text x="165" y="481" class="ns">a prep heat, then three rounds</text>
+          <line x1="165" y1="494" x2="165" y2="523" class="ln" marker-end="url(#arr)"/>
+          <circle cx="187" cy="509" r="9" class="bdg"/><text x="187" y="513" class="bt">8</text>
+          <rect x="50" y="526" width="230" height="64" rx="12" class="nd hi"/>
+          <text x="165" y="549" class="nt">Career complete</text>
+          <text x="165" y="567" class="ns">her racing build is frozen</text>
+          <text x="165" y="582" class="ns">+1 Uma Ticket · +2 Card Tickets</text>
+          <!-- Back to Unlock -->
+          <path d="M280 558 H340 V38 H283" class="ln" marker-end="url(#arr)"/>
+          <circle cx="340" cy="120" r="9" class="bdg"/><text x="340" y="124" class="bt">9</text>
+          <text transform="translate(358 320) rotate(-90)" class="ns">the next Uma, with the tickets earned</text>
+        </svg>
+      </div>
+      <div class="panel">
+        <ol class="arrows">
+          <li><span class="n">1</span><div><b>Unlock, then start</b><span class="t">Spend Uma Tickets in the Stable and Card Tickets in
+            the Card Library. An unlock is for good. A new account has 20 and 24.</span></div></li>
+          <li><span class="n">2</span><div><b>The career begins</b><span class="t">Her six objectives are frozen onto twelve
+            seasons and a Finale. Her deck, tree and wallet start empty.</span></div></li>
+          <li><span class="n">3</span><div><b>Play pays the wallet</b><span class="t">Training Yard pays drills, Furlong Hand pays
+            Bond, both pay SP. Play again any time: a replay pays like a first play.</span></div></li>
+          <li><span class="n">4</span><div><b>Upgrade by hand</b><span class="t">Drills buy pips, Bond fills bond tracks, SP buys
+            skills. Every pip shows its exact gain before you buy it.</span></div></li>
+          <li><span class="n">5</span><div><b>Race until it's won</b><span class="t">A loss changes nothing and Retry is free. Each
+            objective's win pays a Card Ticket and SP.</span></div></li>
+          <li><span class="n">6</span><div><b>Next season</b><span class="t">Opens once every objective in the season is won. A
+            season with no race can move on at once.</span></div></li>
+          <li><span class="n">7</span><div><b>On to the URA Finals</b><span class="t">After Senior Winter, the button reads "On to
+            the URA Finals".</span></div></li>
+          <li><span class="n">8</span><div><b>Three rounds</b><span class="t">A Furlong Hand prep heat on the Finals' course, then
+            the Qualifier, Semifinal and Final, each retried until won.</span></div></li>
+          <li><span class="n">9</span><div><b>Done, and the next Uma</b><span class="t">Winning the Final freezes her build on her
+            profile and pays 1 Uma Ticket and 2 Card Tickets. With the six objectives' tickets, a career earns 8 Card Tickets
+            in all.</span></div></li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. Getting started -->
+  <section id="start">
+    <h2>Getting started</h2>
+    <p class="sub">The Hub has two pages. <b>Town Hall</b> holds the Stable, the Card Library and Account. <b>Career</b> holds
+      your careers and the two games. The raised Career button in the bottom bar opens the season of the career you started last.</p>
+    <div class="grid2">
+      <div class="panel">
+        <h3>Unlock Umas: the Stable</h3>
+        <ol class="steps-mini">
+          <li>Tap the <b>Uma Tickets</b> chip on the top bar. It opens the Stable's Locked tab.</li>
+          <li>Tap her face. The sheet shows her <b>aptitudes</b> (surface, distance, running style) and her <b>growth rates</b>.</li>
+          <li><b>Unlock · 1 Uma Ticket.</b> Then <b>Her profile</b>, where her career starts.</li>
+        </ol>
+        <p class="note">Unlocking is final: nothing is locked again and there is no refund. A completed career earns another
+          Uma Ticket.</p>
+      </div>
+      <div class="panel">
+        <h3>Unlock cards: the Card Library</h3>
+        <ol class="steps-mini">
+          <li>Tap the <b>Card Tickets</b> chip. Filter by the seven card types and the eight focus marks (four running styles,
+            four distances).</li>
+          <li>Open a card. Its page shows its <b>era</b> ("First usable in …", and whether URA Finale careers take it), its
+            <b>power</b> against its type's median, its effects at level 50 and its skills.</li>
+          <li><b>Unlock · 1 Card Ticket.</b> Every card counts at its top level, and cards are shared by all your Umas.</li>
+        </ol>
+      </div>
+      <div class="panel">
+        <h3>What to pick first</h3>
+        <ul class="tips">
+          <li><b>Cards URA Finale can use.</b> A career takes only cards of its scenario's era or older, and this release runs
+            URA Finale careers only. Later cards can be unlocked, but they wait for later scenarios.</li>
+          <li><b>A varied deck of six, with Speed in it.</b> Each card trains at its own type's branch. The Speed branch is
+            where most of her Speed comes from; the Guts and Wit branches add only a little.</li>
+          <li><b>Friend and Group cards</b> train at Wit and never reach friendship, but they are wild in both mini-games.</li>
+          <li><b>Umas whose aptitudes you like.</b> Her best surface and distances choose her objectives and the Finals' course.
+            Her growth rates add to every session of that stat.</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h3>Start a career</h3>
+        <ol class="steps-mini">
+          <li>From <b>her profile</b>: <b>Start career · URA Finale</b>. Or from <b>Careers → Start a career</b>: pick her, read
+            the six objectives she will get, then <b>Start career · URA Finale</b>.</li>
+          <li>Open <b>Upgrade → Deck</b> and pick six cards. Each posts to its own type's branch.</li>
+          <li>Back on her career page, the season card lights the next step.</li>
+        </ol>
+        <p class="note">Each Uma runs one career at a time and one URA Finale career in all; several Umas can run careers side
+          by side.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. The career, season by season -->
+  <section id="calendar">
+    <h2>The career, season by season</h2>
+    <p class="sub">Three school years of four seasons, then the Finale. Each objective sits in its race's real season of the
+      year. The strip below is an example placement; your Uma's seasons depend on her races.</p>
+    <div class="panel">
+      <div class="cal" role="list" aria-label="An example career calendar">
+        <div class="yr y1" role="presentation">Junior</div>
+        <div class="cell c1" role="listitem"><span class="sn">Spring <i>1</i></span><span class="g"><span class="dot" style="--c:var(--spd)"></span>Yard · Speed</span></div>
+        <div class="cell obj c2" role="listitem"><span class="sn">Summer <i>2</i></span><span class="g"><span class="fh"></span>Furlong Hand</span><span class="ob g3">G3 Maiden</span></div>
+        <div class="cell c3" role="listitem"><span class="sn">Autumn <i>3</i></span><span class="g"><span class="dot" style="--c:var(--pow)"></span>Yard · Power</span></div>
+        <div class="cell c4" role="listitem"><span class="sn">Winter <i>4</i></span><span class="g"><span class="dot" style="--c:var(--gut)"></span>Yard · Guts</span></div>
+        <div class="yr y2" role="presentation">Classic</div>
+        <div class="cell obj c5" role="listitem"><span class="sn">Spring <i>5</i></span><span class="g"><span class="fh"></span>Furlong Hand</span><span class="ob g2">G2 Trial</span></div>
+        <div class="cell c6" role="listitem"><span class="sn">Summer <i>6</i></span><span class="g"><span class="dot" style="--c:var(--spd)"></span>Yard · Speed</span></div>
+        <div class="cell obj c7" role="listitem"><span class="sn">Autumn <i>7</i></span><span class="g"><span class="fh"></span>Furlong Hand</span><span class="ob g2">G2 Trial</span></div>
+        <div class="cell c8" role="listitem"><span class="sn">Winter <i>8</i></span><span class="g"><span class="dot" style="--c:var(--pow)"></span>Yard · Power</span></div>
+        <div class="yr y3" role="presentation">Senior</div>
+        <div class="cell obj c9" role="listitem"><span class="sn">Spring <i>9</i></span><span class="g"><span class="fh"></span>Furlong Hand</span><span class="ob g1">G1 Main</span></div>
+        <div class="cell c10" role="listitem"><span class="sn">Summer <i>10</i></span><span class="g"><span class="dot" style="--c:var(--wit)"></span>Yard · Wit</span></div>
+        <div class="cell obj c11" role="listitem"><span class="sn">Autumn <i>11</i></span><span class="g"><span class="fh"></span>Furlong Hand</span><span class="ob g1">G1 Main</span></div>
+        <div class="cell obj c12" role="listitem"><span class="sn">Winter <i>12</i></span><span class="g"><span class="fh"></span>Furlong Hand</span><span class="ob g1">G1 Main</span></div>
+        <div class="yr y4" role="presentation">Finale</div>
+        <div class="cell fin c13" role="listitem"><span class="sn">URA Finals</span><span class="g"><span class="fh"></span>Prep heat</span><span class="ob g2">Qualifier G2</span><span class="ob g1">Semi G1</span><span class="ob g1">Final G1</span></div>
+      </div>
+      <div class="legend">
+        <span><span class="fh"></span>Furlong Hand: a season with an objective</span>
+        <span><span class="dot" style="--c:var(--neutral-strong)"></span>Training Yard, with the season's focus colour</span>
+        <span><span class="ob g3">G3</span><span class="ob g2">G2</span><span class="ob g1">G1</span>objectives</span>
+      </div>
+      <p class="foot">The Yard's focus turns Speed, Stamina, Power, Guts, Wit from Junior Spring, so Junior Summer would be Stamina,
+        Classic Spring Wit, Classic Autumn Stamina, Senior Spring Guts and so on. The example is the manual's: the Maiden in
+        summer, the Trials in spring and autumn, the Main G1s in spring, autumn and winter.</p>
+    </div>
+
+    <div class="grid2" style="margin-top:14px">
+      <div class="panel">
+        <h3>Where the objectives fall</h3>
+        <div class="tbl"><table>
+          <thead><tr><th>Stage</th><th>Race</th><th class="num">How many</th><th>Year</th></tr></thead>
+          <tbody>
+            <tr><td><b>Maiden</b></td><td>a G3 at her best distances, on her better surface</td><td class="num">1</td><td>Junior</td></tr>
+            <tr><td><b>Trials</b></td><td>a G2 at each of her two distances</td><td class="num">2</td><td>Classic</td></tr>
+            <tr><td><b>Main</b></td><td>G1s: the scenario's race set when one fits her, topped up from her own G1s</td><td class="num">3</td><td>the earliest Classic (Senior if it would come before the second Trial), the others Senior</td></tr>
+          </tbody>
+        </table></div>
+        <p class="foot">Two objectives may share a season. You must win every objective in a season to move on, and retries are
+          free.</p>
+      </div>
+      <div class="panel">
+        <h3>The URA Finals</h3>
+        <p class="small">A Furlong Hand prep heat on the Finals' course, then three races on that course, each retried until won.
+          The course is her best surface by aptitude, then her best distance on it. The Final's rivals are only lightly held back.</p>
+        <div class="tbl narrow"><table>
+          <thead><tr><th>Round</th><th>Field</th><th class="num">Rivals' handicap</th></tr></thead>
+          <tbody>
+            <tr><td>Qualifier</td><td>G2</td><td class="num">22%</td></tr>
+            <tr><td>Semifinal</td><td>G1</td><td class="num">17%</td></tr>
+            <tr><td>Final</td><td>G1</td><td class="num">10%</td></tr>
+          </tbody>
+        </table></div>
+        <p class="foot">The Qualifier and Semifinal pay nothing; winning the Final pays 1 Uma Ticket and 2 Card Tickets.</p>
+      </div>
+    </div>
+
+    <div class="grid4" style="margin-top:14px">
+      <div class="panel yc" style="--tc:var(--wit)"><span class="n">Junior · seasons 1–4</span><b class="big">The Maiden G3</b>
+        <p>Rivals are green: from 15% of a trained Uma in Spring to about half by Winter. Set the deck, play every Yard season,
+          start the branches she needs most and pour Bond toward one card's 80.</p></div>
+      <div class="panel yc" style="--tc:var(--spd)"><span class="n">Classic · seasons 5–8</span><b class="big">The two Trials G2s</b>
+        <p>Maybe the first Main G1 too. Rivals at 54% to 74%. Reach level 3 in a branch to open the Camps, bring more cards to
+          friendship and buy the first skills.</p></div>
+      <div class="panel yc" style="--tc:var(--sta)"><span class="n">Senior · seasons 9–12</span><b class="big">The Main G1s</b>
+        <p>Rivals at 76% to 98%: the real test. Replay the Yard before a hard G1, finish her key branches and spend her SP.</p></div>
+      <div class="panel yc" style="--tc:var(--accent)"><span class="n">Finale</span><b class="big">The URA Finals</b>
+        <p>Rivals at full strength. Play the prep heat, upgrade one last time, then win the three rounds.</p></div>
+    </div>
+  </section>
+
+  <!-- 5. Play -->
+  <section id="play">
+    <h2>Play: the mini-games</h2>
+    <p class="sub">A season's <b>Play</b> opens <b>Furlong Hand</b>, the prep heat on her objective's real course, when the season
+      holds an objective, and <b>Training Yard</b> otherwise. The header of her career page has <b>Play again</b> for both games
+      at any time: a replay pays like a first play and never moves the calendar.</p>
+    <div class="panel">
+      <h3>Grades and pay</h3>
+      <p class="small">Every play is graded D to S, and every play pays, D included: the game's pay at A × the grade's multiplier,
+        rounded half up.</p>
+      <div class="tbl wide"><table>
+        <thead><tr><th>Grade</th><th>Score ÷ target</th><th class="num">× pay</th><th class="num">Training Yard pays</th><th class="num">Furlong Hand pays</th><th>Furlong Hand finish</th></tr></thead>
+        <tbody>
+          <tr><td><span class="gr s">S</span></td><td>1.2+, or A with every bonus task</td><td class="num">1.2</td><td class="num">240 drills, 36 SP</td><td class="num">30 Bond, 24 SP</td><td>1st by 2 lengths or more, with every task</td></tr>
+          <tr><td><span class="gr">A</span></td><td>1+</td><td class="num">1</td><td class="num">200 drills, 30 SP</td><td class="num">25 Bond, 20 SP</td><td>1st</td></tr>
+          <tr><td><span class="gr">B</span></td><td>0.75+</td><td class="num">0.8</td><td class="num">160 drills, 24 SP</td><td class="num">20 Bond, 16 SP</td><td>2nd–3rd</td></tr>
+          <tr><td><span class="gr">C</span></td><td>0.5+</td><td class="num">0.6</td><td class="num">120 drills, 18 SP</td><td class="num">15 Bond, 12 SP</td><td>4th–5th</td></tr>
+          <tr><td><span class="gr">D</span></td><td>under 0.5</td><td class="num">0.25</td><td class="num">50 drills, 8 SP</td><td class="num">6 Bond, 5 SP</td><td>6th or worse</td></tr>
+        </tbody>
+      </table></div>
+      <p class="foot">On top, unscaled: 2 SP for each three-Rest clear in the Yard, and each Partner's SP Bonus the first time it
+        plays in Furlong Hand. <b>Practice</b> (offered before a play, and every play from the Hub's two game places) is graded and
+        pays nothing. A play left mid-way <b>resumes</b>: reopen the app and her season's Play reads Resume.</p>
+    </div>
+
+    <div class="grid2" style="margin-top:14px">
+      <div class="panel">
+        <h3>Training Yard <span class="tag">merge · pays drills</span></h3>
+        <ul>
+          <li>A <b>6 × 6 yard</b> and <b>60 placements</b>. Tap an empty cell to set the piece in hand; the next two are shown.</li>
+          <li><b>Three touching pieces</b> of one colour and frame merge one frame up, <b>on the cell just placed</b>. Cascades
+            resolve.</li>
+          <li><b>Hold</b> puts one piece aside; later holds swap it with the hand. One hold a placement.</li>
+          <li>Every piece set down pays 3 drills; every merge pays the frame it makes. Three touching rainbows clear for a
+            <b>Masterclass</b>.</li>
+          <li><b>Partners</b> are her deck cards: set down, one completes the best merge of its colour there and lifts it one more
+            frame (two at bond 80). Friend and Group Partners are wild.</li>
+          <li><b>Fatigue</b> (8% of pieces) drifts toward her best piece. Boxed in, it turns to <b>Rest</b>; three touching Rests
+            clear, with the Fatigue around them.</li>
+          <li>Grade A at <b>222 drills scored</b>. Tasks for S: gold in two colours, no Fatigue left, every Partner in a merge.</li>
+          <li>The 200 drills at A split by <b>the colours you scored</b>.</li>
+        </ul>
+        <div class="ladder" aria-label="The frames and their drills">
+          <span class="rung" style="--rc:var(--hairline-strong)"><b>Plain</b>3</span><span class="ar">×3 →</span>
+          <span class="rung" style="--rc:var(--bronze)"><b>Bronze</b>4</span><span class="ar">×3 →</span>
+          <span class="rung" style="--rc:var(--silver)"><b>Silver</b>12</span><span class="ar">×3 →</span>
+          <span class="rung" style="--rc:var(--gold)"><b>Gold</b>36</span><span class="ar">×3 →</span>
+          <span class="rung" style="--rc:var(--accent)"><b>Rainbow</b>108</span><span class="ar">×3 →</span>
+          <span class="rung" style="--rc:var(--ink)"><b>Masterclass</b>324</span>
+        </div>
+        <h3 style="margin-top:12px">Tips</h3>
+        <ul class="tips">
+          <li><b>Merge what you want to buy.</b> The pay follows the colours you scored, so a yard of Stamina pays Stamina drills.</li>
+          <li><b>Save Partners for a pair.</b> Beside two plain pieces of its colour a Partner makes silver at once, gold when
+            bonded. The higher the pair, the bigger the jump.</li>
+          <li><b>Use Hold</b> to keep a Partner until its spot is ready.</li>
+          <li><b>Box Fatigue in early.</b> It walks toward your best piece; trapped, it becomes Rest, and three Rests clear for 2 SP.</li>
+          <li><b>Aim the third piece.</b> The merge lands where you place it, so place it next to the next pair up to chain a cascade.</li>
+        </ul>
+      </div>
+
+      <div class="panel">
+        <h3>Furlong Hand <span class="tag">card race · pays Bond</span></h3>
+        <ul>
+          <li>A card race on her objective's <b>real course</b>: Sprint 3, Mile 4, Medium 5 or Long 6 legs, then the <b>spurt</b>.
+            Each leg is a straight, a corner or a climb.</li>
+          <li>Before each spread, pick a <b>line</b>: Rail (+1 to the leg's colour: Speed on a straight, Power on a corner or
+            climb), Middle, or Outside (Speed +1, costs 1 Breath).</li>
+          <li>A spread is <b>four columns three deep</b> (four deep in the spurt). Play a front card of the <b>lead's colour</b>
+            or <b>exactly one higher</b> (6 is followed by 1).</li>
+          <li><b>Tap to run</b> a card for ground; <b>swipe down to bank</b> it for +1 Drive. A chain of four: +1 Drive. A cleared
+            spread: +2 Drive.</li>
+          <li>Stuck? <b>Flip</b> a draw card for −1 Breath. At 0 Breath, Speed and Power yields halve. One <b>free redraw</b> a
+            spread, before you play.</li>
+          <li>End each leg in her style's <b>band</b> (Front 1–2, Pace 2–4, Late 4–7, End 6–9): +1 Drive; outside it, −1 Breath.</li>
+          <li>The spurt runs every card × (12 + Drive) ÷ 12. Every rival's next move is shown: surge, hold, fade or closes the rail.</li>
+          <li>1st is A. It <b>never changes the real race</b>, and a loss still pays.</li>
+        </ul>
+        <div class="chain" aria-label="A chain: 3, 4, 4, 5">
+          <span class="card" style="--c:var(--spd)">3</span><span class="ar">→</span>
+          <span class="card" style="--c:var(--spd)">4</span><span class="ar">→</span>
+          <span class="card" style="--c:var(--pow)">4</span><span class="ar">→</span>
+          <span class="card" style="--c:var(--pow)">5</span>
+          <span class="muted small" style="margin-left:6px">one higher, same value, one higher: a chain of four</span>
+        </div>
+        <h3 style="margin-top:12px">Tips</h3>
+        <ul class="tips">
+          <li><b>Redraw a poor spread</b> before touching it: the free redraw is only offered before the first card or flip.</li>
+          <li><b>Bank to stay in band.</b> When running a card would carry her past her band's places, bank it instead: Drive
+            now, a bigger spurt later.</li>
+          <li><b>Read the terrain.</b> Rail on a straight lifts Speed cards, on a corner or climb Power cards. When a rival
+            closes the rail, take the middle or the outside.</li>
+          <li><b>Guard Breath.</b> Flips, the outside and legs out of band all cost it. Guts cards keep full yield at 0.</li>
+          <li><b>Play every Partner.</b> It's a bonus task, a Partner runs a point more, and a bonded one lights the next two
+            cards of its chain for double.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6. Upgrade -->
+  <section id="upgrade">
+    <h2>Upgrade: spending what you earned</h2>
+    <p class="sub">Upgrade has four tabs: <b>Tree · Deck · Bonds · Skills</b>. Each tab's label counts what she can buy there now.
+      Nothing is random, and what you see previewed is what you get.</p>
+    <div class="grid2">
+      <div class="panel">
+        <h3>The tree</h3>
+        <svg viewBox="0 0 345 196" role="img" aria-labelledby="tree-t tree-d" class="tree">
+          <title id="tree-t">An example tree, mid-career</title>
+          <desc id="tree-d">Five branches, each five levels of four pips, level 5 on top. Pip costs rise from 20 drills at level 1 to 28 at level 5. Two Camp slots sit below.</desc>
+          <text x="96" y="14" class="axb">Speed</text><text x="150" y="14" class="axb">Stamina</text><text x="204" y="14" class="axb">Power</text>
+          <text x="258" y="14" class="axb">Guts</text><text x="312" y="14" class="axb">Wit</text>
+          <rect x="72" y="20" width="49" height="3" rx="1.5" style="fill:var(--spd)"/><rect x="126" y="20" width="49" height="3" rx="1.5" style="fill:var(--sta)"/>
+          <rect x="180" y="20" width="49" height="3" rx="1.5" style="fill:var(--pow)"/><rect x="234" y="20" width="49" height="3" rx="1.5" style="fill:var(--gut)"/>
+          <rect x="288" y="20" width="49" height="3" rx="1.5" style="fill:var(--wit)"/>
+          <text x="4" y="40" class="ax">Lv 5 · 28</text><text x="4" y="60" class="ax">Lv 4 · 26</text><text x="4" y="80" class="ax">Lv 3 · 24</text>
+          <text x="4" y="100" class="ax">Lv 2 · 22</text><text x="4" y="120" class="ax">Lv 1 · 20</text>
+          <!-- pips drawn below: Speed 12 bought, Stamina 8, Power 4, Guts 0, Wit 6 (an example) -->
+          <g>
+            <!-- Speed: rows L1-L3 bought, L4 first pip next -->
+            <g style="fill:var(--spd)">
+              <rect x="72" y="111" width="10" height="10" rx="2.5"/><rect x="85" y="111" width="10" height="10" rx="2.5"/><rect x="98" y="111" width="10" height="10" rx="2.5"/><rect x="111" y="111" width="10" height="10" rx="2.5"/>
+              <rect x="72" y="91" width="10" height="10" rx="2.5"/><rect x="85" y="91" width="10" height="10" rx="2.5"/><rect x="98" y="91" width="10" height="10" rx="2.5"/><rect x="111" y="91" width="10" height="10" rx="2.5"/>
+              <rect x="72" y="71" width="10" height="10" rx="2.5"/><rect x="85" y="71" width="10" height="10" rx="2.5"/><rect x="98" y="71" width="10" height="10" rx="2.5"/><rect x="111" y="71" width="10" height="10" rx="2.5"/>
+            </g>
+            <rect x="72.75" y="51.75" width="8.5" height="8.5" rx="2" style="fill:none;stroke:var(--spd);stroke-width:1.5"/>
+            <g class="pip-off">
+              <rect x="85" y="51" width="10" height="10" rx="2.5"/><rect x="98" y="51" width="10" height="10" rx="2.5"/><rect x="111" y="51" width="10" height="10" rx="2.5"/>
+              <rect x="72" y="31" width="10" height="10" rx="2.5"/><rect x="85" y="31" width="10" height="10" rx="2.5"/><rect x="98" y="31" width="10" height="10" rx="2.5"/><rect x="111" y="31" width="10" height="10" rx="2.5"/>
+            </g>
+            <!-- Stamina: L1-L2 bought -->
+            <g style="fill:var(--sta)">
+              <rect x="126" y="111" width="10" height="10" rx="2.5"/><rect x="139" y="111" width="10" height="10" rx="2.5"/><rect x="152" y="111" width="10" height="10" rx="2.5"/><rect x="165" y="111" width="10" height="10" rx="2.5"/>
+              <rect x="126" y="91" width="10" height="10" rx="2.5"/><rect x="139" y="91" width="10" height="10" rx="2.5"/><rect x="152" y="91" width="10" height="10" rx="2.5"/><rect x="165" y="91" width="10" height="10" rx="2.5"/>
+            </g>
+            <rect x="126.75" y="71.75" width="8.5" height="8.5" rx="2" style="fill:none;stroke:var(--sta);stroke-width:1.5"/>
+            <g class="pip-off">
+              <rect x="139" y="71" width="10" height="10" rx="2.5"/><rect x="152" y="71" width="10" height="10" rx="2.5"/><rect x="165" y="71" width="10" height="10" rx="2.5"/>
+              <rect x="126" y="51" width="10" height="10" rx="2.5"/><rect x="139" y="51" width="10" height="10" rx="2.5"/><rect x="152" y="51" width="10" height="10" rx="2.5"/><rect x="165" y="51" width="10" height="10" rx="2.5"/>
+              <rect x="126" y="31" width="10" height="10" rx="2.5"/><rect x="139" y="31" width="10" height="10" rx="2.5"/><rect x="152" y="31" width="10" height="10" rx="2.5"/><rect x="165" y="31" width="10" height="10" rx="2.5"/>
+            </g>
+            <!-- Power: L1 bought -->
+            <g style="fill:var(--pow)">
+              <rect x="180" y="111" width="10" height="10" rx="2.5"/><rect x="193" y="111" width="10" height="10" rx="2.5"/><rect x="206" y="111" width="10" height="10" rx="2.5"/><rect x="219" y="111" width="10" height="10" rx="2.5"/>
+            </g>
+            <rect x="180.75" y="91.75" width="8.5" height="8.5" rx="2" style="fill:none;stroke:var(--pow);stroke-width:1.5"/>
+            <g class="pip-off">
+              <rect x="193" y="91" width="10" height="10" rx="2.5"/><rect x="206" y="91" width="10" height="10" rx="2.5"/><rect x="219" y="91" width="10" height="10" rx="2.5"/>
+              <rect x="180" y="71" width="10" height="10" rx="2.5"/><rect x="193" y="71" width="10" height="10" rx="2.5"/><rect x="206" y="71" width="10" height="10" rx="2.5"/><rect x="219" y="71" width="10" height="10" rx="2.5"/>
+              <rect x="180" y="51" width="10" height="10" rx="2.5"/><rect x="193" y="51" width="10" height="10" rx="2.5"/><rect x="206" y="51" width="10" height="10" rx="2.5"/><rect x="219" y="51" width="10" height="10" rx="2.5"/>
+              <rect x="180" y="31" width="10" height="10" rx="2.5"/><rect x="193" y="31" width="10" height="10" rx="2.5"/><rect x="206" y="31" width="10" height="10" rx="2.5"/><rect x="219" y="31" width="10" height="10" rx="2.5"/>
+            </g>
+            <!-- Guts: none bought -->
+            <rect x="234.75" y="111.75" width="8.5" height="8.5" rx="2" style="fill:none;stroke:var(--gut);stroke-width:1.5"/>
+            <g class="pip-off">
+              <rect x="247" y="111" width="10" height="10" rx="2.5"/><rect x="260" y="111" width="10" height="10" rx="2.5"/><rect x="273" y="111" width="10" height="10" rx="2.5"/>
+              <rect x="234" y="91" width="10" height="10" rx="2.5"/><rect x="247" y="91" width="10" height="10" rx="2.5"/><rect x="260" y="91" width="10" height="10" rx="2.5"/><rect x="273" y="91" width="10" height="10" rx="2.5"/>
+              <rect x="234" y="71" width="10" height="10" rx="2.5"/><rect x="247" y="71" width="10" height="10" rx="2.5"/><rect x="260" y="71" width="10" height="10" rx="2.5"/><rect x="273" y="71" width="10" height="10" rx="2.5"/>
+              <rect x="234" y="51" width="10" height="10" rx="2.5"/><rect x="247" y="51" width="10" height="10" rx="2.5"/><rect x="260" y="51" width="10" height="10" rx="2.5"/><rect x="273" y="51" width="10" height="10" rx="2.5"/>
+              <rect x="234" y="31" width="10" height="10" rx="2.5"/><rect x="247" y="31" width="10" height="10" rx="2.5"/><rect x="260" y="31" width="10" height="10" rx="2.5"/><rect x="273" y="31" width="10" height="10" rx="2.5"/>
+            </g>
+            <!-- Wit: 6 bought (L1 and half of L2) -->
+            <g style="fill:var(--wit)">
+              <rect x="288" y="111" width="10" height="10" rx="2.5"/><rect x="301" y="111" width="10" height="10" rx="2.5"/><rect x="314" y="111" width="10" height="10" rx="2.5"/><rect x="327" y="111" width="10" height="10" rx="2.5"/>
+              <rect x="288" y="91" width="10" height="10" rx="2.5"/><rect x="301" y="91" width="10" height="10" rx="2.5"/>
+            </g>
+            <rect x="314.75" y="91.75" width="8.5" height="8.5" rx="2" style="fill:none;stroke:var(--wit);stroke-width:1.5"/>
+            <g class="pip-off">
+              <rect x="327" y="91" width="10" height="10" rx="2.5"/>
+              <rect x="288" y="71" width="10" height="10" rx="2.5"/><rect x="301" y="71" width="10" height="10" rx="2.5"/><rect x="314" y="71" width="10" height="10" rx="2.5"/><rect x="327" y="71" width="10" height="10" rx="2.5"/>
+              <rect x="288" y="51" width="10" height="10" rx="2.5"/><rect x="301" y="51" width="10" height="10" rx="2.5"/><rect x="314" y="51" width="10" height="10" rx="2.5"/><rect x="327" y="51" width="10" height="10" rx="2.5"/>
+              <rect x="288" y="31" width="10" height="10" rx="2.5"/><rect x="301" y="31" width="10" height="10" rx="2.5"/><rect x="314" y="31" width="10" height="10" rx="2.5"/><rect x="327" y="31" width="10" height="10" rx="2.5"/>
+            </g>
+          </g>
+          <!-- Camps -->
+          <text x="4" y="158" class="ax">Camps</text>
+          <rect x="72" y="140" width="128" height="30" rx="8" class="camp"/>
+          <text x="136" y="159" class="ns" style="fill:var(--ink)">Camp 1 · Speed</text>
+          <rect x="209" y="140" width="128" height="30" rx="8" class="camp off"/>
+          <text x="273" y="159" class="ns">Camp 2 · open</text>
+          <text x="4" y="188" class="ax">An example: a branch passed level 3, so the Camps opened.</text>
+        </svg>
+        <ul style="margin-top:10px">
+          <li><b>5 branches × 5 levels × 4 pips = 100 pips.</b> A pip is one training session. Pips open in order; a level opens
+            when the four below are bought.</li>
+          <li><b>A pip costs drills of its branch's colour</b>: 20, 22, 24, 26, 28 by level. A full branch is 480 drills.</li>
+          <li><b>Energy Cost Reduction</b> on the cards posted to a branch cuts its pip cost by their summed percent, rounded up.
+            Wit Friendship Recovery takes whole drills off a Wit pip while its card is in friendship. A pip never costs less than
+            1 drill.</li>
+          <li><b>Two Camps</b> open once any branch reaches level 3 (its first eight pips). Each is four level-5 sessions in the
+            branch you pick, 112 drills before cuts. They can share a branch.</li>
+          <li><b>Every pip previews</b> its level, cost, gain (each stat and SP) and the part her caps (1,200 a stat) would throw
+            away, in warning ink. Buying pays exactly the preview. <b>Buy row</b> buys the rest of a level at once.</li>
+        </ul>
+      </div>
+
+      <div class="panel">
+        <h3>What a session pays</h3>
+        <p class="small">Each pip pays its branch's base at that level, built up by the cards posted there and by her, rounded down
+          per stat:</p>
+        <div class="formula">
+          <div class="f"><b>Base + Stat Bonus</b><span>the branch's base at the pip's level, plus the posted cards' flat bonus</span></div>
+          <span class="op">×</span>
+          <div class="f"><b>Friendship</b><span>each own-type card at bond 80+ on its own branch</span></div>
+          <span class="op">×</span>
+          <div class="f"><b>Mood</b><span>always Great: +20%, scaled by Mood Effect</span></div>
+          <span class="op">×</span>
+          <div class="f"><b>Training Effectiveness</b><span>summed across the cards there</span></div>
+          <span class="op">×</span>
+          <div class="f"><b>+5% a card</b><span>for each card posted to the branch</span></div>
+          <span class="op">×</span>
+          <div class="f"><b>Growth</b><span>her growth rate for that stat (not SP)</span></div>
+        </div>
+        <div class="tbl narrow"><table>
+          <thead><tr><th>Branch</th><th>Trains, level 1 → 5</th><th class="num">SP</th></tr></thead>
+          <tbody>
+            <tr><td><span class="dot" style="--c:var(--spd)"></span> Speed</td><td>Speed 11 → 15, Power 6 → 8</td><td class="num">4</td></tr>
+            <tr><td><span class="dot" style="--c:var(--sta)"></span> Stamina</td><td>Stamina 10 → 14, Guts 6 → 8</td><td class="num">4</td></tr>
+            <tr><td><span class="dot" style="--c:var(--pow)"></span> Power</td><td>Power 9 → 13, Stamina 6 → 8</td><td class="num">4</td></tr>
+            <tr><td><span class="dot" style="--c:var(--gut)"></span> Guts</td><td>Guts 8 → 13, Speed 5 → 6, Power 5</td><td class="num">4</td></tr>
+            <tr><td><span class="dot" style="--c:var(--wit)"></span> Wit</td><td>Wit 10 → 14, Speed 2 → 4</td><td class="num">5</td></tr>
+          </tbody>
+        </table></div>
+        <p class="foot">The base each session pays before the cards. A Stat Bonus only counts on a stat that branch trains.</p>
+        <details><summary>A worked example, with made-up cards</summary>
+          <p class="small" style="margin-top:6px">A Speed level-2 pip (12 Speed, 6 Power, 4 SP) for an Uma with +20% Speed growth,
+            with three cards posted to Speed: A (Speed type, bond 85), B (Speed type, bond 60) and C (a Wit card posted off type).
+            Their friendship (A only), mood, effectiveness and headcount multiply to 2.35. The pip pays <b>36 Speed, 16 Power and
+            11 SP</b> for 19 drills. Once B reaches bond 80 it pays 47 / 21 / 15, and every pip already bought rises with it.</p>
+        </details>
+        <div class="callout"><b>Order never matters.</b>What bought pips pay is worked out from the deck as it stands. Swap a card,
+          move one, or bring one to bond 80, and every bought and open pip changes at once. Nothing is lost by buying early.</div>
+      </div>
+    </div>
+
+    <div class="grid3" style="margin-top:14px">
+      <div class="panel">
+        <h3>Deck and posting</h3>
+        <ul>
+          <li><b>Six owned SSRs</b> whose era allows the scenario (era 1 for URA Finale). Each counts at level 50.</li>
+          <li>Each card trains at <b>one branch</b>: its own type's by default. Friend and Group cards go to Wit.</li>
+          <li>A branch <b>seats five</b>. A new card whose branch is full goes to the first with a free seat.</li>
+          <li>Tap a deck card for the <b>post sheet</b>: the five branches with their seats, or Take out of her deck.</li>
+          <li>Changing the deck <b>keeps every pip</b>; their pay is read again from the new deck.</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h3>Bonds</h3>
+        <svg viewBox="0 0 330 74" role="img" aria-labelledby="bond-t">
+          <title id="bond-t">A bond track from 0 to 100: a hint every 20, friendship at 80, event skills at 100</title>
+          <text x="258" y="14" class="ax" style="text-anchor:middle;fill:var(--ink);font-weight:650">80 friendship</text>
+          <rect x="10" y="22" width="310" height="12" rx="6" class="trk"/>
+          <rect x="10" y="22" width="180" height="12" rx="6" class="fill"/>
+          <line x1="72" y1="18" x2="72" y2="38" class="tick"/><line x1="134" y1="18" x2="134" y2="38" class="tick"/>
+          <line x1="196" y1="18" x2="196" y2="38" class="tick"/><line x1="258" y1="18" x2="258" y2="38" class="tick big"/>
+          <line x1="319" y1="18" x2="319" y2="38" class="tick big"/>
+          <text x="10" y="52" class="ax">0</text>
+          <text x="72" y="52" class="ax" style="text-anchor:middle">hint</text><text x="134" y="52" class="ax" style="text-anchor:middle">hint</text>
+          <text x="196" y="52" class="ax" style="text-anchor:middle">hint</text>
+          <text x="320" y="52" class="ax" style="text-anchor:end;fill:var(--ink);font-weight:650">100 events</text>
+          <text x="10" y="68" class="ax">starts at the card's Initial Friendship Gauge</text>
+        </svg>
+        <ul>
+          <li>One track <b>per Uma, per tier, per card</b>, 0 to 100. Pour Bond into one card at a time; Pour is preselected to
+            reach the next stop.</li>
+          <li><b>A hint</b> every 20 bond (sooner with Hint Frequency: every 14 at 40%, every 10 at 100%): the card's next hint skill,
+            plus any stat or SP rewards it has.</li>
+          <li><b>80, friendship:</b> it multiplies sessions at its own type's branch.</li>
+          <li><b>100:</b> its event skills are hinted, golds included.</li>
+          <li>What hints give stays hers for the tier, even if the card leaves her deck.</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h3>Skills</h3>
+        <ul>
+          <li><b>Her library:</b> her own skills, plus every skill her bond tracks hinted (a hinted gold brings its white). Her
+            unique is equipped on its own.</li>
+          <li><b>SP cap:</b> a URA Finale career can spend <b>2,000 SP</b>. Up to 64 skills.</li>
+          <li><b>A gold needs its white</b>, and a ◎ its ○: buy the lower one first.</li>
+          <li>Skills that do nothing in this game's races can't be bought.</li>
+        </ul>
+        <div class="tbl narrow"><table>
+          <thead><tr><th>Hint level</th><th class="num">Discount</th><th class="num">A 100 SP skill</th></tr></thead>
+          <tbody>
+            <tr><td>0</td><td class="num">0%</td><td class="num">100</td></tr>
+            <tr><td>1</td><td class="num">10%</td><td class="num">90</td></tr>
+            <tr><td>2</td><td class="num">20%</td><td class="num">80</td></tr>
+            <tr><td>3</td><td class="num">30%</td><td class="num">70</td></tr>
+            <tr><td>4</td><td class="num">35%</td><td class="num">65</td></tr>
+            <tr><td>5</td><td class="num">40%</td><td class="num">60</td></tr>
+          </tbody>
+        </table></div>
+        <p class="foot">Hints for one skill from several cards add up, to level 5.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7. Race -->
+  <section id="race">
+    <h2>Race: objectives and the Finals</h2>
+    <p class="sub">Objectives run on the full race engine with her racing build. Mini-games never change it: only what you bought
+      does.</p>
+    <div class="grid2">
+      <div class="panel">
+        <h3>From the sheet to the result</h3>
+        <ol class="steps-mini">
+          <li><b>The race sheet:</b> the race (grade, surface, metres, venue), her racing build as the race reads it (five stats,
+            this race's surface and distance grades, her skills), her <b>running style</b> with her grade in each, her best
+            preselected, and the field by gate.</li>
+          <li><b>Race</b> runs it. The playback shows the leg, the metres to go, her place and HP; 1× or 2×, and <b>Skip</b>.</li>
+          <li><b>The result:</b> her place, the objective's status, what the win paid and the field with margins.</li>
+          <li>A loss offers <b>Retry</b> at once: the next attempt is a new race. A win <b>Continue</b>s to her career.</li>
+        </ol>
+        <p class="note">She races with her stats (capped at 1,200), her aptitudes for the race, her unique at level 5 and the
+          skills she bought; a gold races in place of its white. The same attempt is the same race on every device. Changing her
+          style redraws the field.</p>
+      </div>
+      <div class="panel">
+        <h3>What a win pays</h3>
+        <div class="tbl narrow"><table>
+          <thead><tr><th>Win</th><th>Pays</th></tr></thead>
+          <tbody>
+            <tr><td>A G3 objective</td><td>1 Card Ticket + 40 SP × (1 + the deck's Race Bonus)</td></tr>
+            <tr><td>A G2 objective</td><td>1 Card Ticket + 60 SP × (1 + Race Bonus)</td></tr>
+            <tr><td>A G1 objective</td><td>1 Card Ticket + 100 SP × (1 + Race Bonus)</td></tr>
+            <tr><td>The URA Finals</td><td>1 Uma Ticket + 2 Card Tickets</td></tr>
+          </tbody>
+        </table></div>
+        <p class="foot">Tickets go to your account; SP goes to her career's wallet. An objective is raced until won and never
+          again.</p>
+        <h3 style="margin-top:14px">Rivals' handicap by grade</h3>
+        <div class="tbl narrow"><table>
+          <thead><tr><th>Field</th><th class="num">G3</th><th class="num">G2</th><th class="num">G1</th><th class="num">Final</th></tr></thead>
+          <tbody><tr><td>Rivals race weaker by</td><td class="num">38%</td><td class="num">22%</td><td class="num">17%</td><td class="num">10%</td></tr></tbody>
+        </table></div>
+      </div>
+    </div>
+    <div class="panel" style="margin-top:14px">
+      <h3>Rivals get stronger as the career goes on</h3>
+      <p class="small muted">The field's stat in each season, before its grade's handicap: the typical career's average stat at
+        that point, out of 559 at the Finale.</p>
+      <div class="bars" role="list" aria-label="Field stat by season">
+        <div class="br" role="listitem" title="Junior Spring: 84 (0.150 of the Finale's)"><span class="bl">Junior Spring</span><span class="btk"><i style="width:15.0%"></i></span><span class="bv">84</span></div>
+        <div class="br" role="listitem" title="Junior Summer: 200 (0.357)"><span class="bl">Junior Summer</span><span class="btk"><i style="width:35.7%"></i></span><span class="bv">200</span></div>
+        <div class="br" role="listitem" title="Junior Autumn: 246 (0.440)"><span class="bl">Junior Autumn</span><span class="btk"><i style="width:44.0%"></i></span><span class="bv">246</span></div>
+        <div class="br" role="listitem" title="Junior Winter: 277 (0.496)"><span class="bl">Junior Winter</span><span class="btk"><i style="width:49.6%"></i></span><span class="bv">277</span></div>
+        <div class="br yr-gap" role="listitem" title="Classic Spring: 300 (0.536)"><span class="bl">Classic Spring</span><span class="btk"><i style="width:53.6%"></i></span><span class="bv">300</span></div>
+        <div class="br" role="listitem" title="Classic Summer: 347 (0.621)"><span class="bl">Classic Summer</span><span class="btk"><i style="width:62.1%"></i></span><span class="bv">347</span></div>
+        <div class="br" role="listitem" title="Classic Autumn: 379 (0.678)"><span class="bl">Classic Autumn</span><span class="btk"><i style="width:67.8%"></i></span><span class="bv">379</span></div>
+        <div class="br" role="listitem" title="Classic Winter: 415 (0.743)"><span class="bl">Classic Winter</span><span class="btk"><i style="width:74.3%"></i></span><span class="bv">415</span></div>
+        <div class="br yr-gap" role="listitem" title="Senior Spring: 424 (0.758)"><span class="bl">Senior Spring</span><span class="btk"><i style="width:75.8%"></i></span><span class="bv">424</span></div>
+        <div class="br" role="listitem" title="Senior Summer: 481 (0.860)"><span class="bl">Senior Summer</span><span class="btk"><i style="width:86.0%"></i></span><span class="bv">481</span></div>
+        <div class="br" role="listitem" title="Senior Autumn: 503 (0.899)"><span class="bl">Senior Autumn</span><span class="btk"><i style="width:89.9%"></i></span><span class="bv">503</span></div>
+        <div class="br" role="listitem" title="Senior Winter: 548 (0.981)"><span class="bl">Senior Winter</span><span class="btk"><i style="width:98.1%"></i></span><span class="bv">548</span></div>
+        <div class="br yr-gap" role="listitem" title="Finale: 559 (1.000)"><span class="bl"><b>Finale</b></span><span class="btk"><i style="width:100%"></i></span><span class="bv">559</span></div>
+      </div>
+      <p class="foot">A Junior race's rivals are as green as she is; a Senior G1's are nearly trained. Junior Spring is set lower,
+        since she races there on her base stats.</p>
+    </div>
+  </section>
+
+  <!-- 8. Resources -->
+  <section id="resources">
+    <h2>Resources at a glance</h2>
+    <p class="sub">Drills, Bond and SP live in each career's wallet. Tickets belong to your account.</p>
+    <div class="panel">
+      <div class="tbl"><table>
+        <thead><tr><th>Resource</th><th>Kept in</th><th>Where it comes from</th><th>What it's spent on</th></tr></thead>
+        <tbody>
+          <tr><td><b>Drills</b><br>
+              <span class="dot" style="--c:var(--spd)"></span> <span class="dot" style="--c:var(--sta)"></span> <span class="dot" style="--c:var(--pow)"></span> <span class="dot" style="--c:var(--gut)"></span> <span class="dot" style="--c:var(--wit)"></span>
+              <span class="muted small">one colour a stat</span></td>
+            <td>Her career</td>
+            <td>Training Yard: 200 a play at A, split by the colours you scored</td>
+            <td>Pips in that colour's branch (20–28 each, less Energy Cost Reduction); Camps (4 level-5 sessions)</td></tr>
+          <tr><td><b>Bond</b></td><td>Her career</td>
+            <td>Furlong Hand: 25 a play at A</td>
+            <td>Poured into one deck card's bond track: hints, friendship at 80, event skills at 100</td></tr>
+          <tr><td><b>Skill Points (SP)</b></td><td>Her career</td>
+            <td>Training Yard (30 at A) and Furlong Hand (20 at A); every pip she buys; objective wins (40 / 60 / 100 × (1 + Race
+              Bonus)); the deck's Initial Skill Points; hint rewards; the Yard's Rests; Partners' SP Bonus</td>
+            <td>Skills, up to 2,000 SP spent in a URA Finale career</td></tr>
+          <tr><td><b>Uma Tickets</b></td><td>Your account</td>
+            <td>20 at the start; +1 for winning the URA Finals</td>
+            <td>Unlocking one Uma in the Stable</td></tr>
+          <tr><td><b>Card Tickets</b></td><td>Your account</td>
+            <td>24 at the start; +1 for each objective's win (6 a career); +2 for winning the URA Finals</td>
+            <td>Unlocking one SSR card in the Card Library</td></tr>
+        </tbody>
+      </table></div>
+      <p class="foot">There are no coins, no shops and no gacha. Bond tracks belong to an Uma: a new Uma starts each card's track
+        over from its Initial Friendship Gauge.</p>
+    </div>
+  </section>
+
+  <!-- 9. Walkthrough -->
+  <section id="walkthrough">
+    <h2>A full career, step by step</h2>
+    <p class="sub">From an empty Stable to the completion screen. The <span class="tag dec">Decision</span> steps are where your
+      choices matter most.</p>
+    <ol class="walk">
+      <li><b class="h">Unlock your first Umas</b><p>Uma Tickets chip → her face → read her aptitudes and growth rates → Unlock.
+        Her best surface and distances shape her whole career.</p></li>
+      <li><b class="h">Unlock a deck's worth of cards</b><p>Card Tickets chip → check each card says URA Finale careers take it →
+        compare its power bar → Unlock. Get at least six, of mixed types, with Speed among them.</p></li>
+      <li><b class="h">Start her career</b><p>Her profile → Start career · URA Finale. Or Careers → Start a career → pick her →
+        read her six objectives → Start.</p></li>
+      <li><b class="h">Set the deck</b><p>Upgrade → Deck: six cards. Leave each at its own type's branch.</p>
+        <span class="tag dec">Decision</span><span class="dec-line">Post own-type cards. Only a card on its own type's branch
+        multiplies sessions through friendship.</span></li>
+      <li><b class="h">Play the first season</b><p>Play opens the Yard (Speed focus in Junior Spring) or Furlong Hand if her Maiden
+        falls there. Aim for A; S pays 20% more.</p></li>
+      <li><b class="h">Buy your first pips</b><p>Upgrade → Tree. Pick a branch, read the gain, Buy pip or Buy row.</p>
+        <span class="tag dec">Decision</span><span class="dec-line">Buy toward her distance's key stats. The rivals are built
+        that way: Speed weighs most at every distance, Power more at sprints and miles, and the Stamina a full spurt needs grows
+        with the distance (about 700 at 2,000 m, 1,000 at 2,400 m).</span></li>
+      <li><b class="h">Race when a season holds an objective</b><p>Race → the sheet → Race → watch or Skip. Lost? Retry at once;
+        it's free.</p>
+        <span class="tag dec">Decision</span><span class="dec-line">Pick a style her aptitude suits. The sheet preselects her best
+        by aptitude and shows her grade in each.</span></li>
+      <li><b class="h">Next season</b><p>Once every objective in the season is won. Repeat Play, Upgrade, Race.</p></li>
+      <li><b class="h">Pour Bond from Furlong Hand</b><p>Upgrade → Bonds. Pour into one card at a time; Pour is preselected to its
+        next stop.</p>
+        <span class="tag dec">Decision</span><span class="dec-line">Push one own-type card to bond 80 early. Friendship raises every
+        pip in its branch, the ones already bought included.</span></li>
+      <li><b class="h">Open the Camps</b><p>When any branch reaches level 3, two Camps open: four level-5 sessions each, in the
+        branch you choose.</p></li>
+      <li><b class="h">Buy skills as SP builds</b><p>Upgrade → Skills. Hinted skills cost less; a gold needs its white first.
+        Keep within the 2,000 SP cap.</p></li>
+      <li><b class="h">Get ready for the Senior G1s</b><p>Rivals there are close to a trained Uma.</p>
+        <span class="tag dec">Decision</span><span class="dec-line">Replay the Yard (Play again in her career's header) to fill the
+        tree before a hard G1. Replays pay in full and never move the calendar.</span></li>
+      <li><b class="h">On to the URA Finals</b><p>After Senior Winter. Play the prep heat on the Finals' course, upgrade, then race
+        the Qualifier, Semifinal and Final.</p></li>
+      <li><b class="h">Career complete</b><p>The trophy, "URA Finale complete", her frozen racing build, +1 Uma Ticket and +2
+        Card Tickets. Her build stays on her profile; her stages become practice.</p></li>
+      <li><b class="h">The next Uma</b><p>Spend the tickets, start another career. Cards carry over; bond tracks start fresh with
+        each Uma.</p></li>
+    </ol>
+  </section>
+
+  <!-- 10. Tips -->
+  <section id="tips">
+    <h2>Strategy tips</h2>
+    <p class="sub">Each one follows from the rules above.</p>
+    <div class="grid2">
+      <div class="panel tip"><b>Once through at A gets you most of the way</b><p>With a median deck, a once-through career at A
+        buys about 60% of the tree, brings about 3 of 6 cards to friendship, earns SP for 4–6 golds with their whites, and wins
+        most first tries: G3s 90%+, G2s 75%, G1s half the time, the Final about half.</p></div>
+      <div class="panel tip"><b>Replays fill the tree</b><p>One replay of each Training Yard season buys 95% or more of the tree.
+        The tree, the bonds and the SP cap are the ceilings, not the number of plays.</p></div>
+      <div class="panel tip"><b>Furlong Hand is your only Bond</b><p>Replay it to reach friendship sooner. Even a loss pays (6 Bond
+        at D), and it never changes the real race.</p></div>
+      <div class="panel tip"><b>Friendship reprices the past</b><p>Pips are worked out from the deck as it stands, so buy freely:
+        when a card reaches 80, every pip in its branch, bought or not, pays more.</p></div>
+      <div class="panel tip"><b>Point the Yard's colours</b><p>Pieces come by her growth rates, and the season's focus colour 1.5×
+        as often. Replay in a season whose focus is the stat you need, and merge that colour.</p></div>
+      <div class="panel tip"><b>Mind the caps</b><p>Every stat stops at 1,200 in URA Finale. The preview shows in warning ink what a
+        pip would throw away: move to another branch before you waste drills.</p></div>
+      <div class="panel tip"><b>Let hints pay for skills</b><p>Bond stops hint skills at up to 40% off, and hints from several cards
+        add up. Pour Bond before buying a skill at full price.</p></div>
+      <div class="panel tip"><b>Replay before the Senior G1s</b><p>Junior fields start at 15% of a trained Uma and Senior G1s near
+        it; the Final holds rivals back only 10%. Seasons before a Senior G1 are where an extra Yard replay matters most.</p></div>
+      <div class="panel tip"><b>Retry is a new race</b><p>Each attempt is seeded afresh and a loss costs nothing. If a race keeps
+        slipping away, upgrade first: Play again is always open.</p></div>
+      <div class="panel tip"><b>Race Bonus and Energy Cost Reduction</b><p>Race Bonus multiplies the SP every objective pays, and
+        adds Drive in Furlong Hand's spurt. Energy Cost Reduction makes every pip in its branch cheaper.</p></div>
+    </div>
+  </section>
+
+  <!-- 11. What's coming -->
+  <section id="coming">
+    <h2>What's coming</h2>
+    <p class="sub">The roadmap after URA Finale. <b>None of this is in the game yet.</b> Each release adds one mini-game and new
+      careers.</p>
+    <div class="grid4">
+      <div class="panel rm"><div class="top"><span class="tag plan">Release 2 · planned</span></div><b class="big">Team Showdown</b>
+        <p class="small muted">An untimed auto-battler.</p>
+        <p>Shards, and Umas earned in play. Unity Cup's careers.</p></div>
+      <div class="panel rm"><div class="top"><span class="tag plan">Release 3 · planned</span></div><b class="big">Fan Festival</b>
+        <p class="small muted">A peg board.</p>
+        <p>Scout points, cards earned in play, and the card refit. Trackblazer's and Our Grand Concert's careers.</p></div>
+      <div class="panel rm"><div class="top"><span class="tag plan">Release 4 · planned</span></div><b class="big">Summer Camp</b>
+        <p class="small muted">Dice placement.</p>
+        <p>Aptitude points. Grand Masters' careers, and promotion to tier 2.</p></div>
+      <div class="panel rm"><div class="top"><span class="tag plan">Release 5 · planned</span></div><b class="big">Festival Kitchen</b>
+        <p class="small muted">Cooking on a flavour map.</p>
+        <p>Dishes, one-use boosts. Tier 2's careers.</p></div>
+    </div>
+    <p class="foot">Until then: one URA Finale career per Uma, Umas and cards unlocked only with tickets, and her aptitudes as
+      her template gives them. A completed career's screen reads "Next: Unity Cup, coming in release 2".</p>
+  </section>
+</main>
+</body>
+</html>
