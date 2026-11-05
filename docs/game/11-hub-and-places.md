@@ -102,7 +102,7 @@ Left to right (uma-kit's `AccountBar`, with uma-racer's chips from `hub/RacerShe
 |---|---|---|---|
 | Trainer button | "T", the trainer's initial on a gold disc (the game keeps no trainer name) | Account (`/town/account`) | Never |
 | **Uma Tickets** | Count, with uma-art's `currency/uma-ticket` mark | The Stable's Locked tab (`/town/stable?tab=locked`) | Never (shows 0) |
-| **Card Tickets** | Count, with `currency/card-ticket`; uma-art draws none yet, so the kit's cards icon stands in (§10.3) | The Card Library's Locked tab (`/town/card-library?tab=locked`) | Never (shows 0) |
+| **Card Tickets** | Count, with uma-art's `currency/card-ticket` (§10.3) | The Card Library's Locked tab (`/town/card-library?tab=locked`) | Never (shows 0) |
 | **Sync** | Offline, Sync paused (signed out), or **Sync** in amber (waiting over a day) or red (failing) (D157) | Account, at the sync row (`/town/account?row=sync`) | Synced |
 
 There are no coins and no Speed Tickets. Numbers move with a CSS transition when they change. While the game boots,
@@ -429,12 +429,13 @@ All 48×48 with a ground line, from `@luismlorenzana/uma-art`'s `buildings` atla
 | Town Hall | `town/*` | Ground, plaza paths, barrels, crates, flower pots, benches, lamps, trees |
 | Career | `learning/*` | uma-art's training ground: hedges, benches, flower beds, lamps, banners |
 
-### 10.3 Marks (uma-art 2.10.0)
+### 10.3 Marks (uma-art 2.21.0, D389)
 
 - **`currency/uma-ticket`** (16×16, drawn at 16 pt) in the account bar, the Stable's Peek, its unlock sheet and
   Account's wallet (the kit's `UiMark`).
-- **`currency/card-ticket` isn't drawn yet.** Every place that shows Card Tickets passes the kit's cards icon as the
-  mark's fallback, so it switches by itself when a uma-art release draws one.
+- **`currency/card-ticket`** (16×16, A05) wherever Card Tickets show: the account bar, the Card Library's Peek, a
+  card's page, Account's wallet and the completion screen.
+- **`yard/fatigue`** and **`yard/rest`** (24×24, drawn at 2×, A05): Training Yard's sweat drop and folded towel.
 - The card types, running styles and distances are the racer's own SVG icons (`ui/TypeIcon.tsx`,
   `ui/CardFocusIcons.tsx`); the surfaces are the kit's.
 

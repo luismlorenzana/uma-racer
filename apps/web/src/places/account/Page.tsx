@@ -4,7 +4,7 @@
 // section that runs `dev-grant` for tickets; App build and Content; and Sign out (the kit's auth). No notifications slot:
 // push is off (D336). `?row=sync` opens at the sync row.
 import { AccountPage as AccountFrame } from '@luismlorenzana/uma-kit/places'
-import { Button, Chip, Panel, UiMark, CardsIcon } from '@luismlorenzana/uma-kit/ui'
+import { Button, Chip, Panel, UiMark } from '@luismlorenzana/uma-kit/ui'
 import { useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router'
 import { APP_BUILD_ID } from '../../app/build'
@@ -100,7 +100,7 @@ export default function AccountPage({ place, rest }: PageProps) {
       <AccountFrame
         wallet={wallet === null ? [] : [
           { key: 'uma-tickets', icon: <UiMark mark="currency/uma-ticket" />, value: wallet.umaTickets, label: 'Uma Tickets' },
-          { key: 'card-tickets', icon: <UiMark mark="currency/card-ticket" fallback={<CardsIcon size={16} variant="duotone" />} />, value: wallet.cardTickets, label: 'Card Tickets' },
+          { key: 'card-tickets', icon: <UiMark mark="currency/card-ticket" />, value: wallet.cardTickets, label: 'Card Tickets' },
         ]}
         sections={(
           <>

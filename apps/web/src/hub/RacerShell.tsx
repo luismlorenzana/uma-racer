@@ -5,7 +5,7 @@
 // (a slot's `fullScreen(rest)`) hides both bars. While the port boots the bars show no numbers. Each page visit, and
 // the career on screen (D387), is remembered for the start rule.
 import { AccountBar, AppFrame, BottomBar, withParam, type BarTab, type CurrencyChip } from '@luismlorenzana/uma-kit/shell'
-import { CardsIcon, HomeIcon, RaceIcon, StatsIcon, type IconComponent } from '@luismlorenzana/uma-kit/ui'
+import { HomeIcon, RaceIcon, StatsIcon, type IconComponent } from '@luismlorenzana/uma-kit/ui'
 import { HUB_PAGE_NAMES, hubWords, isHubPage, placeOnPage, type HubPage, type HubWallet } from '@racer/domain/hub'
 import { useEffect } from 'react'
 import { Outlet, useLocation, useParams } from 'react-router'
@@ -34,9 +34,7 @@ export function currencyChips(wallet: HubWallet | null): CurrencyChip[] {
     },
     {
       key: 'card-tickets',
-      // uma-art draws no Card Ticket yet: the kit's cards icon stands in until it does.
       mark: 'currency/card-ticket',
-      fallback: <CardsIcon size={16} variant="duotone" />,
       value: wallet?.cardTickets ?? null,
       to: libraryPath('locked'),
       label: hubWords('card-tickets', { n: wallet?.cardTickets ?? '' }),

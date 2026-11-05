@@ -1,7 +1,7 @@
 // A completed career (D387): the trophy, her URA Finale racing build as the final froze it (five stats, aptitudes,
 // skills), the tickets the URA Finals paid, and what comes next. The career page shows it in place of the season card
 // once the final is won, and the final's result shows it first.
-import { CardsIcon, Panel, TrophyIcon, UiMark, useReducedMotionSetting } from '@luismlorenzana/uma-kit/ui'
+import { Panel, TrophyIcon, UiMark, useReducedMotionSetting } from '@luismlorenzana/uma-kit/ui'
 import { FINALE_REWARD } from '@racer/domain/career'
 import type { SkillTemplate } from '@racer/domain'
 import type { RacingBuild } from '@racer/domain/save'
@@ -18,7 +18,7 @@ export function TicketsEarned() {
           <UiMark mark="currency/uma-ticket" />{careersWords('uma-ticket', { n: FINALE_REWARD.umaTickets })}
         </li>
         <li className="flex min-h-8 items-center gap-1.5 rounded-full bg-accent-wash px-3">
-          <UiMark mark="currency/card-ticket" fallback={<CardsIcon size={16} variant="duotone" />} />{careersWords('card-tickets', { n: FINALE_REWARD.cardTickets })}
+          <UiMark mark="currency/card-ticket" />{careersWords('card-tickets', { n: FINALE_REWARD.cardTickets })}
         </li>
       </ul>
     </section>

@@ -39,7 +39,7 @@ replaced it, with no rollback path (D380).
 Later releases are planned here as a milestone spec with one packet per part; each part branches `feat/t16x-…` from
 `main` and merges by pull request, CI required. `restart/g3` is retired.
 
-**Next free numbers: M037, T160 and D389.** Numbers are never reused, so a decision that mentions T014 always means
+**Next free numbers: M037, T160 and D390.** Numbers are never reused, so a decision that mentions T014 always means
 the same work. T057 was consumed by the per-scenario limit-break branch and is not reused.
 
 ## Completed and removed

@@ -1,9 +1,9 @@
 // Training Yard's pieces (docs/game/08-training-yard.md §5): Uma face tiles (uma-kit's album) on stat-coloured grounds,
 // framed by tier from plain to rainbow, with the tier also counted in pips so colour never carries it alone; Partners as
-// their support card's art with a type mark (and a heart once bonded); Fatigue and Rest as the kit's warning and moon
-// marks. Drawn in the theme's tokens only.
+// their support card's art with a type mark (and a heart once bonded); Fatigue and Rest as uma-art's sweat drop and
+// folded towel (A05). Drawn in the theme's tokens only.
 import { FaceTile } from '@luismlorenzana/uma-kit/album'
-import { HeartIcon, MoonIcon, StarIcon, WarningIcon } from '@luismlorenzana/uma-kit/ui'
+import { HeartIcon, StarIcon, UiMark } from '@luismlorenzana/uma-kit/ui'
 import { STATS, type SupportCardTemplate } from '@racer/domain'
 import { cellColour, cellTier, FATIGUE, FATIGUE_PIECE, isPartnerPiece, isPieceCell, PARTNER_BASE, PARTNER_LIFT, REST, YARD_TIERS, type YardPartner } from '@racer/domain/stages'
 import { useLoadedContent } from '../../app/content'
@@ -54,7 +54,7 @@ export function ColourPiece({ colour, tier, faces, size }: { colour: number; tie
 export function FatiguePiece() {
   return (
     <span className="flex size-full items-center justify-center rounded-md bg-stage text-ink-on-dark ring-1 ring-inset ring-hairline-dark" role="img" aria-label="Fatigue" data-piece="fatigue">
-      <WarningIcon size={24} />
+      <UiMark mark="yard/fatigue" scale={2} />
     </span>
   )
 }
@@ -62,7 +62,7 @@ export function FatiguePiece() {
 export function RestPiece() {
   return (
     <span className="flex size-full items-center justify-center rounded-md bg-sunken text-info ring-1 ring-inset ring-hairline-strong" role="img" aria-label="Rest" data-piece="rest">
-      <MoonIcon size={24} variant="duotone" />
+      <UiMark mark="yard/rest" scale={2} />
     </span>
   )
 }

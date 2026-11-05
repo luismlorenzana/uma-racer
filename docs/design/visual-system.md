@@ -109,8 +109,7 @@ Two faces, both OFL and self-hosted, latin subset only:
   alignment over mathematical.
 - Line by default, solid for active states, and **illustrated two-tone versions for the page tabs** — the ones
   that carry personality. The two tickets are uma-art's pixel marks wherever a balance or price shows (the account
-  bar, the Peeks, the unlock sheet, a card's page, Account, the completion); the Card Ticket falls back to the kit's
-  cards icon until uma-art draws its mark.
+  bar, the Peeks, the unlock sheet, a card's page, Account, the completion), both drawn by uma-art (A02, A05).
 - Every icon ships with an accessible name. **No emoji in the product** once the set lands.
 - **Stats and card types have one icon each** (D183), `ui/TypeIcon`: our own drawings in the original's style, a
   rounded tile with a darker rim, a top-to-bottom gradient and a white glyph (boot, heart, flexed arm, flame,
@@ -146,7 +145,7 @@ Two faces, both OFL and self-hosted, latin subset only:
 ## Pixel art
 
 The Hub's maps and a few marks are uma-art's pixel art (uma-rpg's house style: a 3/4 overworld view, light from the
-top left, a 1 px selective outline, six-tone ramps), drawn from code in uma-platform and pinned here (2.10.0, D378):
+top left, a 1 px selective outline, six-tone ramps), drawn from code in uma-platform and pinned here (2.21.0, D389):
 
 | Where | What | Size |
 |---|---|---|

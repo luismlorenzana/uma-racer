@@ -16,7 +16,7 @@ share (T147, D367).
   hand-allocated trees on the real card numbers. Its first release, M036 (URA Finale), shipped straight to production
   with a full wipe (D388); the manual describes it.
 - `docs/tasks/README.md` is the current plan: M036 released (D388), releases 2–5 on the roadmap, and the next free
-  numbers (M037, T160, D389). A task spec is deleted once its work merges (D104), so that folder only holds work still
+  numbers (M037, T160, D390). A task spec is deleted once its work merges (D104), so that folder only holds work still
   ahead.
 - **The docs are the source of truth:** [the manual](docs/game/README.md) (`docs/game/`) describes the game as it runs.
   Every screen, route and sheet is [11's menu tree](docs/game/11-hub-and-places.md#the-menu-tree-at-a-glance); the code
@@ -162,8 +162,8 @@ uma-platform's `scripts/pixel-art` and publishes a `@luismlorenzana/uma-art` rel
 3. updates [11](docs/game/11-hub-and-places.md) §10, the architecture's art section and a decision;
 4. deletes the packet and logs it in the handoff README.
 
-uma-art 2.10.0 is pinned (D378). No art packet is open: the Card Ticket mark (`currency/card-ticket`) is the kit's
-cards icon until a release draws one ([11](docs/game/11-hub-and-places.md) §10.3).
+uma-art 2.21.0 is pinned (D389): A05 drew the Card Ticket mark and Training Yard's Fatigue and Rest marks
+([11](docs/game/11-hub-and-places.md) §10.3). No art packet is open.
 
 ## Conventions
 

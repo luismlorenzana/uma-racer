@@ -70,8 +70,8 @@ importers:
   apps/web:
     dependencies:
       '@luismlorenzana/uma-art':
-        specifier: 2.10.0
-        version: 2.10.0
+        specifier: 2.21.0
+        version: 2.21.0
       '@luismlorenzana/uma-data':
         specifier: 1.1.0
         version: 1.1.0
@@ -171,8 +171,8 @@ importers:
         version: 1.1.0
     devDependencies:
       '@luismlorenzana/uma-art':
-        specifier: 2.10.0
-        version: 2.10.0
+        specifier: 2.21.0
+        version: 2.21.0
       typescript:
         specifier: ~5.9.3
         version: 5.9.3
@@ -1405,8 +1405,8 @@ packages:
   '@js-sdsl/ordered-map@4.4.2':
     resolution: {integrity: sha512-iUKgm52T8HOE/makSxjqoWhe95ZJA1/G1sYsGev2JDKUSS14KAgg1LHb+Ba+IPow0xflbnSkOsZcO08C7w1gYw==}
 
-  '@luismlorenzana/uma-art@2.10.0':
-    resolution: {integrity: sha512-fcP+yqSfINTM9hN8zITTmpi6OtS24oWqhRzBRx0uvp5eW9iqg/do17Maihq3R2PbC8lMxhp4oSm7o0UQO/VAoA==, tarball: https://npm.pkg.github.com/download/@luismlorenzana/uma-art/2.10.0/dd37dc215e4fd337ce5536c62df04823f3941f4f}
+  '@luismlorenzana/uma-art@2.21.0':
+    resolution: {integrity: sha512-Ctg6snOdOasSMvir6bsZQgMzRiHoQkwrSbFphMtzPwux1A3SLMhQBCiMUKa0E2rs99HV/yKrAAmGhgRanWTOMA==, tarball: https://npm.pkg.github.com/download/@luismlorenzana/uma-art/2.21.0/9c372510561e2b3fa7bca888193102f9747e6a89}
 
   '@luismlorenzana/uma-data@1.1.0':
     resolution: {integrity: sha512-0sWzgTFG1m2KN2kMNhuCX1ym7t4lTAMfYWv23BzDFf+UsHn2JKcvtlBzvNt5xdTN5Ky8rTQNnRYsLzTEDUZ/Ag==, tarball: https://npm.pkg.github.com/download/@luismlorenzana/uma-data/1.1.0/a6426b9baef7602dae0bf1bfea71862b4e7857cf}
@@ -6011,7 +6011,7 @@ snapshots:
   '@js-sdsl/ordered-map@4.4.2':
     optional: true
 
-  '@luismlorenzana/uma-art@2.10.0': {}
+  '@luismlorenzana/uma-art@2.21.0': {}
 
   '@luismlorenzana/uma-data@1.1.0': {}
 

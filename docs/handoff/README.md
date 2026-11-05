@@ -47,15 +47,14 @@ uma-platform's [queue](https://github.com/luismlorenzana/uma-platform/blob/main/
 
 ## For ChatGPT, in order
 
-| Id | Packet | Repo it changes | State |
-|---|---|---|---|
-| A05 | [The Card Ticket mark and Training Yard's Fatigue and Rest marks](tasks/A05-card-ticket-and-yard-marks.md): three small `ui` atlas frames, a new uma-art minor | uma-platform (art); Claude pins it in uma-racer | Ready |
+Nothing is ready for ChatGPT here now.
 
 The owner authorized A03's implementation, merge and deployment in chat; its proof records the checks and pending
 device acceptance. The shared shell remains uma-kit's (T147, D367), not a local fork.
 
 | Done | What | Landed |
 |---|---|---|
+| A05 | The Card Ticket mark (`currency/card-ticket`, 16×16) and Training Yard's Fatigue sweat drop and Rest folded towel (`yard/fatigue`, `yard/rest`, 24×24) | uma-art 2.21.0 (uma-platform #70, `3e23261`), pinned in the racer by D389. Last packet: `25aac67:docs/handoff/tasks/A05-card-ticket-and-yard-marks.md` |
 | A03 | Farm, Training, Lineage and Racing pickers open on level; context sorts and Open goals stay optional | D368; [07](../archive/g2-manual/07-farm.md) §10, [05](../archive/g2-manual/05-training-hub.md) §8, [11](../game/11-hub-and-places.md) §9.2; [synthetic phone proof](../research/a03-level-rule/README.md). Last packet: `652cc58:docs/handoff/tasks/A03-iphone-band-and-level-rule.md` |
 | A01 | The racer's four buildings and the Racing page's tiles | uma-art 2.6.0 (uma-platform #19, P45), pinned in the racer by D364 |
 | A02 | The account bar's currency marks, tier crests and the Speed Ticket icon | uma-art 2.7.0 (uma-platform #20, P46), pinned by D364 |

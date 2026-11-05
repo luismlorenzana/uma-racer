@@ -121,8 +121,8 @@ No bot completes all three tasks: the S by tasks is for a player who keeps Partn
   (hairline, bronze, silver, gold, a ring of all five stat colours for rainbow), and pips count it too, so colour
   never carries a rule alone.
 - **Partners show their support card's art** with a type mark, and a heart once bonded.
-- **Fatigue** is the kit's warning mark on a dark tile, and **Rest** its moon. (uma-kit and uma-art have no sweat drop
-  or towel mark yet.)
+- **Fatigue** is uma-art's sweat drop (`yard/fatigue`) on a dark tile, and **Rest** its folded towel (`yard/rest`), both
+  drawn at 2× (A05, D389).
 - The top holds the score against the grade ladder (C, B and A marked), the placements left and the tasks; the yard
   and the queue (Now, Next × 2, Hold, and the Hold or Swap button) sit in the bottom of the screen. Every target is
   44 pt or more at 390 × 844, in light and dark.

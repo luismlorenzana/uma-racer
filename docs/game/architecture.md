@@ -358,7 +358,7 @@ lane. The record shapes, kinds, bounds and wire format are `packages/domain/src/
 
 Two sources, kept apart:
 - **Original pixel art** is uma-platform's `@luismlorenzana/uma-art`, drawn from code and public to the owner's games.
-  The racer pins **2.10.0** exactly: a runtime dependency of `@racer/web`, which bundles its atlases, and a dev
+  The racer pins **2.21.0** exactly (D389): a runtime dependency of `@racer/web`, which bundles its atlases, and a dev
   dependency of `@racer/domain`.
 - **Uma art** (icons, busts, faces, chibis, portraits) and card art are the original game's, so they come only from
   the private platform release ([above](#private-content)). Every board and screen draws in it: the Yard's face tiles,
@@ -368,7 +368,7 @@ Two sources, kept apart:
 |---|---|---|
 | `buildings` (48×48, ground line at 44) | uma-kit's Hub scene on the map (through `KitArtProvider`, `app/art.ts`); `ui/BuildingSprite.tsx` in the DOM at 2× (96 pt) | Every place's building ([11](11-hub-and-places.md) §10.1) |
 | `tiles` (16 px) | uma-kit's `layTerrain` and Hub scene, on each page's tile page (`hub/racerHub.ts`) | Each page's ground, paths and props: `town` (Town Hall), `learning` (Career) |
-| `ui` | uma-kit's `UiMark` | The ticket marks at 16 pt (`currency/uma-ticket`; `currency/card-ticket` falls back to the kit's cards icon until drawn) |
+| `ui` | uma-kit's `UiMark` | The ticket marks at 16 pt (`currency/uma-ticket`, `currency/card-ticket`), and Training Yard's `yard/fatigue` and `yard/rest` at 2× |
 
 **How a frame reaches the Hub.** Each place in the registry (`@racer/domain/hub`) names its `buildings` frame and its
 `at` position. `HubPage` passes them to uma-kit's map, whose scene loads the atlases `app/art.ts` hands it, snaps each
@@ -495,7 +495,7 @@ Generation 2's layout and the choices made at its switch (T143) are in git histo
 | Package | Dependency | Version | Kind |
 |---|---|---|---|
 | uma-racer | turbo | ^2.10.13 | dev |
-| @racer/web | @luismlorenzana/uma-art | 2.10.0 | runtime |
+| @racer/web | @luismlorenzana/uma-art | 2.21.0 | runtime |
 | @racer/web | @luismlorenzana/uma-data | 1.1.0 | runtime |
 | @racer/web | @luismlorenzana/uma-kit | 0.9.1 | runtime |
 | @racer/web | @racer/domain | workspace:* | runtime |
@@ -544,7 +544,7 @@ Generation 2's layout and the choices made at its switch (T143) are in git histo
 | @racer/api | typescript | ~5.9.3 | dev |
 | @racer/api | vitest | ^3.2.7 | dev |
 | @racer/domain | @luismlorenzana/uma-data | 1.1.0 | runtime |
-| @racer/domain | @luismlorenzana/uma-art | 2.10.0 | dev |
+| @racer/domain | @luismlorenzana/uma-art | 2.21.0 | dev |
 | @racer/domain | typescript | ~5.9.3 | dev |
 | @racer/domain | vitest | ^3.2.7 | dev |
 | @racer/race | @racer/domain | workspace:* | runtime |

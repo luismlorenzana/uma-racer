@@ -3,7 +3,7 @@
 // and distance focus, **Unlock · 1 Card Ticket** while it's locked (committing `unlock-card`, then a short reveal of its
 // art), its power as a bar against its type's median, its real effects at level 50 named in plain words, its unique
 // effect's description, and its hint and event skills. Every number comes from the private content at runtime.
-import { Button, CardsIcon, EraIcon, Panel, UiMark } from '@luismlorenzana/uma-kit/ui'
+import { Button, EraIcon, Panel, UiMark } from '@luismlorenzana/uma-kit/ui'
 import { cardFocus } from '@racer/domain'
 import { effectLines, uniqueEffectLines, type EffectLine, type Place } from '@racer/domain/hub'
 import { m } from 'motion/react'
@@ -89,7 +89,7 @@ export function CardPage({ place, rest, cardId }: { place: Place; rest: string; 
   const effects = effectLines(card.effects)
   const unique = card.uniqueEffect
   const uniqueLines = uniqueEffectLines(card)
-  const mark = <UiMark mark="currency/card-ticket" fallback={<CardsIcon size={16} variant="duotone" />} />
+  const mark = <UiMark mark="currency/card-ticket" />
 
   const unlock = async () => {
     setBusy(true)
