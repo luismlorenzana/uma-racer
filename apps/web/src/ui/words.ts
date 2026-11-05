@@ -1,9 +1,9 @@
-// Names the Town Hall's screens give ids (T138), beside T140's `ui/work/words` (`showWords`, `itemName`, `placeName`):
+// Names the Town Hall's screens give ids (T138):
 // an Uma by her template's name and a card as the Library names it, "Kitasan Black [Fire at My Heels]", or the name
 // alone for a card with no title.
-import type { G2Snapshot } from '../app/game'
+import type { RacerSnapshot } from '../app/game'
 
-type Content = NonNullable<G2Snapshot['env']>['content']
+type Content = NonNullable<RacerSnapshot['env']>['content']
 
 /** An Uma's display name, or her id while the content lacks her. */
 export const umaName = (content: Content | null | undefined, outfitId: string): string => content?.umas.get(outfitId)?.name ?? outfitId

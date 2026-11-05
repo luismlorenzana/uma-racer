@@ -1,67 +1,21 @@
-// What generation 2 stores and the wire carries (docs/rework/13-removals-and-plan-changes.md §6; T134): one row per
-// entity or log entry, each stamped with the generation and its kind's schema. An entity's `version` starts at 1 and
-// rises by one with each committed sync that changes it; a log row never changes once written. Drafts are rows before
-// the writer stamps them: only the server (or the device, for its own badges and flair) gives a version and `savedAt`.
-import type { BadgeStateV1, FlairEventV1 } from '../badges'
-import type { RaceRun } from '../progression-race'
-import type { FinishRaceReceipt } from '../check-in/finish-race'
-import type { ItemLedgerReason } from '../economy/ledger'
-import type { BuildingLevel } from '../farm/buildings'
-import type { ItemId } from '../items/catalogue'
-import type { AccountProfile, LedgerEntry, OperationRecord, ScenarioOfTier, Tier, UmaState } from '../state/types'
-import type { WorkRow } from '../work/types'
+// What generation 3 stores and the wire carries (D381): one row per entity or log entry, each stamped with the
+// generation and its kind's schema. An entity's `version` starts at 1 and rises by one with each committed sync that
+// changes it; a log row never changes once written. Drafts are rows before the server stamps them.
+import type { AccountRecord, BondRecord, CareerRecord, OperationRecord, RaceResultRecord, UnlockRecord } from './records'
 import { KIND_SCHEMA, SAVE_GENERATION, type EntityKind, type LogKind } from './kinds'
-
-/** `itemLedger/{id}`: one movement of Warehouse stock, with whose work moved it and the operation that did. */
-export interface ItemLedgerRow {
-  readonly id: string
-  readonly itemId: ItemId
-  /** Negative when stock left: a reserve, an upgrade's cost, a Speed Ticket spent, a sale. */
-  readonly delta: number
-  readonly reason: ItemLedgerReason
-  /** Whose work moved it; null for an upgrade's cost, a purchase, a sale or a grant. */
-  readonly outfitId: string | null
-  readonly opId: string
-  readonly at: number
-}
-
-/** `raceResults/{opId}`: a `finish-race` operation's race, kept with its commit (09 §9). */
-export interface RaceResultRow {
-  readonly umaId: string
-  readonly raceId: string
-  /** The operation's id, which is also the row's and the race result's. */
-  readonly opId: string
-  readonly at: number
-  /** Where she raced: badges are scenario-linked (D122). */
-  readonly tier: Tier
-  readonly scenario: ScenarioOfTier
-  /**
-   * The set she raced with: the card set of the preset of the race's distance, after the operation's collect (T141).
-   * Era Loyalist reads the sets of every race she ran in a scenario (06 §7).
-   */
-  readonly cardSetIds: readonly string[]
-  readonly run: RaceRun
-  /** The operation's receipt: what the result screen shows on reload. */
-  readonly commit: FinishRaceReceipt
-}
 
 /** Each entity kind's `data`. */
 export interface EntityData {
-  readonly profile: AccountProfile
-  readonly umas: UmaState
-  /** Slots are read from the work rows (07 §12). */
-  readonly buildings: { readonly level: BuildingLevel }
-  readonly work: WorkRow
-  readonly items: { readonly count: number }
-  readonly badges: BadgeStateV1
+  readonly account: AccountRecord
+  readonly umas: UnlockRecord
+  readonly cards: UnlockRecord
+  readonly careers: CareerRecord
+  readonly bonds: BondRecord
 }
 
 /** Each log kind's `data`. */
 export interface LogData {
-  readonly raceResults: RaceResultRow
-  readonly ledger: LedgerEntry
-  readonly itemLedger: ItemLedgerRow
-  readonly flairEvents: FlairEventV1
+  readonly raceResults: RaceResultRecord
   readonly operations: OperationRecord
 }
 

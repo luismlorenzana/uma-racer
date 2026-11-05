@@ -1,18 +1,18 @@
 # Uma Racer
 
-A personal, never-distributed, mobile-style game inspired by *Umamusume: Pretty Derby*: **Race, Farm, Train**. Each
-Uma climbs a tier of five scenarios, racing her career while the roster works the Farm on timers. The Farm's dishes pay
-for Training Hub sessions that unlock her build one piece at a time, and races pay Prize Money that buys Speed Tickets.
-Badges, titles and flair keep the stable's history.
+A personal, never-distributed, mobile-style game inspired by *Umamusume: Pretty Derby*: **a racing game with
+mini-game careers and no clock**. You unlock Umas and SSR support cards with tickets and run each Uma's career through
+a scenario: twelve seasons, each a 3–7 minute mini-game stage that pays resources, an upgrade spent by hand in her tree
+(priced with the original's training formula and the real numbers of the cards you post to it), and her objectives
+raced on the race engine, then the scenario's finale. Nothing runs on timers, and nothing limits how much you play.
 
-> **Status, 2026-10-16: generation 2 is live on the owner's iPhone.** The game rework (D326–D338) is the game: its
-> rules were built in phase 2 (D340–D351), and phase 3's cutover (M034, D352–D361) built the new game, its save and its
-> screens and deleted every retired system (the RPG, Uma Puzzles, the minigames, Constellation Level, card stars,
-> tokens, Training Tickets and the old Farm). T144 released it on 2026-10-15 and wiped every old save once. The same
-> day the Home screen became uma-rpg's pixel-art Hub on a Phaser canvas (phase 6, ahead of phase 5: T145, D363), with
-> the racer's own uma-art 2.7.0 (D364). On 2026-10-16 the shell, Hub and primitives moved to uma-kit, the app both Uma
-> games share, which brought dark mode (T147, D367). What's open and next is [the task plan](docs/tasks/README.md);
-> [the manual](docs/game/README.md) describes the code as it runs.
+> **Status, 2026-11-05: generation 3 is live on the owner's iPhone.** The restart (D380) retired generation 2 and its
+> game. M036, URA Finale, is its first release (D388): Uma and Card Tickets, the Stable and the Card Library, URA
+> Finale careers for every Uma with **Training Yard** and **Furlong Hand**, the tree, the deck, bonds and skills, the
+> URA Finals, and the Hub's two pages, Town Hall and Career. It shipped with a full wipe of generation 2, on the
+> server and the phone. What comes next is [the task plan](docs/tasks/README.md) and
+> [v3's roadmap](docs/research/drawing-board/README.md#7-the-roadmap); [the manual](docs/game/README.md) describes the
+> code as it runs.
 
 **A fresh session starts here:** this page (status, how to run and verify, the map), then [AGENTS.md](AGENTS.md) (how
 to work, the shared workflows) and, for Claude, CLAUDE.md (production); [docs/tasks/README.md](docs/tasks/README.md)
@@ -23,8 +23,8 @@ for the state of the plan; [the manual](docs/game/README.md) for the game, with
 ## Ground rules
 
 - **Personal use only.** Never published, shared, or deployed publicly.
-- **Assets and game data stay local.** Images, icons, and data extracted from the original game stay out of
-  version control and any public host.
+- **Assets and game data stay local.** Images, icons, and data extracted from the original game, real card values
+  included, stay out of version control and any public host.
 - **Docs first.** Design decisions are recorded here before they are built, so every work session, human or AI,
   can pick up where the last one stopped.
 
@@ -36,46 +36,45 @@ cp apps/api/.env.example apps/api/.env
 pnpm dev            # web http://localhost:5173 (also on the LAN for the iPhone) + api :8080, auth off, dev operations on
 ```
 
-The local API keeps its save in `apps/api/.data/save-g2.json` and reads the private content from the gitignored
+The local API keeps its save in `apps/api/.data/save-g3.json` and reads the private content from the gitignored
 `content/` overlay folder and sibling `uma-platform/content/release` master release (`MASTER_DIR` overrides it).
-Racer no longer imports GameTora or images. A new account opens the Stable's Locked tab with 20 Uma Tickets: unlock Umas there, then send them
-to the Farm's sites, the Pantry and the Kitchen, spend dishes on Training Hub sessions, and race from the raised
-**Race** button. Every place is also in the ☰ menu. In dev builds, `/dev/seeds/` opens the game on synthetic accounts
-(`?seed=busy | fresh | quiet | gate | promote | tired | spent | stopped`, `&at=HH:MM`) without touching the device
-save ([architecture](docs/game/architecture.md#dev-seeds)). From a git worktree, run the preview on your own port
+A new account has 20 Uma Tickets and 24 Card Tickets: unlock Umas in the Stable and cards in the Card Library (the
+account bar's ticket chips open their Locked tabs), then start an Uma's career from her profile or the Careers place
+and play its seasons. Every place is also in the ☰ menu. In dev builds, Account's dev section grants more tickets
+(`dev-grant`). There are no dev seeds (D381). From a git worktree, run the preview on your own port
 ([AGENTS.md](AGENTS.md#workflows)).
 
 ## Verification
 
 ```bash
 pnpm lint           # type-check all packages
-pnpm test           # domain rules, race engine, API, save and web view models
+pnpm test           # domain rules, race engine, API, save and web; then sim:careers and sim:stages on invented content
 pnpm test:ci        # the same suites one package at a time, as CI runs them
 pnpm build          # production builds, including the PWA service worker and the 180 KB startup check
-pnpm docs:update    # regenerate the live blocks in docs/game/ (and the plan's operations list) after a rule change
-pnpm sim:balance    # headless race balance table (-- --final for the full matrix)
-pnpm sim:turns      # engine v9's balance targets on generated G1 fields
-pnpm sim:builds     # the stamina ladder and G1 grid on full-layer builds at every scenario
-pnpm sim:careers    # every career of the private pack on full-layer builds
-pnpm sim:loop       # the whole economy from a fresh account, and the pacing checks
+pnpm docs:update    # regenerate the live blocks in docs/game/ after a rule change
+pnpm sim:decks      # the tree's bands with an empty, median and strong deck (-- --synthetic for invented cards)
+pnpm sim:stages     # each mini-game's bots: grade bands and play length
+pnpm sim:careers    # every Uma's URA Finale career at grade A: first-try win rates and pacing
+pnpm sim:balance    # headless race strategy balance table (-- --final for the full matrix)
 pnpm overlays:import   # validate and build only Racer-authored private overlays
 pnpm overlays:publish -- --dry-run  # verify the overlay before publishing it
 pnpm master:parity     # private migration proof; never commits source rows
 ```
 
-The checks CI enforces, and the ones run by hand (reach, "nothing old remains", links), are
+The sims read the private pack when it is present locally and print aggregates only. The checks CI enforces, and the
+ones run by hand (reach, "nothing old remains", no clock in the rules, links), are
 [the architecture's](docs/game/architecture.md#budgets-and-checks).
 
 ## Repository layout
 
 ```text
-apps/web        React 19 + Vite 7 + Tailwind 4 + Motion — mobile-first PWA on uma-kit (shell, Hub map on Phaser 4, theme); PixiJS 8 for the race
-apps/api        NestJS 11 on Cloud Run — auth guard, the generation-2 save and sync, private content
-packages/domain game rules as pure, tested functions, with subpath exports per area
+apps/web        React 19 + Vite 7 + Tailwind 4 + Motion — mobile-first PWA on uma-kit (shell, Hub map on Phaser 4, theme); the two games' views; PixiJS 8 for the race
+apps/api        NestJS 11 on Cloud Run — auth guard, generation 3's save and sync (Firestore g3/{uid}), the master and content proxies
+packages/domain game rules as pure, tested functions, with subpath exports per area (account, build, career, stages, save, master, tiers, hub)
 packages/race   deterministic race engine
 scripts/        balance sims; Racer-only private overlays; the startup size check
 infra/          GCP bootstrap + GitHub Actions docs
-docs/           the manual, design, plans, tasks, technical, research, handoff packets
+docs/           the manual, design, the drawing board, tasks, technical, research, handoff packets, archives
 .github/        the verify-and-deploy workflow
 ```
 
@@ -85,48 +84,48 @@ docs/           the manual, design, plans, tasks, technical, research, handoff p
 
 | Doc | What it covers |
 |---|---|
-| [Manual](docs/game/README.md) | The game in one paragraph, the shared numbers, the glossary, the "Not built yet" rule and how the pages stay true. Lists are generated from the code (D337) |
-| [Architecture](docs/game/architecture.md) | The repo, the domain's areas and exports, the web app by folder, the dev seeds and hooks, the save and sync v2, routes, the API, private content, the art, the race, the budgets and checks, CI and deploy |
-| [01 · Game loop](docs/game/01-game-loop.md) | The loop step by step, one Uma's scenario, the roster in rotation, a week of play |
-| [02 · Check-ins](docs/game/02-check-ins-and-notifications.md) | Collect all, Repeat, queues, the check-in summary, the planner, offline time, plain words |
-| [03 · Uma progression](docs/game/03-uma-progression.md) | Racing Level, careers, advancing a scenario, one build per tier |
-| [04 · Tiers and promotion](docs/game/04-tiers-and-promotion.md) | Three tiers, promotion, Uma Tickets and Shards, tier scaling, buffs |
-| [05 · Training Hub](docs/game/05-training-hub.md) | Observatory, Lineage Hall, Gym and Dojo; constellations, Inspiration and Extra Stats |
-| [06 · Cards and bonds](docs/game/06-cards-and-bonds.md) | Every SSR open, bonds per Uma, card sets and presets, card focus, the Card Library |
-| [07 · Farm](docs/game/07-farm.md) | Sites, Pantry and Kitchen, Farm Level, jobs and queues, upgrades |
-| [08 · Items and recipes](docs/game/08-item-catalogue-and-recipes.md) | The catalogue, recipes and dish destinations |
-| [09 · Racing rewards and the Exchange](docs/game/09-racing-rewards-and-exchange.md) | Racing EXP, Prize Money, the Daily Purse, featured races, the Exchange, selling |
-| [11 · Hub and places](docs/game/11-hub-and-places.md) | The menu tree at a glance, the shell, the four pages and every place, routes, queries and redirects, the art |
-| [12 · Economy and pacing](docs/game/12-economy-and-pacing.md) | Currencies, the pacing target, the time model, the loop simulation |
-| [Racing](docs/game/racing.md), [Scenarios](docs/game/scenarios.md) | What a finish pays, handicaps and rivals; the scenario ladder and which page owns each rule |
+| [Manual](docs/game/README.md) | The game in one page, every page, and how the pages stay true. Lists are generated from the code (D337) |
+| [01 · Game loop](docs/game/01-game-loop.md) | Careers, seasons and the loop; playing again; what a career is worth |
+| [02 · Unlocks](docs/game/02-unlocks.md) | Uma and Card Tickets, the Stable, the Card Library, a card's page, eras |
+| [03 · Careers](docs/game/03-careers.md) | Starting one, the calendar, objectives, seasons, races, the URA Finals, rewards |
+| [04 · Tiers and scenarios](docs/game/04-tiers-and-scenarios.md) | The tier map, caps, card eras, careers and rivals by scenario |
+| [05 · The build](docs/game/05-the-build.md) | The wallet, the deck and posting, the tree and the session formula, skills, the racing build |
+| [06 · Cards and bonds](docs/game/06-cards-and-bonds.md) | Owned cards at full level, their real effects, bond tracks, card power |
+| [07 · Stages](docs/game/07-stages.md) | The mini-game framework: grades, pay, settling, replays, resume, `sim:stages` |
+| [08 · Training Yard](docs/game/08-training-yard.md) | The merge game |
+| [09 · Furlong Hand](docs/game/09-furlong-hand.md) | The card race |
+| [11 · Hub and places](docs/game/11-hub-and-places.md) | The menu tree at a glance, the shell, the two pages and every place, the career screens, routes, the art |
+| [12 · Pacing](docs/game/12-pacing.md) | The pay table, the targets and `sim:careers` |
+| [Racing](docs/game/racing.md), [Scenarios](docs/game/scenarios.md) | Rival handicaps, strength by season and the roll; the fifteen scenarios and which page owns each rule |
+| [Architecture](docs/game/architecture.md) | The repo, the domain's areas and exports, the sims, the web app by folder, the save and sync, the API, private content, the art, the race, the budgets and checks, CI and deploy |
 
 ### Design
 
 | Doc | What it covers |
 |---|---|
-| [Overview](docs/design/00-overview.md) | Vision, pillars, the core loop, differences from the original game |
+| [The drawing board v3](docs/research/drawing-board/README.md) | **The design of the game** (D380): its shape, the mini-games, the build on the real cards, what stays and goes, the engineering rules and the roadmap, with its research pages |
+| [Overview](docs/design/00-overview.md) | Vision, pillars, the loop, differences from the original game |
 | [UX](docs/design/ux.md) | The shell and navigation, screens, sheets, feedback and plain words, albums, accessibility |
 | [Visual System "Paddock"](docs/design/visual-system.md) | Surfaces, colour, type, shape, components, icons, art treatment, motion, density |
 | [Racing](docs/design/racing.md) | The race engine's design: catalogue, grade handicap, generated rivals, the race view |
-| [Scenario Careers](docs/design/scenario-goals.md) | Each scenario's career per Uma: a G3, two G2s, then a G1 set, and its holds |
-| [Skills & Lineage](docs/design/skills-and-inheritance.md) | Skills from nodes, SP as the only limit, lineage slots and aptitude upgrades |
-| [Badges & Achievements](docs/design/badges.md) | Badge taxonomy, tiers, titles, Trainer achievements, the Trophy Hall |
+| [Scenario Careers](docs/design/scenario-goals.md) | The career generator: her profile, the objectives' grades and how they're chosen |
+| [Skills & Lineage](docs/design/skills-and-inheritance.md) | Archived (D380): generation 2's skills and lineage |
 
 ### Plans
 
 | Doc | What it covers |
 |---|---|
-| [Game rework](docs/rework/README.md) | Where each rework page lives now, World Expeditions (phase 9, not built), and [the plan](docs/rework/13-removals-and-plan-changes.md): what left, the generation-2 save, the revised phases |
-| [Re-architecture plan](docs/rearchitecture/README.md) | How the code is rebuilt (D321–D325): target architecture, uma-platform and shared packages, Phaser, the data wipe, and [the phases](docs/rearchitecture/08-phases.md) |
-| [Tasks](docs/tasks/README.md) | **The current plan:** what shipped, what's open and next, the next free numbers, and the specs of work still ahead (see [AGENTS.md](AGENTS.md)) |
+| [Tasks](docs/tasks/README.md) | **The current plan:** the releases, what shipped, the next free numbers, and the specs of work still ahead (see [AGENTS.md](AGENTS.md)) |
 | [Change protocol](docs/change-protocol.md) | One game or both: where to ask for a change, and how a "Both apps:" kit change runs (uma-platform P50; the same text in all three repos) |
-| [Handoff](docs/handoff/README.md) | Packets for ChatGPT (the Hub's art so far, A01–A02, done), and the master prompt to start a session |
+| [Handoff](docs/handoff/README.md) | Art packets for ChatGPT, and the master prompt to start a session |
+| [Game rework](docs/rework/README.md), [Re-architecture plan](docs/rearchitecture/README.md) | Archived (D380): generation 2's game design and the code plan it ran on |
+| [Generation 2's manual](docs/archive/g2-manual/) | Archived (D380): the retired game's pages, kept as history |
 
 ### Technical
 
 | Doc | What it covers |
 |---|---|
-| [Infrastructure](docs/technical/infrastructure.md) | GCP services at about $0, CI/CD, content privacy, environments, the release runbook as run on 2026-10-15, rollback |
+| [Infrastructure](docs/technical/infrastructure.md) | GCP services at about $0, CI/CD, content privacy, environments, the release runbook, rollback |
 | [GCP Setup Guide](docs/technical/gcp-setup-guide.md) | Click-by-click Firebase and Google Cloud setup for the owner |
 
 ### Research and tracking

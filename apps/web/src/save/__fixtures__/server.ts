@@ -1,25 +1,26 @@
-// A stand-in API for the save layer's tests (T136): T135's own pure `resolveSync` and `snapshotPage` behind a fake
-// `fetch`, with its stamps and statuses (426, 400, 409, 200), so the device is tested against the server's real rules.
-// Knobs make the network misbehave: a request that never reaches it, an answer lost after the server applied it, an
-// answer that skips a change, a held answer, and a save deleted underneath the device. Synthetic content only.
+// A stand-in API for the save layer's tests (T136, T152): the API's own pure `resolveSync` and `snapshotPage` behind a
+// fake `fetch`, with its stamps and statuses (426, 400, 409, 200), so the device is tested against the server's real
+// rules. Knobs make the network misbehave: a request that never reaches it, an answer lost after the server applied it,
+// an answer that skips a change, a held answer, and a save deleted underneath the device. Invented content only.
 import {
   encodeCursor, NO_SAVE, resolveSync, selectReadSet, snapshotPage, syncReadSet, type SaveRow,
 } from '../../../../api/src/save/resolve'
-import type { BadgeStateV1, FlairEventV1 } from '@racer/domain'
-import { SIM_CONTENT, SIM_UMAS } from '@racer/domain/sim'
 import {
-  entityChanges, flairEventId, initialSave, isCurrentStamp, logDraft, parseSnapshotQuery, parseSyncRequestV2, rowKey, STAMP,
-  stampEntity, stampLog, type OperationEnv, type SaveState, type SyncChange, type SyncRequestV2,
+  isCurrentStamp, parseSnapshotQuery, parseSyncRequest, rowKey, STAMP, type OperationEnv, type SyncChange, type SyncRequest,
 } from '@racer/domain/save'
 import { vi } from 'vitest'
+import { syntheticEnv } from '../../__fixtures__/content'
+import { memoryStorage } from '../../__fixtures__/testing'
 import { createSaveApi } from '../api'
 import { bootSave, type SaveBootOptions, type SaveSession } from '../boot'
 import { SaveDb } from '../db'
 import type { LaneSignals } from '../sync'
 
-/** The rework sim's invented content; `dev` so `dev-grant` runs (M034's dev builds). */
-export const ENV: OperationEnv = Object.freeze({ content: SIM_CONTENT, dev: true })
-export const umaId = (n: number): string => SIM_UMAS[n - 1]!.id
+export { memoryStorage }
+export { cardId, umaId } from '../../__fixtures__/content'
+
+/** The invented content's env; `dev` so `dev-grant` runs (dev builds). */
+export const ENV: OperationEnv = syntheticEnv()
 
 /** A failure the next request meets: no network, or an HTTP status. */
 export type Outcome = 'offline' | number
@@ -37,7 +38,7 @@ const json = (status: number, body: unknown): Response =>
 export class FakeServer {
   readonly rows = new Map<string, SaveRow>()
   readonly requests: Request[] = []
-  /** Rows per pulled page, below T134's 1,000, to test paging. */
+  /** Rows per pulled page, below the 1,000 bound, to test paging. */
   pageRows: number | null = null
   private failures: Outcome[] = []
   private always: Outcome | null = null
@@ -92,19 +93,6 @@ export class FakeServer {
     return resolve
   }
 
-  /**
-   * An account the server already holds, built by the rules elsewhere (a state no tap on this device could reach, such
-   * as a completed Expedition run): a new account's rows at `at`, every entity `state` changes, and its ledger.
-   */
-  holdAccount(state: SaveState, at: number): void {
-    const initial = initialSave(at)
-    for (const draft of [...initial.entities, ...entityChanges(initial.state, state)]) this.rows.set(rowKey(draft), stampEntity(draft, 1, at))
-    for (const entry of state.ledger) {
-      const row = stampLog(logDraft('ledger', entry.id, entry.at, entry), at)
-      this.rows.set(rowKey(row), row)
-    }
-  }
-
   /** The server's save is deleted underneath the device (a dev reset): its next sync is a 409. */
   dropSave(): void {
     this.rows.clear()
@@ -118,8 +106,8 @@ export class FakeServer {
     return resolved.response
   }
 
-  syncs(): SyncRequestV2[] {
-    return this.requests.filter((r) => r.path === '/api/sync').map((r) => r.body as SyncRequestV2)
+  syncs(): SyncRequest[] {
+    return this.requests.filter((r) => r.path === '/api/sync').map((r) => r.body as SyncRequest)
   }
 
   count(path: string): number {
@@ -155,7 +143,7 @@ export class FakeServer {
 
   private async sync(request: Request): Promise<Response> {
     if (!isCurrentStamp(request.body)) return json(426, { code: 'upgrade-required', ...STAMP })
-    const parsed = parseSyncRequestV2(request.body)
+    const parsed = parseSyncRequest(request.body)
     if (typeof parsed === 'string') return json(400, { message: parsed })
     const resolved = resolveSync(selectReadSet(this.rows.values(), syncReadSet(parsed)), parsed, this.now(), this.env)
     if (resolved === NO_SAVE) return json(409, { code: 'no-save' })
@@ -174,21 +162,6 @@ export class FakeServer {
       return json(200, { ...resolved.response, results: resolved.response.results.slice(0, -1) })
     }
     return json(200, resolved.response)
-  }
-}
-
-/** Storage in memory. */
-export function memoryStorage(): Storage {
-  const values = new Map<string, string>()
-  return {
-    get length() {
-      return values.size
-    },
-    clear: () => values.clear(),
-    getItem: (key) => values.get(key) ?? null,
-    key: (index) => [...values.keys()][index] ?? null,
-    removeItem: (key) => void values.delete(key),
-    setItem: (key, value) => void values.set(key, String(value)),
   }
 }
 
@@ -234,41 +207,13 @@ export function fakeSignals() {
   }
 }
 
-/** A trainer badge row's data, as `createTrainerBadgeState` makes it, with a name. */
-export function trainerBadge(name = 'Hana', at = 0): BadgeStateV1 {
-  return {
-    version: 1,
-    scope: 'trainer',
-    catalogVersion: 1,
-    evaluatorVersion: 0,
-    trackingStartedAt: at,
-    sourceWatermarks: { contributors: 0, contentVersion: null },
-    aggregates: [],
-    records: [],
-    awards: { achievements: [] },
-    preferences: {
-      activeTitleId: null, showcaseGroups: [{ id: 'default', name: null, awardRefs: [] }], savedViews: [], displayName: name, pinnedUmaIds: [],
-    },
-  } as unknown as BadgeStateV1
-}
-
-/** A trainer's flair event, numbered. */
-export function flairEvent(n: number, at = 0): FlairEventV1 {
-  return {
-    version: 1, scope: 'trainer', umaId: null, kind: 'trainer-achievement', awardKey: `achievement-${n}`, stage: 'one-off', earnedAt: at,
-    source: { kind: 'collection', id: null, tier: null }, retroactive: false,
-  }
-}
-
-export const flairId = (event: FlairEventV1): string => flairEventId(event.scope, event.umaId, event.awardKey, event.stage)
-
 // --- Devices ----------------------------------------------------------------------------------------------------
 
 let databases = 0
 let operations = 0
 
 /** A database of its own for each device a test boots. */
-export const freshDb = (): SaveDb => new SaveDb(`uma-racer-g2-test-${(databases += 1)}`)
+export const freshDb = (): SaveDb => new SaveDb(`uma-racer-g3-test-${(databases += 1)}`)
 
 /** Operation ids of the right shape, unique across every device a test file boots. */
 export const nextId = (): string => `op-${String((operations += 1)).padStart(5, '0')}`
@@ -283,7 +228,7 @@ export interface Device {
 
 export type DeviceOptions = Partial<SaveBootOptions> & { readonly net?: ReturnType<typeof fakeSignals>; readonly storage?: Storage }
 
-/** Boots a device on `server`, without any cutover wipe or purge. */
+/** Boots a device on `server`. */
 export function device(server: FakeServer, options: DeviceOptions = {}): Device {
   const db = options.db ?? freshDb()
   const storage = options.storage ?? memoryStorage()
@@ -309,7 +254,7 @@ export async function settle(target: Device): Promise<void> {
 }
 
 /** Fake timers for the clock and the lane's timers; the event loop's own `setImmediate` stays real. */
-export function useClock(at = Date.UTC(2026, 9, 15, 8)): void {
+export function useClock(at = Date.UTC(2026, 10, 4, 8)): void {
   vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'Date'] })
   vi.setSystemTime(at)
 }

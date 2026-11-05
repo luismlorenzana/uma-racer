@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest'
 import type { SkillKind, SkillTemplate, UmaTemplate } from './content'
 import { cardGoldSkillIds } from './cards'
 import { awakeningSkillsOpen, ownSkillIds } from './derived'
-import { lineageInheritedUniques } from './lineage'
 
 // Lineage passes each slot's unique in its inherited form (D174), beside its baseline skills.
 
@@ -40,15 +39,6 @@ const skills = new Map([
   skill('u-grand', 'unique', 'i-grand'), skill('i-grand', 'inherited-unique'),
   skill('w-sky', 'white'),
 ].map((entry) => [entry.id, entry]))
-
-describe('inherited uniques from lineage (D174)', () => {
-  it('deduplicates by skill', () => {
-    expect(lineageInheritedUniques([sky, sky, grand], skills)).toEqual([
-      { skillId: 'i-sky', sourceId: 'sky' },
-      { skillId: 'i-grand', sourceId: 'grand' },
-    ])
-  })
-})
 
 describe('card golds (D182)', () => {
   it('reads a card’s golds from its event skills, in their order, never its hints', () => {

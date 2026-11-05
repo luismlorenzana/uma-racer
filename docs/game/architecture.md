@@ -1,21 +1,19 @@
 # Architecture
 
-How the code that runs fits together: generation 2, since the phase-3 cutover (M034, D361), with phase 6's canvas Hub
-(T145, D363), uma-art 2.10.0 (A04, D378), shared uma-kit 0.9.1 and uma-work 0.1.0 (SC5, D377; content, SE4, D376; the album, SB6, D373). The infrastructure values and the release runbook are
-[technical/infrastructure.md](../technical/infrastructure.md); what is done and what comes next is
-[the task plan](../tasks/README.md), and the phases still ahead are [docs/rearchitecture/08](../rearchitecture/08-phases.md)
-with [rework/13](../rework/13-removals-and-plan-changes.md) §4.
+The code as it runs: generation 3, released as M036 (D381–D388). The infrastructure values and the release runbook are
+[technical/infrastructure.md](../technical/infrastructure.md); what's done and what comes next is
+[the task plan](../tasks/README.md).
 
 Uma Racer reuses the **uma-planner** architecture (`../uma-planner`): a TypeScript pnpm/Turbo monorepo, a React SPA on
 Firebase Hosting, a NestJS API on Cloud Run, Firebase Auth with an owner email allowlist, and Firestore. What a game
-adds is **local-first state**, **rules that run on the device and again on the server**, **client-side race
-simulation** and a **private content pipeline**.
+adds is **local-first state**, **rules that run on the device and again on the server** (the operations, the stages'
+replays and the races), **client-side race simulation** and a **private content pipeline**.
 
 | Area | uma-planner | Uma Racer |
 |---|---|---|
 | Monorepo | pnpm workspaces + Turbo, `tsconfig.base.json` | Same |
 | Web | React, Vite, React Router, TanStack Query, Tailwind | Same stack, current majors: React 19, Vite 7, React Router 7, TanStack Query 5, Tailwind 4 |
-| API | NestJS, `AuthGuard` (Firebase ID token + `ALLOWED_EMAIL`), `AUTH_MODE=disabled` locally | Same pattern, NestJS 11 |
+| API | NestJS, `AuthGuard` (Firebase ID token + `ALLOWED_EMAIL`), `AUTH_MODE=disabled` locally | Same pattern, NestJS 11, with uma-server's guard |
 | Persistence | Repository interface with a local JSON file (dev) or Firestore (prod) | Same pattern, for the save |
 | Reference data | GameTora JSON importers | uma-platform's verified releases through `uma-data`, one racer adapter (SE1) |
 | Deploy | GitHub Actions with keyless OIDC: Artifact Registry → Cloud Run → Firebase Hosting, smoke checks | Same workflow, in the `uma-racer` project |
@@ -27,12 +25,12 @@ A pnpm 10 workspace with Turbo, on Node 22, in strict TypeScript.
 | Path | What |
 |---|---|
 | `packages/domain` (`@racer/domain`) | Every game rule, pure with no I/O ([below](#the-domain-package)). Vite, Vitest and `tsc` read its TypeScript source; `pnpm --filter @racer/domain build` also emits a CommonJS `dist/cjs` that the API imports |
-| `packages/race` (`@racer/race`) | The deterministic race engine: a seeded RNG (never `Math.random`), one-second turns recorded as a timeline at 15 samples a second, which the scene plays back |
-| `apps/web` (`@racer/web`) | React 19, Vite 7, Tailwind 4, Motion (`m.*` under `LazyMotion strict`), Zustand + Dexie, uma-kit's theme, shell, Hub map (Phaser 4, lazy) and primitives, PixiJS 8 for the race scene only, a PWA ([below](#the-web-app)) |
-| `apps/api` (`@racer/api`) | NestJS 11 on Cloud Run: the auth guard, the generation-2 save and sync, private content ([below](#the-api)) |
-| `scripts/overlays` | Only Racer's private flair/card-focus overlays, publishing and master parity checks; no GameTora or image importer (SE1) |
+| `packages/race` (`@racer/race`) | The deterministic race engine: a seeded RNG (never `Math.random`), one-second turns recorded as a timeline at 15 samples a second, which the scene plays back. Its build emits a CommonJS `dist/cjs` too, for the API's races ([below](#the-race)) |
+| `apps/web` (`@racer/web`) | React 19, Vite 7, Tailwind 4, Motion (`m.*` under `LazyMotion strict`), Zustand + Dexie, uma-kit's theme, shell, Hub map (Phaser 4, lazy) and primitives, the two games' views, PixiJS 8 for the race scene only, a PWA ([below](#the-web-app)) |
+| `apps/api` (`@racer/api`) | NestJS 11 on Cloud Run: the auth guard, generation 3's save and sync, the master and content proxies ([below](#the-api)) |
+| `scripts/overlays` (`@racer/overlays`) | The racer's private flair and card-focus overlays, their publishing, the master parity check, and the local release reader the sims use; no GameTora or image importer (SE1) |
 | `scripts/sim` | Headless balance runs (`pnpm sim:*`, [below](#the-balance-sims)) |
-| `scripts/check-size.mjs` | The startup JS budget, and the dev-only check ([below](#budgets-and-checks)) |
+| `scripts/check-size.mjs` | The startup JS budget and the dev-module check ([below](#budgets-and-checks)) |
 | `infra/` | GCP bootstrap and GitHub Actions notes |
 | `.github/workflows/deploy.yml`, `apps/api/Dockerfile`, `firebase.json` | CI, the API image and Hosting ([below](#ci-and-deploy)) |
 | `docs/` | The manual (`game/`), design, plans, tasks, technical, research and the handoff packets ([README](../../README.md#documentation-map)) |
@@ -40,133 +38,104 @@ A pnpm 10 workspace with Turbo, on Node 22, in strict TypeScript.
 ```mermaid
 flowchart LR
     subgraph iPhone["iPhone · Home Screen web app"]
-        SW[Service worker<br/>app shell + content cache]
+        SW[Service worker<br/>app shell + atlases]
         UI[uma-kit shell and racer places<br/>Motion]
         Hub[uma-kit Phaser Hub map<br/>uma-art tiles and buildings]
+        Games[Stage host<br/>Training Yard · Furlong Hand views]
         Scene[PixiJS race scene]
         Store[useSave · Zustand]
-        IDB[(Dexie uma-racer-g2<br/>kind tables + outbox)]
+        IDB[(Dexie uma-racer-g3<br/>kind tables, outbox, stage journal)]
         Rules[@racer/domain + @racer/race<br/>run on device]
         UI <--> Store
+        Games --> UI
         Scene --> UI
         Hub --> UI
         Store <--> IDB
         Store --> Rules
+        Games --> Rules
     end
     subgraph GCP["GCP project uma-racer"]
         Hosting[Firebase Hosting<br/>SPA]
         Auth[Firebase Auth<br/>owner allowlist]
         API[Cloud Run · NestJS<br/>re-runs every operation]
-        FS[(Firestore<br/>saves/uid)]
-        GCS[(Cloud Storage · private<br/>content packs + atlases)]
+        FS[(Firestore<br/>g3/uid)]
+        GCS[(Cloud Storage · private<br/>racer overlays)]
+        Master[(uma-platform<br/>master release)]
     end
     SW -.install/update.-> Hosting
     IDB -- one sync lane --> API
-    SW -- content files --> API
+    UI -- content files --> API
     API --> FS
     API --> GCS
+    API --> Master
     UI -. sign-in .-> Auth
 ```
 
 ## The domain package
 
-`@racer/domain` holds every rule as a pure function: no I/O, `Date.now`, `Math.random`, React, Dexie or browser
-globals. Time comes in as `now`, integer milliseconds; randomness from the race engine's seeded RNG, passed in.
+`@racer/domain` holds every rule as a pure function: no I/O, `Date.now`, `Math.random`, timers, React, Dexie or
+browser globals. An operation's time comes in on its envelope, integer milliseconds, and is only stamped on what it
+writes: no rule reads a clock, and nothing runs on a duration. Randomness comes from seeded RNGs passed in: a race's
+(`raceRng`), a stage's (`stageRng`).
 
 ### The domain's exports
 
 | Import | For | Resolves to |
 |---|---|---|
-| `@racer/domain` | The core: types, content-pack contracts and the rules kept from before the rework (careers and goals, the race EXP walk, the level curve, rivals, constellation and cap rules, lineage, Inspiration's pick rules, badges, flair, Trainer achievements, the race catalogue and skills, card focus) | `src/index.ts`; `dist/cjs/index.js` under `require` |
-| `@racer/domain/save` | The generation-2 save: rows, strict parsers, `initialSave`, operation envelopes and receipts, `commitOperation`, sync v2's wire types ([rework/13](../rework/13-removals-and-plan-changes.md) §6) | `src/save/index.ts`; `dist/cjs/save/…` |
-| `@racer/domain/state` | The shared state shapes and the one time factor (`types.ts`, `time.ts`): the only path to them | `src/state/index.ts` |
-| `@racer/domain/tiers` | The tier map, Racing Level, careers, advancing, promotion, Uma Tickets and Shards, tier scaling, rivals, the stand-in Expedition | `src/tiers/index.ts` |
-| `@racer/domain/items` | The 8 × 10 catalogue, crafted items, planet dishes (30 retired), Duos, Feasts and tonics, recipes, stand-ins, grade gates, work values | `src/items/index.ts` |
-| `@racer/domain/work` | Racer's adapter to `@luismlorenzana/uma-work`: its buildings, Speed Ticket warehouse, Farm EXP and ledger; Racer's gather/craft/cook/session kinds and pre-race collection | `src/work/index.ts`, `adapter.ts`, `kinds/`, `collect-before-race.ts` |
-| `@racer/domain/farm` | The Farm's buildings and slots, Farm Level, Farm jobs | `src/farm/index.ts` |
-| `@racer/domain/training` | The Training Hub's facilities, layers and unlock order, the Extra Stats map, bonds, presets, buffs, derived stats, and the re-authored trees (`training/trees/`) | `src/training/index.ts` |
-| `@racer/domain/economy` | Prize Money, the Daily Purse, featured races, the Exchange and selling (09 §10–§11) | `src/economy/index.ts` |
-| `@racer/domain/check-in` | Every operation (`OPERATIONS`, `runOnce`, `recheck`), Collect all, Repeat, batch sizing, the check-in summary, `finish-race`, `dev-grant`, the plain words | `src/check-in/index.ts` |
-| `@racer/domain/planner` | The planner's needs and suggestions | `src/planner/index.ts` |
-| `@racer/domain/sim` | `sim:loop`'s pure core, its policies and the invented content the dev seeds are built on | `src/sim/index.ts` |
-| `@racer/domain/master` | The only master-to-racer adapter, flair/card-focus interpretation and overlay envelopes | `src/master/index.ts` |
-| `@racer/domain/builds` | The committed balance reports of `sim:builds` and `sim:careers` | `src/builds/index.ts` |
-| `@racer/domain/hub` | The place registry (`PLACES`) and the Hub view the shell draws | `src/hub/index.ts` |
+| `@racer/domain` | The core kept through the restart: the vocabulary (`types.ts`), the fifteen scenarios and their eras (`scenarios.ts`), content contracts (`content.ts`), the race catalogue, series and attempt (`race-catalog.ts`, `race-series.ts`, `race-attempt.ts`: the seed, field size, best strategy and replayable run), race skills and their tags (`race-skills.ts`, `skill-tags.ts`), pack coefficients and course layouts (`race-pack.ts`, `course-layout.ts`), the rivals' roll and casting (`opponents.ts`), her own skills (`derived.ts`), cards' golds and Race Bonus (`cards.ts`), card focus (`card-focus.ts`), and the career generator with its shapes (`scenario-goals.ts`, `career-shapes.ts`, `career-stages.ts`) | `src/index.ts`; `dist/cjs/index.js` under `require` |
+| `@racer/domain/account` | Tickets, `unlock-uma`, `unlock-card` and `dev-grant` ([02](02-unlocks.md)) | `src/account/index.ts` |
+| `@racer/domain/build` | The deck and posting, the facility table and the session formula, the tree and its previews, bond tracks, skills, the racing build, card power, and `sim:decks`' core ([05](05-the-build.md), [06](06-cards-and-bonds.md)) | `src/build/index.ts` |
+| `@racer/domain/career` | The calendar and placement, the season machine, starting a career, races and the URA Finals on the engine, rewards, the stages' pay table, and `sim:careers`' core with its invented content ([03](03-careers.md), [12](12-pacing.md)) | `src/career/index.ts` |
+| `@racer/domain/stages` | The stage framework: the contract, grades and pay, the seeded dice, replay and settle, the registry, configs, `settle-stage` and `sim:stages`' core; its two games, `yard/` (Training Yard) and `furlong/` (Furlong Hand), each rules and three bots ([07](07-stages.md), [08](08-training-yard.md), [09](09-furlong-hand.md)) | `src/stages/index.ts` |
+| `@racer/domain/save` | Generation 3's save: kinds, stamps and bounds, records, rows, strict parsers, the operation registry and `commitOperation`, the wire format, a new account's rows (`initialSave`) and the operations' env (`buildOperationEnv`) ([below](#the-save-and-sync)) | `src/save/index.ts` |
+| `@racer/domain/master` | The only master-to-racer adapter, flair and card-focus interpretation and the overlay envelopes ([below](#private-content)) | `src/master/index.ts` |
+| `@racer/domain/tiers` | The tier map, the caps and SP caps (`scaling.ts`), and the rivals by scenario and season (`rivals.ts`) ([04](04-tiers-and-scenarios.md), [Racing](racing.md)) | `src/tiers/index.ts` |
+| `@racer/domain/hub` | The place registry (`PLACES`, `AWAITING_ART`), the Hub's view of the account (`hubView`), the shell's words and a card's effect words ([11](11-hub-and-places.md), [02](02-unlocks.md)) | `src/hub/index.ts` |
 
 Every entry has a `require` condition (`dist/cjs/<area>/…`) beside `default` (the TypeScript source). The API resolves
 with Node16 rules, so it takes `require` and reads the built CommonJS; everything else reads the source. Turbo builds the
 domain before any package's `lint`, `test`, `build` or `dev`. After changing a domain rule while `pnpm dev` runs,
 restart it so the API picks up the rebuilt `dist`.
 
-The core export keeps the rules the rework still reads, or uses as its parity oracle, until phase 5 rewrites them
-behind rearchitecture/01 §3's `racing`, `cards` and `badges` subpaths (D361). Its `career-shapes.ts` holds only the
-journey and preference shapes those rules read (the old `save.ts`, cut). No save migration or legacy constant remains.
+### The rules every area follows
 
-## The rework modules
-
-The rules of the [game rework](../rework/README.md), built in phase 2 (D340–D350), are the areas above from `state` to
-`hub`: `packages/domain/src/<area>/`, each exported as `@racer/domain/<area>`. Screens and the server call their
-operations and queries; no screen or API handler restates a rule or a number.
-
-| Area | Holds |
-|---|---|
-| `state` | The shared state (`ReworkState`, the profile, `UmaState`, work rows) and `TIME_FACTOR` |
-| `tiers` | The tier map, Racing Level per tier, careers, advancing, promotion, Uma Tickets and Shards, tier scaling, rivals |
-| `items` | The 8 × 10 catalogue, crafted items, planet dishes (30 retired), Duos, Feasts and tonics, recipes, stand-ins, grade gates, work values |
-| `work`, `farm` | The shared uma-work engine through Racer's adapter and kinds; Racer's building tables and Farm Level |
-| `training` | The Training Hub's facilities, layers and unlock order, the Extra Stats map, bonds, presets, buffs, derived stats; `training/trees/` the re-authored trees, their sizes and the validator |
-| `economy` | Prize Money, the Daily Purse, featured races, the Exchange and selling |
-| `check-in`, `planner` | Every operation and its plain words, Collect all, Repeat, batch sizing, the check-in summary, the planner's needs and suggestions |
-| `builds` | The committed balance reports of `sim:builds` and `sim:careers` |
-| `sim` | `pnpm sim:loop`, the whole economy from a fresh account, its CI checks, and the invented content the dev seeds use |
-| `hub` | The 23 places of the four pages with their routes, counters, uma-art frames and map positions, and `hubView`, which gathers what the shell draws: the pill's counts, tab badges, slot pips, counters, the featured Uma and the account bar's chips |
-
-The rules every area follows:
-- **Pure**, as above.
-- **Whole seconds through one time factor.** Every duration is a base formula in minutes × `TIME_FACTOR` (1.8,
-  D375; 1.2 from D338) × 60, rounded once, then divided by a building's speed and rounded once more (`state/time.ts`).
-- **Reuse, don't copy.** Where the rework keeps a rule as it was, the area imports the core's (`progression.ts`,
-  `scenario-goals.ts`, `constellation.ts`, `lineage.ts`, `opponents.ts` …). Where it changed a formula, the new one
-  lives in the area.
+- **Pure**, as above. `save/`, `career/` and `stages/` each hold a purity test that reads their source for clocks,
+  dice, I/O and browser globals. The stages go further: integers or `+ − × ÷` only (no `Math.pow`, `**` or
+  `Math.sin`), so a play replays alike on the phone's JavaScriptCore and the server's V8, pinned by golden hashes.
+- **Every change is an operation.** Each area defines its operations in its own `ops.ts`, as a parser and an `apply`
+  `(state, input, env) → { state, receipt } | Refusal`; a refusal carries plain words, never protocol names.
+  `save/operations.ts` joins them into one table, and `commitOperation` runs one: the device and the server call the
+  same function.
+- **The engine is handed in.** The domain never imports `@racer/race`: a race runs on `OperationEnv.race`
+  (`{ version, simulate }`), which the web and the API each fill with engine v9's `simulateRace`.
 - **Numbers are named constants** citing their page, pinned by tests beside the modules and in `domain.test.ts`. A
   number changes only with its page, its test and a decision entry.
-- **Art ids are uma-art's**, checked against the package's indexes by a test (`@luismlorenzana/uma-art`, a dev
-  dependency of the domain and a dependency of `@racer/web`, which draws the Hub's buildings from it).
-- **State, not saves.** Plain typed state shaped after the generation-2 save kinds. Each owner action is a pure
-  function `(state, input, now, env?) → { state, receipt } | Refusal`, and a refusal carries plain words, never protocol
-  names. `commitOperation` (`@racer/domain/save`) runs an operation once through `runOnce` and says which rows it
-  writes: the device and the server call the same function.
-- **Synthetic fixtures only.** No master data, names or ids from the private packs; each area's fixture is
+- **Real card values never enter git.** Rules read the cards' effects from the private pack at run time; the tests,
+  the fixtures and `--synthetic` sims run on invented cards (`src/__fixtures__/`, `build/decks.ts`'s `syntheticCards`,
+  `career/synthetic.ts`).
+- **Synthetic fixtures only.** No master data, names or ids from the private packs; the fixtures are
   `src/__fixtures__/<area>.ts`.
-- **The live manual.** Each area exports `LIVE_BLOCKS` from its `docs.ts`; `src/docs/render.ts` joins them as
-  `AREA_BLOCKS` beside the manual's own keys, and `src/docs/docs.test.ts` checks every page of `docs/game/` and
-  `docs/rework/` against them. `pnpm docs:update` rewrites the blocks.
-
-SC5 keeps the save generation and schema. The strict work-entry reader accepts old `farmExp` arrays and writes
-canonical `exp` arrays; old stopped-refusal `reason` becomes `message`. Frozen plans, clocks, inputs, outputs,
-collected progress and queues are never recalculated during this migration. External operation receipts retain
-Racer's `farmExp`, level/grade changes and Prize Money ledger fields. The adapter grants only actually credited
-Farm EXP, including zero at the cap, and records an upgrade charge without spending twice.
+- **The live manual.** Each area exports `LIVE_BLOCKS` from its `docs.ts` (`build`, `career`, `stages`, `tiers`,
+  `hub`); `src/docs/render.ts` joins them as `AREA_BLOCKS` beside the manual's own keys (the rivals and the
+  dependencies), and `src/docs/docs.test.ts` checks every page of `docs/game/` against them. `pnpm docs:update`
+  rewrites the blocks.
 
 ### The balance sims
 
-`scripts/sim` races the engine headless on synthetic builds, from the repo root (`pnpm sim:*`; they read the domain's
-built `dist`, so run `pnpm --filter @racer/domain build` first in a fresh checkout).
+`scripts/sim` runs the rules headless from the repo root (`pnpm sim:*`). Each reads the private pack when it is present
+locally (`MASTER_DIR`, else sibling `uma-platform/content/release`; the racer overlay from `CONTENT_DIR`), and prints
+aggregates only: never an Uma, card, skill or race id, name or value. `--synthetic` runs on the invented content, as CI
+does.
 
 | Script | Checks | Exits 1 when |
 |---|---|---|
 | `pnpm sim:balance` | The engine's strategy balance on synthetic fields (`--final` for the full matrix) | — (a report) |
-| `pnpm sim:turns` | Engine v9's targets on generated G1 fields (`ENGINE=7` or `8` compares a frozen engine) | — (a report) |
-| `pnpm sim:builds` | The stamina ladder and the G1 grid on full-layer builds at every T = 1–14 against the tier rules' fields, and each buff's typical value | A hard ladder check fails, other than the three accepted at a tier's first scenario (`LADDER_ACCEPTED_MISSES`, D350) |
-| `pnpm sim:careers` | Every career of the private pack frozen by the rework's rule, and each stage's best case on full-layer builds at every T, against [03](03-uma-progression.md) §12's targets | A career can't be frozen, or a cell falls under 25% |
-| `pnpm sim:loop` | The whole economy from a fresh account over three tiers, and [12](12-economy-and-pacing.md) §12's pacing checks; `--variant=`, `--matrix`, `--json` | A check fails |
+| `pnpm sim:decks` | Every pip bought with an empty, a median bonded and a strong bonded deck, as shares of the cap budget ([05](05-the-build.md) §10); the domain's tests run it on invented cards in CI | A band drifts, or a deck caps all five stats |
+| `pnpm sim:stages` | Every built mini-game's novice, competent and expert bots over 500 seeds on a typical career's configs ([07](07-stages.md) §6); `--seeds=`, `--kind=`. `pnpm test` and `test:ci` run it with `--synthetic` | The competent median isn't A, the novice's isn't C or B, the expert's S share leaves 35–65%, or a play leaves 3–7 minutes (Furlong Hand 3.5–6.5) |
+| `pnpm sim:careers` | Every Uma's URA Finale career played once at grade A by a fixed bot, with a median and a strong deck, its objectives and URA Finals rounds raced on the engine ([12](12-pacing.md) §3); `--attempts=`, `--umas=`. `pnpm test` and `test:ci` run it with `--synthetic` | A first-try rate or a pacing band misses its target |
 
-Flags: races per cell as a bare number, `--tiers=` (the game's scenarios T), `--ladder-only` and `--rates-only` for the
-builds, `--coverage-only` and `--content=<dir>` for the careers. `sim:builds` and `sim:careers` also take
-`--write-report`, which rewrites their committed report in `packages/domain/src/builds/`; the pages' live blocks render
-it, so CI never runs the engine. Re-run both with it after changing a rule a build or a field reads.
-`pnpm sim:loop -- --refresh-wins` does the same for the loop's win table (`packages/domain/src/sim/win-table.ts`); the
-loop itself runs on the domain's source, and its test runs the checks in CI.
+`sim:balance` and `sim:decks` run on `pnpm dlx tsx`; `sim:stages` and `sim:careers` on `@racer/overlays`' own `tsx`, so
+CI needs no download. Run them after changing a rule they read, and on the private pack before each release.
 
 ## The web app
 
@@ -174,87 +143,76 @@ loop itself runs on the domain's source, and its test runs the checks in CI.
 
 | Folder | What |
 |---|---|
-| `main.tsx` | The entry: uma-kit's setup (`app/kit.ts`), TanStack Query, uma-kit's auth provider with the game's Firebase config (`app/auth.ts`; Firebase lazy), the content provider, the kit's motion root and art provider, the session, the live router (the routes inside the kit's `BootGates`) and the kit's update prompt (`watchAppUpdates`, `UpdateNotice`). In dev builds a path under `/dev/seeds/` mounts the seeds instead |
-| `index.css` | Tailwind, then uma-kit's `theme.css` (the tokens in light and dark, the base styles and utilities) with Tailwind reading the kit's classes, then what is uma-racer's own: the fonts, the Dojo's Friend room colour and the race feed's keyframes ([below](#uma-kit)) |
-| `app/` | uma-kit's setup (`kit.ts`: the device-key prefix and Appearance at boot) and the art it draws with (`art.ts`), the router (`router.tsx`, `routes.tsx`), the start rule (`start.ts`), getting in (`auth.ts`: the Firebase config and the owner's token; `gates.tsx`: the kit's `BootGates` around the live routes), the root's save-error panel (`Root.tsx`), the session (`session.tsx`), the game port (`game.ts`, `G2Game`), its provider and 30-second clock (`GameProvider.tsx`, `clock.ts`), its lazy boot (`boot.ts`) and the rules it runs (`rules.ts`, `hubView`), the content the art reads (`content.ts`), scroll restore (`scroll.ts`) and the build id (`build.ts`) |
-| `hub/` | The racer's adapters to uma-kit's shell and Hub ([11](11-hub-and-places.md) §2, [below](#uma-kit)): `RacerShell.tsx` (the kit's frame, account bar and bottom bar with the racer's chips, Sync chip and tabs), `HubPage.tsx` (the kit's map with each page's places, pips, counters and plaza, and the floating pill), `racerHub.ts` (each page's tile page and palette, `tilePageFor`, and the pips' room colours), `PlacePeek.tsx` (the kit's side panel with the registry's Peek), the global sheets with the ☰ menu (`GlobalSheets.tsx` on the kit's sheet and place menu, `SheetHost.tsx`), the global sheets' names and navigation state (`nav.ts`) and counters (`counts.ts`) |
-| `places/` | Every place's Peek, Page, sub-pages and sheets, filled through `places/registry.tsx` (`PLACE_UI`, `SHEET_UI`, `TOWN_PLAZA`, `FLOW_UI`, `PROFILE_UI`; each a lazy chunk): `stable`, `reveal`, `warehouse`, `exchange`, `card-library`, `account`, `training`, `farm`, `racing` (its slots in `racing/ui.ts`), `check-in`, `needs`; `PlacePageHeader.tsx` is the kit's place header with a place's words, and `Unfilled.tsx` the fallback for a slot with nothing in it (none today). Each screen draws a pure view model (`model.ts`) over the rules' state |
-| `save/` | The device's generation-2 save and its one sync lane ([below](#the-save-and-sync)) |
-| `ui/` | `ui/work/` injects Racer's operation port, vocabulary, check-in sizing and recovery suggestions into `uma-kit/work`; the kit draws rows, queues, speed-up, recall, upgrades, targets and the Farm job sheet. `ItemIcon`, `TreeGraph`, `BuildingSprite`, original type/focus icons and labels, `devicePrefs.ts`; `racerAlbum.tsx` projects game rows and callbacks into the kit's album and picker. `useContentArt.ts` is the card/reveal's private-art hook; the kit's art port is `app/albumArt.tsx`. No local album or work-component fork remains |
-| `scenes/race/` | The race scene: PixiJS 8, lazy, the only PixiJS in the repo until phase 8 ([below](#the-race)) |
-| `content/` | Game-only projection (`adapt.ts`), view shapes, status/words; no local loader or byte/URL cache |
-| `app/contentRuntime.ts` | Lazy configuration of uma-kit's shared content runtime, with SE1-compatible storage keys |
-| `dev/` | The synthetic seeds' mount and the dev proofs, dev builds only ([below](#dev-seeds)) |
-| `__fixtures__/` | Test support (`testing.tsx`, `testing-ops.ts`); places keep their own under `places/*/__fixtures__/` |
+| `main.tsx` | The entry: uma-kit's setup (`app/kit.ts`), TanStack Query, uma-kit's auth provider with the game's Firebase config (`app/auth.ts`; Firebase lazy), the content provider, the kit's motion root and art provider, the session, the live router (the routes inside the kit's `BootGates`) and the kit's update prompt (`watchAppUpdates`, `UpdateNotice`) |
+| `index.css` | Tailwind, then uma-kit's `theme.css` (the tokens in light and dark, the base styles and utilities) with Tailwind reading the kit's classes, then what is uma-racer's own: the fonts and the race feed's keyframes ([below](#uma-kit)) |
+| `app/` | uma-kit's setup (`kit.ts`: the device-key prefix and Appearance at boot) and the art it draws with (`art.ts`, `albumArt.tsx`), the router (`router.tsx`, `routes.tsx`), the start rule (`start.ts`), getting in (`auth.ts`, `gates.tsx`), the root's save-error panel (`Root.tsx`), the session (`session.tsx`), the game port (`game.ts`, `RacerGame`), its provider (`GameProvider.tsx`), its lazy boot (`boot.ts`) and the rules it runs (`rules.ts`, `hubView`), the content the art reads (`content.ts`), the content runtime (`contentRuntime.ts`), scroll restore (`scroll.ts`) and the build id (`build.ts`) |
+| `hub/` | The racer's adapters to uma-kit's shell and Hub ([11](11-hub-and-places.md) §1–§2, [below](#uma-kit)): `RacerShell.tsx` (the kit's frame, account bar and bottom bar with the ticket chips, the Sync chip and the tabs), `HubPage.tsx` (the kit's map with each page's places and counters and the plaza), `PlazaFigure.tsx`, `racerHub.ts` (each page's tile page and palette), `PlacePeek.tsx` (the kit's side panel with the registry's Peek), the menu (`GlobalSheets.tsx` on the kit's sheet and place menu, `SheetHost.tsx`), the paths into the places (`nav.ts`) and the counters (`counts.ts`) |
+| `places/` | Every place's Peek and Page, filled through `places/registry.tsx` (`PLACE_UI`, each a lazy chunk, with sub-page slots and a full-screen rule): `stable`, `card-library`, `account`, `career` (the Careers place and every career's screens: the career page, Upgrade, a play, a race's run), `training-yard` and `furlong-hand` (the stage hosts as practice). `PlacePageHeader.tsx` is the kit's place header with a place's words, `PeekStat.tsx` a Peek's line, and `Unfilled.tsx` the fallback for a place with no Page (none today). Each screen draws a pure view model (`model.ts`) over the rules' state |
+| `stages/` | The stage host (`StageHost.tsx`: the rule card, the journal, resume, settle and the result; `session.ts`, `ids.ts`, `wakeLock.ts`), the games' lazy views and rule cards (`views.ts`), and each game's view, DOM and Motion with no canvas (`yard/`, `furlong/`) ([07](07-stages.md) §5) |
+| `race/` | The run screen's pieces kept from the old Racecourse: the race feed (`RaceFeed.tsx`), the bust sizing, the playback busts (`art.ts`) and the labels |
+| `scenes/race/` | The race scene: PixiJS 8, lazy, the only PixiJS in the repo ([below](#the-race)) |
+| `save/` | The device's generation-3 save and its one sync lane ([below](#the-save-and-sync)) |
+| `content/` | The game-only projection of the master release (`adapt.ts`), the view shapes (`view.ts`), the content provider and its diagnostics; no loader or byte cache of its own |
+| `ui/` | The racer's own small pieces: type, focus and race-mark icons, art tiles and the art viewer, `BuildFacts`, `BuildingSprite`, `AtlasSprite` (the kit's), labels and words, device preferences (`devicePrefs.ts`) and the card art hook (`useContentArt.ts`) |
+| `__fixtures__/` | Test support (`testing.tsx`, `memory.ts`, `content.ts`, `kit-setup.ts`); `save/`, `stages/` and `places/career/` keep their own |
 
 - **One store for game state:** `useSave` (Zustand), read through selectors and fed only by Dexie commits. Device
-  conveniences (the last page, album views, Appearance, reduced motion, race speed, seen flair) are `uma-racer:g2:`
-  localStorage keys and never sync. TanStack Query is for network data only.
-- **One port.** The shell and every place read the game only through `G2Game` (`app/game.ts`): status, the folded
-  state, the Hub view, sync, receipts and notices, `run` for a tap (the domain's `recheck`, then the operation), `logs`
-  for race results, the ledger, the Warehouse's movements and an operation's own row (its name, time and receipt: the
-  folded state never holds a confirmed tap's, so the Scenario Gate's ceremony reads it here), and `writeDevice` for
-  badge and flair rows. The seeds' in-memory port has the same shape: its operations live beside the state. Every tap and
-  device write holds the update prompt's restart until it commits (uma-kit's `criticalAction`).
+  conveniences (the last page and career, the album views, Appearance, reduced motion, race speed, the season's
+  settled plays) are `uma-racer:g3:` localStorage keys and never sync. TanStack Query is for network data only.
+- **One port.** The shell and every place read the game only through `RacerGame` (`app/game.ts`): status, the save's
+  state, the operations' env, sync, receipts and notices, `run` for a tap (one operation through `commitOperation`,
+  answered done or refused in plain words), `logs` for race results, receipts and an operation's own row, `journal`
+  for the device-only stage journal, and `now` for an operation's time. Every tap holds the update prompt's restart
+  until it commits (uma-kit's `criticalAction`). `GameProvider.tsx` also keeps a 30-second display clock
+  (`clock.ts`, `useNow`) that stops while the page is hidden; no screen reads it, and nothing writes on it.
 - **Getting in** is uma-kit's `BootGates` (SD4, `app/gates.tsx`), in both games' order: the splash, Google sign-in
   while nobody is signed in, the boot, then the start page (`start.ts`), opened once and only when the app was opened
-  at `/`. uma-racer has no first-launch step: a new account's start page is the Stable's Locked tab. The seeds' mount
-  and the tests render the routes without the gates.
+  at `/`: her career page while the career last viewed still runs, else the last page viewed, else Town Hall. The
+  tests render the routes without the gates.
 - **The session** (`app/session.tsx`) is the gates' boot: it waits for the private content (operations need its env),
-  opens the device save on it and waits for its first snapshot, then reads the start page from it. A boot that stops
-  shows the content diagnostics' words, or the save's, and its button does what helps: Try again reloads the content,
-  Switch account (a Google account that isn't the owner's, 403) signs out to the sign-in gate, and a save that couldn't
-  open reloads the page. Signing out (Account's last row) returns to the sign-in gate; with auth off (local dev) nobody
-  signs in and the phone acts signed in.
+  opens the device save on it and waits for its first snapshot. A boot that stops shows the content diagnostics' words,
+  or the save's, and its button does what helps: Try again reloads the content, Switch account (a Google account that
+  isn't the owner's, 403) signs out to the sign-in gate, and a save that couldn't open reloads the page. Signing out
+  (Account's last row) returns to the sign-in gate; with auth off (local dev) nobody signs in and the phone acts
+  signed in.
 - **Lazy by default.** The entry holds the router, the shell's frame and bars, the place registry and the port's
-  interface; the rules, the save, Dexie, Firebase, the Hub map and Phaser, the race engine and scene, and every page and
-  sheet load on demand.
-- **Generation-2 names stay.** Identifiers, the `--g2-room-friend` colour, `data-g2` attributes, storage keys and the
-  database keep their `G2`/`g2` names: renaming them changes no behaviour, and the keys and database must keep theirs.
-  What uma-kit draws carries `data-kit` (`frame`, `account-bar`, `bottom-bar`, `page`, `place-targets`, `plaza`, `pill`,
-  `peek`, `side-panel`, `sheet`, `place-header`, `place-menu`).
+  interface; the rules, the save, Dexie, Firebase, the Hub map and Phaser, each game's view and rules, the race engine
+  and scene, and every page and sheet load on demand.
+- **What uma-kit draws carries `data-kit`** (`frame`, `account-bar`, `bottom-bar`, `page`, `place-targets`, `plaza`,
+  `peek`, `side-panel`, `sheet`, `place-header`, `place-menu`), for tests.
 
 ### uma-kit
 
 The shell, the Hub map and the primitives are **`@luismlorenzana/uma-kit`**, uma-platform's package that uma-racer and
-uma-rpg both run on (uma-platform P48, its sibling plan; D367). The uma-rpg session built it by moving this game's own
-code (as of `ff8b95a`) into uma-platform's `packages/kit` and making it game-agnostic: components take values, words and
-links as props, and keep no game state. uma-racer pins it exactly (0.9.0, from GitHub Packages like uma-art) and passes
-everything that is its own in as props. Since SD4 (sibling Phase D) the screens around the game are kit frames too, and
-the API's guard is `@luismlorenzana/uma-server` (below).
+uma-rpg both run on (uma-platform P48, its sibling plan; D367). Its components take values, words and links as props,
+and keep no game state. uma-racer pins it exactly (0.9.1, from GitHub Packages like uma-art) and passes everything that
+is its own in as props. The API's guard and proxies are its sibling, `@luismlorenzana/uma-server` ([below](#the-api)).
 
 | From uma-kit | Stays uma-racer's |
 |---|---|
-| `theme.css`: the Paddock tokens in light and dark, base styles, utilities (`pt-safe`, `pb-safe`, `pb-bar-safe`, `mb-bar-safe`, `scroll-strip` …), and `fillScreen()` for iOS 26's Home Screen viewport | The fonts' `@font-face`, `--g2-room-friend`, the race feed's keyframes (`index.css`) |
-| `/ui`: the icon set, `UiMark` and `TierCrest`, `Button`, `Chip`, `Tabs`, `Panel`, `BottomSheet` and `Sheet`, `AnimatedNumber`, `MotionRoot`, reduced motion, Appearance, device preferences, `KitArtProvider` | Type/focus icons, `ItemIcon`, `BuildingSprite` and the work pieces |
-| `/roster` and `/album`: the pure query, level/work ordering and preference parsers; `AlbumChrome`, `AlbumGrid`, `VirtualGrid`, `UmaPicker`, `useAlbumPrefs`, `AlbumArtProvider`, `FaceTile`, `UmaBust`, `UmaChibi` | Stable/Card Library facets and sorts, tier-local display vs lifetime order, eligibility/refusal words, marks, unlock/reveal and follow-up actions (`ui/racerAlbum.tsx`); private art ids (`app/albumArt.tsx`), loaded/held by `/content` |
-| `/content` (SE4): `ContentProvider`, `createContentClient`, `createContentRuntime`, snapshot/cache verification, held art hooks and URLs, `AtlasFrame`/`AtlasSprite` | Master-to-game projection (`content/adapt.ts`, using `@racer/domain/master`), required overlay envelope, game-facing port and diagnostics; auth and existing storage keys passed as options |
-| `/shell`: `AppFrame`, `AccountBar`, `BottomBar`, `PlaceMenu`, `PeekPanel`, `PlaceHeader`, `FloatingPill`, and `withParam`, `navState`, `useLeave`, `peekPath` | `RacerShell` (the chips, the Sync chip, the tabs and badges, the menu's `?sheet=` link), the global sheets and their registry (`GlobalSheets`, `nav.ts`), `PlacePeek`, `PlacePageHeader`, the check-in sheet's navigation state (`collect`, `collectId`, `repeatId`) |
-| `/hub`: `HubMap` (the lazy Phaser canvas, the place links, swipes), `Pips`, the grid, `layTerrain`, the tile props, palettes and markers | Which places stand on which page and where (`@racer/domain/hub`, `AWAITING_ART`), `tilePageFor` (the ground each page draws), the rooms' pip colours (`ROOM_TONE`), the Town Hall plaza, the counters (`counts.ts`), the dev hooks' switch (`debug`, `?canvas`) |
+| `theme.css`: the Paddock tokens in light and dark, base styles, utilities (`pt-safe`, `pb-safe`, `pb-bar-safe`, `mb-bar-safe`, `scroll-strip` …), and `fillScreen()` for iOS 26's Home Screen viewport | The fonts' `@font-face` and the race feed's keyframes (`index.css`) |
+| `/ui`: the icon set, `UiMark`, `Button`, `Chip`, `Tabs`, `Panel`, `BottomSheet` and `Sheet`, `AnimatedNumber`, `MotionRoot`, reduced motion, Appearance, device preferences, `KitArtProvider` | Type, focus and race-mark icons, `BuildingSprite`, `BuildFacts` |
+| `/roster` and `/album`: the album query engine (`runAlbumQuery`), its preference parsers, `AlbumChrome`, `VirtualGrid`, `UmaPicker`, `useAlbumPrefs`, `AlbumArtProvider`, `FaceTile`, `UmaBust`, `UmaChibi` | The Stable's facets and sorts, the Library's icon filters, rows, marks and words; the private art ids (`app/albumArt.tsx`), loaded and held by `/content` |
+| `/content` (SE4): `createContentRuntime`, snapshot and cache verification, held art hooks and URLs, `AtlasFrame` | The master-to-game projection (`content/adapt.ts`, on `@racer/domain/master`), the required overlay, the game's content port and diagnostics; auth and storage keys passed as options |
+| `/shell`: `AppFrame`, `AccountBar`, `BottomBar`, `PlaceMenu`, `PeekPanel`, `PlaceHeader`, and `withParam`, `navState`, `useLeave`, `peekPath` | `RacerShell` (the ticket chips, the Sync chip, the tabs, the menu's `?sheet=` link), the menu and its host, `PlacePeek`, `PlacePageHeader`, the paths into the places (`hub/nav.ts`) |
+| `/hub`: `HubMap` (the lazy Phaser canvas, the place links, swipes), the grid, `layTerrain`, the tile props, palettes and markers | Which places stand on which page and where (`@racer/domain/hub`, `AWAITING_ART`), `tilePageFor` (the ground each page draws), the Town Hall plaza, the counters (`counts.ts`) |
 | `/auth`: `AuthProvider` (Google sign-in by redirect, Firebase loaded only by `import()`), `useAuth`, `idToken`, `signIn`, `signOut` | The Firebase config (`app/auth.ts`) |
-| `/places` (SD4): `BootGates`, `UpdateNotice` and `criticalAction`, `AccountPage`, `ShelfView`, `ExchangeRows`, `ProfileFrame`, `UnlockConfirm` | Their content: the start rule and the boot's words; Account's check-in times, sync, reduce motion, race speed and dev section; the Warehouse's shelves, row counts, stock lines, Make more and sell question; the Exchange's purse bar, family tabs and goods; the profile's sections and tabs; the multi-unlock and the reveal |
-| `/roster`: `formatLevel` ("Lv 13", "T2 · Lv 13") | The album and its query engine, until SB6 |
+| `/places` (SD4): `BootGates`, `UpdateNotice`, `watchAppUpdates` and `criticalAction`, `AccountPage`, `ProfileFrame` | Their content: the start rule and the boot's words; Account's wallet, sync, Appearance, reduce motion, race speed and dev section; her profile's sections |
 
-- **Setup** (`app/kit.ts`, called first in `main.tsx`): `configureKit({ storagePrefix: 'uma-racer:g2:' })` puts the kit's
-  device keys beside the game's own, so Account's Reduce motion keeps `uma-racer:g2:reducedMotion` and Appearance is
-  `uma-racer:g2:appearance`; neither SE1 nor a subsequent boot deletes preferences. `app/kit.test.ts` pins the keys.
-  `initAppearance()` then puts the stored Appearance on `<html data-theme>` before
-  the first render. Tests get the same prefix from `__fixtures__/kit-setup.ts`.
+- **Setup** (`app/kit.ts`, called first in `main.tsx`): `configureKit({ storagePrefix: 'uma-racer:g3:' })` puts the
+  kit's device keys beside the game's own, so Reduce motion is `uma-racer:g3:reducedMotion` and Appearance
+  `uma-racer:g3:appearance`. `app/kit.test.ts` pins the keys. `initAppearance()` then puts the stored Appearance on
+  `<html data-theme>` before the first render. Tests get the same prefix from `__fixtures__/kit-setup.ts`.
 - **Art:** the kit imports no images. `app/art.ts` hands it uma-art's `ui`, `tiles` and `buildings` atlases (each a
-  `?url` image and its JSON index) through `KitArtProvider`, around the app and around the seeds' mount; a mark or frame
-  the atlas lacks falls back (a `fallback` node, or a code-drawn building).
-- **Album art (SB6):** `GameProvider` installs the kit's `AlbumArtProvider` with `app/albumArt.tsx`. Its hook reads
-  `G2ContentContext` and the same hash-verified `ArtLoader`, holds URLs until unmount, ignores late responses and never
-  flashes a previous outfit on a changed id. Face → current per-character `face`, bust → outfit `bust`, plaza →
-  outfit `chibi`-a then bust; icon → the `uma-icons` atlas. SE1 owns adoption of published `outfit-faces`; this packet
-  uses its specified current-face fallback. The kit's preference prefix already matches every old album key, with
-  compatibility tests for query, saved views and seen ids. 0.7.1 includes the compact Filter button's VoiceOver name
-  fixed upstream in [uma-platform #28](https://github.com/luismlorenzana/uma-platform/pull/28), not forked here.
-- **Dark mode:** the theme's tokens have the same names in both modes (light is uma-racer's palette, dark uma-rpg's), so
-  a screen drawn in tokens works in both. Account's Appearance (System, Light, Dark) is the kit's `setAppearance`, kept
-  on this phone. Text on the gold accent is `text-accent-ink`, a dark surface that stays dark is `bg-stage` or
-  `bg-scrim` (never `bg-ink`, which turns light), and the PixiJS race scene keeps its own palette
-  ([visual system](../design/visual-system.md#dark-mode)).
+  `?url` image and its JSON index) through `KitArtProvider`; a mark or frame the atlas lacks falls back (a `fallback`
+  node, or a code-drawn building).
+- **Album art (SB6):** `GameProvider` installs the kit's `AlbumArtProvider` with `app/albumArt.tsx`, which reads the
+  loaded content and holds verified URLs until unmount: face → the outfit's `face`, bust → its `bust`, plaza → its
+  standing chibi then its bust; icon → the `uma-icons` atlas.
+- **Dark mode:** the theme's tokens have the same names in both modes, so a screen drawn in tokens works in both.
+  Account's Appearance (System, Light, Dark) is the kit's `setAppearance`, kept on this phone. Text on the gold accent
+  is `text-accent-ink`, a dark surface that stays dark is `bg-stage` or `bg-scrim` (never `bg-ink`, which turns light),
+  and the PixiJS race scene keeps its own palette ([visual system](../design/visual-system.md#dark-mode)).
 - **Vite:** `resolve.dedupe` keeps the kit's peers (React, React DOM, React Router, Motion, Phaser) on this app's
   copies; Vitest runs the kit through Vite (`test.server.deps.inline`) so `hub/hub.test.tsx` can stand in for its lazy
   Phaser game.
@@ -265,81 +223,65 @@ the API's guard is `@luismlorenzana/uma-server` (below).
 ### Routes
 
 The live router ([11](11-hub-and-places.md) §7) has no basename:
-- `/` is the start rule: a new account opens the Stable's Locked tab, anything that needs a tap opens the Farm page,
-  otherwise the last page viewed (`uma-racer:g2:lastPage`) or Town Hall.
-- `/:page` is a page's map (`town`, `training`, `racing`, `farm`), with `?peek=:place` for a Peek in the side panel
-  and `?sheet=menu | featured | check-in` for a global sheet, so Back closes either.
-- `/:page/:place/*` is a place: its sub-page slots, then its Page. `/collection/reveal/uma/:umaId` is the full-screen
-  reveal.
-- **Retired paths:** SE1 removes the one-release redirects and device wipe (D365). Retired/unknown paths go to `/`,
-  as `app/router.test.tsx` pins; saved data contains no paths.
+- `/` is the start rule (above).
+- `/:page` is a page's map (`town`, `career`), with `?peek=:place` for a Peek in the side panel and `?sheet=menu` for
+  the menu, so Back closes either.
+- `/:page/:place/*` is a place: its sub-page slots, then its Page with the rest of the path. The career's screens are
+  sub-routes of `/career/careers/:careerId` (`upgrade`, `play/:kind`, `race/:id`).
+- **Retired and unknown paths** go to `/`, as `app/router.test.tsx` pins; saved data holds no paths.
 
 Every route, query and sheet, as a tree from page to place to sub-page, is
 [11's menu tree](11-hub-and-places.md#the-menu-tree-at-a-glance).
 
-### Dev seeds
+### Dev builds
 
-In dev builds, `main.tsx` loads `dev/main.tsx` for `/dev/seeds`, `/dev/seeds/` and any path under it (`isSeedsPath`),
-whose root runs the start rule as `/` does, and which serves the same routes under
-that basename over an in-memory port on `@racer/domain/sim`'s invented accounts: `?seed=busy | fresh | quiet | gate |
-promote | tired | spent | stopped`, and `?at=HH:MM` to move the clock. `?save=device` boots the device save on the
-seeds' content instead, remembered for the tab until a `?seed=` (obsolete `&wipe` is ignored). It mounts no
-auth, content or service worker, so art falls back to each Uma's initial. The dev proofs sit under it
-(`/dev/seeds/dev/check-in`). In any dev build, Account's dev section runs `dev-grant`; on the seeds' in-memory port it
-also loads another seed in place. A production build holds none of it: `check-size.mjs` refuses a build with any
-`src/dev/` module, and production answers `/dev/seeds` as an unknown path.
-
-| Seed | The account |
-|---|---|
-| `busy` (the default) | `sim:loop`'s BASELINE with 25 Umas, 40 minutes after day 3's 08:00 check-in: Ready, Free, queued and busy slots together |
-| `fresh` | A new account: 20 Uma Tickets and nothing else |
-| `quiet` | Day 3's 08:00 check-in, a minute on: every Uma working, nothing to collect |
-| `gate` | `busy` with two Umas at their scenario's gate, every goal won: the Advance sheet |
-| `promote` | `busy` with two Umas through tier 1 and the stand-in Expedition: the Promote sheet |
-| `tired`, `spent` | `busy` with today's Daily Purse past its first or second edge |
-| `stopped` | `busy` with stock drained so queues dropped: Queue stopped's cards, and money for Speed up |
-
-`&art=synthetic` on a seed adds SB6's invented SVG faces and busts through the real album art port. This proof never
-loads private packs or owner data, and is absent from production. The ordinary seeds keep their initials.
-
-**Dev hooks** (dev builds only, every route): `window.__hub` (the Hub's Phaser game, uma-kit's `debug` hook: `scene`,
-`game`, `paused`), `window.__raceScene` (the run's scene: `seek`, `skipToEnd`), and `globalThis.__g2Save` (the device save's
-port, booted by the app or `?save=device`). `?canvas` on any page forces Phaser's Canvas renderer, so a preview
-screenshot captures the map (WebGL doesn't show in one). The preview pane throttles animation frames, so drive the race
-with `__raceScene` rather than waiting. `pnpm dev` serves web on 5173, proxying `/api` to the API on 8080
-(`API_PROXY_TARGET` points it elsewhere), and the API keeps its save in `apps/api/.data/save-g2.json` with
-`DEV_OPERATIONS=true`.
+There are no dev seeds and no dev-preview step (D380, D381): the owner tests in production. What dev builds add:
+- **Hooks** (dev builds only, every route): `window.__hub` (the Hub's Phaser game, uma-kit's `debug` hook: `scene`,
+  `game`, `paused`), `window.__raceScene` (the run's scene: `seek`, `skipToEnd`) and `globalThis.__racerSave` (the
+  device save's port). `?canvas` on any page forces Phaser's Canvas renderer.
+- **`dev-grant`** in Account's dev section (+5 Uma Tickets, +5 Card Tickets), which the local API runs only with
+  `DEV_OPERATIONS=true`.
+- `pnpm dev` serves web on 5173, proxying `/api` to the API on 8080 (`API_PROXY_TARGET` points it elsewhere), and the
+  API keeps its save in `apps/api/.data/save-g3.json` with `DEV_OPERATIONS=true`.
 
 ## The save and sync
 
-Generation 2 is one save in one shape, with no migrations: entities, logs and operations in one sync lane. The kinds,
-rows, bounds and wire format are [rework/13](../rework/13-removals-and-plan-changes.md) §6 ("The save as built", "The
-API as built", "The web save as built"); this is the outline.
+Generation 3 is one save in one shape, with no migrations (D381): five entities, two logs and operations in one sync
+lane. The record shapes, kinds, bounds and wire format are `packages/domain/src/save/` (`records.ts`, `kinds.ts`,
+`wire.ts`).
 
+- **The kinds:**
+  - entities `account/main`, `umas/{outfitId}`, `cards/{cardId}`, `careers/{umaId}:{T}` and
+    `bonds/{umaId}:{tier}:{cardId}`, each versioned;
+  - logs `raceResults/{opId}` and `operations/{opId}`, written once.
+
+  The device writes no rows of its own: every row changes by an operation, or by the create that makes a new account
+  (20 Uma Tickets, 24 Card Tickets).
 - **Every change is an operation** with an id chosen before the tap is written. The device applies it at once with
   `commitOperation` and queues it; the API re-runs the same function on its own rows and commits, or refuses with the
-  same plain words. A retried id returns its first receipt and is never applied twice. Only badges and flair events are
-  written as rows by the device; a new account's rows are built by the server from a create that carries only
-  `createdAt`.
-- **On the device** (`apps/web/src/save/`): Dexie `uma-racer-g2`, schema version 1, one table per kind plus the
-  `outbox`. The store is a fold of the queued operations over what the server confirmed, so a reload and the server's
-  answer fold to the same account, and a refused answer rolls a tap back with a notice. It publishes only after Dexie
-  commits.
-- **One lane** (`save/sync.ts`): the outbox flushes in order, 100 rows a request, 1.5 s after the last write, at once
-  when the app is hidden, and with a pull when it is visible or back online. Failures retry after 5 s, 30 s and
-  2 minutes, then every 5 minutes while visible. A 426 stops the lane until the app restarts; a 409 drops the device's
-  save and boots it as a new device. The Sync chip says offline, paused (signed out), amber (waiting over a day, D157)
-  or red.
-- **The boot** (`save/boot.ts`): open, local first, without any cutover request or write. An empty device pulls
-  every page; one that can't reach the save creates its own and adopts the server's on a later `exists`.
-- **No device wipe.** SE1 retires the first-boot wipe and the old redirects at their D365 boundary. Existing saves,
-  preferences and caches are not deleted. The old `&wipe` dev switch is ignored.
-- **The completed cutover (T144, D362):** the temporary purge endpoint, repository deletion code, wire parsers and
-  boot/reconnect calls are removed. Normal boot only requests save/sync. The historical `saves/{uid}/meta/purge`
-  document and any inert device/local-file markers stay untouched; no migration, wipe, reset or cache deletion runs.
-- **On the server** (`apps/api/src/save/`): `saves/{uid}/{kind}/{id}` in Firestore, one small document per row through
-  the Firestore codec (a row whose data nests arrays is stored as JSON text, D151); a sync is one transaction with every
-  read before the first write. Local dev keeps one file, `apps/api/.data/save-g2.json`.
+  same plain words. A retried id returns its first receipt and is never applied twice.
+- **The operations** (`save/registry.ts`, `save/operations.ts`), each in its area's `ops.ts`:
+  - `account`: `unlock-uma`, `unlock-card` and `dev-grant` ([02](02-unlocks.md), D381);
+  - `build`: `set-deck`, `post-card`, `buy-pips`, `pour-bond` and `buy-skill` ([05](05-the-build.md) §9, D382);
+  - `career`: `start-career`, `run-race`, `next-season` and `run-finale` ([03](03-careers.md) §7, D383). A race runs
+    inside its operation on `OperationEnv.race`, so the device and the API each run the same seeded race; without an
+    engine, the races refuse;
+  - `stages`: `settle-stage` ([07](07-stages.md) §3, D384): a play's seed and moves, replayed on the device and the
+    API through the game's rules, graded and paid into the career's wallet.
+- **Stamps:** every request and response carries protocol 3 and generation 3; anything else is 426.
+- **On the device** (`apps/web/src/save/`):
+  - Dexie `uma-racer-g3`, schema version 1: one table per kind, the outbox, and the device-only `stageJournal` (an
+    open play's moves, written on every move and on pause, so it resumes by replay: [07](07-stages.md) §4);
+  - the store is a fold of the outbox over the confirmed rows (`fold.ts`), so a refused tap rolls back with a notice;
+  - one sync lane (`sync.ts`): a write flushes 1.5 s after the last, hiding the app flushes at once, showing it or
+    coming back online flushes and pulls; failures retry after 5 s, 30 s and 2 minutes, then every 5 minutes while
+    visible; a 426 stops the lane until the app restarts, and a 409 boots the device afresh;
+  - **the generation-2 wipe:** before g3 opens, the first boot deletes the `uma-racer-g2` database and every
+    `uma-racer:g2:` key once (`wipeGeneration2`, marked by `uma-racer:g3:wiped-g2`): the owner's intended full wipe
+    (D380).
+- **On the server** (`apps/api/src/save/`): `g3/{uid}/{kind}/{id}` in Firestore; one sync is one transaction with
+  every read before the first write. Local dev keeps one file, `apps/api/.data/save-g3.json`.
+- **Generation 2's server rows** (`saves/{uid}/…`) were deleted at the release (T159), with no backup.
 
 ## The API
 
@@ -347,7 +289,7 @@ API as built", "The web save as built"); this is the outline.
 |---|---|
 | `GET /api/health` | Liveness. The only route without auth |
 | `GET /api/save` | A page of the save's rows since `since` (protocol and generation as query parameters) |
-| `POST /api/sync` | The outbox in order: the create, badge upserts, flair appends and operations, each answered in order |
+| `POST /api/sync` | The outbox in order: the create (only first) and operations, each answered in order |
 | `GET /api/master/*path` | uma-platform's schema-major-1 channel, manifests and immutable release files |
 | `GET /api/content/*path` | Only `overlay.json` and `overlays/racer.<hash16>.json` from the private racer bucket |
 
@@ -355,114 +297,110 @@ API as built", "The web save as built"); this is the outline.
   games' (SD4): a Firebase ID token whose email matches `ALLOWED_EMAIL`. No token or an invalid one is 401, a valid token
   for anyone else 403, and Firebase Admin failing to start 500. In development, `AUTH_MODE=disabled` lets every request
   in as `local-dev`.
-- **Stamps.** The save's two routes run the guard, then the stamp: anything but `protocol: 2` and `generation: 2` is
+- **Stamps.** The save's two routes run the guard, then the stamp: anything but `protocol: 3` and `generation: 3` is
   426 with nothing read or written, so a stale app can't write. Bodies are checked by the domain's parsers (400).
-- **Operations run on the same adapter as the browser:** `MasterContent` verifies the release and required private
-  overlay, then `buildOperationEnv` constructs the rule inputs. Cache identity includes both release versions; mutable
-  pointers are re-read at most once a minute. Failure gives 503 before any save write and retries immediately.
+- **Operations run on the same adapter as the browser:** `OperationContent` (`save/operation-content.ts`) reads the
+  verified release and the required private overlay through `MasterContent`, then `buildOperationEnv` with the race
+  engine. Its cache key is both release versions, `${manifest}:${overlay}`, exactly as the device's, so race seeds
+  agree on both sides; mutable pointers are re-read at most once a minute. Failure gives 503 before any save write.
+- **Races on the server.** `@racer/race` is a runtime dependency: the API imports its CommonJS build (`dist/cjs`) for
+  `simulateRace`, as it does the domain's, so `run-race` and `run-finale` settle on the same engine the phone ran.
 - **`dev-grant`** runs only when the API starts with `DEV_OPERATIONS=true`. `pnpm dev` and `pnpm api` set it through
   the API's package scripts; no deploy, Dockerfile or Cloud Run setting does, so production refuses it.
-- `app.module.test.ts` holds the API to exactly these five route patterns; HTTP tests pin both proxy guards and allowlists.
+- `app.module.test.ts` holds the API to exactly these five route patterns; HTTP tests pin both proxy guards and
+  allowlists.
 - **Modules** (`apps/api/src/`): `AppModule` imports a global `ConfigModule`, uma-server's `AuthModule` (`authModule()`:
   the guard on every route, its options read from `AUTH_MODE` and `ALLOWED_EMAIL`), `SaveModule` and uma-server's
-  `ReleaseProxyModule`/`PrivatePackModule`,
-  and serves `HealthController`. `SaveModule` (`save/`) holds `SaveController`, the repository `PERSISTENCE` picks
-  (`FirestoreSaveRepository` at `saves/{uid}`, or `LocalSaveRepository` at `LOCAL_SAVE_FILE`, default
-  `.data/save-g2.json` under the API's folder) and `OperationContent`. `master/master.module.ts` configures the published
-  shared sources/proxies after dotenv loads. `main.ts` puts every route under `/api`, takes JSON bodies up to 5 MB and
-  allows CORS from `ALLOWED_ORIGIN`.
+  `ReleaseProxyModule` and `PrivatePackModule` (`master/master.module.ts`, configured after dotenv loads), and serves
+  `HealthController`. `SaveModule` (`save/`) holds `SaveController`, the repository `PERSISTENCE` picks
+  (`FirestoreSaveRepository` at `g3/{uid}`, or `LocalSaveRepository` at `LOCAL_SAVE_FILE`, default `.data/save-g3.json`
+  under the API's folder), both on the pure `resolve.ts`, and `OperationContent`. A row whose data nests an array in an
+  array is stored as JSON text (`firestore-codec.ts`, D151). `main.ts` puts every route under `/api`, takes JSON bodies
+  up to 5 MB and allows CORS from `ALLOWED_ORIGIN`.
 
 ## Private content
 
 - **One shared source (SE1):** `@luismlorenzana/uma-data` **1.1.0**, following schema-major-1's `latest` channel.
-  Master data and original Uma/card art come from uma-platform. `@racer/domain/master` is the only interpretation:
-  stable string ids, five-star stats, Global mechanics, SSRs, Race Bonus, regular venues, career families and overlays.
-  New facts/entries follow the release without changing saves or game rules.
+  Master data and original Uma and card art come from uma-platform. `@racer/domain/master` is the only interpretation:
+  stable string ids, five-star stats, Global mechanics, SSRs and their real effects, Race Bonus, regular venues, career
+  families and overlays. New facts and entries follow the release without changing saves or game rules.
+- **Real card values** are read from the pack at run time, on the device and on the server, and are never written to
+  git, a test or a doc.
 - **Overlays** Claude keeps in the gitignored `content/overrides/`: `flair.json` (race-series legs and the ten main
-  venues, D107) and `card-focus.json` ([06](06-cards-and-bonds.md) §5). Overlay validation resolves every private
+  venues, D107) and `card-focus.json` ([06](06-cards-and-bonds.md)). Overlay validation resolves every private
   reference; git holds only semantic tags, aggregate coverage and synthetic fixtures.
-- **Art identity:** faces are platform `outfit-faces` by outfit id, exactly as RPG, not per-character crops. Busts use
-  `outfit-busts`, plaza chibis `outfit-chibis` (standing suffix `-a`), portraits `outfit-portraits`, cards
-  `support-card-art`, dresses `character-dresses`. Atlas families map to the existing game port; scenario ids map by
-  release date to Racer slugs. Kit rendering is unchanged.
+- **Art identity:** faces are platform `outfit-faces` by outfit id. Busts use `outfit-busts`, plaza chibis
+  `outfit-chibis` (standing suffix `-a`), portraits `outfit-portraits`, cards `support-card-art`. Atlas families map to
+  the game's content port; scenario ids map by release date to the racer's.
 - **Publishing:** `pnpm overlays:import` validates private authored inputs and writes an immutable hashed overlay plus
   `overlay.json`. `pnpm overlays:publish -- --dry-run` verifies bytes; publishing uploads the index last with generation
-  preconditions. Racer never imports or republishes master data/art. Only these overlay paths are API-allowlisted.
-- **Shared device loading (SE4):** uma-kit **0.9.0** `/content` owns authenticated transport, complete snapshots,
-  verified byte caching, held URLs, cancellation and responsive atlas rendering. `app/contentRuntime.ts` configures it
-  lazily; `content/ContentProvider.tsx` only projects its query/status into Racer's session and installs the kit's
-  `ContentProvider`. `content/adapt.ts` requests the release's sets/art and required overlay, then runs the one pure
-  adapter into game views; it owns no transport, fallback, cache or URL lifecycle. Atlas pages load/hold at boot;
-  image families load on demand. `AlbumArtProvider`, card/reveal art and race playback use the same shared client.
-- **Compatible persistence:** every immutable byte (including the enveloped overlay) is size/full-SHA-256 checked on
-  download **and cache hit**. Only a complete boot becomes last-good under `uma-racer:g2:master-release`, still the
-  `{ manifest, overlay }` snapshot. Cache Storage remains `uma-racer-master-v1`, keyed by
-  `https://uma-racer.invalid/master/<full-sha256>`. No migration, cache/save deletion or re-download is needed for
-  SE1's previously verified bytes. Held URLs stay valid while displayed/played; clear cancels and revokes the session.
-- **Offline:** a new runtime cold-starts on the last complete release and reloads previously viewed art from persistent
-  bytes. Corrupt cache hits repair online; partial/corrupt downloads never replace last-good state. A 401 or 403 never
-  bypasses auth by falling back. A first-time missing image keeps its icon/initial fallback.
-- **Sources:** production reads `uma-platform-master-data` and Racer's private overlay bucket through published
-  uma-server 0.2.0 proxies. Locally `MASTER_DIR` defaults to sibling `uma-platform/content/release`, `CONTENT_DIR` to
-  root `content/`; `CONTENT_SOURCE=gcs` selects buckets. No new deployment setting is required.
-- **Retirement:** old GameTora/wiki code, runtime/parsers, importer tests and `imageSource` fields are removed. On
-  2026-10-21, after deployed-source verification, 2,076 retired generated bucket objects (65,767,727 bytes) were removed
-  with exact generation preconditions (D379). Zero retired objects remain; both active overlay objects retain their
-  original generations/sizes. Authoring inputs, unrelated objects and saves are excluded. See the release runbook.
-- **Parity:** `pnpm master:parity` compares all five final Racer packs field by field; private details stay gitignored,
-  only aggregates go in the [acceptance note](../research/se1-master-data/README.md). `sim:careers` reads this adapter,
-  not old packs. CI is synthetic. SE4 deletes the remaining web loader/cache and content HTTP client; API shared proxy configuration
-  already landed in SE1, so its routes, sources, allowlist and environment stay unchanged.
+  preconditions. The racer never imports or republishes master data or art. Only these overlay paths are allowlisted.
+- **Shared device loading (SE4):** uma-kit's `/content` owns authenticated transport, complete snapshots, verified
+  byte caching, held URLs, cancellation and atlas rendering. `app/contentRuntime.ts` configures it lazily;
+  `content/ContentProvider.tsx` projects its query and status into the session and installs the kit's provider.
+  `content/adapt.ts` requests the release's sets and art and the required overlay, then runs the one pure adapter into
+  game views. Atlas pages load at boot; image families load on demand. The album art, the card art and race playback
+  use the same client.
+- **Persistence:** every immutable byte (the enveloped overlay included) is size- and full-SHA-256-checked on download
+  **and on a cache hit**. Only a complete boot becomes last-good, under `uma-racer:g3:master-release`. Cache Storage is
+  `uma-racer-master-v1`, keyed by `https://uma-racer.invalid/master/<full-sha256>`, kept from generation 2 so bytes
+  already verified on the phone are reused. Held URLs stay valid while displayed or played.
+- **Offline:** the runtime cold-starts on the last complete release and reloads previously viewed art from persistent
+  bytes. Corrupt cache hits repair online; partial or corrupt downloads never replace last-good state. A 401 or 403
+  never bypasses auth by falling back. A first-time missing image keeps its icon or initial.
+- **Sources:** production reads `uma-platform-master-data` and the racer's private overlay bucket through uma-server
+  0.2.0's proxies. Locally `MASTER_DIR` defaults to sibling `uma-platform/content/release` and `CONTENT_DIR` to the
+  root `content/`; `CONTENT_SOURCE=gcs` selects the buckets.
+- **Parity:** `pnpm master:parity` compares the racer's final packs field by field; private details stay gitignored,
+  only aggregates go in the [acceptance note](../research/se1-master-data/README.md).
 
 ## The art
 
 Two sources, kept apart:
 - **Original pixel art** is uma-platform's `@luismlorenzana/uma-art`, drawn from code and public to the owner's games.
-  The racer pins **2.10.0** exactly (A04, D378): a runtime dependency of `@racer/web`, which bundles its atlases, and a dev
-  dependency of `@racer/domain`, whose tests check every id against its indexes.
+  The racer pins **2.10.0** exactly: a runtime dependency of `@racer/web`, which bundles its atlases, and a dev
+  dependency of `@racer/domain`.
 - **Uma art** (icons, busts, faces, chibis, portraits) and card art are the original game's, so they come only from
-  the private platform release ([above](#private-content)). Without content (the dev seeds)
-  an Uma is her initial.
+  the private platform release ([above](#private-content)). Every board and screen draws in it: the Yard's face tiles,
+  Furlong Hand's Partners and rivals, the race's busts.
 
 | uma-art atlas | Read by | Shows |
 |---|---|---|
 | `buildings` (48×48, ground line at 44) | uma-kit's Hub scene on the map (through `KitArtProvider`, `app/art.ts`); `ui/BuildingSprite.tsx` in the DOM at 2× (96 pt) | Every place's building ([11](11-hub-and-places.md) §10.1) |
-| `tiles` (16 px) | uma-kit's `layTerrain` and Hub scene, on each page's tile page (`hub/racerHub.ts`) | Each page's ground, paths and props: `town`, `learning` (Training), `racing`, `farmlands` (Farm) |
-| `ui` | uma-kit's `UiMark` and `TierCrest` | The currency marks at 16 pt and the tier crests at 24 pt |
-| `items`, `dishes` (32 px) | `ui/ItemIcon.tsx` | Every catalogue item, dish, the Speed Ticket and all ten tonics by id (`tonic-1` … `tonic-10`, A04) |
+| `tiles` (16 px) | uma-kit's `layTerrain` and Hub scene, on each page's tile page (`hub/racerHub.ts`) | Each page's ground, paths and props: `town` (Town Hall), `learning` (Career) |
+| `ui` | uma-kit's `UiMark` | The ticket marks at 16 pt (`currency/uma-ticket`; `currency/card-ticket` falls back to the kit's cards icon until drawn) |
 
 **How a frame reaches the Hub.** Each place in the registry (`@racer/domain/hub`) names its `buildings` frame and its
 `at` position. `HubPage` passes them to uma-kit's map, whose scene loads the atlases `app/art.ts` hands it, snaps each
 building to the kit's grid and stamps the ground and buildings once into one texture; the DOM's place links sit on the
 same grid. A frame the pinned atlas lacks is never a blank box: the map draws the kit's code marker in the page's
-palette, and `BuildingSprite` draws the same marker as SVG. `AWAITING_ART` in `@racer/domain/hub` lists the frames the registry's frames test
-(`hub/places.test.ts`) lets be missing; it is empty since 2.6.0, so a registry frame the release lacks fails CI.
-`items/art.test.ts`, `items/families.test.ts` and `farm/buildings.test.ts` hold the catalogue and the buildings to the
-same indexes.
+palette, and `BuildingSprite` draws the same marker as SVG. `AWAITING_ART` lists the frames the frames test
+(`apps/web/src/hub/terrain.test.ts`) lets be missing; it is empty, so a registry frame the release lacks fails CI.
 
 **Drawn as pixel art, never smoothed:** in the DOM a sprite is a CSS background at a whole-number scale with
 `image-rendering: pixelated`; on the map the stamped texture uses nearest filtering at a whole number of device pixels
-per art pixel (1.5 CSS px on 2× screens, [11](11-hub-and-places.md) §12). New art goes through a handoff packet
+per art pixel ([11](11-hub-and-places.md) §12). New art goes through a handoff packet
 ([docs/handoff/](../handoff/README.md)): ChatGPT draws it in uma-platform's `scripts/pixel-art`, uma-platform publishes
-a minor release, and Claude pins it here and updates [11](11-hub-and-places.md) §10.
+a release, and Claude pins it here and updates [11](11-hub-and-places.md) §10.
 
 ## The race
 
 - **Simulation, then playback.** `simulateRace(input)` (`@racer/race`, engine v9) runs the whole race up front as
-  one-second turns and returns a timeline at 15 samples a second. A race commits as the `finish-race` operation at
-  Start race, before playback ([09](09-racing-rewards-and-exchange.md) §8–§9), so closing the app mid-race changes
-  nothing.
-- **Determinism.** Randomness comes only from a seeded RNG in the input. A result stores its seed, its course and every
-  runner's compiled skills, so it replays exactly. `packages/race` keeps every engine version; the web replays v9 only,
-  since generation 2 holds no older row.
-- **The scene** (`scenes/race/RaceScene.ts`, PixiJS, lazy) plays the timeline back at the display's refresh rate,
-  interpolating between samples (`sampleTimeline`) into pooled runner tokens with no per-frame allocation. Its own
-  renderer clock handles the gate pre-roll, close-finish slowdown, seek, skip and reduced motion; none of it is saved or
-  read by a reward.
-- **Art is playback-only:** `holdRaceBusts` holds and loads each distinct outfit's verified bust once in runner
-  order, and `RaceScene.setBusts` paints it into a circular token. Missing or invalid art leaves the gate number.
-  Pre-race, feed, result hero and finishing order use the kit's bust; only Uma selection controls use small faces.
-- **Headless runs** use the same engine in Node: the balance sims above.
+  one-second turns and returns a timeline at 15 samples a second. A career's race commits as `run-race` (or
+  `run-finale`) when **Race** is tapped, before playback ([03](03-careers.md) §4–§5), so closing the app mid-race
+  changes nothing.
+- **Determinism.** Randomness comes only from a seeded RNG in the input: `raceAttemptSeed` of the career's start, the
+  content version, her, the race, her strategy and the attempt, so a retry is a new race and the same attempt is the
+  same race on every device. A result's `raceResults` row stores its course, its seed and every runner by gate with
+  her stats, aptitudes and skills, so it replays exactly. `packages/race` keeps every engine version; the game runs v9.
+- **The run** (`places/career/RunPage.tsx`, its own lazy chunk) rebuilds the engine's input from the row, replays it,
+  and plays it in **the scene** (`scenes/race/RaceScene.ts`, PixiJS, lazy), which plays the timeline back at the
+  display's refresh rate, interpolating between samples into pooled runner tokens with no per-frame allocation. Its
+  own renderer clock handles the gate pre-roll, close-finish slowdown, seek, skip and reduced motion; none of it is
+  saved or read by a reward.
+- **Art is playback-only:** `race/art.ts` holds and loads each distinct outfit's verified bust once in runner order,
+  and the scene paints it into a circular token; missing art leaves the gate number.
+- **Headless runs** use the same engine in Node: the balance sims above, and the API's races.
 
 ## Budgets and checks
 
@@ -470,16 +408,20 @@ What CI enforces on every push and pull request:
 
 | Check | What it holds | Where |
 |---|---|---|
-| **Startup JS ≤ 180 KB gzip** | The HTML entry plus every chunk it statically imports; dynamic imports don't count. Measured at 149.76 KB on 2026-10-16 (uma-kit 0.1.2 and uma-art 2.7.0: the art provider puts the `ui`, `tiles` and `buildings` atlas indexes, about 2.2 KB gzip, in the entry), with the Hub's Phaser chunk (1.40 MB, 374 KB gzip) loaded lazily beside it | `scripts/check-size.mjs`, at the end of `pnpm build`; its own test runs first in `pnpm test` |
-| **No dev module in a build** | A production build holding any `src/dev/` module fails | `scripts/check-size.mjs` |
+| **Startup JS ≤ 180 KB gzip** | The HTML entry plus every chunk it statically imports; dynamic imports don't count. 151.86 KB at T158, with the Hub's Phaser chunk (about 1.40 MB, 374 KB gzip) loaded lazily beside it | `scripts/check-size.mjs`, at the end of `pnpm build`; its own test runs first in `pnpm test` |
+| **No dev module in a build** | A production build holding any `src/dev/` module fails (none exists since D381) | `scripts/check-size.mjs` |
 | **Types** | Every package type-checks (`tsc --noEmit`) | `pnpm lint` |
-| **Tests** | Domain, race, API and web suites, one package at a time as CI runs them (`turbo run test --concurrency=1`); `pnpm test` runs them in parallel | `pnpm test:ci` |
-| **The live manual** | Every `<!-- live:… -->` block in `docs/game/` and `docs/rework/` equals what the code renders | `packages/domain/src/docs/docs.test.ts`; `pnpm docs:update` rewrites them |
-| **Frames** | Every registry frame and catalogue art id is in the pinned uma-art | `hub/places.test.ts`, `items/art.test.ts` |
-| **Retired routes** | SE1 removes redirects; old and unknown paths land on `/` | `apps/web/src/app/router.test.tsx` |
+| **Tests** | Domain, race, API and web suites, one package at a time as CI runs them (`turbo run test --concurrency=1`), then `sim:careers` and `sim:stages` on the invented content; `pnpm test` runs the suites in parallel | `pnpm test:ci` |
+| **The bands** | `sim:decks` on invented cards (the domain's tests), `sim:stages` and `sim:careers` with `--synthetic` | `pnpm test`, `pnpm test:ci` |
+| **Purity** | The save, the career and the stages read no clock, roll no dice of their own and do no I/O; the stages use no maths that can differ between engines | `save/purity.test.ts`, `career/purity.test.ts`, `stages/purity.test.ts` |
+| **The live manual** | Every `<!-- live:… -->` block in `docs/game/` equals what the code renders | `packages/domain/src/docs/docs.test.ts`; `pnpm docs:update` rewrites them |
+| **Frames** | Every registry frame, tile and prop is in the pinned uma-art | `apps/web/src/hub/terrain.test.ts` |
+| **Targets** | Every tap target on a place is 44 pt or more at 390×844 | `apps/web/src/places/targets.test.tsx` |
+| **A whole career** | A URA Finale career walked end to end on the screens, on invented content with fixed seeds | `apps/web/src/places/career/Walkthrough.test.tsx` |
+| **Retired routes** | Old and unknown paths land on `/` | `apps/web/src/app/router.test.tsx` |
 | **The API's routes** | Exactly the five routes [above](#the-api) | `apps/api/src/app.module.test.ts` |
 
-What a change that moves files or imports checks by hand (T143's checks, still true on 2026-10-15):
+What a change that moves files or imports checks by hand:
 - **Reach.** Every web source file is reachable from `src/main.tsx`, and every domain source file from an export entry
   or `src/docs/render.ts`. From `apps/web`, this prints nothing (for the domain, list every export entry and
   `src/docs/render.ts` in `files`):
@@ -488,15 +430,22 @@ What a change that moves files or imports checks by hand (T143's checks, still t
   pnpm exec tsc -p tsconfig.reach.json --listFilesOnly | sed -n "s|^$PWD/||p" | sort > /tmp/reach; rm tsconfig.reach.json
   git ls-files 'src/*.ts' 'src/*.tsx' | grep -v -E '\.test\.tsx?$|/__fixtures__/|\.d\.ts$' | sort | comm -23 - /tmp/reach
   ```
-- **Nothing old remains** ([rework/13](../rework/13-removals-and-plan-changes.md) §8–§9). This finds only "racing RPG"
-  (the PWA's description), `uma-rpg` citations, `friendshipBonus` and the router test that walks the deleted routes:
+- **Nothing old remains** (D381). This finds only the tests that assert those words are absent, the router test that
+  walks retired paths, `uma-planner` citations, and comments that name what left (the generator's lineage note, the
+  shell's "no Speed Tickets", the registry's retired buildings):
   ```bash
-  git grep -i -E "puzzle|friendship|constellation level|training ticket|card coupon|inspiration token|rpg|priconne|spark rival" -- apps packages scripts
+  git grep -i -E "uma-work|kit/work|check-in|prize money|speed ticket|constellation|lineage|inspiration|racing exp|racing level|farm level|warehouse|planner|expedition|trophy hall|time_factor|sim:loop" -- apps packages scripts
   ```
-- **PixiJS for the race only** until phase 8 ports it to Phaser: `pixi.js` is imported only under `scenes/race/`.
-- **Phaser for the Hub only:** `phaser` (4.2.1, exact) is uma-kit's peer, imported only by the kit's Hub scene in the
-  lazy chunk its map loads (`createHubGame`); no uma-racer module imports it. The Hub's game is destroyed whenever its
-  map unmounts, so it never runs beside the race scene.
+- **No clock in the rules.** This prints only comments that say the rules never use `Math.random`:
+  ```bash
+  git grep -n -E "Date\.now|setTimeout|setInterval|Math\.random" -- packages/domain/src ':!*.test.ts'
+  ```
+  On the device, `Date.now` and timers belong to the sync lane, the UI and the scenes only.
+- **PixiJS for the race only:** `pixi.js` is imported only under `scenes/race/`.
+- **Phaser only in a scene, lazy:** `phaser` (4.2.1, exact) is uma-kit's peer, imported today only by the kit's Hub
+  scene in the lazy chunk its map loads (`createHubGame`); no uma-racer module imports it. A mini-game that needs a
+  canvas takes it in its own lazy `stages/*/scene` (v3 §6); the two built games are DOM. The Hub's game is destroyed
+  whenever its map unmounts, so it never runs beside a stage or the race scene.
 - **Nothing duplicated from uma-kit:** no module under `apps/web/src` copies a kit component, and every former import
   site uses the kit. From `apps/web`, this prints nothing:
   ```bash
@@ -506,8 +455,9 @@ What a change that moves files or imports checks by hand (T143's checks, still t
   `docs/decisions.md`'s links to deleted pages, which stay as written.
 
 The service worker precaches files up to 3 MB, so the Phaser chunk and uma-art's atlases are on the phone after
-install. Every screen is 390×844 portrait first, with 44 pt targets, safe-area padding, and transform and opacity
-animation only ([game-web-tech.md](../research/game-web-tech.md)).
+install; the private content is the kit runtime's, never a Workbox cache. Every screen is 390×844 portrait first, with
+44 pt targets, safe-area padding, and transform and opacity animation only
+([game-web-tech.md](../research/game-web-tech.md)).
 
 ## CI and deploy
 
@@ -523,51 +473,21 @@ animation only ([game-web-tech.md](../research/game-web-tech.md)).
   deploy. Any other push to `main` deploys.
 
 The pieces it ships:
-- **The API image** (`apps/api/Dockerfile`) is multi-stage, as uma-rpg's: install the workspace, build the domain's
-  CommonJS `dist` and the API, then `pnpm deploy --prod --legacy` into a Node 22 image on port 8080. Cloud Run runs it
-  with min 0 and max 1 instances, 512 MiB, `PERSISTENCE=firestore`, `CONTENT_SOURCE=gcs` and the owner's
-  `ALLOWED_EMAIL`; nothing sets `DEV_OPERATIONS`.
+- **The API image** (`apps/api/Dockerfile`) is multi-stage, as uma-rpg's: install the workspace, build the domain's and
+  the race engine's CommonJS `dist` and the API, then `pnpm deploy --prod --legacy` into a Node 22 image on port 8080.
+  Cloud Run runs it with min 0 and max 1 instances, 512 MiB, `PERSISTENCE=firestore`, `CONTENT_SOURCE=gcs` and the
+  owner's `ALLOWED_EMAIL`; nothing sets `DEV_OPERATIONS`.
 - **Hosting** (`firebase.json`) serves `apps/web/dist` as an SPA (every path rewrites to `index.html`): `/assets/**`
   cached for a year as immutable; the shell, `sw.js`, the manifest and Workbox's files `no-cache`. Hosting has no
   `/api` rewrite, so `https://uma-racer.web.app/api/*` answers with the SPA shell; the API is only on its Cloud Run URL.
 
-GCP auth is keyless (WIF). `@luismlorenzana/*` packages (uma-art, uma-kit) install from GitHub Packages with the
-workflow's token, which reads a package only once its Manage Actions access grants this repository Read
-([infrastructure](../technical/infrastructure.md#cicd-adapted-from-uma-planner)). The
-image build receives the token as a BuildKit secret, so it never lands in a layer. Locally:
-`NODE_AUTH_TOKEN=$(gh auth token) pnpm install`. The infrastructure's values and the release runbook are
-[technical/infrastructure.md](../technical/infrastructure.md).
+GCP auth is keyless (WIF). `@luismlorenzana/*` packages (uma-art, uma-kit, uma-data, uma-server) install from GitHub
+Packages with the workflow's token, which reads a package only once its Manage Actions access grants this repository
+Read ([infrastructure](../technical/infrastructure.md#cicd-adapted-from-uma-planner)). The image build receives the
+token as a BuildKit secret, so it never lands in a layer. Locally: `NODE_AUTH_TOKEN=$(gh auth token) pnpm install`. The
+infrastructure's values and the release runbook are [technical/infrastructure.md](../technical/infrastructure.md).
 
-## Decided at the switch (T143)
-
-How generation 2 became the app (D361). The plan-level choices (the tag, the deletion lists and their checks) are
-[rework/13](../rework/13-removals-and-plan-changes.md) §8's.
-
-| Choice | Why |
-|---|---|
-| The rework areas drop the `rework/` segment: `exchange` becomes `economy`, `constellation` goes under `training/trees`, the shared state under `state` | One rule for every area; 09 §10–§11 names `economy`; the core's `constellation.ts` stays, so its name can't be a folder |
-| The core's kept modules stay in the main export; rearchitecture/01 §3's `racing`, `cards` and `badges` subpaths wait for phase 5, and so do the rules the rework reads or uses as its parity oracle (the race EXP walk, the career planner, the old rivals for `sim:balance` and `sim:turns`, the badge and race-record parsers) | Phase 5 rewrites `content.ts` and its readers anyway; deleting an oracle would drop the parity it proves |
-| The old `save.ts` is cut to the shapes kept rules read and renamed `career-shapes.ts`; the `UmaSave` view `careerView` returns loses Training Level, Extra stats and Inspiration, and the Trainer's fingerprints hash that smaller view | `@racer/domain/save` is generation 2's; careers and badges still read journey shapes; generation 2 has no stored fingerprint yet |
-| `@racer/domain/state` is the only path to the shared shapes and the time factor | A second path to the same names is a compatibility re-export |
-| `cardRaceBonus(template)` takes no stars and pays the full value; `starNodePct` stays only for the rivals' 84% card factor | D329 pays every card 100%, which the rework already passed as 3★, so no number moves; the rivals' factor is their build (D336) |
-| Fixtures take their area's name (`src/__fixtures__/<area>.ts`); the race catalogue the Exchange tests read is `economy.ts` | One naming rule |
-| `src/docs/rework.ts` folds into `render.ts` as `AREA_BLOCKS`; the manual's retired keys (the fourteen-scenario ladder, caps, buffs and the 1–140 level table) leave `render.ts` with their pages' rewrite | A list no page shows is dormant code; 04 and 03 render what runs |
-| Sims are renamed `sim:builds` and `sim:careers`, and their harness loses the old `buildStats` and the helpers only deleted sims used | The `rework` prefix leaves with `rework/`; those read Training Levels, stars and the old Extra stats |
-| The session boots the device save once the content is ready; before it opens, a signed-out phone or failing content gets one full-screen panel; after, signing out pauses sync and play goes on. Account's last row is Sign in or Sign out | A cold boot without content can't run a rule; an open save keeps the owner's taps |
-| One `idToken()` in `auth/firebase.ts` feeds the content client and the save's token provider; `api/client.ts` keeps only the content client | One token source, and the save's client stays in its lazy chunk |
-| Every tap and device write holds the update prompt's restart until it commits (`criticalGameplayAction`) | The installed app defers a restart across gameplay commits |
-| The seeds are a dev-only mount at `/dev/seeds/*`, with the dev proofs under it; `check-size.mjs` refuses a build holding any `src/dev/` module | Every place link is absolute, so the seeds need a basename; proofs stay under `/dev/` and dev-only (11 §7.2) |
-| The content runtime ignores manifest files it has no kind for, keeps its manifest under `uma-racer:g2:content-manifest`, and the service worker caches content as `uma-racer-g2-content` | The old manifest stays readable until T144 publishes the new one; under the old names the wipe would delete what the app had just fetched |
-| The wipe finds the old dev proof databases by their shared shape, `<name>-proof-*` | The same databases, dev builds only, without naming a retired mode in code |
-| `g2/` moved to `app/`, `hub/`, `places/`, `save/`, `ui/` and `dev/`; test support to `__fixtures__/`; the `G2`/`g2` names stay in identifiers, CSS classes, `data-g2` attributes and storage keys | Renaming every identifier changes no behaviour, and the keys and database must keep their names |
-| The old race plan, fit and facts, goals, flair, badge-collection and trainer views and badge frame moved to `places/racing/`; the album query moved to `ui/album/` at the switch and then to uma-kit in SB6; the Root and Account read the build id through `app/build.ts` | A module lives with the place that uses it, or in the shared kit when both games share it |
-| The build-beside boundaries test went whole | With one app, the reach check and the PixiJS check hold what remains |
-| The icon set loses the five icons that drew only retired things; the new game's four join the set | Whole deletion for retired systems; generic icons stay as the visual system's |
-| The API keeps the Firestore codec (D151), moved into the save module; `app.module.test.ts` held it to six routes at the switch (five after D362 retires the purge) | Generation 2's repository stores work rows through it; the API answers only those routes |
-| `pnpm dev` and `pnpm api` start the API with `DEV_OPERATIONS=true`; `.env.example` documents it, commented out | `dev-grant` works locally without a hand-edited `.env`; nothing that deploys sets it |
-| A data import keeps only the atlases and art families `scripts/assets` builds | T144 needs a manifest with none of the retired art, and naming the kept families keeps retired names out of code |
-| The domain's reach check roots at every export entry plus `src/docs/render.ts` | The renderer and each area's `docs.ts` run only under `pnpm docs:update` and the docs test |
-| The redirects and the first-boot wipe leave with the next phase that ships (phase 4 or 5: T145 didn't count, D365) | 11 §7.2 ties them to phase 4, which ships only if the owner asks (D336) |
+Generation 2's layout and the choices made at its switch (T143) are in git history: `git show c592ccd:docs/game/architecture.md`.
 
 ## Dependencies
 
@@ -578,7 +498,6 @@ How generation 2 became the app (D361). The plan-level choices (the tag, the del
 | @racer/web | @luismlorenzana/uma-art | 2.10.0 | runtime |
 | @racer/web | @luismlorenzana/uma-data | 1.1.0 | runtime |
 | @racer/web | @luismlorenzana/uma-kit | 0.9.1 | runtime |
-| @racer/web | @luismlorenzana/uma-work | 0.1.0 | runtime |
 | @racer/web | @racer/domain | workspace:* | runtime |
 | @racer/web | @racer/race | workspace:* | runtime |
 | @racer/web | @tanstack/react-query | ^5.102.8 | runtime |
@@ -607,14 +526,15 @@ How generation 2 became the app (D361). The plan-level choices (the tag, the del
 | @racer/web | vite | ^7.3.6 | dev |
 | @racer/web | vite-plugin-pwa | ^1.3.0 | dev |
 | @racer/web | vitest | ^3.2.7 | dev |
-| @racer/api | @luismlorenzana/uma-data | 1.1.0 | runtime |
 | @racer/api | @google-cloud/storage | ^7.22.0 | runtime |
+| @racer/api | @luismlorenzana/uma-data | 1.1.0 | runtime |
 | @racer/api | @luismlorenzana/uma-server | 0.2.0 | runtime |
 | @racer/api | @nestjs/common | ^11.2.4 | runtime |
 | @racer/api | @nestjs/config | ^4.0.4 | runtime |
 | @racer/api | @nestjs/core | ^11.2.4 | runtime |
 | @racer/api | @nestjs/platform-express | ^11.2.4 | runtime |
 | @racer/api | @racer/domain | workspace:* | runtime |
+| @racer/api | @racer/race | workspace:* | runtime |
 | @racer/api | firebase-admin | ^13.10.0 | runtime |
 | @racer/api | reflect-metadata | ^0.2.2 | runtime |
 | @racer/api | rxjs | ^7.8.2 | runtime |
@@ -624,7 +544,6 @@ How generation 2 became the app (D361). The plan-level choices (the tag, the del
 | @racer/api | typescript | ~5.9.3 | dev |
 | @racer/api | vitest | ^3.2.7 | dev |
 | @racer/domain | @luismlorenzana/uma-data | 1.1.0 | runtime |
-| @racer/domain | @luismlorenzana/uma-work | 0.1.0 | runtime |
 | @racer/domain | @luismlorenzana/uma-art | 2.10.0 | dev |
 | @racer/domain | typescript | ~5.9.3 | dev |
 | @racer/domain | vitest | ^3.2.7 | dev |

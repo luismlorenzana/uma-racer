@@ -1,14 +1,15 @@
-// Racer-only private badge/title overlay, shared by the device and API (SE1; docs/design/badges.md).
+// Racer-only private race-series overlay (the flair override): which race families make each series' legs, shared by
+// the device and API (SE1). The career generator's Main G1 sets read it; badges and titles retired with D380.
 
 import {
   FLAIR_SERIES_LEG_KEY_PATTERN,
   FLAIR_SERIES_REQUIRED_LEGS,
   FLAIR_SERIES_TAGS,
-  SAVE_ID_PATTERN,
   flairSeriesLegId,
   type FlairSeriesTag,
-  type RaceTemplate,
-} from '../index'
+} from '../race-series'
+import { SAVE_ID_PATTERN } from '../career-shapes'
+import type { RaceTemplate } from '../content'
 
 interface FlairOverrideLeg {
   key: string

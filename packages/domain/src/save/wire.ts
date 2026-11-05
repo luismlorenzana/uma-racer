@@ -1,13 +1,11 @@
-// Sync v2 on the wire (docs/rearchitecture/01-target-architecture.md §4.3; docs/rearchitecture/07-data-reset.md §3–§4;
-// T134). Every request and response carries `protocol: 2` and `generation: 2`, and anything else is the caller's 426.
-// One ordered lane of changes: the create (only first), the device's badge upserts and flair appends, and operations.
-// Entities are versioned, logs are first write wins, operations are re-run, and a missing save accepts only a create.
-// Each parser returns the value or a developer's reason; the screens never show it.
-import type { BadgeStateV1, FlairEventV1 } from '../badges'
-import { isRefusal, type Refusal } from '../state/types'
+// Sync on the wire, generation 3 (D381). Every request and response carries `protocol: 3` and `generation: 3`, and
+// anything else is the caller's 426. One ordered lane of changes: the create (only first) and operations. Entities are
+// versioned, logs are first write wins, operations are re-run, and a missing save accepts only a create. Each parser
+// returns the value or a developer's reason; the screens never show it.
 import { parseOperationEnvelope, type OperationEnvelope } from './commit'
-import { isRowId, OPERATION_ID_PATTERN, SAVE_GENERATION, SAVE_LIMITS, SAVE_PROTOCOL, type DeviceKind } from './kinds'
-import { exactKeys, isJson, isNonNegativeInt, isObject, isPositiveInt, isTimestamp, jsonBytes, parseEntityData, parseEntityRow, parseLogData, parseLogRow, parseRefusal } from './parse'
+import { OPERATION_ID_PATTERN, SAVE_GENERATION, SAVE_LIMITS, SAVE_PROTOCOL } from './kinds'
+import { exactKeys, isJson, isObject, isTimestamp, jsonBytes, parseEntityRow, parseLogRow, parseRefusal } from './parse'
+import { isRefusal, type Refusal } from './registry'
 import { rowKey, type EntityRow, type LogRow } from './rows'
 
 /** The stamp on every request and response. */
@@ -20,7 +18,7 @@ export const STAMP: Stamp = Object.freeze({ protocol: SAVE_PROTOCOL, generation:
 
 /**
  * Whether a request is this generation's: `protocol` and `generation` are read before anything else, and anything other
- * than 2 and 2 is the caller's 426 (07 §4). A GET passes its query's values as numbers.
+ * than 3 and 3 is the caller's 426. A GET passes its query's values as numbers.
  */
 export const isCurrentStamp = (value: unknown): boolean =>
   isObject(value) && value.protocol === SAVE_PROTOCOL && value.generation === SAVE_GENERATION
@@ -31,23 +29,16 @@ export const isCurrentStamp = (value: unknown): boolean =>
 export type SyncChange =
   /** The initial save: the server builds its rows from `createdAt` (`initialSave`). At most one, and only first. */
   | { readonly type: 'create'; readonly createdAt: number }
-  /** A badge row; `baseVersion` 0 creates it. */
-  | { readonly type: 'upsert'; readonly kind: 'badges'; readonly id: string; readonly baseVersion: number; readonly data: BadgeStateV1 }
-  /** A flair event; the first write wins. */
-  | { readonly type: 'append'; readonly kind: 'flairEvents'; readonly id: string; readonly at: number; readonly data: FlairEventV1 }
   | { readonly type: 'operation'; readonly operation: OperationEnvelope }
 
-export interface SyncRequestV2 extends Stamp {
+export interface SyncRequest extends Stamp {
   readonly changes: readonly SyncChange[]
 }
-
-const DEVICE_WRITES: Readonly<Record<'upsert' | 'append', DeviceKind>> = { upsert: 'badges', append: 'flairEvents' }
 
 /** A change's key in one request: two changes of one row or one operation are refused. */
 function changeKey(change: SyncChange): string {
   if (change.type === 'create') return 'create'
-  if (change.type === 'operation') return `operations/${change.operation.id}`
-  return rowKey(change)
+  return `operations/${change.operation.id}`
 }
 
 function parseChange(value: unknown, index: number): SyncChange | string {
@@ -56,22 +47,6 @@ function parseChange(value: unknown, index: number): SyncChange | string {
     if (!exactKeys(value, ['type', 'createdAt']) || !isTimestamp(value.createdAt)) return 'a create is exactly { type, createdAt }'
     if (index !== 0) return 'a create comes first'
     return { type: 'create', createdAt: value.createdAt }
-  }
-  if (value.type === 'upsert' || value.type === 'append') {
-    if (value.kind !== DEVICE_WRITES[value.type]) return `${String(value.kind)} changes only by operation`
-    if (!isRowId(value.id)) return `change ${index} has an invalid id`
-    if (value.type === 'upsert') {
-      if (!exactKeys(value, ['type', 'kind', 'id', 'baseVersion', 'data']) || !isNonNegativeInt(value.baseVersion)) return 'an upsert is exactly { type, kind, id, baseVersion, data }'
-      const data = parseEntityData('badges', value.data, value.id)
-      if (data === null) return `invalid badges/${value.id}`
-      if (jsonBytes(value) > SAVE_LIMITS.rowBytes) return `badges/${value.id} is over ${SAVE_LIMITS.rowBytes} bytes`
-      return { type: 'upsert', kind: 'badges', id: value.id, baseVersion: value.baseVersion, data }
-    }
-    if (!exactKeys(value, ['type', 'kind', 'id', 'at', 'data']) || !isTimestamp(value.at)) return 'an append is exactly { type, kind, id, at, data }'
-    const data = parseLogData('flairEvents', value.data, value.id)
-    if (data === null || data.earnedAt !== value.at) return `invalid flairEvents/${value.id}`
-    if (jsonBytes(value) > SAVE_LIMITS.rowBytes) return `flairEvents/${value.id} is over ${SAVE_LIMITS.rowBytes} bytes`
-    return { type: 'append', kind: 'flairEvents', id: value.id, at: value.at, data }
   }
   if (value.type === 'operation') {
     if (!exactKeys(value, ['type', 'operation'])) return 'an operation change is exactly { type, operation }'
@@ -82,8 +57,8 @@ function parseChange(value: unknown, index: number): SyncChange | string {
 }
 
 /** The device's outbox: stamped, at most 100 changes and 2 MiB, a create only first, each row and operation once. */
-export function parseSyncRequestV2(value: unknown): SyncRequestV2 | string {
-  if (!isCurrentStamp(value)) return 'protocol 2 and generation 2 only'
+export function parseSyncRequest(value: unknown): SyncRequest | string {
+  if (!isCurrentStamp(value)) return 'protocol 3 and generation 3 only'
   const body = value as Record<string, unknown>
   if (!exactKeys(body, ['protocol', 'generation', 'changes']) || !Array.isArray(body.changes)) return 'a sync is exactly { protocol, generation, changes }'
   if (body.changes.length > SAVE_LIMITS.changes) return `at most ${SAVE_LIMITS.changes} changes a sync`
@@ -106,20 +81,13 @@ export function parseSyncRequestV2(value: unknown): SyncRequestV2 | string {
 /** One change's answer, in the request's order. */
 export type SyncResult =
   | { readonly type: 'create'; readonly status: 'created' | 'exists' }
-  | { readonly type: 'upsert'; readonly kind: 'badges'; readonly id: string; readonly status: 'applied'; readonly version: number }
-  /** The server's copy, if it has one, is in the response's `entities`. */
-  | { readonly type: 'upsert'; readonly kind: 'badges'; readonly id: string; readonly status: 'conflict' }
-  | { readonly type: 'append'; readonly kind: 'flairEvents'; readonly id: string; readonly status: 'appended' | 'exists' }
   | { readonly type: 'operation'; readonly id: string; readonly status: 'applied' | 'repeated'; readonly receipt: unknown }
   | { readonly type: 'operation'; readonly id: string; readonly status: 'refused'; readonly refusal: Refusal }
   /** A malformed input, or a caller's bug the rules threw on: the outbox drops it and says "That didn't work. Try again." */
   | { readonly type: 'operation'; readonly id: string; readonly status: 'invalid' }
 
-/**
- * What a sync wrote: one result per change, every row it wrote, the server's copy of each conflicted row, and every
- * entity of the save after an `exists`.
- */
-export interface SyncResponseV2 extends Stamp {
+/** What a sync wrote: one result per change, every row it wrote, and every entity of the save after an `exists`. */
+export interface SyncResponse extends Stamp {
   readonly serverTime: number
   readonly results: readonly SyncResult[]
   readonly entities: readonly EntityRow[]
@@ -127,7 +95,7 @@ export interface SyncResponseV2 extends Stamp {
 }
 
 /** `GET /api/save`: the rows saved after `since`, one page at a time; `cursor` is null on the last page. */
-export interface SaveSnapshotV2 extends Stamp {
+export interface SaveSnapshot extends Stamp {
   readonly serverTime: number
   readonly entities: readonly EntityRow[]
   readonly logs: readonly LogRow[]
@@ -140,19 +108,6 @@ function parseResult(value: unknown): SyncResult | null {
   if (!isObject(value)) return null
   if (value.type === 'create') {
     return exactKeys(value, ['type', 'status']) && (value.status === 'created' || value.status === 'exists') ? { type: 'create', status: value.status } : null
-  }
-  if (value.type === 'upsert') {
-    if (value.kind !== 'badges' || !isRowId(value.id)) return null
-    if (value.status === 'applied') {
-      return exactKeys(value, ['type', 'kind', 'id', 'status', 'version']) && isPositiveInt(value.version)
-        ? { type: 'upsert', kind: 'badges', id: value.id, status: 'applied', version: value.version } : null
-    }
-    return value.status === 'conflict' && exactKeys(value, ['type', 'kind', 'id', 'status']) ? { type: 'upsert', kind: 'badges', id: value.id, status: 'conflict' } : null
-  }
-  if (value.type === 'append') {
-    return value.kind === 'flairEvents' && isRowId(value.id) && exactKeys(value, ['type', 'kind', 'id', 'status']) &&
-      (value.status === 'appended' || value.status === 'exists')
-      ? { type: 'append', kind: 'flairEvents', id: value.id, status: value.status } : null
   }
   if (value.type !== 'operation' || !isOpId(value.id)) return null
   if (value.status === 'applied' || value.status === 'repeated') {
@@ -181,8 +136,8 @@ function parseRows<R extends { readonly kind: string; readonly id: string }>(val
   return rows
 }
 
-export function parseSyncResponseV2(value: unknown): SyncResponseV2 | string {
-  if (!isCurrentStamp(value)) return 'protocol 2 and generation 2 only'
+export function parseSyncResponse(value: unknown): SyncResponse | string {
+  if (!isCurrentStamp(value)) return 'protocol 3 and generation 3 only'
   const body = value as Record<string, unknown>
   if (!exactKeys(body, ['protocol', 'generation', 'serverTime', 'results', 'entities', 'logs']) || !isTimestamp(body.serverTime) ||
     !Array.isArray(body.results)) return 'a sync answer is exactly { protocol, generation, serverTime, results, entities, logs }'
@@ -199,17 +154,16 @@ export function parseSyncResponseV2(value: unknown): SyncResponseV2 | string {
 export function resultAnswers(change: SyncChange, result: SyncResult): boolean {
   if (change.type !== result.type) return false
   if (change.type === 'create') return true
-  if (change.type === 'operation') return result.type === 'operation' && result.id === change.operation.id
-  return 'kind' in result && result.kind === change.kind && result.id === change.id
+  return result.type === 'operation' && result.id === change.operation.id
 }
 
 /** Whether a response answers every change of its request, one each, in order (T136 applies nothing otherwise). */
-export const answersRequest = (request: Pick<SyncRequestV2, 'changes'>, response: Pick<SyncResponseV2, 'results'>): boolean =>
+export const answersRequest = (request: Pick<SyncRequest, 'changes'>, response: Pick<SyncResponse, 'results'>): boolean =>
   request.changes.length === response.results.length && request.changes.every((change, i) => resultAnswers(change, response.results[i]!))
 
 /** A pulled page: stamped, at most 1,000 rows and 4 MiB, each row once. */
-export function parseSaveSnapshotV2(value: unknown): SaveSnapshotV2 | string {
-  if (!isCurrentStamp(value)) return 'protocol 2 and generation 2 only'
+export function parseSaveSnapshot(value: unknown): SaveSnapshot | string {
+  if (!isCurrentStamp(value)) return 'protocol 3 and generation 3 only'
   const body = value as Record<string, unknown>
   if (!exactKeys(body, ['protocol', 'generation', 'serverTime', 'entities', 'logs', 'cursor']) || !isTimestamp(body.serverTime)) {
     return 'a snapshot is exactly { protocol, generation, serverTime, entities, logs, cursor }'
@@ -242,7 +196,7 @@ export function snapshotQuery(since: number, cursor: string | null): Record<stri
 }
 
 /**
- * A GET's query as the server reads it: `undefined` for a stamp other than 2 and 2 (the caller's 426), else the query or
+ * A GET's query as the server reads it: `undefined` for a stamp other than 3 and 3 (the caller's 426), else the query or
  * the reason it is malformed.
  */
 export function parseSnapshotQuery(query: Readonly<Record<string, unknown>>): SnapshotQuery | string | undefined {

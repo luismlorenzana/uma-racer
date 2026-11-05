@@ -1,10 +1,6 @@
 // The areas' live-block registry never lets two areas render the same key (M033).
-import { beforeAll, expect, it } from 'vitest'
-import { loopReport } from '../sim/report'
+import { expect, it } from 'vitest'
 import { AREA_BLOCKS, joinBlocks, renderBlock } from './render'
-
-// The loop simulation's blocks read one run per worker (T132); make it before the tests, not inside one's timeout.
-beforeAll(() => { loopReport() }, 120_000)
 
 it('joins area tables and refuses a key rendered twice', () => {
   const joined = joinBlocks({ a: () => 'A' }, { b: () => 'B' })

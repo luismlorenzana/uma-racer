@@ -1,10 +1,7 @@
 // Rival Umas, generated fresh for every race (docs/design/racing.md#opponents-generated-rivals, D152–D153): a mix of
 // running styles rolled per race, each rival on her style's preset for the scenario and distance, every stat rolled.
-import { STAT_NODE_POOL, averageCap, capProfile, cardFairShare, nodeValue, shapeDef, starNodePct } from './constellation'
 import type { UmaTemplate } from './content'
 import { raceSkillFitsRunner, type CompiledRaceSkill, type RaceSkillCourseFacts } from './race-skills'
-import { scenarioBuff } from './scenario-buffs'
-import { MAX_SCENARIO_TIER } from './scenarios'
 import { GRADES, STATS, STRATEGIES, mapStats, type DistanceCategory, type RaceGrade, type StatKey, type Stats, type Strategy } from './types'
 
 /** Uniform in [0, 1). The race's seeded RNG; the domain never uses Math.random. */
@@ -15,46 +12,20 @@ export interface RivalRng {
 /** Median base stat of the imported roster. */
 export const TYPICAL_BASE_STAT = 110
 
-/** A typical trained Uma's cards pay 84% of a node (D159): 2★ of 3 since D200, the old 3★ of 5, so no field moved. */
-export const TYPICAL_CARD_STARS = 2
-
 /**
- * A typical trained Uma's average stat at a tier (D159, superseding D152's full tree of maxed cards): her base plus a
- * fifth of what a realistic set pays — six current-era cards at 3★, one of them a Friend card whose fair share of the
- * nodes pays skill points instead of stats — and the stat nodes, with what the scenario's buff typically adds (D165).
- * 736 in scenario 1, where Foundation adds half again to the stat nodes.
- */
-export const trainedStat = (tier: number): number => {
-  const statCardNodes = shapeDef(tier).cardNodes - cardFairShare(tier)
-  const tree = (statCardNodes * nodeValue(tier) * starNodePct(TYPICAL_CARD_STARS)) / 100 + STAT_NODE_POOL
-  return TYPICAL_BASE_STAT + (tree * (1 + scenarioBuff(tier).typical)) / STATS.length
-}
-
-/**
- * The trained Uma a scenario's field is built on (D191): its typical build, but never stronger than a later scenario's.
- * Scenarios 1–5 share their caps, so their typical builds differ only by how six cards split each tree (the Friend
- * card's share rounds up) and by the buff: URA Finale's came out 4% above Grand Masters'. An earlier era's field is
- * never the harder one, so each tier takes the lowest typical build from it onwards.
- */
-export const fieldTrainedStat = (tier: number): number => {
-  let value = trainedStat(tier)
-  for (let later = tier + 1; later <= MAX_SCENARIO_TIER; later += 1) value = Math.min(value, trainedStat(later))
-  return value
-}
-
-/**
- * How much weaker than a trained Uma a grade's rivals race (D152, retuned for engine v6 in D155). A share rather
- * than a fixed amount, so a grade is equally soft at every tier and in every stat of a build. G1 is the real test;
- * each grade below is softer.
+ * How much weaker than the typical trained Uma a grade's rivals race (D152, D155; re-tuned by `sim:careers` against
+ * generation 3's career in D383, where the trained Uma is the typical career at the race's season). A share rather than
+ * a fixed amount, so a grade is equally soft at every tier and in every stat of a build. G1 is the real test; each
+ * grade below is softer. A career races G3s, G2s and G1s; the lower grades only keep the ladder.
  */
 export const GRADE_HANDICAP: Record<RaceGrade, number> = {
-  debut: 0.35,
-  maiden: 0.35,
-  'pre-op': 0.3,
-  op: 0.3,
-  g3: 0.25,
-  g2: 0.15,
-  g1: 0.05,
+  debut: 0.45,
+  maiden: 0.45,
+  'pre-op': 0.4,
+  op: 0.4,
+  g3: 0.38,
+  g2: 0.22,
+  g1: 0.17,
 }
 
 /** The four stats a rival spreads by weight; Stamina is set first, by what the distance needs (D159). */
@@ -131,36 +102,6 @@ export const RIVAL_STAMINA_ROLL = 0.9
 /** However long the race, no rival puts more than this share of her build into Stamina. */
 export const RIVAL_STAMINA_SHARE_MAX = 0.4
 
-/**
- * A rival's target stats, her 100% (D153, D159): a trained Uma of the tier, handicapped by grade. She puts into Stamina
- * what a full spurt at the race's distance needs from a 90% roll up, and spreads the rest by the distance, her running
- * style and the scenario's caps. A scenario that caps a stat high breeds rivals who lean on it, at the square root of
- * its lean so no stat runs away. Never above the scenario's cap.
- */
-export function rivalPreset(
-  tier: number,
-  grade: RaceGrade,
-  distance: DistanceCategory,
-  strategy: Strategy,
-  meters: number = RIVAL_REFERENCE_METERS[distance],
-): Stats {
-  const caps = capProfile(tier)
-  const average = averageCap(tier)
-  const total = fieldTrainedStat(tier) * (1 - GRADE_HANDICAP[grade]) * STATS.length
-  const weight = (stat: SpreadStat) => NPC_PROFILE[distance][stat] * STYLE_PROFILE[strategy][stat] * Math.sqrt(caps[stat] / average)
-  const weights = SPREAD_STATS.reduce((sum, stat) => sum + weight(stat), 0)
-  const spread = (budget: number) => Object.fromEntries(SPREAD_STATS.map((stat) =>
-    [stat, Math.min(caps[stat], (budget * weight(stat)) / weights)])) as Record<SpreadStat, number>
-  // Stamina depends on the Speed and Guts it must carry, which depend on what Stamina leaves: settle it in a few passes.
-  let stamina = 0
-  for (let pass = 0; pass < 4; pass += 1) {
-    const rest = spread(total - stamina)
-    stamina = Math.min(caps.stamina, RIVAL_STAMINA_SHARE_MAX * total,
-      fullSpurtStamina(meters, strategy, rest.speed, rest.guts) / RIVAL_STAMINA_ROLL)
-  }
-  return { ...spread(total - stamina), stamina }
-}
-
 /** Each stat is rolled between 80% and 100% of the preset (D153): a lucky rival nears it, an unlucky one may run dry. */
 export const RIVAL_STAT_FLOOR = 0.8
 
@@ -193,28 +134,6 @@ export function rollStyleCounts(rivals: number, rng: RivalRng): Record<Strategy,
 export interface RivalSlot {
   strategy: Strategy
   stats: Stats
-}
-
-/** A race's rivals in gate order: styles rolled, then each rival's stats rolled from her style's preset. */
-export function rollRivalField(input: {
-  tier: number
-  grade: RaceGrade
-  distance: DistanceCategory
-  /** The race's length: rivals carry the Stamina it needs (D159). Defaults to the category's longest. */
-  meters?: number
-  count: number
-  rng: RivalRng
-}): RivalSlot[] {
-  const counts = rollStyleCounts(input.count, input.rng)
-  const strategies = STRATEGIES.flatMap((strategy) => Array.from({ length: counts[strategy] }, () => strategy))
-  for (let index = strategies.length - 1; index > 0; index -= 1) {
-    const other = Math.floor(input.rng.next() * (index + 1))
-    ;[strategies[index], strategies[other]] = [strategies[other]!, strategies[index]!]
-  }
-  return strategies.map((strategy) => ({
-    strategy,
-    stats: rollRivalStats(rivalPreset(input.tier, input.grade, input.distance, strategy, input.meters), input.rng),
-  }))
 }
 
 /**

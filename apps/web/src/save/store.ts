@@ -1,10 +1,8 @@
-// One Zustand store over the rework state (docs/rearchitecture/01-target-architecture.md §4.2; T136): `useSave`, read
-// through selectors. No other store holds game state. It publishes only after Dexie commits (today's rule): a tap's
-// outbox row, a flush's answer and a pull's page are written first, and the store refolds or takes the tap's result
-// after. Every change to it runs through the session's one `serial` queue, so a tap and a reconcile never interleave.
-import type { BadgeStateV1 } from '@racer/domain'
-import type { Words } from '@racer/domain/check-in'
-import type { EntityRow, LogDraft, OperationEnv, SaveState } from '@racer/domain/save'
+// One Zustand store over the save (docs/game/architecture.md "The save and sync"; T136, T152): `useSave`, read through
+// selectors. No other store holds game state. It publishes only after Dexie commits: a tap's outbox row, a flush's
+// answer and a pull's page are written first, and the store refolds or takes the tap's result after. Every change to
+// it runs through the session's one `serial` queue, so a tap and a reconcile never interleave.
+import type { LogDraft, OperationEnv, SaveState } from '@racer/domain/save'
 import { create } from 'zustand'
 import { readConfirmed, readOutbox, type OutboxRow, type SaveDb } from './db'
 import { fold } from './fold'
@@ -16,24 +14,23 @@ export interface SaveSync {
   readonly status: SyncStatus
   /** Outbox rows waiting for an answer. */
   readonly pending: number
-  /** The oldest waiting row's time: the Sync chip turns amber once it is over a day old (02 §9, D157). */
+  /** The oldest waiting row's time: the Sync chip turns amber once it is over a day old (D157). */
   readonly oldestQueuedAt: number | null
   readonly lastSuccessAt: number | null
-  /** The chip's sentence, in 02 §9's words; null when there is nothing to say. */
+  /** The chip's sentence; null when there is nothing to say. */
   readonly words: string | null
 }
 
-/** A tap's receipt on this device, and the server's once it answers (02 §9: the summary compares them). */
+/** A tap's receipt on this device, and the server's once it answers. */
 export interface SaveReceipt {
   readonly local: unknown
   readonly server?: unknown
 }
 
-/** A refused or failed tap, in plain words, until the screen dismisses it (09 §8: "rolls back with a notice"). */
+/** A refused or failed tap, in plain words, until the screen dismisses it ("rolls back with a notice"). */
 export interface SaveNotice {
-  /** The tap's own id, so the sheet that sent it can find its notice. */
+  /** The tap's own id, so the screen that sent it can find its notice. */
   readonly id: string
-  readonly words: Words
   readonly text: string
 }
 
@@ -42,14 +39,12 @@ export interface SaveStore {
   /** Why the save can't open, in plain words, when `lifecycle` is `error`. */
   readonly words: string | null
   readonly state: SaveState | null
-  /** The badge rows' data, by row id (`trainer`, `uma:<outfitId>`). */
-  readonly badges: Readonly<Record<string, BadgeStateV1>>
   /** The latest 100 operations' receipts, by operation id. */
   readonly receipts: Readonly<Record<string, SaveReceipt>>
   /** The log rows the queued operations made, until the server's rows replace them. */
   readonly pendingLogs: readonly LogDraft[]
   readonly notices: readonly SaveNotice[]
-  /** Whether sync may run: signed in (T143 wires the auth provider). The chip says "Sync paused" otherwise (D353). */
+  /** Whether sync may run: signed in. The chip says "Sync paused" otherwise (D353). */
   readonly signedIn: boolean
   readonly sync: SaveSync
 }
@@ -61,7 +56,6 @@ const INITIAL: SaveStore = Object.freeze({
   lifecycle: 'booting',
   words: null,
   state: null,
-  badges: {},
   receipts: {},
   pendingLogs: [],
   notices: [],
@@ -107,18 +101,15 @@ export interface Answered {
   readonly notices?: readonly SaveNotice[]
 }
 
-const badgeData = (entities: readonly EntityRow[]): Record<string, BadgeStateV1> =>
-  Object.fromEntries(entities.flatMap((row) => (row.kind === 'badges' ? [[row.id, row.data] as const] : [])))
-
 export function outboxCounts(outbox: readonly OutboxRow[]): Pick<SaveSync, 'pending' | 'oldestQueuedAt'> {
   return { pending: outbox.length, oldestQueuedAt: outbox.length === 0 ? null : Math.min(...outbox.map((row) => row.queuedAt)) }
 }
 
 /**
- * Reads the confirmed rows and the outbox, folds, and publishes: the state, the badges, the receipts (the server's
- * replacing none of the local ones it answers, a dropped tap's removed, each still-queued tap's local one kept from its
- * tap), the pending logs and the outbox counts. Called inside `serial`, after the transaction that changed the rows.
- * Throws `UnreadableRow` when a row doesn't parse.
+ * Reads the confirmed rows and the outbox, folds, and publishes: the state, the receipts (the server's replacing none of
+ * the local ones it answers, a dropped tap's removed, each still-queued tap's local one kept from its tap), the pending
+ * logs and the outbox counts. Called inside `serial`, after the transaction that changed the rows. Throws
+ * `UnreadableRow` when a row doesn't parse.
  */
 export async function refold(db: SaveDb, env: OperationEnv, answered: Answered = {}): Promise<boolean> {
   const outbox = await readOutbox(db)
@@ -132,7 +123,6 @@ export async function refold(db: SaveDb, env: OperationEnv, answered: Answered =
     for (const [id, receipt] of Object.entries(result.receipts)) receipts[id] ??= { local: receipt }
     return {
       state: result.state,
-      badges: badgeData(rows.entities),
       receipts: keepReceipts(receipts),
       pendingLogs: result.pendingLogs,
       notices: answered.notices === undefined || answered.notices.length === 0 ? store.notices : [...store.notices, ...answered.notices],

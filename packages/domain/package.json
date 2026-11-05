@@ -8,10 +8,6 @@
   "main": "./dist/cjs/index.js",
   "types": "./dist/cjs/index.d.ts",
   "exports": {
-    "./master": {
-      "require": { "types": "./dist/cjs/master/index.d.ts", "default": "./dist/cjs/master/index.js" },
-      "default": { "types": "./src/master/index.ts", "default": "./src/master/index.ts" }
-    },
     ".": {
       "require": {
         "types": "./dist/cjs/index.d.ts",
@@ -20,6 +16,16 @@
       "default": {
         "types": "./src/index.ts",
         "default": "./src/index.ts"
+      }
+    },
+    "./master": {
+      "require": {
+        "types": "./dist/cjs/master/index.d.ts",
+        "default": "./dist/cjs/master/index.js"
+      },
+      "default": {
+        "types": "./src/master/index.ts",
+        "default": "./src/master/index.ts"
       }
     },
     "./save": {
@@ -32,24 +38,44 @@
         "default": "./src/save/index.ts"
       }
     },
-    "./state": {
+    "./account": {
       "require": {
-        "types": "./dist/cjs/state/index.d.ts",
-        "default": "./dist/cjs/state/index.js"
+        "types": "./dist/cjs/account/index.d.ts",
+        "default": "./dist/cjs/account/index.js"
       },
       "default": {
-        "types": "./src/state/index.ts",
-        "default": "./src/state/index.ts"
+        "types": "./src/account/index.ts",
+        "default": "./src/account/index.ts"
       }
     },
-    "./economy": {
+    "./career": {
       "require": {
-        "types": "./dist/cjs/economy/index.d.ts",
-        "default": "./dist/cjs/economy/index.js"
+        "types": "./dist/cjs/career/index.d.ts",
+        "default": "./dist/cjs/career/index.js"
       },
       "default": {
-        "types": "./src/economy/index.ts",
-        "default": "./src/economy/index.ts"
+        "types": "./src/career/index.ts",
+        "default": "./src/career/index.ts"
+      }
+    },
+    "./build": {
+      "require": {
+        "types": "./dist/cjs/build/index.d.ts",
+        "default": "./dist/cjs/build/index.js"
+      },
+      "default": {
+        "types": "./src/build/index.ts",
+        "default": "./src/build/index.ts"
+      }
+    },
+    "./stages": {
+      "require": {
+        "types": "./dist/cjs/stages/index.d.ts",
+        "default": "./dist/cjs/stages/index.js"
+      },
+      "default": {
+        "types": "./src/stages/index.ts",
+        "default": "./src/stages/index.ts"
       }
     },
     "./tiers": {
@@ -60,86 +86,6 @@
       "default": {
         "types": "./src/tiers/index.ts",
         "default": "./src/tiers/index.ts"
-      }
-    },
-    "./items": {
-      "require": {
-        "types": "./dist/cjs/items/index.d.ts",
-        "default": "./dist/cjs/items/index.js"
-      },
-      "default": {
-        "types": "./src/items/index.ts",
-        "default": "./src/items/index.ts"
-      }
-    },
-    "./work": {
-      "require": {
-        "types": "./dist/cjs/work/index.d.ts",
-        "default": "./dist/cjs/work/index.js"
-      },
-      "default": {
-        "types": "./src/work/index.ts",
-        "default": "./src/work/index.ts"
-      }
-    },
-    "./farm": {
-      "require": {
-        "types": "./dist/cjs/farm/index.d.ts",
-        "default": "./dist/cjs/farm/index.js"
-      },
-      "default": {
-        "types": "./src/farm/index.ts",
-        "default": "./src/farm/index.ts"
-      }
-    },
-    "./training": {
-      "require": {
-        "types": "./dist/cjs/training/index.d.ts",
-        "default": "./dist/cjs/training/index.js"
-      },
-      "default": {
-        "types": "./src/training/index.ts",
-        "default": "./src/training/index.ts"
-      }
-    },
-    "./check-in": {
-      "require": {
-        "types": "./dist/cjs/check-in/index.d.ts",
-        "default": "./dist/cjs/check-in/index.js"
-      },
-      "default": {
-        "types": "./src/check-in/index.ts",
-        "default": "./src/check-in/index.ts"
-      }
-    },
-    "./planner": {
-      "require": {
-        "types": "./dist/cjs/planner/index.d.ts",
-        "default": "./dist/cjs/planner/index.js"
-      },
-      "default": {
-        "types": "./src/planner/index.ts",
-        "default": "./src/planner/index.ts"
-      }
-    },
-    "./sim": {
-      "require": {
-        "types": "./dist/cjs/sim/index.d.ts",
-        "default": "./dist/cjs/sim/index.js"
-      },
-      "default": {
-        "types": "./src/sim/index.ts",
-        "default": "./src/sim/index.ts"
-      }
-    },
-    "./builds": {
-      "require": {
-        "types": "./dist/cjs/builds/index.d.ts",
-        "default": "./dist/cjs/builds/index.js"
-      },
-      "default": {
-        "types": "./src/builds/index.ts",
-        "default": "./src/builds/index.ts"
       }
     },
     "./hub": {
@@ -165,7 +111,6 @@
     "vitest": "^3.2.7"
   },
   "dependencies": {
-    "@luismlorenzana/uma-data": "1.1.0",
-    "@luismlorenzana/uma-work": "0.1.0"
+    "@luismlorenzana/uma-data": "1.1.0"
   }
 }

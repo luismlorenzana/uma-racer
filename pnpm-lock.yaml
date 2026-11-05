@@ -38,6 +38,9 @@ importers:
       '@racer/domain':
         specifier: workspace:*
         version: link:../../packages/domain
+      '@racer/race':
+        specifier: workspace:*
+        version: link:../../packages/race
       firebase-admin:
         specifier: ^13.10.0
         version: 13.10.0(@firebase/app-compat@0.5.18)(@firebase/app@0.16.2)
@@ -75,9 +78,6 @@ importers:
       '@luismlorenzana/uma-kit':
         specifier: 0.9.1
         version: 0.9.1(@luismlorenzana/uma-data@1.1.0)(@luismlorenzana/uma-work@0.1.0)(firebase@12.19.0)(motion@12.43.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(phaser@4.2.1)(react-dom@19.3.0(react@19.3.0))(react-router@7.18.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react@19.3.0)
-      '@luismlorenzana/uma-work':
-        specifier: 0.1.0
-        version: 0.1.0
       '@racer/domain':
         specifier: workspace:*
         version: link:../../packages/domain
@@ -169,9 +169,6 @@ importers:
       '@luismlorenzana/uma-data':
         specifier: 1.1.0
         version: 1.1.0
-      '@luismlorenzana/uma-work':
-        specifier: 0.1.0
-        version: 0.1.0
     devDependencies:
       '@luismlorenzana/uma-art':
         specifier: 2.10.0
@@ -6039,7 +6036,8 @@ snapshots:
     optionalDependencies:
       '@google-cloud/storage': 7.22.0
 
-  '@luismlorenzana/uma-work@0.1.0': {}
+  '@luismlorenzana/uma-work@0.1.0':
+    optional: true
 
   '@lukeed/csprng@1.1.0': {}
 

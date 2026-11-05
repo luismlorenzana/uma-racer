@@ -4,22 +4,22 @@ import { FaceTile, UmaBust, UmaChibi } from '@luismlorenzana/uma-kit/album'
 import { act, cleanup, render, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { LoadedContent } from '../content/view'
-import { seedGame } from '../__fixtures__/testing'
-import { devRaceContent } from '../places/racing/content'
-import { G2ContentContext } from './content'
+import { syntheticContent, umaId } from '../__fixtures__/content'
+import { memoryGame } from '../__fixtures__/memory'
+import { ContentContext } from './content'
 import { GameProvider } from './GameProvider'
 import { albumArtCandidates, outfitIcon } from './albumArt'
 
 afterEach(cleanup)
-const game = seedGame('fresh')
-const content = () => devRaceContent(game.getSnapshot().env!)
-const first = 'sim-uma-01', second = 'sim-uma-02'
+const game = memoryGame()
+const content = () => syntheticContent()
+const first = umaId(1), second = umaId(2)
 
 function frame(data: LoadedContent, id: string, kind: 'face' | 'bust' | 'chibi' = 'face') {
-  return <G2ContentContext.Provider value={data}><GameProvider game={game}>
+  return <ContentContext.Provider value={data}><GameProvider game={game}>
     {kind === 'face' ? <FaceTile outfitId={id} label="Invented Uma" size={68} />
       : kind === 'bust' ? <UmaBust outfitId={id} label="Invented Uma" /> : <UmaChibi outfitId={id} label="Invented Uma" />}
-  </GameProvider></G2ContentContext.Provider>
+  </GameProvider></ContentContext.Provider>
 }
 
 describe('the racer album art port', () => {

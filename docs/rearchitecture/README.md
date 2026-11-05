@@ -1,5 +1,8 @@
 # uma-racer re-architecture
 
+> **Archived by the restart (D380, 2026-11-04).** This plan's phases 1–3, 5 and 6 shipped; 4 and 7–9 are retired. The
+> new game is [the drawing board v3](../research/drawing-board/README.md); this page is kept as history only.
+
 > **Revised 2026-10-13 by the game rework (D326–D336).** The owner's feature docs have arrived as
 > [`docs/rework/`](../rework/README.md): Race, Farm, Train, three tiers and World Expeditions. They delete the Uma
 > Puzzles, Constellation Level, Friendship Training, card stars and tokens too. They replace this plan's Hub place list

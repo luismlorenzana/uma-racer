@@ -1,196 +1,183 @@
-// A card's page (docs/game/06-cards-and-bonds.md §6, §10; T138): the illustration at 4:5 (the art viewer on tap); type,
-// era, style and distance; what it pays in the lens (`cardPay`: the split, SP per node for Friend and Group, the eraPct
-// it keeps later in the tier, the full Race Bonus); its skills by node, golds first; the bond's real time per tier, with
-// no item (D375); who is bonded and where, then who could bond it now; and Bond in the thumb zone, which opens the Uma picker and
-// goes on to T139's Dojo session with her, this card and its room. A bond in progress reads "In session · bonds in 2h 10m".
-import { Button, Panel } from '@luismlorenzana/uma-kit/ui'
-import { scenarioRow } from '@racer/domain/tiers'
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
-import { Link, useLocation, useNavigate } from 'react-router'
-import { ArtViewer } from '../../ui/ArtViewer'
-import { useArt } from '../../ui/useContentArt'
-import { DistanceTypeIcon, RunningStyleIcon } from '../../ui/CardFocusIcons'
-import { TypeIcon } from '../../ui/TypeIcon'
-import { useG2Content } from '../../app/content'
-import { useGame, useNow } from '../../app/game'
-import { useAlbumPrefs } from '@luismlorenzana/uma-kit/album'
+// A card's page (docs/game/02-unlocks.md §3, docs/game/11-hub-and-places.md §3.1; D386),
+// `/town/card-library/card/:cardId`: its art and type, its era as the first scenario it can be used in, its running-style
+// and distance focus, **Unlock · 1 Card Ticket** while it's locked (committing `unlock-card`, then a short reveal of its
+// art), its power as a bar against its type's median, its real effects at level 50 named in plain words, its unique
+// effect's description, and its hint and event skills. Every number comes from the private content at runtime.
+import { Button, CardsIcon, EraIcon, Panel, UiMark } from '@luismlorenzana/uma-kit/ui'
+import { cardFocus } from '@racer/domain'
+import { effectLines, uniqueEffectLines, type EffectLine, type Place } from '@racer/domain/hub'
+import { m } from 'motion/react'
+import { useMemo, useState, type ReactNode } from 'react'
+import { useLoadedContent } from '../../app/content'
+import { useGame, useRun } from '../../app/game'
 import { CardSquare } from '../../ui/ArtSquare'
-import { DISTANCE_LABEL, STAT_LABEL, STYLE_LABEL } from '../../ui/labels'
+import { SkillNames } from '../../ui/BuildFacts'
+import { DistanceTypeIcon, RunningStyleIcon } from '../../ui/CardFocusIcons'
+import { DISTANCE_LABEL, STYLE_LABEL } from '../../ui/labels'
+import { Meter } from '../../ui/Meter'
+import { TypeIcon, typeLabel } from '../../ui/TypeIcon'
+import { useArt } from '../../ui/useContentArt'
+import { titledCardName } from '../../ui/words'
 import { PlacePageHeader } from '../PlacePageHeader'
-import { RacerUmaPicker as UmaPicker } from '../../ui/racerAlbum'
-import { umaName } from '../../ui/words'
-import type { PageProps } from '../registry'
-import {
-  bondChoice, bondCosts, bondedTo, bondSessionPath, cardName, cardSkills, eraLabel, LENS_MODES, lensOf, LIBRARY_ALBUM,
-  LIBRARY_DEFAULT_QUERY, LIBRARY_FACETS, LIBRARY_SORTS, payWords, pendingBond, PLAYABLE, raceBonusWords, TYPE_LABEL,
-} from './model'
-import { cardFocus, cardPay } from '@racer/domain/training'
+import { eraReading, libraryWords, powerReading, powerText } from './model'
 
-function Block({ title, children }: { title: string; children: ReactNode }) {
+function Lines({ lines, label }: { lines: readonly EffectLine[]; label: string }) {
   return (
-    <Panel className="p-3" aria-label={title}>
-      <h2 className="text-micro mb-2">{title}</h2>
-      {children}
-    </Panel>
+    <ul aria-label={label} className="divide-y divide-hairline" data-racer="effects">
+      {lines.map((line) => (
+        <li key={line.id} className="flex min-h-10 items-center justify-between gap-3 text-[14px]" data-effect={line.id}>
+          <span>{line.name}</span>
+          <span className="numeral font-display font-bold">{line.value}</span>
+        </li>
+      ))}
+    </ul>
   )
 }
 
-export default function CardPage({ place, rest, cardId }: PageProps & { cardId: string }) {
-  const location = useLocation()
-  const navigate = useNavigate()
-  const now = useNow()
-  const state = useGame((snapshot) => snapshot.state)
-  const env = useGame((snapshot) => snapshot.env)
-  const g2Content = useG2Content()
-  const art = useArt(g2Content, 'card', cardId)
-  const prefs = useAlbumPrefs(LIBRARY_ALBUM, { fallback: LIBRARY_DEFAULT_QUERY, facets: LIBRARY_FACETS, sorts: LIBRARY_SORTS, modes: LENS_MODES })
-  const [viewing, setViewing] = useState(false)
-  const [bonding, setBonding] = useState(false)
-  const card = env?.content.cards.get(cardId) ?? null
-  const lens = lensOf(prefs.query.mode)
-  // In All, a card pays as it does in its own scenario (or the last playable one).
-  const T = lens === 'all' ? Math.min(card?.era ?? 1, PLAYABLE.at(-1)!) : lens
-  const pay = useMemo(() => (card === null ? null : cardPay(card, T)), [card, T])
-  const choices = useMemo(() => (state === null || env === null || card === null ? new Map() : new Map(Object.values(state.umas).map((uma) => [uma.outfitId, bondChoice(state, uma, card, now, env)]))), [state, env, card, now])
+function Section({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <section className="space-y-1.5" aria-label={title}>
+      <h3 className="font-display text-[15px] font-semibold">{title}</h3>
+      {children}
+    </section>
+  )
+}
 
-  // Opening its page is what clears a card's NEW mark (ux "Shared behaviours"), as her profile does an Uma's. A device
-  // that has never opened the Library first takes every card as seen, as the Library would, so only cards a content
-  // update adds read NEW there.
-  useEffect(() => {
-    if (card === null || env === null) return
-    prefs.see(prefs.fresh ? [...env.content.cards.keys()] : [cardId])
-    // Once per card.
-  }, [cardId, card !== null])
+function Art({ cardId, name, owned, revealed }: { cardId: string; name: string; owned: boolean; revealed: boolean }) {
+  const content = useLoadedContent()
+  const art = useArt(content, 'card', cardId)
+  const body = art !== null
+    ? <img src={art} alt={name} draggable={false} className={`size-full select-none object-cover object-top ${owned ? '' : 'opacity-45 saturate-50'}`} />
+    : <CardSquare cardId={cardId} name={name} dimmed={!owned} className="size-full" />
+  return (
+    <m.div
+      key={revealed ? 'revealed' : 'still'}
+      className="aspect-square w-32 shrink-0 overflow-hidden rounded-md bg-sunken shadow-1"
+      initial={revealed ? { scale: 0.85, opacity: 0.4 } : false}
+      animate={{ scale: 1, opacity: 1 }}
+      transition={{ type: 'spring', stiffness: 320, damping: 20 }}
+      data-racer="card-art"
+    >
+      {body}
+    </m.div>
+  )
+}
 
-  if (state === null || env === null) return <PlacePageHeader place={place} rest={rest} />
-  if (card === null || pay === null) {
+export function CardPage({ place, rest, cardId }: { place: Place; rest: string; cardId: string }) {
+  const run = useRun()
+  const content = useGame((snapshot) => snapshot.env?.content ?? null)
+  const owned = useGame((snapshot) => snapshot.state?.cards[cardId] !== undefined)
+  const tickets = useGame((snapshot) => snapshot.state?.account.cardTickets ?? 0)
+  const [busy, setBusy] = useState(false)
+  const [revealed, setRevealed] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const card = content?.cards.get(cardId)
+  const power = useMemo(() => (card === undefined || content === null ? null : powerReading(card, content.cards)), [card, content])
+
+  if (card === undefined || content === null) {
     return (
-      <div>
-        <PlacePageHeader place={place} rest={rest} title="Card" />
-        <Panel className="m-4 text-center">
-          <p>That card isn't in the Library.</p>
-          <Link to="/town/card-library" replace className="font-display mt-3 inline-flex min-h-12 items-center rounded-sm bg-accent px-5 font-semibold text-accent-ink shadow-1">Open the Library</Link>
-        </Panel>
+      <div data-place-page="card-library" data-racer="card-page">
+        <PlacePageHeader place={place} rest={rest} />
+        <p className="px-4 py-6 text-[14px] text-ink-soft">{libraryWords('unknown-card')}</p>
       </div>
     )
   }
-  const content = env.content
-  const name = cardName(card)
+
+  const name = titledCardName(card)
   const focus = cardFocus(card, content.skills)
-  const skills = cardSkills(card, content)
-  const costs = bondCosts(card)
-  const who = bondedTo(state, card)
-  const pending = pendingBond(state, card, now)
-  const back = `${location.pathname}${location.search}`
-  const chip = 'inline-flex min-h-8 items-center gap-1 rounded-full border border-hairline bg-sunken px-2.5 text-[12px] font-semibold'
+  const era = eraReading(card.era)
+  const effects = effectLines(card.effects)
+  const unique = card.uniqueEffect
+  const uniqueLines = uniqueEffectLines(card)
+  const mark = <UiMark mark="currency/card-ticket" fallback={<CardsIcon size={16} variant="duotone" />} />
+
+  const unlock = async () => {
+    setBusy(true)
+    setError(null)
+    try {
+      const answer = await run('unlock-card', { cardId }, `unlock-card:${cardId}`)
+      if (answer.kind === 'done') setRevealed(true)
+      else setError(answer.text)
+    } catch {
+      setError(libraryWords('failed'))
+    } finally {
+      setBusy(false)
+    }
+  }
 
   return (
-    <div data-place-page="card" data-card={cardId}>
-      <PlacePageHeader place={place} rest={rest} title={name} />
-      <div className="space-y-3 px-4 pt-3 pb-4">
-        <button type="button" onClick={() => art !== null && setViewing(true)} aria-label={art !== null ? `View ${name}'s art` : name}
-          className="relative block aspect-[4/5] w-full overflow-hidden rounded-md border border-hairline bg-sunken shadow-1" data-g2="card-art">
-          {art !== null
-            ? <img src={art} alt="" className="absolute inset-0 size-full object-cover object-top" draggable={false} />
-            : <span className="absolute inset-0 flex items-center justify-center p-10"><span className="w-full"><CardSquare cardId={cardId} name={name} /></span></span>}
-          <span className="art-scrim absolute inset-x-0 bottom-0 h-1/3" aria-hidden />
-          <span className="absolute bottom-2 left-3 text-left text-ink-on-dark">
-            <span className="font-display block text-lg leading-tight font-bold">{card.charName}</span>
-            <span className="block text-[13px]">{card.title}</span>
-          </span>
-          <span className="absolute top-2 right-2"><TypeIcon type={card.type} size={32} title={TYPE_LABEL[card.type]} /></span>
-        </button>
-        <div className="flex flex-wrap gap-1.5" data-g2="card-chips">
-          <span className={chip}><TypeIcon type={card.type} size={16} />{TYPE_LABEL[card.type]}</span>
-          <span className={chip}>{eraLabel(card.era)}</span>
-          <span className={chip}>{focus.style !== 'generalist' && <RunningStyleIcon style={focus.style} size={16} />}{focus.style === 'generalist' ? 'Generalist style' : STYLE_LABEL[focus.style]}</span>
-          <span className={chip}>{focus.distance !== 'generalist' && <DistanceTypeIcon distance={focus.distance} size={16} />}{focus.distance === 'generalist' ? 'Generalist distance' : DISTANCE_LABEL[focus.distance]}</span>
-        </div>
-        {pending.length > 0 && (
-          <ul className="space-y-1" data-g2="pending-bond">
-            {pending.map((line) => <li key={line.umaId} className="rounded-sm bg-accent-wash px-3 py-2 text-[13px] font-semibold">{umaName(content, line.umaId)} · {line.words}</li>)}
-          </ul>
+    <div data-place-page="card-library" data-racer="card-page" data-card={cardId}>
+      <PlacePageHeader place={place} rest={rest} title={card.charName} />
+      <div className="space-y-4 px-4 pt-3 pb-24">
+        <section className="flex gap-3">
+          <Art cardId={cardId} name={name} owned={owned} revealed={revealed} />
+          <div className="min-w-0 flex-1 space-y-1">
+            <p className="flex items-center gap-1.5 text-[13px] font-semibold text-ink-soft">
+              <TypeIcon type={card.type} size={20} />{typeLabel(card.type)}
+            </p>
+            <h2 className="text-lg leading-tight">{card.charName}</h2>
+            {card.title.trim() !== '' && <p className="text-[13px] text-ink-soft">{card.title}</p>}
+            <p className="flex items-center gap-1 text-[12px] text-ink-soft" data-racer="card-era">
+              <EraIcon size={16} />{libraryWords('era', { scenario: era.scenario })}
+            </p>
+            {(focus.style !== 'generalist' || focus.distance !== 'generalist') && (
+              <p className="flex items-center gap-1.5" data-racer="card-focus">
+                {focus.style !== 'generalist' && <RunningStyleIcon style={focus.style} size={22} title={`${libraryWords('style-focus')}: ${STYLE_LABEL[focus.style]}`} />}
+                {focus.distance !== 'generalist' && <DistanceTypeIcon distance={focus.distance} size={22} title={`${libraryWords('distance-focus')}: ${DISTANCE_LABEL[focus.distance]}`} />}
+              </p>
+            )}
+          </div>
+        </section>
+
+        {owned ? (
+          revealed && <p role="status" className="text-[14px] font-semibold text-success">{libraryWords('unlocked')}</p>
+        ) : (
+          <Panel className="space-y-2 p-3" data-racer="card-unlock">
+            <p className="flex items-center gap-1.5 text-[15px]" aria-label={libraryWords('tickets-move', { n: tickets, next: Math.max(0, tickets - 1) })}>
+              {mark}
+              <span aria-hidden className="font-display font-bold tabular-nums">{tickets} → {Math.max(0, tickets - 1)}</span>
+              <span className="text-[13px] text-ink-soft">{tickets < 1 ? libraryWords('no-tickets') : libraryWords('final')}</span>
+            </p>
+            <Button className="w-full" disabled={busy || tickets < 1} onClick={() => void unlock()}>
+              <span className="flex items-center justify-center gap-1.5">{mark}{libraryWords('unlock')}</span>
+            </Button>
+            {error !== null && <p role="alert" className="text-[13px] text-danger">{error}</p>}
+          </Panel>
         )}
-        <Block title={`What it pays · scenario ${T} · ${scenarioRow(T).name}`}>
-          {!pay.eligible ? <p className="text-[14px]">{eraLabel(card.era)}: not in a set before scenario {card.era}.</p> : (
-            <div className="space-y-1.5 text-[14px]" data-g2="card-pay">
-              {pay.split.length > 0 && (
-                <p className="flex flex-wrap items-center gap-2">
-                  {pay.split.map(([stat, share]) => <span key={stat} className="flex items-center gap-1"><TypeIcon type={stat} size={16} />{STAT_LABEL[stat]} {share}%</span>)}
-                </p>
-              )}
-              <p className="font-semibold">{payWords(pay)} · {pay.eraPct}% for its era</p>
-              {pay.later.length > 0 && <p className="text-[13px] text-ink-soft">Later this tier: {pay.later.map((later) => `${later.eraPct}% in ${later.T}`).join(' · ')}</p>}
-              <p className="text-[13px] text-ink-soft">Up to {pay.nodeCap} nodes of one tree. Before her preset's scenario buff.</p>
+
+        <p className="text-[13px] text-ink-soft">{era.open ? libraryWords('era-open') : libraryWords('era-later')}</p>
+
+        {power !== null && (
+          <Section title={libraryWords('power')}>
+            <div className="space-y-1" data-racer="card-power">
+              <Meter value={power.max > 0 ? power.power / power.max : 0} marker={power.max > 0 ? power.median / power.max : undefined} color="var(--color-accent)" height={8} />
+              <p className="text-[13px]">
+                {libraryWords('power-line', { power: powerText(power.power), type: typeLabel(card.type), median: powerText(power.median) })}
+              </p>
+              <p className="text-[12px] text-ink-soft">{libraryWords('power-note')}</p>
             </div>
-          )}
-          <p className="mt-1.5 text-[14px]">Race Bonus {raceBonusWords(pay.raceBonus)}</p>
-        </Block>
-        {skills.length > 0 && (
-          <Block title="Skills">
-            <ul className="space-y-1 text-[14px]" data-g2="card-skills">
-              {skills.map((skill) => (
-                <li key={`${skill.skillId}:${skill.node}`} className="flex justify-between gap-2">
-                  <span className={skill.gold ? 'font-semibold text-accent-strong' : ''}>{skill.name}</span>
-                  <span className="shrink-0 text-ink-soft">node {skill.node}</span>
-                </li>
-              ))}
-            </ul>
-          </Block>
+          </Section>
         )}
-        <Block title="Bond cost">
-          <ul className="space-y-1 text-[14px]" data-g2="bond-costs">
-            {costs.map((cost) => (
-              <li key={cost.tiers} className="flex justify-between gap-2">
-                <span className="text-ink-soft">{cost.tiers}</span>
-                <span>{cost.time === null ? 'Not in this tier' : `No item · ${cost.time}`}</span>
-              </li>
-            ))}
-          </ul>
-        </Block>
-        <Block title="Bonded to">
-          {who.bonded.length === 0 ? <p className="text-[13px] text-ink-soft">No Uma yet.</p> : (
-            <ul className="space-y-1.5 text-[14px]" data-g2="bonded-to">
-              {who.bonded.map((row) => (
-                <li key={row.umaId}>
-                  <Link to={`/town/stable/outfit/${encodeURIComponent(row.umaId)}`} state={{ back: true }} className="flex min-h-11 flex-col justify-center rounded-sm bg-sunken/60 px-3">
-                    <span className="font-semibold">{umaName(content, row.umaId)} <span className="font-normal text-ink-soft">{row.at}</span></span>
-                    {row.presets.length > 0 && <span className="text-[12px] text-ink-soft">{row.presets.join(' · ')}</span>}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-          {who.could.length > 0 && <p className="mt-2 text-[13px] text-ink-soft">Could bond it now: {who.could.map((id) => umaName(content, id)).join(', ')}</p>}
-        </Block>
+
+        <Section title={libraryWords('effects')}>
+          {effects.length === 0 ? <p className="text-[13px] text-ink-soft">{libraryWords('no-effects')}</p> : <Lines lines={effects} label={libraryWords('effects')} />}
+        </Section>
+
+        {unique !== null && (
+          <Section title={libraryWords('unique')}>
+            {unique.description !== null && unique.description.trim() !== ''
+              ? <p className="text-[14px] leading-relaxed" data-racer="unique-description">{unique.description}</p>
+              : uniqueLines.length > 0 && <Lines lines={uniqueLines} label={libraryWords('unique')} />}
+          </Section>
+        )}
+
+        <Section title={libraryWords('hint-skills')}>
+          <SkillNames ids={card.hintSkillIds} skills={content.skills} empty={libraryWords('no-skills')} />
+        </Section>
+        <Section title={libraryWords('event-skills')}>
+          <SkillNames ids={card.eventSkillIds} skills={content.skills} empty={libraryWords('no-skills')} />
+        </Section>
       </div>
-      <div className="sticky bottom-0 z-10 border-t border-hairline bg-panel/95 px-4 py-2 backdrop-blur">
-        <Button className="w-full" size="lg" onClick={() => setBonding(true)} disabled={Object.keys(state.umas).length === 0}>Bond</Button>
-        {Object.keys(state.umas).length === 0 && <p className="mt-1 text-center text-[12px] text-ink-soft">Unlock an Uma in the Stable first.</p>}
-      </div>
-      <ArtViewer src={viewing ? art : null} title={name} subtitle={eraLabel(card.era)} onClose={() => setViewing(false)} />
-      <UmaPicker
-        open={bonding}
-        onClose={() => setBonding(false)}
-        title={`Bond ${card.charName}`}
-        work
-        disabledReason={(entry) => choices.get(entry.id)?.reason ?? null}
-        describe={(entry) => choices.get(entry.id)?.line ?? null}
-        action={(entry) => {
-          const choice = choices.get(entry.id)
-          if (choice === undefined) return null
-          if (choice.canQueue) {
-            return (
-              <button type="button" onClick={() => navigate(bondSessionPath(entry.id, card, back, true), { state: { back: true } })}
-                className="font-display mt-1 min-h-11 w-full rounded-sm bg-accent px-3 text-[13px] font-semibold text-accent-ink shadow-1">
-                Queue
-              </button>
-            )
-          }
-          return null
-        }}
-        onPick={(umaId) => navigate(bondSessionPath(umaId, card, back), { state: { back: true } })}
-      />
     </div>
   )
 }

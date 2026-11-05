@@ -1,17 +1,17 @@
-// Test helpers for the new game (T137): the real routes in a memory router, over a port the test chooses. Synthetic
-// seeds only; the port's clock is held at the seed's time so every count is fixed.
+// Test helpers for the shell (T137, T152): the real routes in a memory router, over a port the test chooses (usually the
+// in-memory port on invented content, `memory.ts`).
 import { KitArtProvider, MotionRoot } from '@luismlorenzana/uma-kit/ui'
 import { render } from '@testing-library/react'
 import { domMax, LazyMotion } from 'motion/react'
 import { MemoryRouter, useLocation, useRoutes, type InitialEntry, type Location } from 'react-router'
 import { vi } from 'vitest'
 import { RACER_ART } from '../app/art'
-import type { G2Game, G2Rules } from '../app/game'
+import { ContentContext } from '../app/content'
+import type { RacerGame, RacerRules } from '../app/game'
 import { GameProvider } from '../app/GameProvider'
-import { G2_ROUTES } from '../app/router'
+import { ROUTES } from '../app/router'
 import { RULES } from '../app/rules'
-import { createMemoryGame } from '../dev/memory'
-import { SEEDS, type G2Seed } from '../dev/seed'
+import type { LoadedContent } from '../content/view'
 
 /** An in-memory Storage: the runtime's own `localStorage` may be a stub without the Storage methods. */
 export function memoryStorage(): Storage {
@@ -40,33 +40,8 @@ export function stubPointerEvents(): void {
   vi.stubGlobal('PointerEvent', class PointerEvent extends MouseEvent {})
 }
 
-const made = new Map<string, G2Seed>()
-
-/** A seed, built once per test file: the loop takes a moment. */
-export function seed(name: string): G2Seed {
-  let found = made.get(name)
-  if (found === undefined) {
-    found = SEEDS[name]!()
-    made.set(name, found)
-  }
-  return found
-}
-
-/**
- * The names of the taps a port has applied, oldest first, read as the device save offers them: the snapshot's receipts
- * name the taps, and `logs.operation` reads each one's log row (the rules' state never holds a confirmed one).
- */
-export async function appliedNames(game: G2Game): Promise<string[]> {
-  const ids = Object.keys(game.getSnapshot().receipts)
-  const rows = await Promise.all(ids.map((id) => game.logs!.operation(id)))
-  return rows.map((row, i) => row?.name ?? `missing:${ids[i]!}`)
-}
-
-/** The in-memory port on a seed, its clock held at the seed's time. */
-export const seedGame = (name: string, changes: Partial<G2Seed> = {}): G2Game => createMemoryGame({ ...seed(name), ...changes }, () => 0)
-
 function Routes() {
-  return useRoutes(G2_ROUTES)
+  return useRoutes(ROUTES)
 }
 
 function Probe({ seen }: { seen: { current: Location | null } }) {
@@ -74,24 +49,31 @@ function Probe({ seen }: { seen: { current: Location | null } }) {
   return null
 }
 
+export interface RenderOptions {
+  readonly rules?: RacerRules | null
+  /** The private content the art and Account read; none by default. */
+  readonly content?: LoadedContent | null
+}
+
 /**
  * The real routes in a declarative memory router (the data router's fetch `Request` refuses jsdom's AbortSignal under
- * Node), with the location read back after each render. `path` may carry navigation state, as a reload keeps it, and
- * `basename` mounts the routes under one, as the seeds' mount does.
+ * Node), with the location read back after each render. `path` may carry navigation state, as a reload keeps it.
  */
-export function renderG2(path: InitialEntry, game: G2Game, rules: G2Rules | null = RULES, basename?: string) {
+export function renderRacer(path: InitialEntry, game: RacerGame, options: RenderOptions = {}) {
   const seen: { current: Location | null } = { current: null }
   const result = render(
     <MotionRoot>
       {/* The kit's root loads Motion's features lazily; tests draw with them from the first render. */}
       <LazyMotion features={domMax} strict>
         <KitArtProvider art={RACER_ART}>
-          <GameProvider game={game} rules={rules}>
-            <MemoryRouter initialEntries={[path]} basename={basename}>
-              <Routes />
-              <Probe seen={seen} />
-            </MemoryRouter>
-          </GameProvider>
+          <ContentContext.Provider value={options.content ?? null}>
+            <GameProvider game={game} rules={options.rules === undefined ? RULES : options.rules}>
+              <MemoryRouter initialEntries={[path]}>
+                <Routes />
+                <Probe seen={seen} />
+              </MemoryRouter>
+            </GameProvider>
+          </ContentContext.Provider>
         </KitArtProvider>
       </LazyMotion>
     </MotionRoot>,

@@ -1,7 +1,8 @@
-// Scenarios are 10-level steps of a tier, in JP release order (docs/game/scenarios.md).
+// The fifteen scenarios in JP release order (docs/game/scenarios.md): the game's scenario T is the T-th row, three
+// tiers of five (docs/game/04-tiers-and-scenarios.md).
 
 export interface ScenarioDef {
-  /** 1-based tier index. */
+  /** The game's scenario number T, 1–15 (named `tier` since generation 1). */
   tier: number
   id: string
   name: string
@@ -25,11 +26,10 @@ export const SCENARIOS: readonly ScenarioDef[] = [
   { tier: 12, id: 'yukoma-hot-springs', name: 'Yukoma Hot Springs', jpName: 'ごくらく♪ゆこま温泉郷', jpRelease: '2025-10-29' },
   { tier: 13, id: 'beyond-dreams', name: 'Beyond Dreams', jpName: 'Beyond Dreams 共に前へ、共に光を', jpRelease: '2026-02-24' },
   { tier: 14, id: 'tracen-diner', name: 'Tracen Diner', jpName: 'らっしゃい！トレセン軒！', jpRelease: '2026-06-29' },
+  { tier: 15, id: 'goshiki-shuntaisai', name: 'Goshiki Shuntaisai', jpName: '午式駿大祭', jpRelease: '2026-10-26' },
 ]
 
-export const LEVELS_PER_SCENARIO = 10
 export const MAX_SCENARIO_TIER = SCENARIOS.length
-export const MAX_UMA_LEVEL = MAX_SCENARIO_TIER * LEVELS_PER_SCENARIO
 
 export function scenarioForTier(tier: number): ScenarioDef | undefined {
   return SCENARIOS[tier - 1]
@@ -41,23 +41,13 @@ export const STAT_SOFT_CAP = 1200
 /**
  * Skill points a fully trained career can hold, per scenario (D133). Grounded where the original game is measured —
  * Unity Cup careers finish around 2,000–2,500 SP and Trackblazer around 2,800 (Game8) — and a draft elsewhere: URA
- * Finale is set just below Unity Cup, and tiers 4–14 climb 200 a scenario. A typical gold skill with its white
+ * Finale is set just below Unity Cup, and tiers 4–15 climb 200 a scenario. A typical gold skill with its white
  * prerequisite costs about 340 SP in our content, so tier 1 buys five or six.
  */
-export const SKILL_POINT_CAPS = [2000, 2400, 2800, 3000, 3200, 3400, 3600, 3800, 4000, 4200, 4400, 4600, 4800, 5000] as const
+export const SKILL_POINT_CAPS = [2000, 2400, 2800, 3000, 3200, 3400, 3600, 3800, 4000, 4200, 4400, 4600, 4800, 5000, 5200] as const
 
 export const skillPointCap = (tier: number): number =>
   SKILL_POINT_CAPS[Math.min(SKILL_POINT_CAPS.length, Math.max(1, Math.trunc(tier))) - 1]!
-
-/** Share of the cap every career earns on its own, whatever the card set (D133). */
-export const BASELINE_SP_SHARE = 0.4
-
-export const tierOfLevel = (umaLevel: number): number => Math.ceil(umaLevel / LEVELS_PER_SCENARIO)
-
-export const isGateLevel = (umaLevel: number): boolean => umaLevel % LEVELS_PER_SCENARIO === 0
-
-/** 0 at levels 1, 11, 21… and 9 at gate levels 10, 20, 30… */
-export const levelsIntoScenario = (umaLevel: number): number => (umaLevel - 1) % LEVELS_PER_SCENARIO
 
 /** A card's era is the latest scenario released on or before the card's JP release date. */
 export function eraOf(jpReleaseDate: string): number {

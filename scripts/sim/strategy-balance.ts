@@ -5,9 +5,7 @@
 //   pnpm sim:balance -- 1000         custom quick seeds per row
 //   pnpm sim:balance -- --final      Milestone 3 multi-dimensional closure matrix
 import {
-  averageCap,
   distanceCategory,
-  rivalPreset,
   parseRaceCondition,
   STRATEGIES,
   type CompiledRaceSkill,
@@ -16,6 +14,7 @@ import {
   type Stats,
   type Strategy,
 } from '../../packages/domain/src/index'
+import { capBudgetAt, rivalPresetAt } from '../../packages/domain/src/tiers/index'
 import { simulateRace, type RaceTimeline } from '../../packages/race/src/index'
 
 const args = process.argv.slice(2)
@@ -154,7 +153,7 @@ function mixedRunners(tier: number, grade: RaceGrade, distance: number, field: n
   return Array.from({ length: field }, (_, gate) => ({
     id: `synthetic-${gate}`,
     label: `${gate + 1}`,
-    stats: rivalPreset(tier, grade, distanceCategory(distance), STRATEGIES[gate % STRATEGIES.length]!, distance),
+    stats: rivalPresetAt({ T: tier, grade: grade, distance: distanceCategory(distance), strategy: STRATEGIES[gate % STRATEGIES.length]!, meters: distance }),
     strategy: STRATEGIES[gate % STRATEGIES.length]!,
     aptitude: { distance: 'A', surface: 'A', strategy: 'A' } as const,
     gate,
@@ -200,15 +199,15 @@ function runQuick() {
 }
 
 function playerStats(tier: number, grade: RaceGrade, distance: number, build: PlayerBuild): Stats {
-  if (build === 'field') return rivalPreset(tier, grade, distanceCategory(distance), 'pace', distance)
-  return allStats(averageCap(tier) * (build === 'under' ? 0.7 : 1))
+  if (build === 'field') return rivalPresetAt({ T: tier, grade: grade, distance: distanceCategory(distance), strategy: 'pace', meters: distance })
+  return allStats((capBudgetAt(tier) / 5) * (build === 'under' ? 0.7 : 1))
 }
 
 function playerRunners(input: {
   tier: number; grade: RaceGrade; distance: number; field: number; build: PlayerBuild
   playerStrategy: Strategy; playerSkills: readonly CompiledRaceSkill[]; seed: number
 }) {
-  const rivalStats = (strategy: Strategy) => rivalPreset(input.tier, input.grade, distanceCategory(input.distance), strategy, input.distance)
+  const rivalStats = (strategy: Strategy) => rivalPresetAt({ T: input.tier, grade: input.grade, distance: distanceCategory(input.distance), strategy: strategy, meters: input.distance })
   const playerGate = input.seed % input.field
   return {
     playerIndex: playerGate,

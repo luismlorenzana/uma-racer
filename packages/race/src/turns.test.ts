@@ -1,13 +1,12 @@
 import {
   fullSpurtStamina,
   parseRaceCondition,
-  rivalPreset,
-  rollRivalField,
   type CompiledRaceSkill,
   type RaceSkillEffectKind,
   type Stats,
   type Strategy,
 } from '@racer/domain'
+import { rivalPresetAt, rollRivalFieldAt } from '@racer/domain/tiers'
 import { describe, expect, it } from 'vitest'
 import { HORSE_LANE } from './constants'
 import {
@@ -239,8 +238,8 @@ describe('engine v7 (D158)', () => {
     const held = (share: number) => {
       let maxed = 0
       for (let seed = 1; seed <= 20; seed += 1) {
-        const others = rollRivalField({ tier: 1, grade: 'g1', distance: 'medium', meters: 2000, count: 11, rng: createRng(seed) })
-        const build = rivalPreset(1, 'g1', 'medium', 'pace', 2000)
+        const others = rollRivalFieldAt({ T: 1, grade: 'g1', distance: 'medium', meters: 2000, count: 11, rng: createRng(seed) })
+        const build = rivalPresetAt({ T: 1, grade: 'g1', distance: 'medium', strategy: 'pace', meters: 2000 })
         const me = runner(11, { ...build, stamina: share * fullSpurtStamina(2000, 'pace', build.speed, build.guts) }, 'pace')
         const runners = [...others.map((slot, gate) => runner(gate, slot.stats, slot.strategy)), me]
         if (simulateRaceV7({ course: course(2000), seed, runners }).results.find((result) => result.runner === 11)!.spurtMaxed) maxed += 1

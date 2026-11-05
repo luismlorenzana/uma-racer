@@ -1,5 +1,8 @@
 # 06 · RPG decommission
 
+> **Archived by the restart (D380, 2026-11-04).** This plan's phases 1–3, 5 and 6 shipped; 4 and 7–9 are retired. The
+> new game is [the drawing board v3](../research/drawing-board/README.md); this page is kept as history only.
+
 The Global Uma RPG leaves uma-racer completely (D322): code, API routes, save kinds, local tables, private packs,
 bucket files, sims, docs and proof images. There are no feature flags, no dormant code and no compatibility readers.
 uma-rpg is its own game now (platform P2–P4), and the owner accepts the data loss.

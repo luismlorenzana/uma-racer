@@ -1,17 +1,14 @@
-// Local dev persistence for generation 2 (docs/rework/13-removals-and-plan-changes.md §6; docs/rearchitecture/07-data-
-// reset.md §2–§3; T135): one JSON file, `.data/save-g2.json`, shaped `{ [uid]: { rows: { 'kind/id': row }, purge? } }`,
-// written atomically (a temporary file, then a rename) with calls serialized in-process, on the same `resolve.ts` as
-// Firestore. Historical audit metadata is preserved but never acted on (T144, D362).
+// Local dev persistence for generation 3 (docs/game/architecture.md "The save and sync"; D381; T152): one JSON file,
+// `.data/save-g3.json`, shaped `{ [uid]: { rows: { 'kind/id': row } } }`, written atomically (a temporary file, then a
+// rename) with calls serialized in-process, on the same `resolve.ts` as Firestore. Generation 2's file is never read.
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import { dirname } from 'node:path'
-import { rowKey, type SaveSnapshotV2, type SyncRequestV2, type SyncResponseV2 } from '@racer/domain/save'
+import { rowKey, type SaveSnapshot, type SyncRequest, type SyncResponse } from '@racer/domain/save'
 import { needsOperationEnv, NO_SAVE, resolveSync, selectReadSet, snapshotPage, syncReadSet, type NoSave, type SaveRow } from './resolve'
 import type { OperationEnvLoader, SaveRepository } from './save.repository'
 
 interface UserFile {
   rows: Record<string, SaveRow>
-  /** An inert record from the completed cutover; sync preserves it unchanged. */
-  purge?: unknown
 }
 type FileShape = Record<string, UserFile>
 
@@ -46,11 +43,11 @@ export class LocalSaveRepository implements SaveRepository {
     return readJson<FileShape>(this.file, {})
   }
 
-  snapshot(uid: string, since: number, cursor: string | null): Promise<SaveSnapshotV2> {
+  snapshot(uid: string, since: number, cursor: string | null): Promise<SaveSnapshot> {
     return this.serialize(async () => snapshotPage(Object.values((await this.read())[uid]?.rows ?? {}), since, cursor, this.clock()))
   }
 
-  async sync(uid: string, request: SyncRequestV2, env: OperationEnvLoader): Promise<SyncResponseV2 | NoSave> {
+  async sync(uid: string, request: SyncRequest, env: OperationEnvLoader): Promise<SyncResponse | NoSave> {
     // Content loads first: a missing pack throws here, and nothing is written.
     const operationEnv = needsOperationEnv(request) ? await env() : undefined
     return this.serialize(async () => {

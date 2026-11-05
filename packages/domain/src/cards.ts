@@ -1,11 +1,7 @@
-// SSR support cards: the generated effect profile that still feeds Race Bonus (docs/game/06-cards-and-bonds.md). The rest
-// of the effect model died with the training turn (D125), and every card pays 100%: no stars (D329).
+// SSR support cards (docs/game/06-cards-and-bonds.md): their golds, the effect kinds the card tooling names, and Race
+// Bonus from the real values (D381). The tree's training formula (T153) reads the rest of `effects`.
 
 import type { SkillTemplate, SupportCardTemplate } from './content'
-
-export const eraMult = (era: number): number => 1 + 0.08 * (era - 1)
-
-export const CARD_UNIQUE_BONUS_MULTIPLIER = 0.25
 
 export const CARD_EFFECTS = [
   'trainingBonus',
@@ -60,18 +56,15 @@ export function cardUniqueEffectKinds(template: SupportCardTemplate): ReadonlySe
   )
 }
 
-/**
- * Race Bonus for an era-1 card whose profile weight is 1: the value the old model reached at max limit break and level
- * 25 (0.03 × 1.5 × 1.08), so a card races exactly as a maxed card did (D147, D329).
- */
-const RACE_BONUS_AT_MAX = 0.03 * 1.5 * 1.08
+/** The original's Race Bonus effect id. */
+export const RACE_BONUS_EFFECT = 15
 
 /**
- * What one card adds to race EXP, the one generated effect that outlived the training turn (D125): its full value, and
- * its unique effect's bonus on top when Race Bonus is one of its kinds.
+ * What one card adds to what a race pays, as a fraction: its real Race Bonus at its top level (a percentage in the
+ * source), plus its unique effect's Race Bonus where it has one (D381, 05 §3.1).
  */
-export function cardRaceBonus(template: SupportCardTemplate): number {
-  const full = RACE_BONUS_AT_MAX * eraMult(template.era) * (template.effectProfile.raceBonus ?? 0)
-  const signature = cardUniqueEffectKinds(template).has('raceBonus') ? CARD_UNIQUE_BONUS_MULTIPLIER : 0
-  return full * (1 + signature)
+export function cardRaceBonus(template: Pick<SupportCardTemplate, 'effects' | 'uniqueEffect'>): number {
+  const own = template.effects[RACE_BONUS_EFFECT] ?? 0
+  const unique = (template.uniqueEffect?.effects ?? []).filter((effect) => effect.type === RACE_BONUS_EFFECT).reduce((sum, effect) => sum + effect.value, 0)
+  return (own + unique) / 100
 }

@@ -1,32 +1,55 @@
-// Test support for generation 2's API (T135): the domain's synthetic fixtures, a synthetic content folder and a strict
-// fake Firestore. Not built (tsconfig.build.json leaves `*.test-support.ts` out) and never imported by the module.
-import { resolve } from 'node:path'
-import type { OperationEnv, OperationPacks } from '@racer/domain/save'
+// Test support for generation 3's API (T152): hand-made synthetic content and a strict fake Firestore. Not built
+// (tsconfig.build.json leaves `*.test-support.ts` out) and never imported by the module.
+import type { SupportCardTemplate, UmaTemplate } from '@racer/domain'
+import { buildOperationEnv, type OperationEnv } from '@racer/domain/save'
 
 // --- Synthetic fixtures ---------------------------------------------------------------------------------------------
+// Invented ids and names only: no real Uma, card or race. The account's rules read an Uma's `name` and a card's `title`.
 
-/** `packages/domain/src/__fixtures__/save.ts`: invented Umas, cards, skills and races, and their envs. */
-export interface SaveFixtures {
-  readonly PACKS: OperationPacks
-  readonly ENV: OperationEnv
-  /** The env with `dev: true`, where `dev-grant` runs. */
-  readonly DEV: OperationEnv
-  opId(n: number): string
-  uma(n: number): string
-  clock(hhmm: string): number
+/** The stamp every generation-3 request carries. */
+export const STAMP = { protocol: 3, generation: 3 } as const
+
+/** Milliseconds at `HH:MM` on a fixed day (2026-11-04 UTC). */
+export const clock = (hhmm: string): number => {
+  const [h, m] = hhmm.split(':').map(Number)
+  return Date.UTC(2026, 10, 4, h ?? 0, m ?? 0)
 }
 
-/** The domain's synthetic save fixtures, read from source: the built package leaves `__fixtures__` out. */
-export async function saveFixtures(): Promise<SaveFixtures> {
-  return (await import(resolve(process.cwd(), '../../packages/domain/src/__fixtures__/save.ts'))) as SaveFixtures
+/** An operation id: 8+ characters, unique per n. */
+export const opId = (n: number): string => `op-test-${String(n).padStart(4, '0')}`
+export const uma = (n: number): string => `uma-${n}`
+export const card = (n: number): string => `card-${n}`
+
+/** How many invented Umas and cards the env holds: more than a new account's 20 Uma Tickets. */
+export const SYNTHETIC_COUNT = 30
+const numbers = Array.from({ length: SYNTHETIC_COUNT }, (_, i) => i + 1)
+
+function syntheticEnv(dev: boolean): OperationEnv {
+  const env = buildOperationEnv({
+    umas: numbers.map((n) => ({ id: uma(n), name: `Test Uma ${n}` }) as unknown as UmaTemplate),
+    cards: numbers.map((n) => ({ id: card(n), title: `Test Card ${n}` }) as unknown as SupportCardTemplate),
+    skills: [],
+    races: [],
+    courses: [],
+    contentVersion: 'test-content',
+  })
+  return dev ? { ...env, dev: true } : env
 }
+
+/** The env production runs: no dev operations. */
+export const ENV = syntheticEnv(false)
+/** The env with `dev: true`, where `dev-grant` runs. */
+export const DEV = syntheticEnv(true)
+
+/** One operation change, as the wire carries it. */
+export const op = (n: number, name: string, input: unknown, at: number) => ({ type: 'operation', operation: { id: opId(n), name, input, at } })
 
 // --- A fake Firestore -----------------------------------------------------------------------------------------------
-// Only what the generation-2 repository calls. Like Firestore, it refuses `undefined` and an array directly inside an
+// Only what the generation-3 repository calls. Like Firestore, it refuses `undefined` and an array directly inside an
 // array, applies a transaction's writes only when its callback resolves, and refuses a read after a write.
 
 type Data = Record<string, unknown>
-interface Filter { readonly field: string; readonly op: '>' | '==' | 'in'; readonly value: unknown }
+interface Filter { readonly field: string; readonly op: '>'; readonly value: unknown }
 /** A query's sort key: a field path, or null for the document id. */
 type Order = string | null
 
@@ -80,10 +103,7 @@ export class FakeQuery {
     const key = (path: string, data: Data): unknown[] => this.orders.map((order) => (order === null ? lastSegment(path) : fieldValue(data, order)))
     const compare = (a: readonly unknown[], b: readonly unknown[]): number => a.reduce<number>((result, value, i) => result || compareValues(value, b[i]), 0)
     let rows = [...this.db.docs].filter(([path, data]) => path.startsWith(prefix) && !path.slice(prefix.length).includes('/') &&
-      this.filters.every(({ field, op, value }) => {
-        const actual = fieldValue(data, field)
-        return op === '>' ? compareValues(actual, value) > 0 : op === '==' ? actual === value : (value as unknown[]).includes(actual)
-      }))
+      this.filters.every(({ field, value }) => compareValues(fieldValue(data, field), value) > 0))
     if (this.orders.length > 0) rows.sort(([a, x], [b, y]) => compare(key(a, x), key(b, y)))
     if (this.after !== null) rows = rows.filter(([path, data]) => compare(key(path, data), this.after!) > 0)
     if (this.max !== null) rows = rows.slice(0, this.max)

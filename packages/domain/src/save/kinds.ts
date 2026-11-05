@@ -1,42 +1,32 @@
-// Generation 2's kinds, stamps and bounds (docs/rework/13-removals-and-plan-changes.md §6; docs/rearchitecture/01-target-
-// architecture.md §4.3, §5; docs/rearchitecture/07-data-reset.md §4; T134). Eleven kinds and only these: six entities,
-// versioned, and five logs, written once. Only badges and flair events are the device's to write; every other kind
-// changes by an operation, or by the create that makes a new account. Pure constants.
+// Generation 3's kinds, stamps and bounds (docs/game/architecture.md "The save and sync", D381). Five entities,
+// versioned, and two logs, written once. Every kind changes by an operation, or by the create that makes a new account;
+// the device writes no rows of its own. Pure constants.
 
-/** The save's generation, on every row, request and response (07 §4). */
-export const SAVE_GENERATION = 2
-/** The sync protocol, on every request and response. Anything else is the caller's 426 (07 §4). */
-export const SAVE_PROTOCOL = 2
-/** One schema version per kind (01 §5), with no migrations: generation 2 starts every kind at 1. */
+/** The save's generation, on every row, request and response. Generation 2 was wiped by the restart (D380). */
+export const SAVE_GENERATION = 3
+/** The sync protocol, on every request and response. Anything else is the caller's 426. */
+export const SAVE_PROTOCOL = 3
+/** One schema version per kind, with no migrations: generation 3 starts every kind at 1. */
 export const KIND_SCHEMA = 1
 
-/** The entities: `profile/main`, `umas/{outfitId}`, `buildings/{id}`, `work/{outfitId}`, `items/{itemId}` and `badges/…`. */
-export const ENTITY_KINDS = Object.freeze(['profile', 'umas', 'buildings', 'work', 'items', 'badges'] as const)
+/** The entities: `account/main`, `umas/{outfitId}`, `cards/{cardId}`, `careers/{umaId}:{T}` and `bonds/{umaId}:{tier}:{cardId}`. */
+export const ENTITY_KINDS = Object.freeze(['account', 'umas', 'cards', 'careers', 'bonds'] as const)
 export type EntityKind = (typeof ENTITY_KINDS)[number]
 /** The logs: append-only, first write wins. */
-export const LOG_KINDS = Object.freeze(['raceResults', 'ledger', 'itemLedger', 'flairEvents', 'operations'] as const)
+export const LOG_KINDS = Object.freeze(['raceResults', 'operations'] as const)
 export type LogKind = (typeof LOG_KINDS)[number]
 export type SaveKind = EntityKind | LogKind
 
-/**
- * The order a pull walks the kinds: the profile and the account's parts first, then the logs the rules read (the
- * ledger's rule rows and the operations), then history. A second device can play once the kinds before `flairEvents`
- * have arrived (T136).
- */
+/** The order a pull walks the kinds: the account and what it owns first, then the operations, then race history. */
 export const KIND_ORDER: readonly SaveKind[] = Object.freeze([
-  'profile', 'buildings', 'umas', 'work', 'items', 'badges', 'ledger', 'operations', 'flairEvents', 'itemLedger', 'raceResults',
+  'account', 'umas', 'cards', 'careers', 'bonds', 'operations', 'raceResults',
 ] as const)
-
-/** The kinds the device writes as rows, as today: badge state and flair events (M034). */
-export const DEVICE_KINDS = Object.freeze(['badges', 'flairEvents'] as const)
-export type DeviceKind = (typeof DEVICE_KINDS)[number]
 
 export const isEntityKind = (value: unknown): value is EntityKind => (ENTITY_KINDS as readonly unknown[]).includes(value)
 export const isLogKind = (value: unknown): value is LogKind => (LOG_KINDS as readonly unknown[]).includes(value)
 
 /**
- * The bounds (T134): under Firestore's 1 MiB document and Cloud Run's response limits, with room for a 25-Uma Collect
- * all's receipt.
+ * The bounds (T134): under Firestore's 1 MiB document and Cloud Run's response limits, with room for a stage's journal.
  */
 export const SAVE_LIMITS = Object.freeze({
   /** Changes in one sync request. */

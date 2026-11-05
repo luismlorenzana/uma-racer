@@ -1,4 +1,4 @@
-import { hasBannedWord } from '@racer/domain/check-in'
+import { hasBannedWord } from '../save/words'
 import { describe, expect, it } from 'vitest'
 import { ContentError as ApiError, ContentFallbackError } from '@luismlorenzana/uma-kit/content'
 import { diagnoseContentError, diagnoseLoadedContent, EMPTY_BUCKET_CONTENT, SIGNED_OUT_CONTENT } from './diagnostics'

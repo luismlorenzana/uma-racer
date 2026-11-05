@@ -11,7 +11,7 @@ This folder holds **only work that is planned or in progress**. A task spec is a
 
 ## Current plan
 
-**The restart (D380, 2026-11-04).** The game as built is retired. Uma Racer is redesigned as a clock-free game:
+**The restart (D380, 2026-11-04).** Generation 2's game is retired. Uma Racer is redesigned as a clock-free game:
 - careers of mini-game seasons;
 - resources spent by hand in trees priced with the real support cards;
 - the race engine kept.
@@ -20,7 +20,7 @@ This folder holds **only work that is planned or in progress**. A task spec is a
 
 | Release | Milestone | State |
 |---|---|---|
-| 1 | [M036 — URA Finale, the new game](M036-ura-finale-slice.md) (T152–T159): generation 3 with a full wipe, Training Yard and Furlong Hand, the tree, deck, bonds and skills, URA Finale careers | **Specified 2026-11-04.** Built on `restart/g3`; ships to production in one release |
+| 1 | [M036 — URA Finale, the new game](M036-ura-finale-slice.md) (T152–T159): generation 3 with a full wipe, Training Yard and Furlong Hand, the tree, deck, bonds and skills, URA Finale careers | **Released 2026-11-05 (D388).** Built on `restart/g3` (D381–D387), shipped to production in one release with generation 2's wipe; [the manual](../game/README.md) describes it |
 | 2 | Team Showdown: Shards, Umas earned in play; Unity Cup's careers | Planned |
 | 3 | Fan Festival: Scout points, cards earned in play, the refit; Trackblazer's and Our Grand Concert's careers | Planned |
 | 4 | Summer Camp: aptitude points; Grand Masters' careers; promotion to tier 2 | Planned |
@@ -33,12 +33,14 @@ This folder holds **only work that is planned or in progress**. A task spec is a
 
 The rework phases that shipped (1–3, 5 and 6) are in the history, with their records below.
 
-The `pre-split` tag marks the generation-1 game. Generation 2's last state on `main` is `c592ccd`; the restart deletes
-it.
+The `pre-split` tag marks the generation-1 game. Generation 2's last state on `main` is `c592ccd`; M036's release
+replaced it, with no rollback path (D380).
 
-**Next free numbers: M037, T160 and D389** (D381–D388 are reserved for M036's parts). Numbers are never reused, so a
-decision that mentions T014 always means the same work. T057 was consumed by the per-scenario limit-break branch and is
-not reused.
+Later releases are planned here as a milestone spec with one packet per part; each part branches `feat/t16x-…` from
+`main` and merges by pull request, CI required. `restart/g3` is retired.
+
+**Next free numbers: M037, T160 and D389.** Numbers are never reused, so a decision that mentions T014 always means
+the same work. T057 was consumed by the per-scenario limit-break branch and is not reused.
 
 ## Completed and removed
 
@@ -51,12 +53,12 @@ are named by their old path (`design/uma-rpg.md` …); read them with `git show 
 | SE4 (sibling handoff) — shared content runtime, held art and atlas rendering; existing SE1 cache/snapshot keys preserved | 2026-10-20; `ad15cf0`, verified production green (D376; [delivery evidence](../research/se4-content/README.md)) | uma-kit 0.9.0 `/content`, uma-server 0.2.0 `/content`, game-only adapter and diagnostics | `1ed5b77` (`docs/handoff/tasks/`) |
 | M035 / T148–T151 · SE1 platform master data | 2026-10-21, verified production and exact cleanup (D379; [acceptance](../research/se1-master-data/README.md)) | `@racer/domain/master`, API shared proxies, verified web cache, private overlay tools and the manual | `97f08f7` |
 | SB6 (sibling handoff) — shared album and Uma pickers on uma-kit 0.7.1, faces when small and busts throughout races; saved preferences and racer operations preserved | 2026-10-18 | [game/11](../game/11-hub-and-places.md) §3.1, [architecture](../game/architecture.md#uma-kit), D373, [local acceptance and deployment](../research/sb6-album/README.md); `4885baf` | `4885baf` (`docs/handoff/tasks/`) |
-| A03 (ChatGPT handoff) — the four remaining Uma pickers open on level, with context sorts optional and Open goals as a Racing filter; the default Farm Uma follows the first row unless explicitly linked | 2026-10-16 | [game/07](../game/07-farm.md) §10, [game/05](../game/05-training-hub.md) §8, [game/11](../game/11-hub-and-places.md) §9.2, D368, [phone proof](../research/a03-level-rule/README.md) | `652cc58` (`docs/handoff/tasks/`) |
+| A03 (ChatGPT handoff) — the four remaining Uma pickers open on level, with context sorts optional and Open goals as a Racing filter; the default Farm Uma follows the first row unless explicitly linked | 2026-10-16 | [game/07](../archive/g2-manual/07-farm.md) §10, [game/05](../archive/g2-manual/05-training-hub.md) §8, [game/11](../game/11-hub-and-places.md) §9.2, D368, [phone proof](../research/a03-level-rule/README.md) | `652cc58` (`docs/handoff/tasks/`) |
 | T147 — uma-racer on the shared uma-kit 0.1.2 (uma-platform P48, sibling step A6.2): the kit's theme, shell, Hub map and primitives with the racer's chips, tabs, sheets, ground and words passed in; the iPhone band fixed; dark mode and Appearance in Account | 2026-10-16 | [architecture](../game/architecture.md#uma-kit), [game/11](../game/11-hub-and-places.md) §1–§2, §12, [visual system](../design/visual-system.md#dark-mode), D367 | none (briefed in chat from uma-platform's sibling plan) |
-| T146 — the compact Farm: durations instead of clock end times, Free Umas only in a one-screen job sheet with everything preselected, icon-first 48–56 pt rows with Collect, Repeat, Speed Tickets and ⋯, and a side panel that acts (2 taps to collect or restart, 3 to start a job); Training shares the rows | 2026-10-16 | [game/07](../game/07-farm.md) §10, [game/02](../game/02-check-ins-and-notifications.md) §3, [game/11](../game/11-hub-and-places.md) §2.6, D366 | none (built from the owner's feedback in chat) |
+| T146 — the compact Farm: durations instead of clock end times, Free Umas only in a one-screen job sheet with everything preselected, icon-first 48–56 pt rows with Collect, Repeat, Speed Tickets and ⋯, and a side panel that acts (2 taps to collect or restart, 3 to start a job); Training shares the rows | 2026-10-16 | [game/07](../archive/g2-manual/07-farm.md) §10, [game/02](../archive/g2-manual/02-check-ins-and-notifications.md) §3, [game/11](../game/11-hub-and-places.md) §2.6, D366 | none (built from the owner's feedback in chat) |
 | A01–A02 (ChatGPT handoff packets) — the racer's four buildings, the Racing page's tiles, the currency marks, tier crests and Speed Ticket icon, published as uma-art 2.6.0 and 2.7.0 | 2026-10-15 | [game/11](../game/11-hub-and-places.md) §10.3, D364 | `d25d4e9` (`docs/handoff/tasks/`) |
 | T145 — uma-rpg's Hub on the Home screen: the Phaser town, the side-panel quick look, stand-ins for the four buildings awaiting art | 2026-10-15 | [game/11](../game/11-hub-and-places.md), D363 | none (built from the owner's scope call in chat) |
-| T143 — The switch (M034): generation 2 becomes the app, the retired systems are deleted, the docs are rewritten as built | 2026-10-15 | [The manual](../game/README.md), [its architecture's "Decided at the switch"](../game/architecture.md#decided-at-the-switch-t143), [rework/13](../rework/13-removals-and-plan-changes.md) §8, D361 | `1a39f95` |
+| T143 — The switch (M034): generation 2 becomes the app, the retired systems are deleted, the docs are rewritten as built | 2026-10-15 | [The manual](../game/README.md), its architecture's "Decided at the switch" (`git show c592ccd:docs/game/architecture.md`), [rework/13](../rework/13-removals-and-plan-changes.md) §8, D361 | `1a39f95` |
 | M033 / T125–T133 — The rework's rules, `sim:loop` and the builds against the field | 2026-10-14 | [The manual](../game/README.md) (live blocks), `packages/domain/src/<area>/` (moved there by T143), D340–D350 | M033: `adb10ed`; each T spec: the commit before its merge |
 | M032 — Re-architecture phase 1: a sound base | 2026-10-14 | [rearchitecture/08](../rearchitecture/08-phases.md) phase 1, D337, [the manual](../game/README.md) | No spec file: the phase table was the spec |
 | M024 / T081, M010 / T035, M011 / T036–T039 — **retired unbuilt** (D339) | 2026-10-14 | — | `afe4696` |
@@ -105,7 +107,7 @@ are named by their old path (`design/uma-rpg.md` …); read them with `git show 
 | T052 — constellation silhouettes | 2026-09-25 | D143, Constellations (`design/constellations.md`) | git history |
 | M019 — stars and tickets | 2026-09-25 | D147–D148, D150, Support Cards (`design/support-cards.md`), Economy (`design/economy.md`) | git history |
 | T059 — chibi and outfit-stand art | 2026-09-26 | D160, Collection (`design/collection.md`) | git history |
-| M015 — scenario identity | 2026-09-26 | D163–D165, Scenarios (`design/scenarios.md`), [Badges](../design/badges.md), Collection (`design/collection.md`) | git history |
+| M015 — scenario identity | 2026-09-26 | D163–D165, Scenarios (`design/scenarios.md`), [Badges](../archive/g2-manual/badges.md), Collection (`design/collection.md`) | git history |
 | M009 — look and feel | 2026-09-26 | D166–D167, [Visual System](../design/visual-system.md) | git history |
 | M020 — Friendship Training | 2026-09-26 | D146, D168, D173, D177, Minigames (`design/minigames.md`) | git history |
 | M007 — align and stabilize (T019–T022; T023 retired, D189) | 2026-09-28 | D105–D108, D114, [Infrastructure](../technical/infrastructure.md#release-runbook) | `7129d77` |

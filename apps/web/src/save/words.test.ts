@@ -1,15 +1,12 @@
-// Plain words (T136; docs/game/02-check-ins-and-notifications.md §9): every failure says one of 02 §9's sentences, a
-// refusal says its rule's own words, and no sentence in `save/` holds a banned word, a code or a status number.
+// Plain words (T136, T152; D157): every failure says one of two sentences, a refusal says its rule's own words, and no
+// sentence in `save/` holds a banned word, a code or a status number.
 import { readdirSync, readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
-import { CHECK_IN_WORDS, fill, hasBannedWord, say } from '@racer/domain/check-in'
 import { describe, expect, it } from 'vitest'
 import type { SaveFailure } from './api'
-import { failureWords, refusalWords, SAVE_WORDS, sentence, unexpectedWords } from './words'
+import { failureWords, hasBannedWord, refusalWords, SAVE_WORDS } from './words'
 
 const FAILURES: readonly SaveFailure[] = ['offline', 'auth', 'upgrade', 'no-save', 'unavailable', 'server', 'invalid']
-/** 02 §9's sentences, as the check-in's table holds them. */
-const SECTION_9 = [CHECK_IN_WORDS.offline, CHECK_IN_WORDS.unexpected, CHECK_IN_WORDS['already-collected']]
 
 const HERE = fileURLToPath(new URL('.', import.meta.url))
 
@@ -21,22 +18,22 @@ function literals(source: string): string[] {
 }
 
 describe('plain words', () => {
-  it("maps every failure to one of 02 §9's sentences", () => {
+  it('maps every failure to one of two sentences', () => {
     expect(failureWords('offline')).toBe("Saved on this phone. It'll sync when you're back online.")
     for (const failure of FAILURES.filter((kind) => kind !== 'offline')) expect(failureWords(failure)).toBe("That didn't work. Try again.")
     for (const failure of FAILURES) {
-      expect(SECTION_9).toContain(failureWords(failure))
+      expect(Object.values(SAVE_WORDS)).toContain(failureWords(failure))
       expect(hasBannedWord(failureWords(failure))).toBe(false)
     }
-    expect(Object.values(SAVE_WORDS).sort()).toEqual([...SECTION_9].sort())
-    expect(sentence(unexpectedWords())).toBe(CHECK_IN_WORDS.unexpected)
   })
 
-  it("says a refusal in its rule's words, filled from its data", () => {
-    const words = refusalWords({ refused: true, code: 'busy', reason: '{uma} is busy for another {time}.', data: { uma: 'Kitasan Black', time: '2h 10m' } })
-    expect(words).toEqual(say('{uma} is busy for another {time}.', { uma: 'Kitasan Black', time: '2h 10m' }))
-    expect(sentence(words)).toBe(fill(words))
-    expect(sentence(words)).toBe('Kitasan Black is busy for another 2h 10m.')
+  it("says a refusal in its rule's words", () => {
+    expect(refusalWords({ refused: true, code: 'no-tickets', reason: 'You have no Uma Tickets left.' })).toBe('You have no Uma Tickets left.')
+  })
+
+  it('knows the banned words', () => {
+    expect(['Sync failed.', 'A stale receipt.', 'Error 500.', 'Operation refused.'].map(hasBannedWord)).toEqual([true, true, true, true])
+    expect(hasBannedWord('Saved on this phone.')).toBe(false)
   })
 
   it('holds no banned word, code or status number in any sentence of save/', () => {

@@ -1,5 +1,6 @@
 // Operations consume the same verified release and racer adapter as the web (SE1; docs/game/architecture.md).
 import { buildOperationEnv, type OperationEnv } from '@racer/domain/save'
+import { simulateRace } from '@racer/race'
 import type { MasterContent, MasterSnapshot } from '../master/master-content'
 
 export const MANIFEST_TTL_MS = 60_000
@@ -7,6 +8,8 @@ export class ContentUnavailable extends Error {
   constructor() { super('Operation content is unavailable'); this.name = 'ContentUnavailable' }
 }
 export const devOperations = (): boolean => process.env.DEV_OPERATIONS === 'true'
+/** The race engine career races run on, the device's own (D383): engine v9's `simulateRace`. */
+export const RACE_ENGINE: NonNullable<OperationEnv['race']> = Object.freeze({ version: 9, simulate: simulateRace })
 export type OperationContentSource = Pick<MasterContent, 'snapshot' | 'load'>
 
 export class OperationContent {
@@ -23,7 +26,8 @@ export class OperationContent {
       const key = `${snapshot.manifest.version}:${snapshot.overlay.version}`
       if (this.cached?.key === key) return { ...this.cached.env, dev: devOperations() }
       if (this.loading?.key !== key) {
-        const value = this.source.load(snapshot).then((content) => buildOperationEnv(content))
+        // The env's content version is the cache's key: the platform release and the racer overlay it was built from.
+        const value = this.source.load(snapshot).then((content) => buildOperationEnv({ ...content, contentVersion: key, race: RACE_ENGINE }))
         this.loading = { key, value }
         void value.then((env) => { this.cached = { key, env } }, () => undefined)
           .finally(() => { if (this.loading?.value === value) this.loading = undefined })

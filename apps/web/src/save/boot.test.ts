@@ -1,17 +1,14 @@
-// The save's boot (T136; docs/rearchitecture/01-target-architecture.md §4.3; 07 §2–§3): local first, an empty device
-// pulls or creates. Cutover writes are retired; device data and inert markers are kept (SE1, D362).
+// The save's boot (T136, T152): local first, an empty device pulls or creates; the only requests are the save's own.
 import 'fake-indexeddb/auto'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { CREATE_KEY } from './db'
 import { useSave } from './store'
-import {
-  device, FakeServer, flairEvent, freshDb, memoryStorage, nextId, settle, turn, umaId, useClock, type Device,
-} from './__fixtures__/server'
+import { cardId, device, FakeServer, nextId, settle, umaId, useClock, type Device } from './__fixtures__/server'
 
 beforeEach(() => useClock())
 afterEach(() => vi.useRealTimers())
 
-const tickets = () => useSave.getState().state?.profile.umaTickets
+const tickets = () => useSave.getState().state?.account.umaTickets
 const umas = () => Object.keys(useSave.getState().state?.umas ?? {})
 
 /** A server that already holds this account's save: created, with Uma 1 unlocked, on another device. */
@@ -19,7 +16,7 @@ function serverWithSave(): FakeServer {
   const server = new FakeServer()
   server.otherDevice([
     { type: 'create', createdAt: Date.now() },
-    { type: 'operation', operation: { id: nextId(), name: 'unlock-uma', input: { outfitId: umaId(1) }, at: Date.now() } },
+    { type: 'operation', operation: { id: nextId(), name: 'unlock-uma', input: { umaId: umaId(1) }, at: Date.now() } },
   ])
   return server
 }
@@ -44,11 +41,9 @@ async function stop(...devices: Device[]): Promise<void> {
 }
 
 describe('local-first boot', () => {
-  it.each([false, true])('only requests save/sync on boot, reconnect and sign-in, with historical markers present: %s', async (marked) => {
+  it('only requests save and sync, on boot, reconnect and sign-in', async () => {
     const server = serverWithSave()
-    const storage = memoryStorage()
-    if (marked) storage.setItem('uma-racer:g2:purged', 'historical audit')
-    const phone = device(server, { storage })
+    const phone = device(server)
     await settle(phone)
     expect([tickets(), umas()]).toEqual([19, [umaId(1)]])
     phone.net.online()
@@ -58,13 +53,10 @@ describe('local-first boot', () => {
     await settle(phone)
     expect(server.requests.length).toBeGreaterThan(0)
     expect(server.requests.every(({ path }) => path === '/api/save' || path === '/api/sync')).toBe(true)
-    expect(storage.getItem('uma-racer:g2:purged')).toBe(marked ? 'historical audit' : null)
     await stop(phone)
-    const again = device(server, { db: phone.db, storage })
+    const again = device(server, { db: phone.db, storage: phone.storage })
     await settle(again)
     expect([tickets(), umas()]).toEqual([19, [umaId(1)]])
-    expect(server.requests.every(({ path }) => path === '/api/save' || path === '/api/sync')).toBe(true)
-    expect(storage.getItem('uma-racer:g2:purged')).toBe(marked ? 'historical audit' : null)
     again.session.stop()
   })
 
@@ -94,19 +86,19 @@ describe('local-first boot', () => {
     phone.session.stop()
   })
 
-  it('an empty device on an empty server queues the create with 20 Uma Tickets, and the server takes it', async () => {
+  it('an empty device on an empty server queues the create with 20 Uma Tickets and 24 Card Tickets, and the server takes it', async () => {
     const server = new FakeServer()
     const seen = requestsWhenReady(server)
     const phone = device(server)
     await phone.session.opened
     expect(seen.value).toBe(1)
     expect((await phone.db.outbox.toArray()).map((row) => row.key)).toEqual([CREATE_KEY])
-    expect([tickets(), umas()]).toEqual([20, []])
+    expect(useSave.getState().state?.account).toEqual({ createdAt: Date.now(), umaTickets: 20, cardTickets: 24 })
     await settle(phone)
-    expect(server.syncs()[0]?.changes).toEqual([{ type: 'create', createdAt: Date.now() }])
-    expect(server.row<{ data: { umaTickets: number } }>('profile/main')?.data.umaTickets).toBe(20)
+    expect(server.syncs()[0]).toEqual({ protocol: 3, generation: 3, changes: [{ type: 'create', createdAt: Date.now() }] })
+    expect(server.row<{ data: { umaTickets: number } }>('account/main')?.data.umaTickets).toBe(20)
     expect(await phone.db.outbox.count()).toBe(0)
-    expect(await phone.db.profile.count()).toBe(1)
+    expect(await phone.db.account.count()).toBe(1)
     phone.session.stop()
   })
 
@@ -117,13 +109,13 @@ describe('local-first boot', () => {
     await settle(phone)
     expect(useSave.getState().lifecycle).toBe('ready')
     expect([tickets(), umas(), useSave.getState().sync.status]).toEqual([20, [], 'offline'])
-    await phone.session.actions.run('set-repeat-sizing', { sizing: 'fit' })
+    await phone.session.actions.run('unlock-card', { cardId: cardId(1) })
     server.failAlways(null)
     phone.net.online()
     await settle(phone)
     expect(server.syncs().at(-1)?.changes.map((change) => change.type)).toEqual(['create', 'operation'])
     // The server's save, and the tap made offline, run on it.
-    expect([tickets(), umas(), useSave.getState().state?.profile.repeatSizing]).toEqual([19, [umaId(1)], 'fit'])
+    expect([tickets(), umas(), Object.keys(useSave.getState().state!.cards)]).toEqual([19, [umaId(1)], [cardId(1)]])
     expect(await phone.db.outbox.count()).toBe(0)
     expect(server.requests.filter((r) => r.path === '/api/save').at(-1)?.query.since).toBe('0')
     phone.session.stop()
@@ -131,19 +123,13 @@ describe('local-first boot', () => {
 
   it('opens an empty device once the rule kinds are in, and loads the history behind it', async () => {
     const server = serverWithSave()
-    for (let n = 1; n <= 6; n += 1) {
-      const event = flairEvent(n, Date.now())
-      server.otherDevice([{ type: 'append', kind: 'flairEvents', id: `flair:trainer:stable:achievement-${n}:one-off`, at: event.earnedAt, data: event }])
-    }
-    server.pageRows = 4
+    server.pageRows = 1
     const seen = requestsWhenReady(server)
     const phone = device(server)
     await settle(phone)
-    const pulls = server.count('/api/save')
     expect(seen.value).not.toBeNull()
-    expect(seen.value!).toBeLessThan(pulls)
-    expect(await phone.db.flairEvents.count()).toBe(6)
     expect([tickets(), umas()]).toEqual([19, [umaId(1)]])
+    expect(await phone.db.operations.count()).toBe(1)
     phone.session.stop()
   })
 
@@ -154,7 +140,7 @@ describe('local-first boot', () => {
     expect([useSave.getState().lifecycle, tickets(), server.requests.length]).toEqual(['ready', 20, 0])
     phone.session.setSignedIn(true)
     await settle(phone)
-    expect(server.row('profile/main')).toBeDefined()
+    expect(server.row('account/main')).toBeDefined()
     phone.session.stop()
   })
 
@@ -163,13 +149,12 @@ describe('local-first boot', () => {
     const first = device(server)
     await stop(first)
     await first.db.open()
-    const profile = (await first.db.profile.get('main'))!
-    await first.db.profile.put({ ...profile, data: { ...profile.data, umaTickets: -1 } })
+    const account = (await first.db.account.get('main'))!
+    await first.db.account.put({ ...account, data: { ...account.data, umaTickets: -1 } })
     const again = device(server, { db: first.db, storage: first.storage })
     await settle(again)
     expect(useSave.getState()).toMatchObject({ lifecycle: 'error', words: "That didn't work. Try again." })
-    expect((await first.db.profile.get('main'))?.data.umaTickets).toBe(-1)
+    expect((await first.db.account.get('main'))?.data.umaTickets).toBe(-1)
     again.session.stop()
   })
 })
-

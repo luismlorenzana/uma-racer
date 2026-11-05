@@ -1,77 +1,57 @@
 # Overview
 
-> **As built: generation 2 (the rework, D326–D360; the switch, T143), with the canvas Hub (T145, D363).** The
-> vision, the pillars, the loop and how Uma Racer differs from the original game. The rules live in the manual,
-> [docs/game/](../game/README.md). Its README holds the game in one paragraph, the two ways to play, the shared numbers
-> and the glossary; this page doesn't repeat them.
+> **As built: generation 3, M036's URA Finale (D380, D388).** The vision, the pillars, the loop and how Uma Racer
+> differs from the original game, in brief. The design in full is [the drawing board v3](../research/drawing-board/README.md),
+> with its research and roadmap; the rules as they run are the manual, [docs/game/](../game/README.md), whose README
+> holds the game in one page. This page doesn't repeat either.
 
 ## Vision
 
-A pocket-sized Uma Musume racing game where **every Uma is a long-term companion and the stable is a collection**. Each
-Uma climbs a **tier** of five scenarios, in the order they were released. While the owner is busy, the roster works a
-Farm and a Training Hub on timers. When there's time, the owner races. Every race pays, every dish cooked becomes a
-piece of an Uma's build, and every win leaves a mark on her and on the account.
+A pocket-sized Uma Musume racing game where **every Uma's career is played, not waited on**. Each season of a career is
+a short mini-game drawn in Uma art, a few minutes of upgrading her by hand with what it paid, and her objective races on
+the race engine. The original's support cards bring their **real numbers** to her training, so a deck is built the way
+the original's is, and a finished career leaves her racing build on her profile.
 
 ## Design pillars
 
-1. **Races are the payoff, and never blocked.** Any Uma can race at any time, whatever else she's doing (D328). Races
-   can be lost: rivals follow the grade handicap, and difficulty assumes a fully trained Uma (D336).
-2. **The roster works while you're away.** Farm jobs and Training Hub sessions run on timers, closed and offline time
-   included. A check-in takes under a minute: Collect all, Repeat, and a glance at what each Uma still needs.
-3. **Every unlock is one piece of her build.** One dish pays for one session unlock: a constellation node, an
-   Inspiration slot or skill, an Extra Stats node or a card bond. It lasts the whole tier (D326, D328). Nothing is
-   random.
-4. **History unfolds in order.** Scenarios are eras, played in release order, and a card joins a set from its own
-   era's scenario on.
-5. **Collect everything, and show it.** Umas, bonds, badges, titles, trophies and Trainer achievements all show their
-   completion. Flair stays with an Uma through promotion.
-6. **Soft limits, never walls.** Nothing expires, and a day away costs time, not progress. There's no energy and no
-   ticket to train. A long day of racing tapers its Prize Money through the Daily Purse instead of stopping the races.
+1. **No clock, no limits.** Nothing runs on timers, refills overnight or resets daily, and there's no energy, mood or
+   rest. The more you play, the more you unlock (D380).
+2. **Active training.** Resources come from mini-game stages of 3–7 minutes, graded D to S, each Uma-themed and
+   replayable at any time. No audio is needed, no heavy tapping, nothing as heavy as a puzzle RPG.
+3. **Deterministic building.** The owner spends resources by hand in her tree. Every pip shows its exact gain, priced
+   with the original's training formula and the cards posted to that branch, before it is bought. Nothing is random.
+4. **The real cards.** SSR support cards count at their top level with their real effects, train where they're
+   posted, and grow a bond track with each Uma. Their values stay in the private pack.
+5. **Races can be lost, and retried for free.** Rivals are real Umas, handicapped by grade and as trained as the
+   season says. A G1 is the real test.
+6. **History unfolds in order.** The original's fifteen scenarios in release order, three tiers of five; a card joins
+   careers from its own era on. Every mechanic is open from scenario 1, and scenarios differ by caps, objectives,
+   rivals, card era and finale.
 
-## The core loop: Race, Farm, Train
+## The core loop
 
 ```text
-Farm sites ──▶ Pantry ──▶ Kitchen ──▶ Training Hub session ──▶ unlock (lasts the tier) ──▶ race
-  gather        craft       cook       Observatory · Lineage Hall                            │
-    ▲                                  Gym · Dojo                                            │
-    └───── Speed Tickets ◀── Exchange ◀── Prize Money ◀──────────────────────────────────────┘
+unlock Umas and cards (tickets) ──▶ start a career ──▶ each of 12 seasons:
+                                                        Play (a stage) ──▶ Upgrade (tree · deck · bonds · skills) ──▶ Race
+                                                        └──────────────────── replay any time ◀───────────────────────┘
+                                    ──▶ the finale (URA Finals) ──▶ her racing build, and tickets for more
 ```
 
-- **Farm.** Any free Uma gathers at one of eight family sites, crafts at the Pantry or cooks at the Kitchen. Farm work
-  raises her **Farm Level**, 1–50 per tier, which opens higher grades ([07](../game/07-farm.md)).
-- **Train.** A dish is the price of one unlock in a **Training Hub session**, and only the Uma it's for can sit it
-  ([05](../game/05-training-hub.md); bonds in [06](../game/06-cards-and-bonds.md)).
-- **Race.** Races pay **Racing EXP** toward her **Racing Level**, 1–50 per tier, and **Prize Money**. The **Exchange**
-  turns Prize Money into **Speed Tickets**, each 30 minutes off a running job or session, and raw ingredients. So a free
-  evening of racing speeds up everything passive ([09](../game/09-racing-rewards-and-exchange.md)).
-- **Advance.** Winning a scenario's career goals (a G3, two G2s, then three G1s) lets her advance to the next scenario,
-  whose layer asks for higher-grade dishes ([03](../game/03-uma-progression.md)).
-- **Promote.** A tier ends in a **World Expedition**: eight distinct wins abroad. Completing it promotes her to the next
-  tier, where everything on her starts over while the account's Warehouse, Prize Money, titles and buildings carry
-  ([04](../game/04-tiers-and-promotion.md)). **Expeditions are phase 9 and not built yet**
-  ([10](../rework/10-expeditions.md)). Until then the Expedition Map shows each Uma's distance to entry.
-- **New Umas** cost an **Uma Ticket**. A new account starts with 20; after that every scenario gate an Uma reaches pays
-  an Uma Shard, and five Shards make a ticket ([04](../game/04-tiers-and-promotion.md) §6).
+- **Unlock** with Uma and Card Tickets in the Stable and the Card Library ([02](../game/02-unlocks.md)).
+- **Play** Training Yard (drills) or Furlong Hand (Bond and SP) for the season ([07](../game/07-stages.md)).
+- **Upgrade** in her tree, deck, bond tracks and skills ([05](../game/05-the-build.md), [06](../game/06-cards-and-bonds.md)).
+- **Race** her objectives, and win the URA Finals to complete the career ([03](../game/03-careers.md)).
 
-The loop step by step, the activity rule and a week of play are [01](../game/01-game-loop.md). Check-ins and the
-planner are [02](../game/02-check-ins-and-notifications.md), and pacing (a roster of 25, about four weeks a scenario) is
-[12](../game/12-economy-and-pacing.md). It all happens on the Hub's four pages: Town Hall, Training, Racing and Farm,
-each a pixel-art town map (uma-rpg's Hub, on uma-art) with the game's own DOM skin over it
-([11](../game/11-hub-and-places.md), [UX](ux.md), [Visual System](visual-system.md)).
+It all happens on the Hub's two pages, Town Hall and Career, each a pixel-art map (uma-rpg's Hub, on uma-art) with the
+game's own DOM skin over it ([11](../game/11-hub-and-places.md), [UX](ux.md), [Visual System](visual-system.md)).
 
 ## How this differs from the original game
 
 | Original game | Uma Racer |
 |---|---|
-| A career run makes a one-off trained Uma | Each Uma is permanent and climbs **tiers of five scenarios**, with a **Racing Level** and a **Farm Level** of 1–50 in each tier |
-| Training is limited by career turns, with heavy RNG | Training is **timed Training Hub sessions paid with cooked dishes**. Each unlocks one known piece of the build, and her stats, aptitudes and SP are derived from those pieces |
-| Scenarios are separate career modes | Scenarios are **steps inside a tier**, in release order. A tier ends in a World Expedition and a promotion |
-| Daily energy meters limit play | **Nothing limits racing.** The Daily Purse tapers a long day's Prize Money instead ([09](../game/09-racing-rewards-and-exchange.md) §3) |
-| R, SR and SSR support cards, limit-broken by duplicates | **SSR cards only, every one open at full value** (D329). A card is **bonded** to one Uma at the Dojo before it joins her set |
-| Gacha for Umas and cards | **No gacha.** Umas cost Uma Tickets earned by progress (D336); a card costs only its bond |
-| Skill points are spent during a career | **SP is derived** from her build, and she fine-tunes a skill loadout within it |
-| Sparks are inherited from a finished career | The **Lineage Hall** unlocks parents and grandparents (any Uma ever owned) and their unique and gold skills |
-| Career goals are mandatory, and failing ends the run | **A career per scenario** holds her Racing Level until each stage is won. A lost goal race costs only the race: goals are retried, never failed |
-| Mostly flat difficulty inside a career | **The grade handicap:** rivals are a trained Uma made weaker by the race's grade, most at G3 and least at G1, so a G1 is the real test |
-| No idle play | **A passive Farm** and timed sessions run while the app is closed. Check-ins collect and restart them |
-| Epithets and titles are a side feature | **Badges, titles, trophies and collection are core** ([Badges](badges.md)) |
+| A career is turns of training with RNG, mood and energy | A career is **12 seasons of mini-game stages**, each graded and paying resources spent by hand; no mood, energy or rest |
+| Training gains are rolled each turn | Every gain is **previewed exactly** from the training formula and the posted cards' real effects |
+| Gacha for Umas and cards, limit-broken by duplicates | **No gacha.** One ticket unlocks an Uma or an SSR for good, at its top level; careers pay the tickets |
+| Career goals end the run when failed | **Retries are free**; an objective must be won before the season ends |
+| Daily limits and timed events | **No clock** of any kind |
+| Each scenario adds its own mechanic | **Every mechanic is open everywhere**; scenarios differ by caps, objectives, rivals, card era, finale and themed stages |

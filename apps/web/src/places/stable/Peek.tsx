@@ -1,41 +1,40 @@
-// The Stable's Peek (docs/game/11-hub-and-places.md §3.1; T138): the featured Uma first, "23 Umas · T1 21 · T2 2", the
-// Umas ready to advance or promote, and the Uma Tickets in hand.
-import { useMemo } from 'react'
+// The Stable's quick look (docs/game/11-hub-and-places.md §2.6; D386): Uma Tickets in hand and how many Umas are owned
+// of all of them, then the latest unlocks as faces, each a link to her profile.
+import { FaceTile } from '@luismlorenzana/uma-kit/album'
+import { OwnedIcon, UiMark } from '@luismlorenzana/uma-kit/ui'
+import { hubWords } from '@racer/domain/hub'
 import { Link } from 'react-router'
 import { useGame, useHub } from '../../app/game'
-import type { PeekProps } from '../registry'
-import { FeaturedUmaCard } from './Featured'
-import { readyUmas, rosterLine, ticketNote } from './model'
+import { profilePath } from '../../hub/nav'
+import { PeekStat } from '../PeekStat'
 
-export default function StablePeek(_: PeekProps) {
+const LATEST = 5
+
+export default function StablePeek() {
   const view = useHub()
-  const state = useGame((snapshot) => snapshot.state)
-  const content = useGame((snapshot) => snapshot.env?.content ?? null)
-  const ready = useMemo(() => (state === null || content === null ? [] : readyUmas(state, content)), [state, content])
-  if (state === null || content === null) return null
-  const note = ticketNote(state.profile)
+  const umas = useGame((snapshot) => snapshot.env?.content.umas ?? null)
+  const owned = view?.owned ?? []
   return (
-    <div className="space-y-3" data-g2="stable-peek">
-      <div className="flex items-center gap-3">
-        <FeaturedUmaCard umaId={view?.featured ?? null} />
-        <div className="min-w-0 text-[14px]">
-          <p className="font-semibold" data-g2="roster-line">{rosterLine(state)}</p>
-          <p className="text-ink-soft">Uma Tickets {note.text}</p>
-        </div>
+    <div className="space-y-4 py-2" data-racer="stable-peek">
+      <div className="grid grid-cols-2 gap-2">
+        <PeekStat icon={<UiMark mark="currency/uma-ticket" />} value={view?.wallet.umaTickets ?? '–'} label={hubWords('peek-uma-tickets')} />
+        <PeekStat icon={<OwnedIcon size={20} className="text-ink-soft" />} label={hubWords('peek-owned')}
+          value={hubWords('peek-owned-of', { n: owned.length, total: umas?.size ?? '–' })} />
       </div>
-      {ready.length > 0 && (
-        <section aria-label="Ready to advance or promote">
-          <h3 className="text-micro mb-1">Ready to advance or promote</h3>
-          <ul className="grid gap-1">
-            {ready.map(({ uma, ready: kind }) => (
-              <li key={uma.outfitId}>
-                <Link to={`/racing/scenario-gate/${encodeURIComponent(uma.outfitId)}`} state={{ back: true }}
-                  className="flex min-h-11 items-center justify-between rounded-sm bg-sunken/60 px-3 text-[13px] font-semibold">
-                  <span className="truncate">{content.umas.get(uma.outfitId)?.name}</span>
-                  <span className="text-success">{kind === 'advance' ? 'Advance' : 'Promote'}</span>
-                </Link>
-              </li>
-            ))}
+      {owned.length > 0 && (
+        <section className="space-y-2">
+          <h3 className="text-micro">{hubWords('peek-latest-umas')}</h3>
+          <ul className="grid grid-cols-5 gap-2">
+            {owned.slice(0, LATEST).map((umaId) => {
+              const name = umas?.get(umaId)?.name ?? umaId
+              return (
+                <li key={umaId}>
+                  <Link to={profilePath(umaId)} state={{ back: true }} aria-label={hubWords('crowd-figure', { uma: name })} className="block min-h-11 rounded-md">
+                    <FaceTile outfitId={umaId} size={56} label={name} />
+                  </Link>
+                </li>
+              )
+            })}
           </ul>
         </section>
       )}

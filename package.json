@@ -11,19 +11,18 @@
     "dev": "turbo run dev",
     "build": "turbo run build",
     "lint": "turbo run lint",
-    "test": "node --test scripts/check-size.test.mjs && turbo run test",
+    "test": "node --test scripts/check-size.test.mjs && turbo run test && pnpm sim:careers -- --synthetic && pnpm sim:stages -- --synthetic",
     "web": "pnpm --filter @racer/web dev",
     "api": "pnpm --filter @racer/api start:dev",
     "overlays:import": "pnpm --filter @racer/overlays run import",
     "overlays:publish": "pnpm --filter @racer/overlays run publish",
     "master:parity": "pnpm --filter @racer/overlays run parity",
     "sim:balance": "pnpm dlx tsx scripts/sim/strategy-balance.ts",
-    "sim:builds": "pnpm dlx tsx scripts/sim/builds.ts",
-    "sim:careers": "pnpm dlx tsx scripts/sim/careers.ts",
-    "sim:turns": "pnpm dlx tsx scripts/sim/turn-balance.ts",
-    "sim:loop": "pnpm --filter @racer/overlays exec node --import tsx ../sim/loop.ts",
+    "sim:decks": "pnpm dlx tsx scripts/sim/decks.ts",
+    "sim:careers": "pnpm --filter @racer/overlays exec tsx ../sim/careers.ts",
+    "sim:stages": "pnpm --filter @racer/overlays exec tsx ../sim/stages.ts",
     "docs:update": "pnpm --filter @racer/domain run docs:update",
-    "test:ci": "node --test scripts/check-size.test.mjs && turbo run test --concurrency=1"
+    "test:ci": "node --test scripts/check-size.test.mjs && turbo run test --concurrency=1 && pnpm sim:careers -- --synthetic && pnpm sim:stages -- --synthetic"
   },
   "devDependencies": {
     "turbo": "^2.10.13"
