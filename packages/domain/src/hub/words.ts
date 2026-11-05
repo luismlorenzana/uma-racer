@@ -44,6 +44,17 @@ export const HUB_WORDS = Object.freeze({
   copied: 'Copied',
   /** A place whose screen hasn't landed yet (M036 builds them in parts). */
   'not-ready': 'Coming soon',
+  /** The quick looks (D386): the Stable's and the Card Library's tickets and owned count, and the careers in progress. */
+  'peek-uma-tickets': 'Uma Tickets',
+  'peek-card-tickets': 'Card Tickets',
+  'peek-owned': 'Owned',
+  'peek-owned-of': '{n} of {total}',
+  'peek-latest-umas': 'Latest unlocks',
+  'peek-careers': 'In progress',
+  'peek-no-careers': "No career running. Start one from an Uma's profile in the Stable.",
+  'next-objective': 'Next: {race}',
+  'next-finale': 'Next: the URA Finals',
+  'open-career': '{uma}: open her career',
 } as const)
 
 export type HubWord = keyof typeof HUB_WORDS

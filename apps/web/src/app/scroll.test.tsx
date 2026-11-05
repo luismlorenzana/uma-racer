@@ -27,10 +27,10 @@ describe("the place's scroll position (D176)", () => {
     const { where } = renderRacer('/town/account', memoryGame())
     await screen.findByText('This phone')
     scrollTo(817)
-    // The Uma Tickets chip opens the Stable: a new place, from the top, with its title and Back in view.
-    fireEvent.click(document.querySelector('a[href="/town/stable"]')!)
-    await waitFor(() => expect(where()).toBe('/town/stable'))
-    await screen.findByText('Coming soon')
+    // The Uma Tickets chip opens the Stable's Locked tab: a new place, from the top, with its title and Back in view.
+    fireEvent.click(document.querySelector('a[href="/town/stable?tab=locked"]')!)
+    await waitFor(() => expect(where()).toBe('/town/stable?tab=locked'))
+    await screen.findByRole('tab', { name: /^Locked/ })
     expect(scroller().scrollTop).toBe(0)
     fireEvent.click(await screen.findByRole('button', { name: /^Back to/ }))
     await waitFor(() => expect(where()).toBe('/town/account'))

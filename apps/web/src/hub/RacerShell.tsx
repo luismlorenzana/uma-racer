@@ -1,5 +1,5 @@
-// The shell (docs/game/11-hub-and-places.md §2, §6; T147, T152): uma-kit's frame, account bar and bottom bar, with
-// uma-racer's chips, tabs and sheets passed in. The frame is fixed to the screen's edges (not `h-dvh`, which an
+// The shell (docs/game/11-hub-and-places.md §2, §6; T147, T152, D386): uma-kit's frame, account bar and bottom bar,
+// with uma-racer's chips, tabs and sheets passed in. The frame is fixed to the screen's edges (not `h-dvh`, which an
 // iPhone's Home Screen app can report a status bar short), the account bar on top, the route between, the floating
 // bottom bar lifted only by the safe area, and the global sheets' host over all. A full-screen flow inside a place route
 // (a slot's `fullScreen(rest)`) hides both bars. While the port boots the bars show no numbers. Each page visit is
@@ -13,19 +13,23 @@ import { useGame, useHub, type RacerSync } from '../app/game'
 import { rememberPage } from '../app/start'
 import { isFullScreen } from '../places/registry'
 import { initialOf } from '../ui/uma'
+import { CAREERS_PATH, careerPath, libraryPath, stablePath } from './nav'
 import { SheetHost } from './SheetHost'
 
 /** The trainer's name on the account bar: generation 3 keeps none of its own. */
 export const TRAINER_NAME = 'Trainer'
 
-/** The account bar's two chips (§2.1), each a link to the place that spends it; blank while the save loads. */
+/**
+ * The account bar's two chips (§2.1), each a link to the Locked tab of the place that spends it; blank while the save
+ * loads. There are no coins and no Speed Tickets in generation 3.
+ */
 export function currencyChips(wallet: HubWallet | null): CurrencyChip[] {
   return [
     {
       key: 'uma-tickets',
       mark: 'currency/uma-ticket',
       value: wallet?.umaTickets ?? null,
-      to: '/town/stable',
+      to: stablePath('locked'),
       label: hubWords('uma-tickets', { n: wallet?.umaTickets ?? '' }),
     },
     {
@@ -34,7 +38,7 @@ export function currencyChips(wallet: HubWallet | null): CurrencyChip[] {
       mark: 'currency/card-ticket',
       fallback: <CardsIcon size={16} variant="duotone" />,
       value: wallet?.cardTickets ?? null,
-      to: '/town/card-library',
+      to: libraryPath('locked'),
       label: hubWords('card-tickets', { n: wallet?.cardTickets ?? '' }),
     },
   ]
@@ -69,25 +73,36 @@ interface Tab {
   readonly raised?: boolean
 }
 
-/** The bar's tabs (§2.2): Town Hall · Career · (Career, raised: her careers) · then the kit's Menu. */
+/** The bar's tabs (§2.2): Town Hall · Career · (Career, raised: her current season) · then the kit's Menu. */
 const TABS: readonly Tab[] = [
   { key: 'town', to: '/town', label: HUB_PAGE_NAMES.town, Icon: HomeIcon },
   { key: 'career', to: '/career', label: HUB_PAGE_NAMES.career, Icon: StatsIcon },
-  { key: 'careers', to: '/career/careers', label: hubWords('career'), Icon: RaceIcon, raised: true },
+  { key: 'careers', to: CAREERS_PATH, label: hubWords('career'), Icon: RaceIcon, raised: true },
 ]
 
-/** The tabs with the current one marked: the raised Career on the Careers place, else the page's own tab. */
-export function barTabs(page: HubPage | null, place: string | null): BarTab[] {
-  const current = place === 'careers' ? 'careers' : page
-  return TABS.map((tab) => ({ key: tab.key, to: tab.to, label: tab.label, Icon: tab.Icon, active: tab.key === current, raised: tab.raised }))
+/**
+ * The tabs with the current one marked: the raised Career on the Careers place, else the page's own tab. The raised
+ * Career opens `current`, the career in progress started last, or every career when none runs.
+ */
+export function barTabs(page: HubPage | null, place: string | null, current: string | null = null): BarTab[] {
+  const active = place === 'careers' ? 'careers' : page
+  return TABS.map((tab) => ({
+    key: tab.key,
+    to: tab.key === 'careers' && current !== null ? careerPath(current) : tab.to,
+    label: tab.label,
+    Icon: tab.Icon,
+    active: tab.key === active,
+    raised: tab.raised,
+  }))
 }
 
 function RacerBottomBar({ page, place }: { page: HubPage | null; place: string | null }) {
   const location = useLocation()
+  const current = useHub()?.careers[0]?.id ?? null
   return (
     <BottomBar
       label={hubWords('bar')}
-      tabs={barTabs(page, place)}
+      tabs={barTabs(page, place, current)}
       menu={{ to: withParam(location, 'sheet', 'menu'), label: hubWords('menu-label'), text: hubWords('menu'), state: { back: true } }}
     />
   )

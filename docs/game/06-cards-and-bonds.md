@@ -1,6 +1,7 @@
 # 06 · Cards and bonds
 
-> **Status: generation 3, the rules built (T153, D382).** The Card Library that shows each card's effects is T157's,
+> **Status: generation 3, the rules built (T153, D382).** The Card Library that shows each card's effects is
+> [02 · Unlocks](02-unlocks.md) §3 (T157, D386),
 > and the Bonds screen T158's. The research is [05 · card mechanics](../research/drawing-board/05-card-mechanics.md)
 > §1–§3. How the effects price a session is [05](05-the-build.md) §4.
 

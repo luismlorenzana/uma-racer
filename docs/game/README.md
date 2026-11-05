@@ -26,7 +26,7 @@ timers, and nothing limits how much you play.
 | Page | What | Written by |
 |---|---|---|
 | [01 · The game loop](01-game-loop.md) | Careers, seasons and the loop | T154 |
-| 02 · Unlocks | Uma and Card Tickets, the Stable, the Card Library, eras | T157 |
+| [02 · Unlocks](02-unlocks.md) | Uma and Card Tickets, the Stable, the Card Library, a card's page, eras | T152, T157 |
 | [03 · Careers](03-careers.md) | The calendar, objectives, seasons, races, the URA Finals, rewards | T154 |
 | [04 · Tiers and scenarios](04-tiers-and-scenarios.md) | The tier map, caps, card eras, careers and rivals by scenario | T152, T154 |
 | [05 · The build](05-the-build.md) | The deck, posting, the tree, the session formula, the racing build, skills | T153 |
@@ -34,7 +34,7 @@ timers, and nothing limits how much you play.
 | [07 · Stages](07-stages.md) | The mini-game framework: the contract, grades, pay, settling, replays, resume, `sim:stages` | T155 |
 | [08 · Training Yard](08-training-yard.md) | The merge game: its rules, pay, bots and screen | T155 |
 | [09 · Furlong Hand](09-furlong-hand.md) | The card race: its rules, effect hooks, pay, bots and screen | T156 |
-| [11 · Hub and places](11-hub-and-places.md) | Every screen, route and sheet: the menu tree | T157, T158 (being rewritten) |
+| [11 · Hub and places](11-hub-and-places.md) | Every screen, route and sheet: the menu tree, the shell, the places | T157; T158 adds the career screens |
 | [12 · Pacing](12-pacing.md) | The pay table, the targets and `sim:careers` | T154 |
 | [Racing](racing.md) | The race engine and rivals | kept; T154 re-tuned the rivals |
 | [Scenarios](scenarios.md) | The fifteen scenarios | kept |
