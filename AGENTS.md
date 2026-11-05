@@ -46,13 +46,13 @@ Packages; `.npmrc` reads it from `NODE_AUTH_TOKEN`). With the GitHub CLI: `gh au
     pnpm test:ci        # the same suites one package at a time, as CI runs them
     pnpm build          # production builds (web includes the PWA service worker and the 180 KB startup check)
     pnpm docs:update    # regenerate the live blocks in docs/game/ after changing what they list
-    pnpm dev            # web :5173 (proxies /api) + api :8080, auth disabled, save apps/api/.data/save-g2.json, dev operations on
-    pnpm sim:balance    # headless race balance table; also sim:turns, sim:builds, sim:careers and sim:loop
+    pnpm dev            # web :5173 (proxies /api) + api :8080, auth disabled, save apps/api/.data/save-g3.json, dev operations on
+    pnpm sim:balance    # headless race balance table (M036 adds sim:decks, sim:stages and sim:careers)
     pnpm overlays:import   # Racer-only authored overlays against the platform master
     pnpm overlays:publish -- --dry-run # verify before publishing overlays
     pnpm master:parity     # private migration oracle, aggregates only in git
 
-In dev builds, `/dev/seeds/` opens the game on synthetic accounts. Run `pnpm lint && pnpm test:ci && pnpm build`
+There are no dev seeds or preview milestones since the restart (D380, D381): verify with tests. Run `pnpm lint && pnpm test:ci && pnpm build`
 before opening a PR. CI runs the same.
 
 ## Layout
@@ -78,13 +78,10 @@ before opening a PR. CI runs the same.
   for your own API, build the domain (`pnpm --filter @racer/domain build`), start it with
   `PORT=<api-port> pnpm --filter @racer/api start:dev`, and give Vite `API_PROXY_TARGET=http://localhost:<api-port>`.
   Check who owns a port (`lsof -iTCP:<port> -sTCP:LISTEN`) before trusting what it serves.
-- **Synthetic accounts for every screen** (dev builds): `/dev/seeds/<route>?seed=busy | fresh | quiet | gate | promote |
-  tired | spent | stopped`, `&at=HH:MM` to move the seed's clock, `&canvas` to draw the Hub with Phaser's Canvas
-  renderer so a screenshot captures it, and `?save=device` for the device save instead of a seed. `window.__hub` drives
-  the Hub's scene and `window.__raceScene` the race (`seek`, `skipToEnd`), since a preview pane throttles animation
-  frames ([architecture](docs/game/architecture.md#dev-seeds)).
+- **No dev seeds and no preview milestone** (D380, D381). Slices ship to production and the owner tests live. Verify a
+  screen with component tests at 390×844 (Testing Library) and the checks above.
 - **`pnpm dev`** runs the local API with `DEV_OPERATIONS=true` (so Account's dev section can run `dev-grant`), auth off,
-  and its save at `apps/api/.data/save-g2.json`; `apps/api/.env` comes from `.env.example`.
+  and its save at `apps/api/.data/save-g3.json`; `apps/api/.env` comes from `.env.example`.
 - **Private content in a worktree.** The importers and the local API read the gitignored `content/` at the repo root.
   Master data/art comes from sibling `uma-platform/content/release` (`MASTER_DIR`); link only the owner's authored
   `content/overrides` into the worktree before `pnpm overlays:import`. Never commit links; stage explicit paths, since a link

@@ -1,5 +1,5 @@
-// This device's conveniences in Account (docs/game/02-check-ins-and-notifications.md §10; T138, T147): never synced, in
-// `uma-racer:g2:` keys through uma-kit's device preferences. Reduce motion and Appearance are the kit's own switches
+// This device's conveniences in Account (docs/game/11-hub-and-places.md §3.1; T138, T147): never synced, in
+// `uma-racer:g3:` keys through uma-kit's device preferences. Reduce motion and Appearance are the kit's own switches
 // (`app/kit.ts` gives them uma-racer's prefix); the default race speed is uma-racer's, read by T141's run.
 import { deviceReducedMotion, readPref, setReducedMotion, subscribePrefs, writePref } from '@luismlorenzana/uma-kit/ui'
 import { useSyncExternalStore } from 'react'

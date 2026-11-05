@@ -1,5 +1,8 @@
 # 07 · Data wipe and reset
 
+> **Archived by the restart (D380, 2026-11-04).** This plan's phases 1–3, 5 and 6 shipped; 4 and 7–9 are retired. The
+> new game is [the drawing board v3](../research/drawing-board/README.md); this page is kept as history only.
+
 Every account starts over (D323). All player data, server and device, is deleted, not migrated. The new save
 (**generation 2**) has a new local database, a new Firestore root and a new sync protocol, and a new account starts
 with **20 Uma Tickets**. The owner accepts the loss of everything earned so far.
@@ -63,7 +66,7 @@ document stays as a record. The request/response description below is historical
 > entry from `.data/save.json`. That path is fixed, never an env var, and is refused if it resolves to the
 > generation-2 file.
 
-> **As built on the device (T136, [game/02](../game/02-check-ins-and-notifications.md) §11).** The app's boot runs
+> **As built on the device (T136, [game/02](../archive/g2-manual/02-check-ins-and-notifications.md) §11).** The app's boot runs
 > in this order:
 > 1. **The wipe**, unless `uma-racer:g2:wiped` is set: `Dexie.delete('uma-racer')`; in dev builds every
 >    `farm-kitchen-proof-*` and `puzzle-proof-*` database; every localStorage key that starts with `uma-racer:` and not

@@ -4,8 +4,7 @@
 // - The boot waits for the private content (`ContentProvider`, on the owner's token), opens the device save on it
 //   (`bootSaveGame`, local first) and waits for its first snapshot. A page holds
 //   one save, so a later content version or a second render keeps it.
-// - Then the start rule (`start.ts`) reads the opened save: a new account opens the Stable's Locked tab, a pending tap
-//   the Farm, else the last page.
+// - Then the start rule (`start.ts`): the last page viewed on this device, else Town Hall.
 // - A boot that stops says why in the content diagnostics' plain words, or the save's, and its button does what helps:
 //   Try again reloads the content, Switch account signs out (the sign-in gate follows), and a save that couldn't open
 //   reloads the page. Nothing is ever cleared.
@@ -18,9 +17,9 @@ import { useContent, type ContentState } from '../content/ContentProvider'
 import type { ContentDiagnostic } from '../content/diagnostics'
 import type { LoadedContent } from '../content/view'
 import { authOn, ownerSignIn, ownerSignOut, ownerToken } from './auth'
-import { bootSaveGame, type G2Boot } from './boot'
-import { G2ContentContext } from './content'
-import type { G2Game, G2Snapshot } from './game'
+import { bootSaveGame, type RacerBoot } from './boot'
+import { ContentContext } from './content'
+import type { RacerGame, RacerSnapshot } from './game'
 import { GameProvider } from './GameProvider'
 import { startPath } from './start'
 
@@ -65,7 +64,7 @@ export function failureOf(error: unknown): BootFailure {
 }
 
 /** The port's first opened snapshot: ready, or why it couldn't open. */
-function opened(game: G2Game): Promise<G2Snapshot> {
+function opened(game: RacerGame): Promise<RacerSnapshot> {
   return new Promise((resolve) => {
     let unsubscribe: (() => void) | null = null
     let done = false
@@ -86,7 +85,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const content = useContent()
   const signedIn = auth.ready && (!auth.authRequired || auth.user !== null)
   const loaded = content.status === 'ready' ? content.content : null
-  const [booted, setBooted] = useState<G2Boot | null>(null)
+  const [booted, setBooted] = useState<RacerBoot | null>(null)
   const [failure, setFailure] = useState<BootFailure | null>(null)
   const signedInNow = useRef(signedIn)
   signedInNow.current = signedIn
@@ -139,7 +138,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       setBooted(result)
       const snapshot = await opened(result.game)
       if (snapshot.status === 'error' || snapshot.state === null || snapshot.env === null) throw new SaveFailure(snapshot.words ?? '')
-      start.current = startPath(result.rules.hubView(snapshot.state, result.game.now(), snapshot.env))
+      start.current = startPath()
       return { firstLaunch: false }
     } catch (error) {
       const next = failureOf(error)
@@ -153,9 +152,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   return (
     <SessionGatesContext.Provider value={gates}>
-      <G2ContentContext.Provider value={loaded}>
+      <ContentContext.Provider value={loaded}>
         <GameProvider {...(booted === null ? {} : { game: booted.game, rules: booted.rules })}>{children}</GameProvider>
-      </G2ContentContext.Provider>
+      </ContentContext.Provider>
     </SessionGatesContext.Provider>
   )
 }

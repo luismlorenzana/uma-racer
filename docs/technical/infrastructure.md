@@ -78,7 +78,7 @@ runs the first deploy.
 | Web | `vite` on 5173 (on the LAN too: `host: true`), `/api` proxied to 8080 (`API_PROXY_TARGET` to point elsewhere) | Firebase Hosting, `https://uma-racer.web.app` |
 | API | `nest start --watch` on 8080 | Cloud Run `racer-api`, us-central1: `https://racer-api-tmzkhylhfq-uc.a.run.app` (read it with the scoped `gcloud run services describe`) |
 | Auth | `AUTH_MODE=disabled` (a fixed local user) | Firebase ID token + `ALLOWED_EMAIL` |
-| Saves | `PERSISTENCE=local` → `apps/api/.data/save-g2.json` (`LOCAL_SAVE_FILE`) | `PERSISTENCE=firestore` → `saves/{uid}` |
+| Saves | `PERSISTENCE=local` → `apps/api/.data/save-g3.json` (`LOCAL_SAVE_FILE`) | `PERSISTENCE=firestore` → `g3/{uid}` (D381) |
 | Dev operations | `DEV_OPERATIONS=true`, set by `pnpm dev` and `pnpm api` (the API's own `dev` and `start:dev` scripts), so `dev-grant` runs | Never set: no deploy, Dockerfile or Cloud Run setting sets it, so production refuses `dev-grant` |
 | Content | `CONTENT_SOURCE=local`: sibling platform release (`MASTER_DIR`) + Racer overlay (`CONTENT_DIR`) | `CONTENT_SOURCE=gcs`: `uma-platform-master-data` read-only + `uma-racer-content` overlay |
 | Synthetic accounts | `/dev/seeds/*?seed=…` in dev builds ([architecture](../game/architecture.md#dev-seeds)) | None: production answers `/dev/seeds` as an unknown path |

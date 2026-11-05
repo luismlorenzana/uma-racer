@@ -1,5 +1,8 @@
 # 03 · Rendering and textures
 
+> **Archived by the restart (D380, 2026-11-04).** This plan's phases 1–3, 5 and 6 shipped; 4 and 7–9 are retired. The
+> new game is [the drawing board v3](../research/drawing-board/README.md); this page is kept as history only.
+
 How the racer draws its canvas scenes after the rebuild: one engine, one scene host, and a clear path for every texture
 from its source to the GPU (D324).
 

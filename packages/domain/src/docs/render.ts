@@ -8,6 +8,7 @@
 // joins it. A key used twice fails at load, so two areas can't fight over a block. The manual's own keys below are
 // the race's (docs/game/racing.md) and the dependencies (docs/game/architecture.md). Generation 2's area blocks left
 // with it (D381); the restart's areas add theirs as they land (T153–T158).
+import { LIVE_BLOCKS as HUB_BLOCKS } from '../hub/docs'
 import { LIVE_BLOCKS as TIER_BLOCKS } from '../tiers/docs'
 import { GRADE_HANDICAP, RIVAL_REFERENCE_METERS, RIVAL_SKILL_RANGE, RIVAL_STAT_FLOOR, STYLE_COUNT_RANGE } from '../opponents'
 import { RACE_GRADES } from '../types'
@@ -26,7 +27,7 @@ export function joinBlocks(...tables: readonly LiveBlocks[]): LiveBlocks {
 }
 
 /** Every area's live blocks, joined. */
-export const AREA_BLOCKS: LiveBlocks = joinBlocks(TIER_BLOCKS)
+export const AREA_BLOCKS: LiveBlocks = joinBlocks(TIER_BLOCKS, HUB_BLOCKS)
 
 type Cell = string | number
 /** A Markdown table; pipes in cells are escaped. */

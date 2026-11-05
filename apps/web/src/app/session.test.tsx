@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-// The live session (T143, SD4): the boot uma-kit's gates run waits for the content, opens the device save on it, finds
-// the start page and follows sign-in; a boot that stops says why, and its button reloads the content or switches account.
+// The live session (T143, SD4, T152): the boot uma-kit's gates run waits for the content, opens the device save on it,
+// finds the start page (Town Hall the first time) and follows sign-in; a boot that stops says why, and its button reloads the content or switches account.
 import { cleanup, render, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { EMPTY_BUCKET_CONTENT, diagnoseContentError } from '../content/diagnostics'
@@ -19,10 +19,10 @@ vi.mock('./boot', () => ({
   bootSaveGame: vi.fn(async (loaded: unknown, account: unknown) => {
     boot.calls.push({ loaded, account })
     const snapshot = boot.status === 'ready'
-      ? { status: 'ready', state: {}, env: {}, trainerName: '', sync: 'synced', receipts: {} }
-      : { status: 'error', state: null, env: null, trainerName: '', sync: 'synced', receipts: {}, words: 'The save is damaged.' }
-    const game = { subscribe: () => () => {}, getSnapshot: () => snapshot, now: () => 0, utcOffsetMin: () => 0, run: async () => { throw new Error('no') } }
-    return { game, rules: { hubView: () => ({ umas: 0, needsATap: 0 }) }, save: { setSignedIn: boot.setSignedIn } }
+      ? { status: 'ready', state: {}, env: {}, sync: 'synced', receipts: {} }
+      : { status: 'error', state: null, env: null, sync: 'synced', receipts: {}, words: 'The save is damaged.' }
+    const game = { subscribe: () => () => {}, getSnapshot: () => snapshot, now: () => 0, run: async () => { throw new Error('no') } }
+    return { game, rules: { hubView: () => null }, save: { setSignedIn: boot.setSignedIn } }
   }),
 }))
 
@@ -48,12 +48,12 @@ describe('the session', () => {
     content.state = { status: 'loading' } satisfies ContentState
     const page = view()
     const booting = gates!.boot()
-    const loaded = { manifest: { version: 'invented0001' } }
+    const loaded = { manifest: { version: 'invented0001' }, overlay: { version: 'abcdef012345' } }
     content.state = { status: 'ready', content: loaded, diagnostic: EMPTY_BUCKET_CONTENT, retry: async () => {} } as unknown as ContentState
     page.rerender(<SessionProvider><Probe /></SessionProvider>)
     await expect(booting).resolves.toEqual({ firstLaunch: false })
     expect(boot.calls[0]).toMatchObject({ loaded, account: { signedIn: true } })
-    expect(gates!.startPath()).toBe('/town/stable?tab=locked')
+    expect(gates!.startPath()).toBe('/town')
     await waitFor(() => expect(boot.setSignedIn).toHaveBeenLastCalledWith(true))
   })
 

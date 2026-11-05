@@ -1,5 +1,8 @@
 # Uma Racer rework: Race, Farm, Train
 
+> **Archived by the restart (D380, 2026-11-04).** This was generation 2's game design. The new game is [the drawing
+> board v3](../research/drawing-board/README.md); this page is kept as history only.
+
 > **Status: built, phase 3 (generation 2, D361).** The owner's rework (D326–D336, D338) is the game now. Phase 2
 > built its rules (D340–D351) and phase 3 its screens and the generation-2 save (D352–D361), and the cutover moved
 > its pages into [the manual](../game/README.md) as built. This folder keeps what isn't built yet and the plan that
@@ -12,18 +15,18 @@ is rebuilt underneath it. Both meet in [13](13-removals-and-plan-changes.md).
 
 | Page | Where | What it covers |
 |---|---|---|
-| 01 · Game loop | [manual](../game/01-game-loop.md) | The loop step by step, one Uma's scenario, the roster in rotation, activity rules, a week of play in both modes |
-| 02 · Check-ins and notifications | [manual](../game/02-check-ins-and-notifications.md) | Collect all, Repeat, queues, the check-in summary, the planner, offline time; push notifications not built (phase 4) |
-| 03 · Uma progression | [manual](../game/03-uma-progression.md) | Racing Level 1–50, scenarios inside a tier, career goals, advancing a scenario, one build per tier |
-| 04 · Tiers and promotion | [manual](../game/04-tiers-and-promotion.md) | Three tiers of five scenarios, what resets and what carries, Uma Tickets, promotion, tier scaling, the 15th scenario, buffs |
-| 05 · Training Hub | [manual](../game/05-training-hub.md) | Observatory, Lineage Hall, Gym and Dojo: sessions, slots, layers, constellation sizes, Inspiration and Extra Stats maps |
-| 06 · Cards and bonds | [manual](../game/06-cards-and-bonds.md) | Every SSR open, no stars, bonds per Uma, era and bond cost, card sets and presets, the Card Library |
-| 07 · Farm | [manual](../game/07-farm.md) | Sites, Pantry and Kitchen; Farm Level 1–50; jobs, queues and Repeat; slots and building upgrades |
-| 08 · Item catalogue and recipes | [manual](../game/08-item-catalogue-and-recipes.md) | 8 families × 10 grades, crafted items, every dish recipe, destinations, art ids |
-| 09 · Racing rewards and the Exchange | [manual](../game/09-racing-rewards-and-exchange.md) | Racing EXP, Prize Money, the Daily Purse, featured races, the Exchange, Speed Tickets, selling |
+| 01 · Game loop | [manual](../archive/g2-manual/01-game-loop.md) | The loop step by step, one Uma's scenario, the roster in rotation, activity rules, a week of play in both modes |
+| 02 · Check-ins and notifications | [manual](../archive/g2-manual/02-check-ins-and-notifications.md) | Collect all, Repeat, queues, the check-in summary, the planner, offline time; push notifications not built (phase 4) |
+| 03 · Uma progression | [manual](../archive/g2-manual/03-uma-progression.md) | Racing Level 1–50, scenarios inside a tier, career goals, advancing a scenario, one build per tier |
+| 04 · Tiers and promotion | [manual](../archive/g2-manual/04-tiers-and-promotion.md) | Three tiers of five scenarios, what resets and what carries, Uma Tickets, promotion, tier scaling, the 15th scenario, buffs |
+| 05 · Training Hub | [manual](../archive/g2-manual/05-training-hub.md) | Observatory, Lineage Hall, Gym and Dojo: sessions, slots, layers, constellation sizes, Inspiration and Extra Stats maps |
+| 06 · Cards and bonds | [manual](../archive/g2-manual/06-cards-and-bonds.md) | Every SSR open, no stars, bonds per Uma, era and bond cost, card sets and presets, the Card Library |
+| 07 · Farm | [manual](../archive/g2-manual/07-farm.md) | Sites, Pantry and Kitchen; Farm Level 1–50; jobs, queues and Repeat; slots and building upgrades |
+| 08 · Item catalogue and recipes | [manual](../archive/g2-manual/08-item-catalogue-and-recipes.md) | 8 families × 10 grades, crafted items, every dish recipe, destinations, art ids |
+| 09 · Racing rewards and the Exchange | [manual](../archive/g2-manual/09-racing-rewards-and-exchange.md) | Racing EXP, Prize Money, the Daily Purse, featured races, the Exchange, Speed Tickets, selling |
 | 10 · World Expeditions | [here](10-expeditions.md), **not built (phase 9)** | The tier finale: all regions every tier, the eight-win rule, tier mechanics and difficulty, courses to author, rewards |
 | 11 · Hub and places | [manual](../game/11-hub-and-places.md) | Town Hall, Training, Racing and Farm pages; every place; routes; art |
-| 12 · Economy and pacing | [manual](../game/12-economy-and-pacing.md) | Currencies, sources and sinks, the 25-Uma pacing target, the time model, the loop simulation |
+| 12 · Economy and pacing | [manual](../archive/g2-manual/12-economy-and-pacing.md) | Currencies, sources and sinks, the 25-Uma pacing target, the time model, the loop simulation |
 | 13 · Removals and plan changes | [here](13-removals-and-plan-changes.md) | What left the game and why, the generation-2 save, and how the re-architecture's decisions and phases changed |
 
 The game in one paragraph, the shared numbers (structure, grades, the eight families, unlocks per layer, the time

@@ -1,5 +1,5 @@
-// What the API answers after the generation-2 switch (T143 "Acceptance"; rearchitecture/06 §6): health, the save, sync,
-// the private content, and no other route. Read from the mounted modules' route metadata.
+// What the API answers on generation 3 (T152): health, the save, sync, the master release and the private content, and
+// no other route. Read from the mounted modules' route metadata.
 import 'reflect-metadata'
 import { RequestMethod, type Type, type DynamicModule } from '@nestjs/common'
 import { METHOD_METADATA, MODULE_METADATA, PATH_METADATA } from '@nestjs/common/constants'

@@ -6,7 +6,7 @@
 > and engine policy.
 
 **Cards.**
-- The content holds only SSRs, and era is a card's only quality ([06](../../game/06-cards-and-bonds.md) §1), so
+- The content holds only SSRs, and era is a card's only quality ([06](../../archive/g2-manual/06-cards-and-bonds.md) §1), so
   "rarity" means era here.
 - Each game names *hooks* for the card effect kinds in `cards.ts`. The card teammate owns the numbers.
 

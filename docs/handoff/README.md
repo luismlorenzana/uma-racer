@@ -54,7 +54,7 @@ device acceptance. The shared shell remains uma-kit's (T147, D367), not a local 
 
 | Done | What | Landed |
 |---|---|---|
-| A03 | Farm, Training, Lineage and Racing pickers open on level; context sorts and Open goals stay optional | D368; [07](../game/07-farm.md) §10, [05](../game/05-training-hub.md) §8, [11](../game/11-hub-and-places.md) §9.2; [synthetic phone proof](../research/a03-level-rule/README.md). Last packet: `652cc58:docs/handoff/tasks/A03-iphone-band-and-level-rule.md` |
+| A03 | Farm, Training, Lineage and Racing pickers open on level; context sorts and Open goals stay optional | D368; [07](../archive/g2-manual/07-farm.md) §10, [05](../archive/g2-manual/05-training-hub.md) §8, [11](../game/11-hub-and-places.md) §9.2; [synthetic phone proof](../research/a03-level-rule/README.md). Last packet: `652cc58:docs/handoff/tasks/A03-iphone-band-and-level-rule.md` |
 | A01 | The racer's four buildings and the Racing page's tiles | uma-art 2.6.0 (uma-platform #19, P45), pinned in the racer by D364 |
 | A02 | The account bar's currency marks, tier crests and the Speed Ticket icon | uma-art 2.7.0 (uma-platform #20, P46), pinned by D364 |
 | A04 | The ten tonics' 32×32 item icons, drawn at every Kitchen, Warehouse and Training size (D378) | uma-art 2.10.0 (uma-platform `7ed5bce`, P62), pinned and deployed in Racer as `be16a6d` ([#127](https://github.com/luismlorenzana/uma-racer/pull/127)); [acceptance](../research/a04-tonics/README.md) |

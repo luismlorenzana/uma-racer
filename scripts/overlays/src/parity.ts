@@ -35,7 +35,7 @@ async function main() {
   const counts: Record<string, number> = {}
   for (const change of changes) counts[`${change.pack}.${change.field}`] = (counts[`${change.pack}.${change.field}`] ?? 0) + 1
   console.log(JSON.stringify({ before: manifest.version, after: master.manifest.version, fieldDifferences: counts }))
-  const permitted = new Set(['umas.added', 'umas.globalRelease', 'umas.signatureRaceFamilyIds', 'cards.added', 'cards.effectProfile', 'cards.obtain', 'cards.starter', 'cards.uniqueEffect', 'skills.added', 'races.added'])
+  const permitted = new Set(['umas.added', 'umas.globalRelease', 'umas.signatureRaceFamilyIds', 'cards.added', 'cards.effectProfile', 'cards.effects', 'cards.hintOthers', 'cards.obtain', 'cards.starter', 'cards.uniqueEffect', 'skills.added', 'races.added'])
   // Metadata/new coverage is reviewed in the acceptance note. Nothing may disappear or change retained rules.
   const unexpected = changes.filter((change) => !permitted.has(`${change.pack}.${change.field}`))
   const activeUniqueLoss = changes.filter((change) => change.pack === 'cards' && change.field === 'uniqueEffect').some((change) => {

@@ -1,5 +1,8 @@
 # 04 · Hub rework
 
+> **Archived by the restart (D380, 2026-11-04).** This plan's phases 1–3, 5 and 6 shipped; 4 and 7–9 are retired. The
+> new game is [the drawing board v3](../research/drawing-board/README.md); this page is kept as history only.
+
 > **Superseded by the manual's [11 · Hub and places](../game/11-hub-and-places.md) (D333; 13 §7).** The rework's four
 > pages (Town Hall, Training, Racing, Farm) replaced this page's place list, and phase 3 built them as plain DOM pages
 > (T137–T143). The pattern here (registry, Peek and Page, routes, the DOM hit layer) still stands, and 11 keeps it. The

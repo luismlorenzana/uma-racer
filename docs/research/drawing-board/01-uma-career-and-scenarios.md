@@ -117,7 +117,7 @@ twelve months that grades it, and a finale. "Leans toward" comes from each scena
 | 14 | Tracen Diner | 2026-06-29 | Three regions a year. Ingredient gauges pay for tastings that use no turn and boost training | A Ramen Jamboree each December; pick one of three ramen at the end | More SP than Beyond Dreams |
 | 15 | Goshiki Shuntaisai (午式駿大祭) | 2026-10-26 | Teachings are buffs on support cards, swapped and transformed during the run. A gauge stores Performance Trainings | Camp in Junior summer too; the festival in late October of Senior is not a race | Higher caps |
 
-**The 15th scenario exists now,** though the repo still calls it "Japan's next" ([04](../../game/04-tiers-and-promotion.md) §2).
+**The 15th scenario exists now,** though the repo still calls it "Japan's next" ([04](../../archive/g2-manual/04-tiers-and-promotion.md) §2).
 
 Sources: [Game8: scenario guide](https://game8.co/games/Umamusume-Pretty-Derby/archives/536350) ·
 [dbltap: Unity Cup EN](https://www.dbltap.com/news/umamusume-unity-cup-release-date-career-scenario) ·
@@ -140,9 +140,9 @@ AUTOMATON: [Island](https://automaton-media.com/articles/newsjp/umamusume-202505
 
 - **The fifteen originals in JP order,** in three tiers of five ([scenarios](../../game/scenarios.md)).
 - **No calendar and no turns.** A scenario is 10 Racing Levels earned only by racing, plus six goals: a G3, two G2s
-  and three G1s ([03](../../game/03-uma-progression.md) §4). They can be won in any order with free retries: the
+  and three G1s ([03](../../archive/g2-manual/03-uma-progression.md) §4). They can be won in any order with free retries: the
   original's objectives without dates or failure.
-- **Stats are unlocked, not trained** ([05](../../game/05-training-hub.md)). Four facilities split up what a career
+- **Stats are unlocked, not trained** ([05](../../archive/g2-manual/05-training-hub.md)). Four facilities split up what a career
   does in the original, 107 unlocks a tier:
 
   | Facility | What it unlocks | Its counterpart in the original |
@@ -153,12 +153,12 @@ AUTOMATON: [Island](https://automaton-media.com/articles/newsjp/umamusume-202505
   | Dojo | A timed, yes-or-no bond per card | The bond gauge |
 
 - **What makes a scenario different:** a cap budget (6,000 to 9,500), an SP cap, one buff on card nodes, a
-  constellation shape, a card-era window and its rival field ([04](../../game/04-tiers-and-promotion.md) §8). None of
+  constellation shape, a card-era window and its rival field ([04](../../archive/g2-manual/04-tiers-and-promotion.md) §8). None of
   the original gimmicks is played.
 - **Not modelled from the original:** energy, mood, events, friendship training (removed by D326), camps, finales (a
   World Expedition per tier is planned instead), and the final rating.
 - **The clock sets the pace:** timed Farm jobs and sessions, skipped with Speed Tickets. 25 Umas max a scenario in about
-  4 weeks ([12](../../game/12-economy-and-pacing.md) §5). The drawing board removes the clock, and the Training Hub's
+  4 weeks ([12](../../archive/g2-manual/12-economy-and-pacing.md) §5). The drawing board removes the clock, and the Training Hub's
   inputs go with it.
 
 ## 4. A candidate mini-game per scenario
@@ -243,7 +243,7 @@ stage, a career grows tenfold.
 
 **What the arithmetic shows:**
 - **B and C keep today's pace without a timer.** Today's measured pace is about 3–4 weeks a scenario and about 52 weeks
-  for the whole game ([12](../../game/12-economy-and-pacing.md) §10). C matches it; B runs about a quarter longer.
+  for the whole game ([12](../../archive/g2-manual/12-economy-and-pacing.md) §10). C matches it; B runs about a quarter longer.
 - **B** is mini-game-led: stages are about 85% of play.
 - **C** is the most faithful: energy, mood and rest return as turn rules, not time rules, and stages are about
   two-thirds of play.
@@ -252,7 +252,7 @@ stage, a career grows tenfold.
 
 Sources: [GameTora: Beginner's Guide](https://gametora.com/umamusume/beginners-guide) ·
 [Denfaminico: about 20 min an auto run](https://news.denfaminicogamer.jp/kikakuthetower/261025a) ·
-[12 · Economy and pacing](../../game/12-economy-and-pacing.md)
+[12 · Economy and pacing](../../archive/g2-manual/12-economy-and-pacing.md)
 
 ## Open points for the owner
 

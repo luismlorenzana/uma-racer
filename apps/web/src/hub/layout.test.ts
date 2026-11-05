@@ -1,10 +1,9 @@
-// The Hub's layout at the owner's screen (docs/game/11-hub-and-places.md §1, §3, §12): every place link, from its
-// building's top down to its name pill and pips, and the Town Hall plaza, inside the map, clear of the floating pill and
+// The Hub's layout at the owner's screen (docs/game/11-hub-and-places.md §1, §3, §12; T152): every place link, from its
+// building's top down to its name pill, and the Town Hall plaza, inside the map, clear of the floating pill's corner and
 // of one another, at least 44 pt, on the 390 × 844 portrait screen with its bars and safe areas or without them (the
-// preview). Box sizes are the links' as measured in the browser (T145): 66 pt of building, then 24 pt for the name pill
-// and 24 more for each row of pips (with the Kitchen's eight at Lv 3, two rows).
-import { buildingOf, HUB_PAGES, placesOn, PLAZA_AT, type Place } from '@racer/domain/hub'
-import { MAX_BUILDING_LEVEL, totalSlots } from '@racer/domain/farm'
+// preview). Box sizes are the links' as measured in the browser (T145): 66 pt of building, then 24 pt for the name pill.
+// Generation 3's places carry no pips.
+import { HUB_PAGES, placesOn, PLAZA_AT } from '@racer/domain/hub'
 import { describe, expect, it } from 'vitest'
 import { BUILDING, hubGrid, placeAnchor, TARGET_W } from '@luismlorenzana/uma-kit/hub'
 
@@ -16,14 +15,8 @@ interface Box {
   readonly y1: number
 }
 
-/** The rows of pips a place shows at its fullest: up to eight, four to a row (§4). */
-function pipRows(place: Place): number {
-  const building = buildingOf(place)
-  return building === null ? 0 : Math.ceil(Math.min(8, totalSlots(building, MAX_BUILDING_LEVEL)) / 4)
-}
-
-/** The measured label under the ground line: the name pill's 24, then each pip row's 20 and their gaps on a backing. */
-const label = (rows: number): number => 24 + (rows === 0 ? 0 : 4 + rows * 20 + (rows - 1) * 4)
+/** The measured label under the ground line: the name pill's 24. */
+const LABEL = 24
 
 /** The map between the bars at 390 or 393 wide: the preview (no safe areas), and the phone in standalone. */
 const SCREENS = [
@@ -36,9 +29,8 @@ const PILL = { w: 180, h: 44, right: 16, bottom: 12 }
 
 describe('the Hub layout at 390 × 844 (§12)', () => {
   it('measures each place link as the browser does', () => {
-    expect([label(0), label(1), label(2)]).toEqual([24, 48, 72])
     expect(BUILDING.anchorY * 1.5).toBe(66)
-    expect(TARGET_W).toBeGreaterThanOrEqual(4 * 20 + 3 * 4)
+    expect(TARGET_W).toBeGreaterThanOrEqual(44)
   })
 
   for (const screen of SCREENS) {
@@ -48,7 +40,7 @@ describe('the Hub layout at 390 × 844 (§12)', () => {
         const tapH = BUILDING.anchorY * grid.scale
         const boxes: Box[] = placesOn(page).map((place) => {
           const anchor = placeAnchor(place.at!, grid)
-          return { id: place.id, x0: anchor.x - TARGET_W / 2, y0: anchor.y - tapH, x1: anchor.x + TARGET_W / 2, y1: anchor.y + label(pipRows(place)) }
+          return { id: place.id, x0: anchor.x - TARGET_W / 2, y0: anchor.y - tapH, x1: anchor.x + TARGET_W / 2, y1: anchor.y + LABEL }
         })
         if (page === 'town') {
           const anchor = placeAnchor(PLAZA_AT, grid)

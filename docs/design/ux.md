@@ -22,7 +22,7 @@ Uma Racer is played on the owner's iPhone, in portrait, as a Home Screen web app
 5. **One-handed loops.** A check-in is three taps (Collect all, Repeat all, Start suggestions). A race after the first
    is four (11 §9).
 6. **Offline is normal.** Game actions never show a spinner: they commit on the phone and sync later
-   ([02](../game/02-check-ins-and-notifications.md) §8). Sync stays quiet unless something waits (the Sync chip, D157).
+   ([02](../archive/g2-manual/02-check-ins-and-notifications.md) §8). Sync stays quiet unless something waits (the Sync chip, D157).
    A save that can't open says why, offers **Try again** and **Copy details**, and never offers to clear anything.
 7. **Help sits behind (i).** Every Peek and Page has an (i) button with the place's blurb and its own lines. No banner
    explains a rule (uma-rpg D95).
@@ -69,7 +69,7 @@ global sheets, in a frame fixed to the screen's edges. The rules and their reaso
 | **Bottom bar** | **Town Hall · Training · ( Race ) · Farm · ☰ Menu**. Race is a raised accent disc and opens the Racing page. Farm and Training carry a badge with the Umas who have something to collect there, hidden at 0; Town Hall and Race carry none. The active page shows by shape (two-tone icon, chamfered underline) as well as colour. The floating panel lifts by the safe area alone | uma-kit's `BottomBar`, from `hub/RacerShell.tsx` |
 | **Menu (☰)** | `?sheet=menu`, **Every place**: the four pages' drawn places in two columns, each with its counter and opening its Peek (the Racecourse its Page), then Account and **Needs of every Uma** (the planner's roster view). It reaches everything, whatever the page shows ([11](../game/11-hub-and-places.md) §2.5) | `hub/GlobalSheets.tsx`, uma-kit's `PlaceMenu` |
 | **Page map** | Each page is a pixel-art map on a lazy canvas (uma-rpg's Hub, T145) with one DOM link per place on its building: the name pill with its counter, the slot pips and the Ready badge. A sideways swipe of more than 60 pt moves to the next or previous page, with a short fade; the map never scrolls or zooms | uma-kit's `HubMap`, from `hub/HubPage.tsx` |
-| **Floating pill** | On every page, right thumb zone, above the bar: **Collect all · N ready**, else **Check-in · N free**, else nothing. It opens the check-in summary ([02](../game/02-check-ins-and-notifications.md) §4) | uma-kit's `FloatingPill`, from `hub/HubPage.tsx` |
+| **Floating pill** | On every page, right thumb zone, above the bar: **Collect all · N ready**, else **Check-in · N free**, else nothing. It opens the check-in summary ([02](../archive/g2-manual/02-check-ins-and-notifications.md) §4) | uma-kit's `FloatingPill`, from `hub/HubPage.tsx` |
 | **Global sheets** | `?sheet=menu`, `?sheet=featured` (the featured Uma's quick sheet) and `?sheet=check-in`, over any shell route. A sheet is a route, so Back closes it. Collect all's intent rides in navigation state, so a reload never collects again | `hub/SheetHost.tsx`, `hub/nav.ts` |
 
 ### Peek, Page and Back
@@ -126,11 +126,11 @@ sub-routes and its decisions are 11 §3 and the manual page that owns its rules.
 
 | Page | Places | Rules |
 |---|---|---|
-| **Town Hall** (`/town`) | **Stable:** the roster album (Owned and Locked), each Uma's profile (Overview, Needs, Skills, Racing), Unlock and the reveal. **Warehouse:** every item by shelf, and the stock sheet with Make more and Sell. **Exchange:** Speed Tickets and raw ingredients. **Card Library:** every SSR, and each card's page with Bond. **Account** (hidden; reached from the trainer chip and the menu): check-in times, sync, this phone's reduced motion and race speed, App build and Content, Sign in or Sign out, and a dev section in dev builds. **The plaza:** the featured Uma and her quick sheet | 11 §3.1, §5; [03](../game/03-uma-progression.md), [04](../game/04-tiers-and-promotion.md) §6, [06](../game/06-cards-and-bonds.md) §6, [09](../game/09-racing-rewards-and-exchange.md) §5–§6 |
-| **Training** (`/training`) | **Observatory, Lineage Hall, Gym, Dojo:** a facility page each (level, slots by room, Needs here, Collect here, the session sheet), and each Uma's build view at `/:umaId` | 11 §3.2; [05](../game/05-training-hub.md) §8 |
-| **Racing** (`/racing`) | **Racecourse** (`direct`): race select, the pre-race sheet, the run and its result. **Scenario Gate:** every Uma's career, the Advance sheet and its ceremony. **Expedition Map:** each Uma's distance to entry until phase 9. **Trophy Hall:** badges by scope, titles, showcases, trophies, records and the trainer profile | 11 §3.3; [09](../game/09-racing-rewards-and-exchange.md), [03](../game/03-uma-progression.md) §4–§5, [10](../rework/10-expeditions.md), [Badges](badges.md) |
-| **Farm** (`/farm`) | **The eight family sites, the Pantry and the Kitchen:** a building page each, with its slots, its jobs and the job sheet | 11 §3.4; [07](../game/07-farm.md) §10 |
-| **Every page** | The menu, the featured Uma's quick sheet and the check-in summary. The planner's views live under the Stable (`/town/stable/needs`, each profile's `/needs`) | 11 §2; [02](../game/02-check-ins-and-notifications.md) §4–§6 |
+| **Town Hall** (`/town`) | **Stable:** the roster album (Owned and Locked), each Uma's profile (Overview, Needs, Skills, Racing), Unlock and the reveal. **Warehouse:** every item by shelf, and the stock sheet with Make more and Sell. **Exchange:** Speed Tickets and raw ingredients. **Card Library:** every SSR, and each card's page with Bond. **Account** (hidden; reached from the trainer chip and the menu): check-in times, sync, this phone's reduced motion and race speed, App build and Content, Sign in or Sign out, and a dev section in dev builds. **The plaza:** the featured Uma and her quick sheet | 11 §3.1, §5; [03](../archive/g2-manual/03-uma-progression.md), [04](../archive/g2-manual/04-tiers-and-promotion.md) §6, [06](../archive/g2-manual/06-cards-and-bonds.md) §6, [09](../archive/g2-manual/09-racing-rewards-and-exchange.md) §5–§6 |
+| **Training** (`/training`) | **Observatory, Lineage Hall, Gym, Dojo:** a facility page each (level, slots by room, Needs here, Collect here, the session sheet), and each Uma's build view at `/:umaId` | 11 §3.2; [05](../archive/g2-manual/05-training-hub.md) §8 |
+| **Racing** (`/racing`) | **Racecourse** (`direct`): race select, the pre-race sheet, the run and its result. **Scenario Gate:** every Uma's career, the Advance sheet and its ceremony. **Expedition Map:** each Uma's distance to entry until phase 9. **Trophy Hall:** badges by scope, titles, showcases, trophies, records and the trainer profile | 11 §3.3; [09](../archive/g2-manual/09-racing-rewards-and-exchange.md), [03](../archive/g2-manual/03-uma-progression.md) §4–§5, [10](../rework/10-expeditions.md), [Badges](../archive/g2-manual/badges.md) |
+| **Farm** (`/farm`) | **The eight family sites, the Pantry and the Kitchen:** a building page each, with its slots, its jobs and the job sheet | 11 §3.4; [07](../archive/g2-manual/07-farm.md) §10 |
+| **Every page** | The menu, the featured Uma's quick sheet and the check-in summary. The planner's views live under the Stable (`/town/stable/needs`, each profile's `/needs`) | 11 §2; [02](../archive/g2-manual/02-check-ins-and-notifications.md) §4–§6 |
 
 Places with slots share one set of work pieces (`ui/work/`): compact slot rows (D366), size chips, queue chips,
 Recall, Speed up and Upgrade, all answering through the same tap (below). They read how long work takes or has left,
@@ -139,7 +139,7 @@ never the clock time it ends.
 ### Race select and the pre-race sheet
 
 Race select is the Racecourse's Page (`places/racing/RaceSelect.tsx`): the purse bar and featured races, the shared Uma picker control,
-**Today's featured**, **Next up** and every race ([09](../game/09-racing-rewards-and-exchange.md) §3–§4). A race card
+**Today's featured**, **Next up** and every race ([09](../archive/g2-manual/09-racing-rewards-and-exchange.md) §3–§4). A race card
 opens the **pre-race sheet**, ordered so starting never means scrolling past the detail (D233):
 1. **The race:** grade, name, its line, and its prize at today's band.
 2. **What's at stake:** every goal the race can complete, with its win rule.
@@ -156,7 +156,7 @@ opens the **pre-race sheet**, ordered so starting never means scrolling past the
 7. **Race skills** with their SP (her unique is free), then the **Field**: outfit busts in gate order.
 
 If the race can't be prepared, the stats and the field are left out. **Start race** commits the race before it plays
-([09](../game/09-racing-rewards-and-exchange.md) §8), so a reload or a reopen lands on the same race.
+([09](../archive/g2-manual/09-racing-rewards-and-exchange.md) §8), so a reload or a reopen lands on the same race.
 
 ### The race
 
@@ -172,7 +172,7 @@ speed the race offers if that one isn't. Dev builds expose `window.__raceScene` 
 
 ### Results
 
-The result slides up over the run, in [09](../game/09-racing-rewards-and-exchange.md) §7's order:
+The result slides up over the run, in [09](../archive/g2-manual/09-racing-rewards-and-exchange.md) §7's order:
 1. The placement **stamps** in ("1st!", with confetti on a win).
 2. Her bust, then the finishing order with outfit busts and margins.
 3. **Racing EXP**, with a chip for each level gained and a line for a hold or a new Uma Shard.
@@ -197,15 +197,15 @@ headed "Earned in this race", without replaying it.
 | **Lists and grids** | Rows of at least 44 pt. Long lists stay cheap through `content-visibility`: off-screen rows skip layout and paint, and the scroll position restores because nothing unmounts | `uma-kit/album`'s `VirtualGrid` |
 
 **Confirm only what costs or sells, and say the amount.** The check-in summary's Buy and restart and Speed up all
-([02](../game/02-check-ins-and-notifications.md) §11), a sale that includes a dish, dips into needed stock or is worth
-1,000 or more, and an Exchange buy of 1,000 or more ([09](../game/09-racing-rewards-and-exchange.md) §6.1) each ask
+([02](../archive/g2-manual/02-check-ins-and-notifications.md) §11), a sale that includes a dish, dips into needed stock or is worth
+1,000 or more, and an Exchange buy of 1,000 or more ([09](../archive/g2-manual/09-racing-rewards-and-exchange.md) §6.1) each ask
 once. Everything else is one tap. Nothing has an undo.
 
 ## Feedback and plain words
 
 ### A tap's answer
 
-Every tap is one operation, with its id chosen before it's written ([02](../game/02-check-ins-and-notifications.md) §9).
+Every tap is one operation, with its id chosen before it's written ([02](../archive/g2-manual/02-check-ins-and-notifications.md) §9).
 While it runs, its button is disabled, so a double tap does nothing. Its answer shows beside the button
 (`ui/work/useTap.ts`, `TapNoteLine`):
 
@@ -223,7 +223,7 @@ The words are the rule's own refusal, run through the same `recheck` on the phon
 
 ### Plain words
 
-The full table of situations is [02](../game/02-check-ins-and-notifications.md) §9. The rules:
+The full table of situations is [02](../archive/g2-manual/02-check-ins-and-notifications.md) §9. The rules:
 - **Say what happened, in the owner's words.** Offline: "Saved on this phone. It'll sync when you're back online." Done
   on the other device: "Already collected." Anything unexpected: "That didn't work. Try again."
 - **Banned in player-facing text:** operation, receipt, revision, generation, version, stale, conflict, payload, id,
@@ -239,7 +239,7 @@ The full table of situations is [02](../game/02-check-ins-and-notifications.md) 
   state in a sentence, with **Sync now**.
 - **A tap the server refused** after the phone accepted it rolls back and becomes a **notice** in plain words, kept
   until dismissed. Notices show in the check-in summary's footer with **OK**, beside the offline line, which links to
-  Account's sync row ([02](../game/02-check-ins-and-notifications.md) §11).
+  Account's sync row ([02](../archive/g2-manual/02-check-ins-and-notifications.md) §11).
 - **A new build** shows one banner at the top: **Update ready** with **Restart**. It waits for the current action to
   finish and save first, and never reloads across a gameplay commit (`app/UpdateNotice.tsx`,
   `app/update-lifecycle.ts`).
@@ -275,7 +275,7 @@ There is no sound and no haptics: every moment stands on its own visually.
 ## Albums
 
 Two albums share one chrome and one query engine: the **Stable**'s roster (`places/stable/`) and the **Card Library**
-(`places/card-library/`, [06](../game/06-cards-and-bonds.md) §6). The **Uma picker** is `uma-kit/album`'s, the one way
+(`places/card-library/`, [06](../archive/g2-manual/06-cards-and-bonds.md) §6). The **Uma picker** is `uma-kit/album`'s, the one way
 to choose an Uma anywhere (SB6, D373). The engine is pure (`uma-kit/roster`); `uma-kit/album` owns `AlbumChrome`,
 `AlbumGrid`, filters, sorts and preferences. Racer's `ui/racerAlbum.tsx` only projects its rows, orders, badges and
 callbacks. The patterns follow the faceted-tray
@@ -322,7 +322,7 @@ research in [Game UI Reference](../research/game-ui-reference.md).
 
 | Album | Opens on | Ties | Other sorts |
 |---|---|---|---|
-| **Stable**, and the Uma picker | **Level**, highest first: the lifetime level, from her tier and Racing Level ([03](../game/03-uma-progression.md) §2) | Release, newest first; then name | Release · Name · Tier · Racing Level · Farm Level |
+| **Stable**, and the Uma picker | **Level**, highest first: the lifetime level, from her tier and Racing Level ([03](../archive/g2-manual/03-uma-progression.md) §2) | Release, newest first; then name | Release · Name · Tier · Racing Level · Farm Level |
 | **Card Library** | **Era**, newest first | Release, newest first; then name | Type · Character · Card name · Per-node pay (in a lens) · Race Bonus · Umas bonded |
 
 - **A missing value sorts last** in either direction, so flipping never surfaces a hole. Locked Umas have no level,
@@ -394,7 +394,7 @@ Each tile keeps its marks inside its padding, so nothing covers a face (`ui/ArtT
 - **A locked Uma** is her art dimmed and desaturated behind the kit's central lock, never an empty box. Selection is
   the kit's gold outline. A Hall of Fame Uma keeps her gold mark and profile frame.
 - **The Uma picker** puts her tier-local level under the name; the chosen Uma keeps her gold outline and context label.
-- **The bond pill** ([06](../game/06-cards-and-bonds.md) §6): with no Uma chosen, how many Umas are bonded to the card
+- **The bond pill** ([06](../archive/g2-manual/06-cards-and-bonds.md) §6): with no Uma chosen, how many Umas are bonded to the card
   in their current tier (hidden at 0). With an Uma chosen: a check if she's bonded, a stopwatch while the bond is in
   her work, "G5" on the card type's colour for the dish grade she needs, or a lock, with the art dimmed, when the
   card's era is past her scenario.

@@ -1,15 +1,13 @@
-// The save's own small fetch (docs/rearchitecture/01-target-architecture.md §4.3, §6; docs/rearchitecture/07-data-
-// reset.md §3–§4; T135's routes; T136), using `VITE_API_BASE_URL` (empty in dev, where
-// Vite proxies `/api`), a pluggable token provider, and the stamp on every call: query parameters for the GET, the body
-// for the POSTs. Answers go through T134's parsers. A failure is one of seven kinds, never a status on a screen:
+// The save's own small fetch (docs/game/architecture.md "The save and sync"; T135's routes; T136, T152), using
+// `VITE_API_BASE_URL` (empty in dev, where Vite proxies `/api`), a pluggable token provider, and generation 3's stamp on
+// every call: query parameters for the GET, the body for the POST. Answers go through the domain's parsers. A failure is one of seven kinds, never a status on a screen:
 // - `offline`: no answer at all (no network, or no reply within a minute);
 // - `auth` (401, 403), `upgrade` (426), `no-save` (409), `unavailable` (429, 502, 503, 504), `server` (anything else);
-// - `invalid`: a 400, or an answer T134's parsers refuse.
+// - `invalid`: a 400, or an answer the parsers refuse.
 // After a 426 the client asks nothing more until the app restarts: the server has moved on, and the update prompt
 // brings the new app.
 import {
-  parseSaveSnapshotV2, parseSyncResponseV2, snapshotQuery, STAMP, type SaveSnapshotV2, type SyncChange,
-  type SyncRequestV2, type SyncResponseV2,
+  parseSaveSnapshot, parseSyncResponse, snapshotQuery, STAMP, type SaveSnapshot, type SyncChange, type SyncRequest, type SyncResponse,
 } from '@racer/domain/save'
 
 export type SaveFailure = 'offline' | 'auth' | 'upgrade' | 'no-save' | 'unavailable' | 'server' | 'invalid'
@@ -25,9 +23,9 @@ export const failureOf = (error: unknown): SaveFailure => (error instanceof Save
 
 export interface SaveApi {
   /** `GET /api/save`: one page of the rows saved after `since`. */
-  snapshot(since: number, cursor: string | null): Promise<SaveSnapshotV2>
+  snapshot(since: number, cursor: string | null): Promise<SaveSnapshot>
   /** `POST /api/sync`: the outbox's batch, answered change by change. */
-  sync(changes: readonly SyncChange[]): Promise<SyncResponseV2>
+  sync(changes: readonly SyncChange[]): Promise<SyncResponse>
 }
 
 let tokenProvider: () => Promise<string | null> = async () => null
@@ -95,10 +93,10 @@ export function createSaveApi(options: SaveApiOptions = {}): SaveApi {
   }
 
   return {
-    snapshot: (since, cursor) => call(`/api/save?${new URLSearchParams(snapshotQuery(since, cursor)).toString()}`, { method: 'GET' }, parseSaveSnapshotV2),
+    snapshot: (since, cursor) => call(`/api/save?${new URLSearchParams(snapshotQuery(since, cursor)).toString()}`, { method: 'GET' }, parseSaveSnapshot),
     sync: (changes) => {
-      const body: SyncRequestV2 = { ...STAMP, changes }
-      return call('/api/sync', { method: 'POST', body: JSON.stringify(body) }, parseSyncResponseV2)
+      const body: SyncRequest = { ...STAMP, changes }
+      return call('/api/sync', { method: 'POST', body: JSON.stringify(body) }, parseSyncResponse)
     },
   }
 }

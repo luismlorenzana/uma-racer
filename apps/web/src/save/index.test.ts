@@ -1,13 +1,11 @@
-// The save behind the shell's port (T136; T137's `G2Game`): the store maps one to one onto the snapshot, the Sync chip
+// The save behind the shell's port (T136, T152; `RacerGame`): the store maps one to one onto the snapshot, the Sync chip
 // reads the lane's state (paused, offline, failing, waiting after a day, synced), and the chip turns amber on its own.
 import 'fake-indexeddb/auto'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createSaveApi } from './api'
 import { chipOf, createSaveGame, WAITING_MS, type SaveGame } from './index'
 import { useSave, type SaveStore } from './store'
-import {
-  ENV, FakeServer, fakeSignals, freshDb, memoryStorage, nextId, trainerBadge, turn, umaId, useClock,
-} from './__fixtures__/server'
+import { ENV, FakeServer, fakeSignals, freshDb, memoryStorage, nextId, turn, umaId, useClock } from './__fixtures__/server'
 
 beforeEach(() => useClock())
 afterEach(() => vi.useRealTimers())
@@ -36,13 +34,11 @@ describe('the port', () => {
     game.subscribe(seen)
     await settled(game)
     expect(seen).toHaveBeenCalled()
-    expect(game.getSnapshot()).toMatchObject({ status: 'ready', env: ENV, trainerName: 'Trainer', sync: 'synced', receipts: {}, notices: [] })
-    expect(game.getSnapshot().state?.profile.umaTickets).toBe(20)
-    const answer = await game.run('unlock-uma', { outfitId: umaId(1) })
+    expect(game.getSnapshot()).toMatchObject({ status: 'ready', env: ENV, sync: 'synced', receipts: {}, notices: [] })
+    expect(game.getSnapshot().state?.account).toMatchObject({ umaTickets: 20, cardTickets: 24 })
+    const answer = await game.run('unlock-uma', { umaId: umaId(1) })
     expect(answer.kind).toBe('done')
     expect(game.getSnapshot().receipts[answer.id]).toEqual({ local: answer.kind === 'done' ? answer.receipt : null })
-    await game.session.actions.writeBadge('trainer', trainerBadge('Hana'))
-    expect(game.getSnapshot().trainerName).toBe('Hana')
     // The snapshot is stable between publishes, and through a change the port doesn't show.
     const shown = game.getSnapshot()
     expect(game.getSnapshot()).toBe(shown)
@@ -50,7 +46,6 @@ describe('the port', () => {
     useSave.setState((store) => ({ sync: { ...store.sync, status: 'syncing', lastSuccessAt: 1 } }))
     expect(game.getSnapshot()).toBe(shown)
     expect(seen).not.toHaveBeenCalled()
-    expect(game.utcOffsetMin(Date.now())).toBe(-new Date(Date.now()).getTimezoneOffset())
     game.stop()
   })
 
@@ -82,7 +77,7 @@ describe('the port', () => {
     const game = saveGame(server, net)
     await settled(game)
     net.offline()
-    await game.run('unlock-uma', { outfitId: umaId(1) })
+    await game.run('unlock-uma', { umaId: umaId(1) })
     const seen = vi.fn()
     game.subscribe(seen)
     await vi.advanceTimersByTimeAsync(WAITING_MS - 60_000)
@@ -101,15 +96,14 @@ describe('the port', () => {
     const server = new FakeServer()
     const game = saveGame(server)
     await settled(game)
-    const answer = await game.run('unlock-uma', { outfitId: umaId(1) })
+    const answer = await game.run('unlock-uma', { umaId: umaId(1) })
     const before = server.syncs().length
     await game.syncNow!()
     expect(server.syncs()).toHaveLength(before + 1)
-    expect(server.row('umas/' + umaId(1))).toBeDefined()
-    expect((await game.logs!.ledgerRows()).map((row) => row.reason)).toEqual(['initial-uma-tickets', 'unlock-uma'])
+    expect(server.row(`umas/${umaId(1)}`)).toBeDefined()
     expect(await game.logs!.raceResults(umaId(1))).toEqual([])
-    expect(await game.logs!.itemLedgerRows()).toEqual([])
     expect(await game.logs!.receipt(answer.id)).toEqual(answer.kind === 'done' ? answer.receipt : null)
+    expect(await game.logs!.operation(answer.id)).toMatchObject({ name: 'unlock-uma' })
     game.stop()
   })
 
@@ -124,7 +118,7 @@ describe('the port', () => {
     game.setSignedIn(true)
     await settled(game)
     expect(game.getSnapshot().sync).toBe('synced')
-    expect(server.row('profile/main')).toBeDefined()
+    expect(server.row('account/main')).toBeDefined()
     game.stop()
   })
 })

@@ -6,7 +6,7 @@ import { fromStored, hasNestedArray, toStored } from './firestore-codec'
 describe('Firestore codec', () => {
   // A compiled skill condition, alternatives of clauses, is an array of arrays, which Firestore cannot store (D151).
   const raceRow = {
-    kind: 'raceResults' as const, id: 'op-1', generation: 2, schema: 1, at: 1, savedAt: 2,
+    kind: 'raceResults' as const, id: 'op-test-0001', generation: 3, schema: 1, at: 1, savedAt: 2,
     data: { run: { field: [{ umaId: 'u1', skills: [{ groups: [{ condition: [[{ variable: 'phase', op: '>=', value: 2 }]] }] }] }] } },
   }
 
@@ -25,8 +25,8 @@ describe('Firestore codec', () => {
   })
 
   it('leaves every other row as it is', () => {
-    const ledger = { kind: 'ledger' as const, id: 'l1', generation: 2, schema: 1, at: 1, savedAt: 2, data: { id: 'l1', resource: 'umaTickets', delta: 20, reason: 'initial-uma-tickets', at: 1 } }
-    expect(toStored(ledger)).toEqual(ledger)
-    expect(fromStored(ledger)).toEqual(ledger)
+    const account = { kind: 'account' as const, id: 'main', generation: 3, schema: 1, version: 1, savedAt: 2, data: { createdAt: 1, umaTickets: 20, cardTickets: 24 } }
+    expect(toStored(account)).toEqual(account)
+    expect(fromStored(account)).toEqual(account)
   })
 })

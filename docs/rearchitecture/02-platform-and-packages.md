@@ -1,5 +1,8 @@
 # 02 · uma-platform and packages
 
+> **Archived by the restart (D380, 2026-11-04).** This plan's phases 1–3, 5 and 6 shipped; 4 and 7–9 are retired. The
+> new game is [the drawing board v3](../research/drawing-board/README.md); this page is kept as history only.
+
 How uma-racer stops being its own master-data importer and becomes a consumer of uma-platform, and which shared
 packages are extracted now that it is the second game to need them (D325, platform P5–P11).
 

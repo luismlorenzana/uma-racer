@@ -13,6 +13,8 @@ export interface ArtLoader {
 }
 export interface LoadedContent {
   manifest: { version: string }
+  /** The racer overlay's index version: with the manifest's, the operations' `contentVersion` (the API's too). */
+  overlay: { version: string }
   origin: 'network' | 'offline-cache'
   umas: ContentRegistry<UmaTemplate>; cards: ContentRegistry<SupportCardTemplate>; skills: ContentRegistry<SkillTemplate>
   races: ContentRegistry<RaceTemplate>; courses: ContentRegistry<CourseTemplate>

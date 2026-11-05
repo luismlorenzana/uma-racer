@@ -5,7 +5,7 @@ loops with the scenario. A new scenario gets a new career. Targets are concrete 
 frozen when she arrives in the scenario, so content updates never silently reroll an active or historical career.
 
 > **Status: built (generation 2).** Goal plan **v4** (D137, D138, D194): a career per scenario of a tier, frozen on
-> arrival, with its level holds and the gate ([03](../game/03-uma-progression.md) §2, §4–§5). Careers show at the
+> arrival, with its level holds and the gate ([03](../archive/g2-manual/03-uma-progression.md) §2, §4–§5). Careers show at the
 > Racecourse, the Scenario Gate and the Uma profile ([Presentation](#presentation)).
 
 ## Three stages
@@ -23,13 +23,13 @@ be won early: a G1 won at level 1 counts. Stages gate only **Racing Level** and 
   is unwon, it stops at level 5. A held Uma banks EXP up to one short of her next level, so the race that wins the goal
   releases the bank at once. An Uma already past a hold is never pushed back.
 - **The gate.** The scenario's last level is the gate. She **keeps racing at the gate** until every goal is won, and
-  only then can she advance, for free ([03](../game/03-uma-progression.md) §5, `advance-scenario`). The gate banks up
+  only then can she advance, for free ([03](../archive/g2-manual/03-uma-progression.md) §5, `advance-scenario`). The gate banks up
   to 100 EXP, the next scenario's first step, which applies at the advance. A tier's last scenario has no advance: there
   the completed career leads to the World Expedition (phase 9, [rework/10](../rework/10-expeditions.md)), and until it
   ships she waits at the gate with racing open.
 - **Retries** are free: losing a goal race costs only the race.
 
-**Goals pay nothing of their own** ([03](../game/03-uma-progression.md) §4): a goal race pays its usual Racing EXP and
+**Goals pay nothing of their own** ([03](../archive/g2-manual/03-uma-progression.md) §4): a goal race pays its usual Racing EXP and
 Prize Money, and a level-up pays nothing but the gate's Uma Shard. The holds pace her levels, nothing more.
 
 ## Her profile
@@ -48,7 +48,7 @@ Mile · Medium. Her surface is the better of Turf and Dirt; a tie goes to her ca
 selected preset's, after its lineage (her filled open Inspiration slots, D123, D252), at the moment the career is
 frozen.
 
-Each Uma keeps race defaults (`set-race-defaults`, [03](../game/03-uma-progression.md) §7): a preferred **distance**,
+Each Uma keeps race defaults (`set-race-defaults`, [03](../archive/g2-manual/03-uma-progression.md) §7): a preferred **distance**,
 **surface** and **running style**. Before the owner chooses them, the automatic profile above is the recommendation. A
 chosen distance selects one of the neighbouring bands that contains it, ranking the other distance by the usual
 weaker/stronger grades and career tie-break; a chosen surface replaces the automatic surface choice. The new profile
@@ -67,7 +67,7 @@ Every pick is **in her profile and B or better** on surface and distance. Within
 2. **famous races** (any race that is a leg of a set);
 3. everything else, in a fixed order hashed from her id.
 
-The game's scenario *T* (1–14, [04](../game/04-tiers-and-promotion.md) §1) starts at the *T*-th entry of that order,
+The game's scenario *T* (1–14, [04](../archive/g2-manual/04-tiers-and-promotion.md) §1) starts at the *T*-th entry of that order,
 wrapping, so each scenario brings different races and her own career comes first. A race family is used once per
 career; a family with several variants runs its best-fitting one.
 
@@ -76,7 +76,7 @@ distance is below B (a pure sprinter, say) runs both trials at her first.
 
 ### Main goals: the set rotation
 
-Each scenario's main goal is one **G1 set** — the sets that earn [titles](badges.md#4-titles-and-g1-trophies) — taken in
+Each scenario's main goal is one **G1 set** — the sets that earn [titles](../archive/g2-manual/badges.md#4-titles-and-g1-trophies) — taken in
 a fixed order, and every rotation ends with **her own G1s**:
 
 | Order | Set | Legs |
@@ -115,7 +115,7 @@ variant has been preferred (D195). The sim fails if any career cannot be frozen,
 B-or-better aptitudes, or if a stage's win rate falls under 25% (D152). Its win rates race full-layer builds against
 generated fields on engine v9, best case across the distance's sets and the four running styles: the targets are every
 Maiden G3 won, the Trials G2s at 90% or more and the Main G1s at 60–100%, and the measured table is
-[03](../game/03-uma-progression.md) §9's ([Racing — difficulty target](racing.md#difficulty-target)).
+[03](../archive/g2-manual/03-uma-progression.md) §9's ([Racing — difficulty target](racing.md#difficulty-target)).
 
 The generator never fails a career over a thin catalog: a pool short of races relaxes to her profile at any aptitude,
 then B or better anywhere, then anything of the stage's grade. Freezing a career throws before any write only when the
@@ -136,7 +136,7 @@ first receipt without awarding or animating again.
 ## Save shape
 
 Careers use `ScenarioJourney` and `ScenarioGoal`, on `umas/{outfitId}` as her current `career` and the `closedCareers`
-she left ([03](../game/03-uma-progression.md) §7). A career's goals are, in order, `goal:<T>:maiden`,
+she left ([03](../archive/g2-manual/03-uma-progression.md) §7). A career's goals are, in order, `goal:<T>:maiden`,
 `goal:<T>:trials:1` and `:2`, then `goal:<T>:main:1` to `:4`, with slots `maiden`, `trials` and `main`. A set is one
 `win-series` main goal whose legs carry their own completion; every other goal is `win`, and a career holds at most one
 set. The goal plan is **v4** (`SCENARIO_GOAL_VERSION`). The save's parser checks careers with `parseScenarioJourney`,
@@ -146,7 +146,7 @@ and the API re-runs every operation with the domain package.
 
 - **Frozen on arrival.** A career is frozen when she arrives in a scenario: on her unlock (tier 1, scenario 1), at the
   advance, or at promotion (scenario 1 of the next tier), from her selected preset's aptitudes
-  ([03](../game/03-uma-progression.md) §4). It is never regenerated: content updates and preference edits shape only her
+  ([03](../archive/g2-manual/03-uma-progression.md) §4). It is never regenerated: content updates and preference edits shape only her
   next career.
 - **Closed on leaving.** The advance, or promotion from a tier's last scenario, closes it into her history: won goals
   stay won and anything unwon is marked missed. Closed facts never reopen. Both need every goal won, so a closed career

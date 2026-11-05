@@ -1,10 +1,9 @@
-// Production persistence for generation 2 (docs/rework/13-removals-and-plan-changes.md §6; docs/rearchitecture/07-data-
-// reset.md §3; T135): `saves/{uid}/{kind}/{id}`, one small document per row, stored through the codec (a work row's
-// arrays of arrays become `dataJson`, D151). A sync is one transaction, every read before the first write. Historical
-// `meta` audit records are not save kinds: neither sync nor pulls read or change them (T144, D362).
+// Production persistence for generation 3 (docs/game/architecture.md "The save and sync"; D381; T152):
+// `g3/{uid}/{kind}/{id}`, one small document per row, stored through the codec (a row whose data holds an array inside
+// an array becomes `dataJson`, D151). A sync is one transaction, every read before the first write. Nothing here reads
+// or writes outside `g3/{uid}`.
 import * as admin from 'firebase-admin'
-import { KIND_ORDER, rowKey, RULE_LEDGER_REASONS, SAVE_LIMITS, type SaveSnapshotV2,
-  type SyncRequestV2, type SyncResponseV2 } from '@racer/domain/save'
+import { KIND_ORDER, rowKey, SAVE_LIMITS, type SaveSnapshot, type SyncRequest, type SyncResponse } from '@racer/domain/save'
 import { fromStored, toStored } from './firestore-codec'
 import { needsOperationEnv, NO_SAVE, parseCursor, pullFloor, resolveSync, selectReadSet, snapshotPage, syncReadSet, type NoSave,
   type SaveRow } from './resolve'
@@ -12,6 +11,9 @@ import type { OperationEnvLoader, SaveRepository } from './save.repository'
 
 type Firestore = admin.firestore.Firestore
 type Data = Record<string, unknown>
+
+/** Generation 3's root collection: `g3/{uid}/{kind}/{id}`. */
+export const SAVE_ROOT = 'g3'
 
 export class FirestoreSaveRepository implements SaveRepository {
   constructor(private readonly injectedDb?: Firestore, private readonly clock: () => number = Date.now) {}
@@ -23,10 +25,10 @@ export class FirestoreSaveRepository implements SaveRepository {
   }
 
   private save(uid: string) {
-    return this.db.collection('saves').doc(uid)
+    return this.db.collection(SAVE_ROOT).doc(uid)
   }
 
-  async snapshot(uid: string, since: number, cursor: string | null): Promise<SaveSnapshotV2> {
+  async snapshot(uid: string, since: number, cursor: string | null): Promise<SaveSnapshot> {
     const after = cursor === null ? null : parseCursor(cursor)
     if (cursor !== null && after === null) throw new RangeError('an invalid cursor')
     const save = this.save(uid)
@@ -45,7 +47,7 @@ export class FirestoreSaveRepository implements SaveRepository {
     return snapshotPage(rows, since, cursor, now)
   }
 
-  async sync(uid: string, request: SyncRequestV2, env: OperationEnvLoader): Promise<SyncResponseV2 | NoSave> {
+  async sync(uid: string, request: SyncRequest, env: OperationEnvLoader): Promise<SyncResponse | NoSave> {
     // Content loads before the transaction: a missing pack throws here, and nothing is read or written.
     const operationEnv = needsOperationEnv(request) ? await env() : undefined
     const readSet = syncReadSet(request)
@@ -55,14 +57,12 @@ export class FirestoreSaveRepository implements SaveRepository {
       return save.collection(key.slice(0, slash)).doc(key.slice(slash + 1))
     }
     return this.db.runTransaction(async (tx) => {
-      const [collections, ledger, documents] = await Promise.all([
+      const [collections, documents] = await Promise.all([
         Promise.all(readSet.collections.map((kind) => tx.get(save.collection(kind)))),
-        readSet.ruleLedger ? tx.get(save.collection('ledger').where('data.reason', 'in', [...RULE_LEDGER_REASONS])) : Promise.resolve(null),
         readSet.documents.length > 0 ? tx.getAll(...readSet.documents.map(ref)) : Promise.resolve([]),
       ])
       const rows: SaveRow[] = []
       for (const snap of collections) for (const doc of snap.docs) rows.push(fromStored<SaveRow>(doc.data()))
-      for (const doc of ledger?.docs ?? []) rows.push(fromStored<SaveRow>(doc.data()))
       for (const doc of documents) if (doc.exists) rows.push(fromStored<SaveRow>(doc.data() as Data))
       // Every read has completed; nothing is read after the first write.
       const resolved = resolveSync(selectReadSet(rows, readSet), request, this.clock(), operationEnv)

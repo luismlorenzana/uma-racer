@@ -1,15 +1,14 @@
-// The app's entry (T143, T147; docs/rework/13-removals-and-plan-changes.md §6, docs/game/architecture.md): the game on
-// the private content and the owner's account. First uma-kit's setup (`app/kit.ts`: the device-key prefix and the
-// stored Appearance on `<html>`), then from the outside in:
+// The app's entry (T143, T147, T152; docs/game/architecture.md): the game on the private content and the owner's
+// account. First uma-kit's setup (`app/kit.ts`: the device-key prefix and the stored Appearance on `<html>`), then from
+// the outside in:
 // - TanStack Query for the content, uma-kit's auth provider with the game's Firebase config (`app/auth.ts`; the SDK
 //   loaded lazily) and the content provider, whose requests carry the owner's token;
 // - the kit's motion root (`LazyMotion strict`, so only `m.*` draws, and the reduced-motion setting) and its art
 //   provider (uma-art's atlases, `app/art.ts`);
 // - the session (`app/session.tsx`): the boot uma-kit's gates run (the device save opened local first on the content),
 //   its requests on the owner's token, sync following the auth state;
-// - the live router (`app/router.tsx`: the current routes inside the kit's `BootGates`), and the
-//   kit's update prompt, fed by vite-plugin-pwa's `registerSW` (SD4).
-// Dev builds mount the synthetic seeds instead at `/dev/seeds/*` (`dev/main.tsx`); a production build holds none of it.
+// - the live router (`app/router.tsx`: the routes inside the kit's `BootGates`), and the kit's update prompt, fed by
+//   vite-plugin-pwa's `registerSW` (SD4).
 import './index.css'
 
 import { AuthProvider } from '@luismlorenzana/uma-kit/auth'
@@ -23,39 +22,33 @@ import { registerSW } from 'virtual:pwa-register'
 import { RACER_ART } from './app/art'
 import { FIREBASE } from './app/auth'
 import { setupKit } from './app/kit'
-import { ContentProvider } from './content/ContentProvider'
-import { createLiveRouter, isSeedsPath } from './app/router'
+import { createLiveRouter } from './app/router'
 import { SessionProvider } from './app/session'
+import { ContentProvider } from './content/ContentProvider'
 
 setupKit()
-const root = createRoot(document.getElementById('root')!)
-
-if (import.meta.env.DEV && isSeedsPath(location.pathname)) {
-  void import('./dev/main').then(({ mountSeeds }) => mountSeeds(root))
-} else {
-  const queryClient = new QueryClient({
-    defaultOptions: {
-      queries: { staleTime: Infinity, retry: 1, refetchOnWindowFocus: false },
-    },
-  })
-  const router = createLiveRouter()
-  watchAppUpdates(registerSW)
-  root.render(
-    <StrictMode>
-      <QueryClientProvider client={queryClient}>
-        <AuthProvider config={FIREBASE}>
-          <ContentProvider>
-            <MotionRoot>
-              <KitArtProvider art={RACER_ART}>
-                <SessionProvider>
-                  <RouterProvider router={router} />
-                </SessionProvider>
-                <UpdateNotice />
-              </KitArtProvider>
-            </MotionRoot>
-          </ContentProvider>
-        </AuthProvider>
-      </QueryClientProvider>
-    </StrictMode>,
-  )
-}
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: { staleTime: Infinity, retry: 1, refetchOnWindowFocus: false },
+  },
+})
+const router = createLiveRouter()
+watchAppUpdates(registerSW)
+createRoot(document.getElementById('root')!).render(
+  <StrictMode>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider config={FIREBASE}>
+        <ContentProvider>
+          <MotionRoot>
+            <KitArtProvider art={RACER_ART}>
+              <SessionProvider>
+                <RouterProvider router={router} />
+              </SessionProvider>
+              <UpdateNotice />
+            </KitArtProvider>
+          </MotionRoot>
+        </ContentProvider>
+      </AuthProvider>
+    </QueryClientProvider>
+  </StrictMode>,
+)

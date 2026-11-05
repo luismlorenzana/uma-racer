@@ -1,36 +1,20 @@
 // The app's routes (docs/game/11-hub-and-places.md §7): `/` is the start rule; `/:page` a page's map, with
-// `?peek=:place` for a Peek and `?sheet=menu | featured | check-in` for a global sheet, so Back closes either;
-// `/:page/:place/*` a place's sub-pages, then its Page; `/collection/reveal/uma/:umaId` the full-screen reveal; and
-// retired paths go to `/` (SE1, D365). The live router
-// has no basename; the seeds' mount (dev builds only) serves the same routes under `SEEDS_PATH`.
-import { lazy, Suspense, type ComponentType } from 'react'
+// `?peek=:place` for a Peek and `?sheet=menu` for the menu, so Back closes either; `/:page/:place/*` a place's
+// sub-pages, then its Page; and anything else goes to `/`.
 import { createBrowserRouter, Navigate, type RouteObject } from 'react-router'
 import { RacerShell } from '../hub/RacerShell'
 import { LiveGates } from './gates'
 import { Root } from './Root'
-import { PageRoute, PlaceRoute, RevealRoute, StartRoute } from './routes'
+import { PageRoute, PlaceRoute, StartRoute } from './routes'
 
-
-// Dev proofs (§7.2: new proofs live under `/dev/`, beside the places they prove), in dev builds only, so a production
-// build drops them and their chunks. T142's shows the check-in's pieces, on the seeds at `/dev/seeds/dev/check-in`.
-const DEV_ROUTES: RouteObject[] = import.meta.env.DEV
-  ? [{ path: 'dev/check-in', element: <DevProof Proof={lazy(() => import('../dev/CheckInProof'))} /> }]
-  : []
-
-function DevProof({ Proof }: { Proof: ComponentType }) {
-  return <Suspense fallback={null}><Proof /></Suspense>
-}
-
-export const G2_ROUTES: RouteObject[] = [
+export const ROUTES: RouteObject[] = [
   {
     element: <Root />,
     children: [
-      { path: 'collection/reveal/uma/:umaId', element: <RevealRoute /> },
       {
         element: <RacerShell />,
         children: [
           { index: true, element: <StartRoute /> },
-          ...DEV_ROUTES,
           { path: ':page', element: <PageRoute /> },
           { path: ':page/:place/*', element: <PlaceRoute /> },
         ],
@@ -40,16 +24,7 @@ export const G2_ROUTES: RouteObject[] = [
   },
 ]
 
-/** Where dev builds mount the synthetic seeds (`dev/main.tsx`); in production it is an unknown path, so `/`. */
-export const SEEDS_PATH = '/dev/seeds'
-
-/**
- * Whether a path is the seeds' mount: its root, with or without the trailing slash, and anything under it. The root
- * runs the start rule under the mount, as `/` does on the live router (T145).
- */
-export const isSeedsPath = (pathname: string): boolean => pathname === SEEDS_PATH || pathname.startsWith(`${SEEDS_PATH}/`)
-
-export const createG2Router = (basename?: string) => createBrowserRouter(G2_ROUTES, basename === undefined ? {} : { basename })
+export const createRouter = (basename?: string) => createBrowserRouter(ROUTES, basename === undefined ? {} : { basename })
 
 /** The live router (`main.tsx`): the same routes inside uma-kit's boot gates (SD4, `gates.tsx`). */
-export const createLiveRouter = () => createBrowserRouter([{ element: <LiveGates />, children: G2_ROUTES }])
+export const createLiveRouter = () => createBrowserRouter([{ element: <LiveGates />, children: ROUTES }])

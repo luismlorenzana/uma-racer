@@ -23,7 +23,8 @@ export class OperationContent {
       const key = `${snapshot.manifest.version}:${snapshot.overlay.version}`
       if (this.cached?.key === key) return { ...this.cached.env, dev: devOperations() }
       if (this.loading?.key !== key) {
-        const value = this.source.load(snapshot).then((content) => buildOperationEnv(content))
+        // The env's content version is the cache's key: the platform release and the racer overlay it was built from.
+        const value = this.source.load(snapshot).then((content) => buildOperationEnv({ ...content, contentVersion: key }))
         this.loading = { key, value }
         void value.then((env) => { this.cached = { key, env } }, () => undefined)
           .finally(() => { if (this.loading?.value === value) this.loading = undefined })
