@@ -20,7 +20,7 @@ This folder holds **only work that is planned or in progress**. A task spec is a
 
 | Release | Milestone | State |
 |---|---|---|
-| 1 | [M036 — URA Finale, the new game](M036-ura-finale-slice.md) (T152–T159): generation 3 with a full wipe, Training Yard and Furlong Hand, the tree, deck, bonds and skills, URA Finale careers | **Released 2026-11-05 (D388).** Built on `restart/g3` (D381–D387), shipped to production in one release with generation 2's wipe; [the manual](../game/README.md) describes it |
+| 1 | M036 — URA Finale, the new game (T152–T159; spec at `git show 1f4b481:docs/tasks/M036-ura-finale-slice.md`): generation 3 with a full wipe, Training Yard and Furlong Hand, the tree, deck, bonds and skills, URA Finale careers | **Released 2026-11-05 (D388).** Built on `restart/g3` (D381–D387), shipped to production in one release with generation 2's wipe; [the manual](../game/README.md) describes it |
 | 2 | Team Showdown: Shards, Umas earned in play; Unity Cup's careers | Planned |
 | 3 | Fan Festival: Scout points, cards earned in play, the refit; Trackblazer's and Our Grand Concert's careers | Planned |
 | 4 | Summer Camp: aptitude points; Grand Masters' careers; promotion to tier 2 | Planned |
