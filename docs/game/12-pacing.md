@@ -1,7 +1,7 @@
 # 12 · Pacing
 
-> **Status: generation 3, the numbers set (T154, D383).** The stages that pay them are T155's (the framework and
-> Training Yard) and T156's (Furlong Hand). The targets are [M036](../tasks/M036-ura-finale-slice.md)'s.
+> **Status: generation 3, the numbers set (T154, D383).** The stages that pay them are T155's ([07](07-stages.md) and
+> [08](08-training-yard.md), D384) and T156's (Furlong Hand). The targets are [M036](../tasks/M036-ura-finale-slice.md)'s.
 
 How much a career earns, and how fast. There is no clock: pacing is what each play pays, against what the tree, the
 bonds and the skills cost, and how strong the rivals are at each point of the calendar.
@@ -12,7 +12,7 @@ Code: `packages/domain/src/career/pay.ts` (the table), `career/rewards.ts` (the 
 ## 1. What a play pays
 
 Every stage pays into the career's wallet ([05](05-the-build.md) §1) on every play, its pay at grade A times its
-grade's multiplier (D 0.25, C 0.6, B 0.8, A 1.0, S 1.2: 07 · Stages, T155). Practice outside a career pays nothing.
+grade's multiplier (D 0.25, C 0.6, B 0.8, A 1.0, S 1.2: [07](07-stages.md) §2). Practice pays nothing.
 
 <!-- live:career-pay -->
 | Game | Drills | Bond | SP |
@@ -21,13 +21,15 @@ grade's multiplier (D 0.25, C 0.6, B 0.8, A 1.0, S 1.2: 07 · Stages, T155). Pra
 | Furlong Hand | | 25 | 20 |
 <!-- /live -->
 
-- **Training Yard** pays drills by colour, from the merges it made in each, about 200 in all at A, and a little SP.
+- **Training Yard** pays drills by colour, in proportion to the drills it scored in each (its pieces' Sweat and its
+  merges, [08](08-training-yard.md) §6), 200 in all at A, and a little SP.
 - **Furlong Hand** pays Bond, which the owner pours into the deck's tracks, and SP.
 - **Races** pay on an objective's win ([03](03-careers.md) §6): a Card Ticket, and SP by grade × (1 + the deck's Race
   Bonus).
 - **The tree's sessions** pay SP of their own, by the original's formula ([05](05-the-build.md) §4).
 
-`STAGE_PAY_AT_A` is the one table the stages' settle reads (T155, T156), so a re-tune changes one number.
+`STAGE_PAY_AT_A` is the one table the stages' settle reads (`settle-stage`, [07](07-stages.md) §3), so a re-tune
+changes one number.
 
 ## 2. The targets
 

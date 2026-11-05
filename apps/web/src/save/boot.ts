@@ -9,6 +9,8 @@ import type { OperationEnv } from '@racer/domain/save'
 import { createSaveApi, type SaveApi } from './api'
 import { createActions, type SaveActions } from './actions'
 import { CREATE_KEY, holdsSave, SaveDb, UnreadableRow, wipeGeneration2, type WipeOptions } from './db'
+import { dexieJournal } from './journal'
+import type { RacerJournal } from '../app/game'
 import { createSerial, refold, resetSave, useSave } from './store'
 import { browserSignals, forgetPull, SyncLane, type LaneSignals } from './sync'
 import { browserStorage } from './storage'
@@ -32,6 +34,8 @@ export interface SaveSession {
   readonly env: OperationEnv
   readonly actions: SaveActions
   readonly lane: SyncLane
+  /** The device-only stage journal (T155). */
+  readonly journal: RacerJournal
   /** Resolves once the boot has done all it does before play: the store is then ready, or in error. */
   readonly opened: Promise<void>
   setSignedIn(signedIn: boolean): void
@@ -126,6 +130,7 @@ export function bootSave(options: SaveBootOptions): SaveSession {
     env,
     actions,
     lane,
+    journal: dexieJournal(db),
     opened,
     setSignedIn(signedIn) {
       if (useSave.getState().signedIn === signedIn) return

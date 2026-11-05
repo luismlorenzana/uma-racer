@@ -29,8 +29,8 @@ export interface OutboxRow {
 }
 
 /**
- * One stage's journal on this device (T155 fills it): what a game played so far, so a stage closed mid-play resumes.
- * Never synced and never folded; its shape is T155's.
+ * One stage's journal on this device (T155, D384): what a game played so far, so a stage closed mid-play resumes.
+ * Never synced and never folded; `save/journal.ts` reads it back as `{ id, careerId, journal }`.
  */
 export interface StageJournalRow {
   readonly id: string

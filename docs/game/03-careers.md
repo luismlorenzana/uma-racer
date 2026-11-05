@@ -70,7 +70,7 @@ A season is three steps: **Play**, **Upgrade** and **Race**.
 
 1. **Play** opens the season's stage:
    - **Furlong Hand**, as the prep heat on the course of the season's first objective, when the season holds one;
-   - **Training Yard** otherwise, with the season's focus stat tilting its colours.
+   - **Training Yard** ([08](08-training-yard.md)) otherwise, with the season's focus stat tilting its colours.
 2. **Upgrade** is the build: Tree · Deck · Bonds · Skills ([05](05-the-build.md), [06](06-cards-and-bonds.md)).
 3. **Race** runs each of the season's objectives (§4), as often as it takes to win.
 
@@ -93,8 +93,8 @@ A season is three steps: **Play**, **Upgrade** and **Race**.
 <!-- /live -->
 
 - **Next season** opens once every objective in the season is won. A season without objectives can end at once.
-- **Playing again never moves the calendar:** stages can be replayed at any time and pay every time (07 · Stages, T155),
-  and lost races are retried for free.
+- **Playing again never moves the calendar:** stages can be replayed at any time and pay every time
+  ([07](07-stages.md) §4), and lost races are retried for free.
 - The rules don't enforce the steps' order: the screens lead it (T158).
 - After Senior Winter, Next season opens the **Finale** (§5).
 
@@ -171,6 +171,6 @@ then three races, each retried until won:
 ## Not built yet
 
 - **The screens** (T158): the calendar strip, the season card, the race hand-off and the finale.
-- **The stages' pay** comes from T155's settle on [12](12-pacing.md)'s table.
+- **The stages' pay** comes from `settle-stage` ([07](07-stages.md) §3) on [12](12-pacing.md)'s table.
 - **A second career** with the same Uma in the same scenario, and careers in later scenarios
   ([04](04-tiers-and-scenarios.md) §4).

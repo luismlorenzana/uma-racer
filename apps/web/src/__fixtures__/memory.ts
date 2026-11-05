@@ -1,7 +1,8 @@
 // An in-memory `RacerGame` for the shell's tests (T152): a generation-3 account held in memory, moved by the domain's own
 // `commitOperation`, with no database and no network. Its clock is held where the test puts it.
 import { commitOperation, initialSave, type OperationEnv, type OperationRecord, type SaveState } from '@racer/domain/save'
-import type { RacerAnswer, RacerGame, RacerSnapshot, RacerSync } from '../app/game'
+import type { RacerAnswer, RacerGame, RacerJournal, RacerSnapshot, RacerSync } from '../app/game'
+import { memoryJournal } from '../save/journal'
 import { syntheticEnv } from './content'
 
 export interface MemoryOptions {
@@ -17,6 +18,8 @@ export const MEMORY_AT = Date.UTC(2026, 10, 4, 8)
 export interface MemoryGame extends RacerGame {
   /** The names of the taps applied, oldest first. */
   readonly applied: readonly string[]
+  /** The stage journal, in memory. */
+  readonly journal: RacerJournal & { readonly rows: Map<string, unknown> }
 }
 
 export function memoryGame(options: MemoryOptions = {}): MemoryGame {
@@ -35,6 +38,7 @@ export function memoryGame(options: MemoryOptions = {}): MemoryGame {
   }
   return {
     applied,
+    journal: memoryJournal(),
     subscribe(listener) {
       listeners.add(listener)
       return () => listeners.delete(listener)
