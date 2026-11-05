@@ -249,7 +249,7 @@ until T159.
 | **T153** ✓ | **Done (D382).** **The build.** Deck, posting, the tree and the session formula, bond tracks, skills, the racing build; card power (05's reference session, for the later refit); `sim:decks` | T152 | D382 |
 | **T154** ✓ | **Done (D383).** **The career.** Calendar placement, the season machine, objectives on the engine, the URA Finals, rewards; the rivals' re-tune with T153's sim | T152, T153's types | D383 |
 | **T155** ✓ | **Done (D384).** **The stage framework and Training Yard:** contract, host, journal, settle, `sim:stages`; the Yard's rules, bots and view | T152 | D384 |
-| [**T156**](T156-furlong-hand.md) | **Furlong Hand:** rules, rival scripts, bots and view, on T155's contract | T155's contract | D385 |
+| **T156** ✓ | **Done (D385).** **Furlong Hand:** rules, rival scripts, bots and view, on T155's contract | T155's contract | D385 |
 | [**T157**](T157-the-shell.md) | **The shell:** the Hub's two pages, Stable, Card Library and Account on the generation-3 save | T152 | D386 |
 | [**T158**](T158-career-screens.md) | **The career screens:** calendar, season flow, Tree · Deck · Bonds · Skills, the race hand-off and the finale | T153, T154, T157 (T155, T156) | D387 |
 | [**T159**](T159-release.md) | **The release:** the manual rewritten as built, the new rules in CLAUDE.md and AGENTS.md, then the release steps below | All | D388 |

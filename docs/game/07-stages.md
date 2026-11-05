@@ -1,7 +1,8 @@
 # 07 · Stages
 
-> **Status: generation 3, the framework built (T155, D384).** Training Yard ([08](08-training-yard.md)) is its first
-> game; Furlong Hand registers on the same contract in T156. The career screens that open a season's stage are T158's.
+> **Status: generation 3, the framework built (T155, D384).** Its games are Training Yard ([08](08-training-yard.md),
+> T155) and Furlong Hand ([09](09-furlong-hand.md), T156, D385). The career screens that open a season's stage are
+> T158's.
 > The design is [02 · mini-games](../research/drawing-board/02-mini-games.md) §2, §4 and §5, and
 > [M036](../tasks/M036-ura-finale-slice.md) "Stages".
 
@@ -26,12 +27,13 @@ A game is a `StageRules<S>` (`stages/contract.ts`), registered once by kind (`st
 | `report(state)` | `{ p, tasks, score, drills?, bonusSp? }`: the score over the stage's target, the bonus tasks, and how a drill pay splits across the colours |
 | `bots` | `novice`, `competent` and `expert`: each gives the next move for a state, with its own dice |
 
-- **`StageConfig`** is everything a play reads: `{ kind, seed, T, uma, deck, bonds, seasonFocus?, course?, practice }`.
-  `uma` is her outfit id and growth rates in whole percents; `deck` her career's cards in deck order, each with its type
-  and its real effects by effect id; `bonds` each deck card's bond (its track, or its Initial Friendship Gauge);
-  `seasonFocus` the season's focus stat (Training Yard); `course` the race whose course the stage runs (Furlong Hand).
-  The device and the API build it alike from the career and the content (`stages/config.ts`), so a play's journal
-  needs only its seed and its moves.
+- **`StageConfig`** is everything a play reads: `{ kind, seed, T, uma, deck, bonds, seasonFocus?, course?, furlong?,
+  practice }`. `uma` is her outfit id and growth rates in whole percents; `deck` her career's cards in deck order, each
+  with its type, its real effects by effect id and its unique effect's terms; `bonds` each deck card's bond (its track,
+  or its Initial Friendship Gauge); `seasonFocus` the season's focus stat (Training Yard); `course` the race whose
+  course the stage runs and `furlong` that race's legs, her racing build as the race reads it, her skills and the
+  rival field (Furlong Hand, [09](09-furlong-hand.md) §1). The device and the API build it alike from the career and
+  the content (`stages/config.ts`), so a play's journal needs only its seed and its moves.
 - **`StageInput`** is one quantised move, `{ tick, code, x?, y? }`: `tick` is the move's index (a turn-based game's),
   `code` the game's own move, and `x`, `y` whole numbers when the move needs a place.
 - **`Journal`** is `{ config, version, inputs }`: what the device keeps while a play is open.
@@ -50,7 +52,7 @@ manual page.
 | Game | Rules version | Pays at A | Built |
 |---|---|---|---|
 | Training Yard | 1 | 200 drills, 30 SP | yes |
-| Furlong Hand | | 25 Bond, 20 SP | not yet |
+| Furlong Hand | 1 | 25 Bond, 20 SP | yes |
 <!-- /live -->
 
 ## 2. Grades and pay
@@ -78,7 +80,7 @@ The view never grades. On a play's last move the device commits **`settle-stage`
 - **Both sides replay.** The device (through `commitOperation`) and the API each build the config from the career as it
   stands, replay the moves through the game's rules (`settle(journal, rules)`), grade the report and pay the grade into
   the career's wallet. The receipt is `{ careerId, kind, seed, practice, season, grade, p, score, tasks, pay }`.
-- **Refused in plain words, writing nothing:** a game that isn't built ("Furlong Hand isn't built yet."), another rules
+- **Refused in plain words, writing nothing:** a game that isn't built ("… isn't built yet."), another rules
   version, a career that doesn't exist, a finished career's paid play ("its stages are practice now"), a move that
   isn't legal ("Move 12 of that play isn't legal in Training Yard, …"), and a play that stops short ("… isn't
   finished: it stops after 40 moves.").
@@ -92,7 +94,7 @@ The view never grades. On a play's last move the device commits **`settle-stage`
   (the Yard with the season's focus); the tree and the caps are the ceiling, not the plays. Playing never moves the
   calendar ([03](03-careers.md) §3).
 - **Practice** is graded and pays nothing. A career's rule card offers it before the first play; outside a career
-  (the Hub's Training Yard place, until T158) every play is practice. The device grades practice itself with the same
+  (the Hub's two game places, until T158) every play is practice. The device grades practice itself with the same
   `settle` and commits nothing; `settle-stage` with `practice: true` answers the grade and pays nothing, leaving the
   career as it was.
 - **A finished career** keeps its stages for practice only.
@@ -107,10 +109,11 @@ The view never grades. On a play's last move the device commits **`settle-stage`
 
 `apps/web/src/stages/StageHost.tsx` is one full-screen play, `StageHost({ kind, careerId, mode, onExit })`:
 - **`mode`:** `career` opens a career's plays (Play pays, Practice doesn't); `practice` offers Practice only. T158 opens
-  it with `mode: 'career'` for the season's stage; the Hub's Training Yard place opens it as practice today, borrowing
-  the deck of her most recently started running career when there is one.
+  it with `mode: 'career'` for the season's stage; the Hub's Training Yard and Furlong Hand places open it as practice
+  today, borrowing her most recently started running career when there is one (its deck, and for Furlong Hand her
+  build and her next race).
 - **The rule card:** the game's one verb and one sentence (`views.ts`), what a play pays at A, and Play and
-  Practice (pays nothing).
+  Practice (pays nothing). A game may say its score in words on the result card (Furlong Hand's "Finished 2nd").
 - **The view** loads lazily, one chunk per game (`STAGE_VIEWS`), and draws from the rules' state; the host stamps each
   move's tick, drops an illegal one, and journals the rest.
 - **The result:** the grade, the score, the bonus tasks, the pay (or "Practice pays nothing."), **Play again** and
@@ -122,9 +125,10 @@ The view never grades. On a play's last move the device commits **`settle-stage`
 
 `pnpm sim:stages` plays each built game's three bots over 500 seeds and fails unless the bands hold
 (`stages/sim.ts`, `scripts/sim/stages.ts`). Seed n plays a typical career's config (`stageSimConfig`): each Uma in
-turn, each season's focus in turn, and the median deck (`pickDecks`) with 0–3 of its cards at bond 80. It reads the
-private pack when present (`MASTER_DIR`) and the invented content otherwise (`--synthetic`, which `pnpm test` and
-`test:ci` run). It prints aggregates only.
+turn, each season's focus in turn (the Yard) or her objectives and URA Finals in turn on the typical career's stats
+(Furlong Hand), and the median deck (`pickDecks`) with 0–3 of its cards at bond 80. It reads the private pack when
+present (`MASTER_DIR`) and the invented content otherwise (`--synthetic`, which `pnpm test` and `test:ci` run). It
+prints aggregates only, and Furlong Hand's length by distance. Furlong Hand's own packet holds it to 3.5–6.5 minutes.
 
 <!-- live:stage-bands -->
 | Check | Band |
@@ -133,15 +137,14 @@ private pack when present (`MASTER_DIR`) and the invented content otherwise (`--
 | The competent bot's median grade | A |
 | The novice's median grade | C or B |
 | The expert's S | 35%–65% of seeds |
-| A play at a human pace | 3–7 minutes (the competent bot's median moves) |
+| A play at a human pace | 3–7 minutes (the competent bot's median moves); Furlong Hand 3.5–6.5 |
 | Pace, Training Yard | 4 s a move |
 | Pace, Furlong Hand | 3 s a move |
 | Moves a journal may carry | 2,000 |
 <!-- /live -->
 
-Each game's results are on its page ([08](08-training-yard.md) §7).
+Each game's results are on its page ([08](08-training-yard.md) §7, [09](09-furlong-hand.md) §10).
 
 ## Not built yet
 
-- **Furlong Hand** (T156) registers its rules, bots and view on this contract.
 - **The career screens** (T158) open the host for a career's season, and show replays from her career.

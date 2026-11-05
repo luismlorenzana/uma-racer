@@ -33,7 +33,7 @@ timers, and nothing limits how much you play.
 | [06 · Cards and bonds](06-cards-and-bonds.md) | Owned cards at full level, their real effects, bond tracks, card power | T153 |
 | [07 · Stages](07-stages.md) | The mini-game framework: the contract, grades, pay, settling, replays, resume, `sim:stages` | T155 |
 | [08 · Training Yard](08-training-yard.md) | The merge game: its rules, pay, bots and screen | T155 |
-| 09 · Furlong Hand | The card race | T156 |
+| [09 · Furlong Hand](09-furlong-hand.md) | The card race: its rules, effect hooks, pay, bots and screen | T156 |
 | [11 · Hub and places](11-hub-and-places.md) | Every screen, route and sheet: the menu tree | T157, T158 (being rewritten) |
 | [12 · Pacing](12-pacing.md) | The pay table, the targets and `sim:careers` | T154 |
 | [Racing](racing.md) | The race engine and rivals | kept; T154 re-tuned the rivals |

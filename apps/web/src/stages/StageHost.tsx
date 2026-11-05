@@ -218,7 +218,7 @@ export function StageHost({ kind, careerId, mode, onExit }: StageHostProps) {
             <p className="text-[15px]">{entry.rule}</p>
             {mode === 'career' && (
               <p className="text-[13px] text-ink-soft">
-                A play pays {STAGE_PAY_AT_A[kind].drills > 0 ? `${STAGE_PAY_AT_A[kind].drills} drills and ` : ''}{STAGE_PAY_AT_A[kind].sp} SP at grade A, more at S.
+                A play pays {STAGE_PAY_AT_A[kind].drills > 0 ? `${STAGE_PAY_AT_A[kind].drills} drills and ` : ''}{STAGE_PAY_AT_A[kind].bond > 0 ? `${STAGE_PAY_AT_A[kind].bond} Bond and ` : ''}{STAGE_PAY_AT_A[kind].sp} SP at grade A, more at S.
               </p>
             )}
             {phase.note !== undefined && <p className="text-[13px] text-ink-soft" role="status">{phase.note}</p>}
@@ -242,7 +242,9 @@ export function StageHost({ kind, careerId, mode, onExit }: StageHostProps) {
           <Panel className="space-y-3">
             <div className="flex items-end gap-3">
               <p className="font-display text-6xl font-bold leading-none" aria-label={`Grade ${phase.result.grade}`}>{phase.result.grade}</p>
-              <p className="pb-1 text-[14px] text-ink-soft">Score <span className="numeral font-semibold text-ink">{phase.result.score}</span></p>
+              {entry.score === undefined
+                ? <p className="pb-1 text-[14px] text-ink-soft">Score <span className="numeral font-semibold text-ink">{phase.result.score}</span></p>
+                : <p className="pb-1 text-[15px] font-semibold" data-racer="stage-score">{entry.score(phase.result.score)}</p>}
             </div>
             <ul className="space-y-1 text-[14px]" aria-label="Bonus tasks">
               {entry.tasks.map((task, i) => (
