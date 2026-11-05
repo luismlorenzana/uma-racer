@@ -228,6 +228,7 @@ These are CLAUDE.md updates, made with the slice:
 | Release | What it adds | Why then |
 |---|---|---|
 | **1. URA Finale, the slice** (M036, released, D388) | Careers for URA Finale end to end. **Furlong Hand** and **Training Yard**; the tree, deck, bonds and skills; Uma and Card Tickets; the full wipe | The smallest complete game |
+| 1.1 | **Careers v2** (M037, D390): every game paying one bundle with Furlong Hand first; cards by scenario; careers by distance group on full race calendars; distance presets; training up front; crowns paying Card Tickets ([careers v2](../careers-v2/README.md)) | The owner's first playtest |
 | 2 | **Team Showdown**: Shards and Umas earned in play; Unity Cup's careers | Umas beyond the starting tickets |
 | 3 | **Fan Festival**: Scout points, cards earned in play and **the refit**; Trackblazer's and Our Grand Concert's careers | Cards beyond the starting tickets; refits before tier 2's eras |
 | 4 | **Summer Camp**: aptitude points; Grand Masters' careers; **promotion** to tier 2 | Tier 1 complete |

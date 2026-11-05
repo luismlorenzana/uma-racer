@@ -37,9 +37,10 @@ The Farm production and Uma Puzzles definition reviews that sat here are closed 
 ## Not questions, but still to come
 
 - **Data research:** facts to gather from the original game, tracked in the [data backlog](research/data-backlog.md).
-- **World Expeditions content** (phase 9): about 89 course layouts and 70 local champions, authored privately by Claude
-  and reviewed by the owner region by region ([rework/10](rework/10-expeditions.md)).
-- **Push notifications** (phase 4) come only if you ask for them after playing (D336).
+- **Careers v2 (M037):** the owner's first playtest feedback (2026-11-05) is planned in [tasks](tasks/README.md):
+  careers by distance group, swappable stages with Furlong Hand as the main game, card gating by scenario and the
+  ticket economy. Its defaults are logged in D390 and its proposal's open points; none waits on you.
+- World Expeditions and push notifications were retired with generation 2 (D380).
 
 ## Process
 

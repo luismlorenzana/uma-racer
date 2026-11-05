@@ -136,4 +136,5 @@ An id the table doesn't know reads "Effect *id*". What each effect does in the g
   [04](04-tiers-and-scenarios.md) §3). Its page names that scenario as the first it can be used in.
 - **A career takes only cards of its scenario's era or older.** This release runs URA Finale careers (T = 1), so only
   era-1 cards go in a deck; the Library still holds, shows and unlocks every card, ready for later scenarios.
-- Unlocking never depends on the era.
+- Unlocking never depends on the era. **Changing in M037** (T161, D390): a card will unlock only once its era's
+  scenario is open, and later-era cards already unlocked can be returned for their tickets.

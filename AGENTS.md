@@ -103,6 +103,12 @@ before opening a PR. CI runs the same.
   never copy or fork a kit component. A missing option is a change to uma-platform's `packages/kit`, released there
   with a changeset (ask the owner, who routes it to the uma-rpg or a uma-platform session); try it locally with
   `pnpm link` or a `file:` override and never commit that. What the kit draws carries `data-kit` attributes for tests.
+- **Picking up a packet** (a fresh session's usual job): read `docs/tasks/README.md`, take the lowest-numbered
+  packet whose dependencies have merged and that has no open pull request or branch yet (`gh pr list`,
+  `git ls-remote --heads origin 'feat/t16*'`), read its Context in order, and build it in your own worktree. A
+  packet's Done-when boxes are the acceptance; its Deliver says the branch, the PR title and what to tell the owner.
+  The packet's design doc (for M037, [careers v2](docs/research/careers-v2/README.md)) is binding: where code and
+  packet disagree with it, follow the design doc and say so in the PR.
 - **Packets for later releases live in `docs/tasks/`:** a milestone spec and one self-contained packet per part (Why,
   Context, Do, Done when, Deliver), each part on its own `feat/t16x-…` branch from `main` with a pull request into
   `main`. The roadmap is [v3 §7](docs/research/drawing-board/README.md#7-the-roadmap).

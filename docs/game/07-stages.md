@@ -146,5 +146,8 @@ Each game's results are on its page ([08](08-training-yard.md) §7, [09](09-furl
 
 ## Not built yet
 
+- **One pay bundle for every game,** Furlong Hand first in every season (T160, D390;
+  [swappable stages](../research/careers-v2/swappable-stages.md)).
+
 - **The other four games** on this framework: Team Showdown, Fan Festival, Summer Camp and Festival Kitchen, one a
   release ([v3's roadmap](../research/drawing-board/README.md#7-the-roadmap)).

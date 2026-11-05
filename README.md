@@ -10,9 +10,11 @@ raced on the race engine, then the scenario's finale. Nothing runs on timers, an
 > game. M036, URA Finale, is its first release (D388): Uma and Card Tickets, the Stable and the Card Library, URA
 > Finale careers for every Uma with **Training Yard** and **Furlong Hand**, the tree, the deck, bonds and skills, the
 > URA Finals, and the Hub's two pages, Town Hall and Career. It shipped with a full wipe of generation 2, on the
-> server and the phone. What comes next is [the task plan](docs/tasks/README.md) and
-> [v3's roadmap](docs/research/drawing-board/README.md#7-the-roadmap); [the manual](docs/game/README.md) describes the
-> code as it runs.
+> server and the phone. **Next is M037, careers v2** ([the plan](docs/tasks/M037-careers-v2.md), D390): every
+> mini-game paying the same with Furlong Hand first, cards by scenario, careers by distance group on full race
+> calendars, and distance presets. [The task plan](docs/tasks/README.md) and
+> [v3's roadmap](docs/research/drawing-board/README.md#7-the-roadmap) hold what follows; [the manual](docs/game/README.md)
+> describes the code as it runs.
 
 **A fresh session starts here:** this page (status, how to run and verify, the map), then [AGENTS.md](AGENTS.md) (how
 to work, the shared workflows) and, for Claude, CLAUDE.md (production); [docs/tasks/README.md](docs/tasks/README.md)
@@ -104,6 +106,7 @@ docs/           the manual, design, the drawing board, tasks, technical, researc
 | Doc | What it covers |
 |---|---|
 | [The drawing board v3](docs/research/drawing-board/README.md) | **The design of the game** (D380): its shape, the mini-games, the build on the real cards, what stays and goes, the engineering rules and the roadmap, with its research pages |
+| [Careers v2](docs/research/careers-v2/README.md) | **The next release's design** (M037, D390): distance groups and their calendars, presets, pacing, tickets and card gating, with [swappable stages](docs/research/careers-v2/swappable-stages.md) and [a visual summary](docs/research/careers-v2/previews/careers.html) |
 | [Overview](docs/design/00-overview.md) | Vision, pillars, the loop, differences from the original game |
 | [UX](docs/design/ux.md) | The shell and navigation, screens, sheets, feedback and plain words, albums, accessibility |
 | [Visual System "Paddock"](docs/design/visual-system.md) | Surfaces, colour, type, shape, components, icons, art treatment, motion, density |

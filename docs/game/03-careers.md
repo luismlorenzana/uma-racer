@@ -177,5 +177,9 @@ then three races, each retried until won:
 
 ## Not built yet
 
+- **Careers v2** (M037, D390; [the proposal](../research/careers-v2/README.md)): careers by distance group on full
+  race calendars (T162), a deck, posts and style per distance (T163), crowns paying Card Tickets, and a training
+  block up front.
+
 - **A second career** with the same Uma in the same scenario, and careers in later scenarios
   ([04](04-tiers-and-scenarios.md) §4).
