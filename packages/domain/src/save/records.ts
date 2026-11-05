@@ -52,7 +52,10 @@ export interface CareerFinale {
   readonly won: boolean
 }
 
-/** What the career has earned and not yet spent. */
+/**
+ * What the career has earned from play. Drills and Bond are spent from here. `sp` is only what stages and races pay:
+ * the tree's, the deck's and hints' SP are derived, and skills are paid by `spSpent` against the total (D382).
+ */
 export interface CareerWallet {
   readonly drills: Stats
   readonly bond: number
