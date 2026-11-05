@@ -2,6 +2,7 @@
 // module's load, so whatever reads the registry reads every game (a bundler can't drop a registration it would never
 // see used). Adding a game is one import and one `registerStage` line below.
 import type { AnyStageRules, StageKind, StageRules } from './contract'
+import { FURLONG_RULES } from './furlong'
 import { YARD_RULES } from './yard'
 
 const REGISTRY = new Map<StageKind, AnyStageRules>()
@@ -20,3 +21,4 @@ export const stageRules = (kind: StageKind): AnyStageRules | null => REGISTRY.ge
 export const registeredStages = (): StageKind[] => [...REGISTRY.keys()]
 
 registerStage(YARD_RULES)
+registerStage(FURLONG_RULES)

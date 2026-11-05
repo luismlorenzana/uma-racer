@@ -1,5 +1,5 @@
-// The stage registry and the configs (D384): Training Yard is registered, Furlong Hand waits for T156, a kind registers
-// once; a career's config reads her growth, her deck and bonds, and the season's focus.
+// The stage registry and the configs (D384, D385): Training Yard and Furlong Hand are registered, a kind registers once;
+// a career's config reads her growth, her deck and bonds, and the season's focus.
 import { describe, expect, it } from 'vitest'
 import { careerSave, CONTENT_ENV, UMAS } from '../__fixtures__/career'
 import { careerId, type CareerRecord } from '../save/records'
@@ -9,13 +9,14 @@ import { clock, opId } from '../__fixtures__/g3'
 import { careerStageConfig, practiceStageConfig } from './config'
 import { STAGE_KINDS } from './contract'
 import { registeredStages, registerStage, stageRules } from './registry'
+import { FURLONG_RULES } from './furlong'
 import { YARD_RULES } from './yard'
 
 describe('the registry', () => {
-  it('holds Training Yard, and Furlong Hand not yet', () => {
-    expect(registeredStages()).toEqual(['training-yard'])
+  it('holds Training Yard and Furlong Hand', () => {
+    expect(registeredStages()).toEqual(['training-yard', 'furlong-hand'])
     expect(stageRules('training-yard')).toBe(YARD_RULES)
-    expect(stageRules('furlong-hand')).toBeNull()
+    expect(stageRules('furlong-hand')).toBe(FURLONG_RULES)
     expect(STAGE_KINDS).toEqual(['training-yard', 'furlong-hand'])
   })
 

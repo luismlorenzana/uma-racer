@@ -1,18 +1,22 @@
 // @vitest-environment jsdom
-// The stage host at 390 × 844 (T155, D384) over the in-memory port: the rule card, the Yard's view loaded lazily, the
-// journal kept on every move and when the page hides, a closed play resumed by replay (and one whose setup changed
-// started again), a career play settled through `settle-stage` on its last move into her wallet, and practice graded
-// on the device, paying nothing.
+// The stage host at 390 × 844 (T155, T156, D384, D385) over the in-memory port: the rule card, the Yard's view loaded
+// lazily, the journal kept on every move and when the page hides, a closed play resumed by replay (and one whose setup
+// changed started again), a career play settled through `settle-stage` on its last move into her wallet, practice
+// graded on the device, paying nothing, and Furlong Hand's race settled the same way, paying Bond and SP.
 import { STAGE_PAY_AT_A } from '@racer/domain/career'
+import { FURLONG_MOVE } from '@racer/domain/stages'
 import { act, cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { stubStorage } from '../__fixtures__/testing'
+import { stubPointerEvents, stubStorage } from '../__fixtures__/testing'
 import type { StoredJournal } from '../app/game'
-import { atPhoneSize, CAREER, careerGame, careerState, partPlayed, renderInApp } from './__fixtures__/stages'
+import {
+  atPhoneSize, CAREER, careerGame, careerState, FURLONG_CAREER, furlongGame, furlongOneLeft, partPlayed, renderInApp,
+} from './__fixtures__/stages'
 import { StageHost } from './StageHost'
 
 beforeEach(() => {
   stubStorage()
+  stubPointerEvents()
   atPhoneSize()
 })
 afterEach(() => {
@@ -112,8 +116,60 @@ describe('the stage host', () => {
     expect(rowOf(game, PRACTICE_ROW)).toBeUndefined()
   })
 
-  it('says a game without rules or a view isn\'t built', async () => {
-    renderInApp(careerGame(), <StageHost kind="furlong-hand" careerId={CAREER} mode="career" onExit={() => {}} />)
-    expect((await screen.findByRole('alert')).textContent).toBe('Furlong Hand isn\'t built yet.')
+  it('says why a play can\'t open: Furlong Hand without a race to run', async () => {
+    renderInApp(careerGame(), <StageHost kind="furlong-hand" careerId={null} mode="practice" onExit={() => {}} />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Practice (pays nothing)' }))
+    expect((await screen.findByRole('alert')).textContent).toBe('Furlong Hand has no race to run here.')
+  })
+})
+
+describe('the stage host with Furlong Hand', () => {
+  const FURLONG_ROW = `furlong-hand:${FURLONG_CAREER}`
+
+  it('opens on its rule card, then deals the race to the line choice', async () => {
+    const game = furlongGame()
+    renderInApp(game, <StageHost kind="furlong-hand" careerId={FURLONG_CAREER} mode="career" onExit={() => {}} />)
+    const card = await screen.findByText('Race')
+    expect(card.closest('[data-racer="rule-card"]')?.textContent).toMatch(/tap to run it for ground, swipe it down to bank Drive/)
+    expect(screen.getByText(/A play pays 25 Bond and 20 SP at grade A/)).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Play' }))
+    expect(await screen.findByRole('list', { name: 'The field, first to last' })).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: /^Middle: / }))
+    await waitFor(() => expect((game.journal.rows.get(FURLONG_ROW) as StoredJournal | undefined)?.journal.inputs).toHaveLength(1))
+    expect(await screen.findByRole('group', { name: 'The spread' })).toBeTruthy()
+  })
+
+  it('settles a career race on its last tap through settle-stage: her place, the grade, and Bond and SP into her wallet', async () => {
+    const game = furlongGame()
+    const { journal, move } = furlongOneLeft(false, FURLONG_MOVE.run)
+    await game.journal.write({ id: FURLONG_ROW, careerId: FURLONG_CAREER, journal })
+    renderInApp(game, <StageHost kind="furlong-hand" careerId={FURLONG_CAREER} mode="career" onExit={() => {}} />)
+    const spread = await screen.findByRole('group', { name: 'The spread' })
+    fireEvent.click(spread.querySelector(`[data-front="${move.x}"]`)!)
+    const result = await screen.findByLabelText(/^Grade [SABCD]$/)
+    expect(game.applied).toEqual(['settle-stage'])
+    const grade = result.textContent as 'S' | 'A' | 'B' | 'C' | 'D'
+    const wallet = game.getSnapshot().state!.careers[FURLONG_CAREER]!.wallet
+    expect(wallet.bond).toBe(Math.round(STAGE_PAY_AT_A['furlong-hand'].bond * { D: 0.25, C: 0.6, B: 0.8, A: 1, S: 1.2 }[grade]))
+    expect(Object.values(wallet.drills).every((n) => n === 0)).toBe(true)
+    expect(screen.getByText(/^Finished \d(st|nd|rd|th)$/)).toBeTruthy()
+    expect(within(screen.getByRole('list', { name: 'Bonus tasks' })).getAllByRole('listitem')).toHaveLength(4)
+    expect(within(screen.getByRole('list', { name: 'Pay' })).getByText(`+${wallet.bond}`)).toBeTruthy()
+    expect(game.journal.rows.get(FURLONG_ROW)).toBeUndefined()
+  })
+
+  it('grades a practice race on the device by a swipe to bank, and pays nothing', async () => {
+    const game = furlongGame()
+    // Its last card banked instead of run: the race ends the same.
+    const { journal, move } = furlongOneLeft(true, FURLONG_MOVE.run)
+    await game.journal.write({ id: 'furlong-hand:practice', careerId: null, journal })
+    renderInApp(game, <StageHost kind="furlong-hand" careerId={FURLONG_CAREER} mode="practice" onExit={() => {}} />)
+    const spread = await screen.findByRole('group', { name: 'The spread' })
+    const card = spread.querySelector(`[data-front="${move.x}"]`)!
+    fireEvent.pointerDown(card, { clientX: 5, clientY: 50 })
+    fireEvent.pointerUp(card, { clientX: 5, clientY: 120 })
+    expect(await screen.findByLabelText(/^Grade [SABCD]$/)).toBeTruthy()
+    expect(screen.getByText('Practice pays nothing.')).toBeTruthy()
+    expect(game.applied).toEqual([])
   })
 })

@@ -5,6 +5,7 @@
 import type { SupportCardType } from '../content'
 import type { CareerGame } from '../career/season'
 import type { StatKey, Stats } from '../types'
+import type { FurlongSetup } from './furlong/setup'
 
 /** The games, by kind: one per career game. */
 export type StageKind = CareerGame
@@ -21,12 +22,19 @@ export interface StageUma {
   readonly growth: Stats
 }
 
+/** A card's unique effect, as a stage reads it: its terms (Furlong Hand maps them to an ability). */
+export interface StageUnique {
+  readonly effects: readonly { readonly type: number; readonly value: number; readonly params: readonly number[] }[]
+}
+
 /** One deck card, as a stage reads it. */
 export interface StageCard {
   readonly id: string
   readonly type: SupportCardType
   /** Its real effects at full level, by the original's effect id (`build/effects.ts`): Specialty Priority is 19. */
   readonly effects: Readonly<Record<number, number>>
+  /** Its unique effect's terms, when it has one at full level. */
+  readonly unique?: StageUnique
 }
 
 /**
@@ -48,6 +56,8 @@ export interface StageConfig {
   readonly seasonFocus?: StatKey
   /** The race whose course the stage runs (Furlong Hand, T156). */
   readonly course?: string
+  /** Furlong Hand's race: its legs, her racing build as it reads it, her skills and the rival field (T156). */
+  readonly furlong?: FurlongSetup
   /** Practice: graded, and pays nothing. */
   readonly practice: boolean
 }

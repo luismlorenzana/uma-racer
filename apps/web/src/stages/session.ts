@@ -22,8 +22,8 @@ export function newSeed(): number {
 }
 
 /**
- * A play's config from the save as it stands: her career's (deck, bonds, the season's focus), or outside a career an Uma
- * alone (the first unlocked one the content holds, else the content's first). Words when there is none.
+ * A play's config from the save as it stands: her career's (deck, bonds, the season's focus or her race), or outside a
+ * career an Uma alone (the first unlocked one the content holds, else the content's first). Words when there is none.
  */
 export function stageConfigFor(kind: StageKind, careerId: string | null, practice: boolean, seed: number, state: SaveState, env: OperationEnv): StageConfig | string {
   if (careerId !== null) {
@@ -35,7 +35,8 @@ export function stageConfigFor(kind: StageKind, careerId: string | null, practic
   const unlocked = Object.keys(state.umas).sort().map((id) => env.content.umas.get(id)).find((uma) => uma !== undefined)
   const uma = unlocked ?? env.content.umas.values().next().value
   if (uma === undefined) return 'There is no Uma to practise with yet.'
-  return practiceStageConfig(uma, kind, seed)
+  const config = practiceStageConfig(uma, kind, seed, env.content)
+  return 'refused' in config ? config.reason : config
 }
 
 /** The same play with another seed: what a resumed journal is checked against, so a changed deck starts afresh. */

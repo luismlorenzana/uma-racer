@@ -7,7 +7,9 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { codeOnly } from '../__fixtures__/code-only'
 import { deepFreeze } from '../__fixtures__/g3'
+import { furlongConfig } from '../__fixtures__/furlong'
 import { yardConfig } from '../__fixtures__/stages'
+import { FURLONG_RULES } from './furlong'
 import { playBot } from './sim'
 import { YARD_RULES } from './yard'
 
@@ -42,5 +44,13 @@ describe('purity', () => {
       return { inputs, state }
     }
     expect(run()).toEqual(run())
+    const race = () => {
+      const config = deepFreeze(furlongConfig({ seed: 77 }))
+      let state = deepFreeze(FURLONG_RULES.init(config))
+      const { inputs } = playBot(FURLONG_RULES, config, 'expert', 3)
+      for (const input of inputs) state = deepFreeze(FURLONG_RULES.step(state, input)!)
+      return { inputs, state }
+    }
+    expect(race()).toEqual(race())
   })
 })

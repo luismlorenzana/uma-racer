@@ -403,7 +403,10 @@ does), and return to where they came from:
 - **the race run and its result** ([09](../archive/g2-manual/09-racing-rewards-and-exchange.md) §7);
 - **the collection reveal** after unlocking an Uma, outside the shell in the same frame without bars;
 - **an Uma's constellation tree and Extra Stats map**, which open full screen inside their facility's route;
-- **the promotion ceremony** ([04](../archive/g2-manual/04-tiers-and-promotion.md)).
+- **the promotion ceremony** ([04](../archive/g2-manual/04-tiers-and-promotion.md));
+- **the two career games**, Training Yard (`/career/training-yard`, [08](08-training-yard.md)) and Furlong Hand
+  (`/career/furlong-hand`, [09](09-furlong-hand.md)): the stage host full screen, as practice until the career screens
+  (T158) open them for a season ([07](07-stages.md) §5).
 
 The Expedition world map stays inside the shell: it is a place Page, and its Uma picker sits above the bottom bar.
 
