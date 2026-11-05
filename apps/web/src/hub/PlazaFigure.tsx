@@ -4,8 +4,7 @@ import { UmaChibi } from '@luismlorenzana/uma-kit/album'
 import { hubWords } from '@racer/domain/hub'
 import { Link } from 'react-router'
 import { useUmaName } from '../ui/uma'
-
-export const profilePath = (umaId: string): string => `/town/stable/outfit/${encodeURIComponent(umaId)}`
+import { profilePath } from './nav'
 
 export function PlazaFigure({ umaId }: { umaId: string }) {
   const name = useUmaName(umaId)

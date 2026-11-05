@@ -9,7 +9,7 @@ loop moves when you play it.
 
 ## 1. The loop
 
-1. **Unlock** Umas and support cards with tickets (02 · Unlocks, T157). A new account starts with 20 Uma Tickets and
+1. **Unlock** Umas and support cards with tickets ([02 · Unlocks](02-unlocks.md)). A new account starts with 20 Uma Tickets and
    24 Card Tickets.
 2. **Start a career** with an Uma ([03](03-careers.md) §1). Her objectives are frozen on a calendar of twelve seasons
    and a finale.

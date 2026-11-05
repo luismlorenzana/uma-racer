@@ -1,8 +1,8 @@
 // What each place shows (docs/game/11-hub-and-places.md §1, §6; uma-rpg's `places/registry.tsx`): a Peek (the quick look
 // over its page), a Page (its full screen) with sub-page slots, and an optional full-screen rule. Every body is a lazy
-// chunk. Generation 3 starts with Account alone (T152); every other place opens the not-ready state (`Unfilled.tsx`)
-// until its part of M036 fills its slot (T155 Training Yard, T156 Furlong Hand, T157 the Town Hall and Career places,
-// T158 the race).
+// chunk. T157 (D386) fills the Stable, the Card Library and the Careers shell beside Account; the two games open their
+// stage hosts (T155, T156); a place without a Page opens the not-ready state (`Unfilled.tsx`). T158 builds the career
+// screens into the Careers place.
 import type { Place, PlaceId } from '@racer/domain/hub'
 import { lazy, type ComponentType, type LazyExoticComponent } from 'react'
 import { matchPath } from 'react-router'
@@ -38,7 +38,10 @@ export interface PlaceUi {
 }
 
 export const PLACE_UI: Readonly<Partial<Record<PlaceId, PlaceUi>>> = {
+  stable: { Peek: lazy(() => import('./stable/Peek')), Page: lazy(() => import('./stable/Page')) },
+  'card-library': { Peek: lazy(() => import('./card-library/Peek')), Page: lazy(() => import('./card-library/Page')) },
   account: { Page: lazy(() => import('./account/Page')) },
+  careers: { Peek: lazy(() => import('./career/Peek')), Page: lazy(() => import('./career/Page')) },
   // The stage hosts, full screen: practice until the career screens (T158) open them for a season.
   'training-yard': { Page: lazy(() => import('./training-yard/Page')), fullScreen: () => true },
   'furlong-hand': { Page: lazy(() => import('./furlong-hand/Page')), fullScreen: () => true },

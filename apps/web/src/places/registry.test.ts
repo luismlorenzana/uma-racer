@@ -1,20 +1,16 @@
-// The place registry (docs/game/11-hub-and-places.md §1, §6; T152, T155, T156): generation 3 starts with Account alone;
-// the two games fill theirs; every other place falls back to the not-ready Page until its part fills its slot.
-// Sub-page patterns and full-screen flows resolve as T137 set them.
+// The place registry (docs/game/11-hub-and-places.md §1, §6; T152, T155, T156, T157): every place has its Page, the
+// Stable, the Card Library and Careers a Peek too; the hidden Account has none. Sub-page patterns and full-screen flows
+// resolve as T137 set them.
 import { PLACE_IDS, PLACES } from '@racer/domain/hub'
 import { describe, expect, it } from 'vitest'
 import { isFullScreen, matchSubPage, PLACE_UI, type PlaceUi } from './registry'
 
 describe('the place registry', () => {
-  it('fills Account, Training Yard and Furlong Hand, each only with a Page: Account is hidden, so it has no Peek', () => {
-    expect(Object.keys(PLACE_UI)).toEqual(['account', 'training-yard', 'furlong-hand'])
-    expect(PLACE_UI.account?.Page).toBeDefined()
-    expect(PLACE_UI.account?.Peek).toBeUndefined()
-    expect(PLACE_UI['training-yard']?.Page).toBeDefined()
-    expect(PLACE_UI['furlong-hand']?.Page).toBeDefined()
+  it('fills every place with a Page; the Stable, the Card Library and Careers with a Peek; the hidden Account with none', () => {
+    expect(Object.keys(PLACE_UI)).toEqual(['stable', 'card-library', 'account', 'careers', 'training-yard', 'furlong-hand'])
+    for (const id of PLACE_IDS) expect(PLACE_UI[id]?.Page, id).toBeDefined()
+    expect(PLACE_IDS.filter((id) => PLACE_UI[id]?.Peek !== undefined)).toEqual(['stable', 'card-library', 'careers'])
     expect(PLACES.find((place) => place.id === 'account')?.hidden).toBe(true)
-    const filled = ['account', 'training-yard', 'furlong-hand']
-    for (const id of PLACE_IDS.filter((each) => !filled.includes(each))) expect(PLACE_UI[id], id).toBeUndefined()
   })
 
   it('hides the bars on the two games alone: each is full screen (T155, T156)', () => {

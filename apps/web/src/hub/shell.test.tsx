@@ -1,14 +1,18 @@
 // @vitest-environment jsdom
-// The shell (docs/game/11-hub-and-places.md §2, §4, §12; T152) on invented accounts through the in-memory port: the bars
-// in uma-kit's frame, the bottom bar's Town Hall, Career, raised Career and Menu, the chips' tickets and links, the Sync
-// chip, the side panel and every way it closes, the menu's places, and reduced motion.
+// The shell (docs/game/11-hub-and-places.md §2, §4, §12; T152, D386) on invented accounts through the in-memory port: the
+// bars in uma-kit's frame, the bottom bar's Town Hall, Career, raised Career (her current season) and Menu, the chips'
+// tickets and links, the Sync chip, the side panel and every way it closes, the menu's places, and reduced motion.
 import { setReducedMotion as setDeviceReducedMotion } from '@luismlorenzana/uma-kit/ui'
 import { placeById, placesOn } from '@racer/domain/hub'
 import { act, cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { memoryGame } from '../__fixtures__/memory'
+import { initialSave, type CareerRecord } from '@racer/domain/save'
+import { umaId } from '../__fixtures__/content'
+import { MEMORY_AT, memoryGame } from '../__fixtures__/memory'
 import { renderRacer, stubPointerEvents, stubStorage } from '../__fixtures__/testing'
 import { REDUCED_MOTION_KEY } from '../app/kit'
+import { careerPath } from './nav'
+import { barTabs } from './RacerShell'
 
 afterEach(() => {
   cleanup()
@@ -42,6 +46,20 @@ describe('the bars (§2.1, §2.2)', () => {
     expect(links[1]!.getAttribute('aria-current')).toBeNull()
   })
 
+  it('opens her current season from the raised Career: the career in progress started last (D386)', async () => {
+    const base = initialSave(MEMORY_AT).state
+    const career = (umaId: string, startedAt: number, completedAt: number | null = null): CareerRecord => ({
+      umaId, T: 1, startedAt, season: 2, objectives: [], finale: { step: 0, won: false }, deck: [], posts: {},
+      pips: { speed: 0, stamina: 0, power: 0, guts: 0, wit: 0 }, camps: [null, null], skills: [], spSpent: 0,
+      wallet: { drills: { speed: 0, stamina: 0, power: 0, guts: 0, wit: 0 }, bond: 0, sp: 0 }, completedAt, racingBuild: null,
+    })
+    const state = { ...base, careers: { [`${umaId(1)}:1`]: career(umaId(1), 10), [`${umaId(2)}:1`]: career(umaId(2), 20), [`${umaId(3)}:1`]: career(umaId(3), 30, 40) } }
+    renderRacer('/town', memoryGame({ state }))
+    const bar = await screen.findByRole('navigation', { name: 'Hub pages' })
+    await waitFor(() => expect(within(bar).getAllByRole('link')[2]!.getAttribute('href')).toBe(careerPath(`${umaId(2)}:1`)))
+    expect(barTabs('town', null)[2]!.to).toBe('/career/careers')
+  })
+
   it('marks the raised Career on her careers, and the Career tab elsewhere on its page', async () => {
     renderRacer('/career/careers', memoryGame())
     const bar = await screen.findByRole('navigation', { name: 'Hub pages' })
@@ -55,11 +73,11 @@ describe('the bars (§2.1, §2.2)', () => {
     expect([tab!.getAttribute('aria-current'), centre!.getAttribute('aria-current')]).toEqual(['page', null])
   })
 
-  it('shows Uma Tickets and Card Tickets, each a link to the place that spends it, and no other currency', async () => {
+  it('shows Uma Tickets and Card Tickets, each a link to the Locked tab of the place that spends it, and no other currency', async () => {
     renderRacer('/town', memoryGame())
     const bar = await header()
     const links = within(bar).getAllByRole('link')
-    expect(links.map((link) => link.getAttribute('href'))).toEqual(['/town/account', '/town/stable', '/town/card-library'])
+    expect(links.map((link) => link.getAttribute('href'))).toEqual(['/town/account', '/town/stable?tab=locked', '/town/card-library?tab=locked'])
     expect(links.map((link) => link.getAttribute('aria-label'))).toEqual([
       'Account: Trainer', 'Uma Tickets 20. Open the Stable.', 'Card Tickets 24. Open the Card Library.',
     ])

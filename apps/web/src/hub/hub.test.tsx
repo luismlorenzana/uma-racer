@@ -88,26 +88,39 @@ describe('the two pages', () => {
     expect(document.querySelector('[data-kit="plaza"]')).toBeNull()
   })
 
-  it.each(['stable', 'card-library'] as const)('opens %s as not ready: its Peek, then a Page saying so', async (id) => {
+  it.each([
+    ['stable', 'Uma Tickets', '20', '0 of 7'],
+    ['card-library', 'Card Tickets', '24', '0 of 7'],
+  ] as const)('opens %s: its Peek with the tickets and the owned count, then its Page (T157)', async (id, tickets, held, owned) => {
     const place = placesOn('town').find((each) => each.id === id)!
     const { where } = renderRacer('/town', memoryGame())
     fireEvent.click(await screen.findByRole('link', { name: new RegExp(`^${place.name}\\.`) }))
     await waitFor(() => expect(where()).toBe(`/town?peek=${id}`))
     const panel = await screen.findByRole('dialog', { name: place.name })
-    expect(within(panel).getByText(place.blurb)).toBeTruthy()
-    expect(within(panel).getByText('Coming soon')).toBeTruthy()
+    const stats = await waitFor(() => {
+      const found = [...panel.querySelectorAll<HTMLElement>('[data-racer="peek-stat"]')]
+      expect(found).toHaveLength(2)
+      return found
+    })
+    expect(stats.map((stat) => stat.textContent)).toEqual([`${tickets}${held}`, `Owned${owned}`])
+    expect(within(panel).queryByText('Coming soon')).toBeNull()
     fireEvent.click(within(panel).getByRole('link', { name: `Enter ${place.name}` }))
     await waitFor(() => expect(where()).toBe(`/town/${id}`))
     expect(await screen.findByRole('heading', { level: 1, name: place.name })).toBeTruthy()
-    expect(document.querySelector(`[data-racer="unfilled-page"][data-place-page="${id}"]`)).not.toBeNull()
-    expect(screen.getByText('Coming soon')).toBeTruthy()
+    // A new account owns nothing, so both open on their Locked tab.
+    await waitFor(() => expect(document.querySelector(`[data-place-page="${id}"]`)?.getAttribute('data-tab')).toBe('locked'))
+    expect(document.querySelector('[data-racer="unfilled-page"]')).toBeNull()
   })
 
-  it.each(['careers'] as const)('opens %s on the Career page as not ready', async (id) => {
-    const place = placesOn('career').find((each) => each.id === id)!
-    renderRacer(`/career/${id}`, memoryGame())
-    expect(await screen.findByRole('heading', { level: 1, name: place.name })).toBeTruthy()
-    expect(screen.getByText('Coming soon')).toBeTruthy()
+  it('opens Careers on the Career page: its Peek says how to start one, its Page lists none running (T157)', async () => {
+    const { where } = renderRacer('/career?peek=careers', memoryGame())
+    const panel = await screen.findByRole('dialog', { name: 'Careers' })
+    expect(await within(panel).findByText("No career running. Start one from an Uma's profile in the Stable.")).toBeTruthy()
+    fireEvent.click(within(panel).getByRole('link', { name: 'Enter Careers' }))
+    await waitFor(() => expect(where()).toBe('/career/careers'))
+    expect(await screen.findByRole('heading', { level: 1, name: 'Careers' })).toBeTruthy()
+    expect(await screen.findByRole('link', { name: 'Open the Stable' })).toBeTruthy()
+    expect(screen.queryByText('Coming soon')).toBeNull()
   })
 
   it.each([['training-yard', 'Training Yard'], ['furlong-hand', 'Furlong Hand']] as const)('opens %s on the Career page as the game, full screen (T155, T156)', async (id, name) => {

@@ -152,7 +152,7 @@ then three races, each retried until won:
 - An objective is raced until it's won and never again, so every win is its first.
 - **Race Bonus** is the deck's real values summed (each card's top-level Race Bonus and any unique Race Bonus), read
   when the race is won.
-- The tickets go to the account, which unlocks Umas and cards with them (02 · Unlocks, T157); the SP goes to the
+- The tickets go to the account, which unlocks Umas and cards with them ([02 · Unlocks](02-unlocks.md)); the SP goes to the
   career's wallet, where skills spend it ([05](05-the-build.md) §8).
 
 ## 7. The operations
