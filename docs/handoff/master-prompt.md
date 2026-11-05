@@ -15,9 +15,10 @@ the codebase day to day. The owner is a solo web/TypeScript game developer. They
 self-contained task packets, one at a time, and deliver each as a pull request.
 
 THE PROJECT
-- uma-racer: a personal racing game inspired by Umamusume, played as an iPhone Home Screen web app. Its Home screen
-  is a Phaser 4 town hub ported from uma-rpg: four pages (Town Hall, Training, Racing, Farm) drawn from 16 px tiles,
-  with a 48×48 building sprite per place. Repo: github.com/luismlorenzana/uma-racer (local: ~/workspace/uma-racer).
+- uma-racer: a personal racing game inspired by Umamusume, played as an iPhone Home Screen web app. Since 2026-11-05
+  (generation 3, D388) it's a clock-free game of Uma careers played through mini-games (Training Yard, Furlong Hand),
+  on a Phaser 4 town hub ported from uma-rpg with two pages (Town Hall, Career), drawn from 16 px tiles with a 48×48
+  building sprite per place. Repo: github.com/luismlorenzana/uma-racer (local: ~/workspace/uma-racer).
 - uma-platform: shared master data and original pixel art for the owner's games. Its art is drawn from code by
   scripts/pixel-art and published as @luismlorenzana/uma-art. Repo: github.com/luismlorenzana/uma-platform (local:
   ~/workspace/uma-platform).

@@ -47,7 +47,9 @@ uma-platform's [queue](https://github.com/luismlorenzana/uma-platform/blob/main/
 
 ## For ChatGPT, in order
 
-Nothing is ready for ChatGPT here now.
+| Id | Packet | Repo it changes | State |
+|---|---|---|---|
+| A05 | [The Card Ticket mark and Training Yard's Fatigue and Rest marks](tasks/A05-card-ticket-and-yard-marks.md): three small `ui` atlas frames, a new uma-art minor | uma-platform (art); Claude pins it in uma-racer | Ready |
 
 The owner authorized A03's implementation, merge and deployment in chat; its proof records the checks and pending
 device acceptance. The shared shell remains uma-kit's (T147, D367), not a local fork.
