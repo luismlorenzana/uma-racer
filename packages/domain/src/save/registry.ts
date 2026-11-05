@@ -3,6 +3,7 @@
 // into one table, which `commitOperation` dispatches through. Pure: no clock, no I/O.
 import type { RaceTemplate, SkillTemplate, SupportCardTemplate, UmaTemplate } from '../content'
 import type { CourseTemplate } from '../content'
+import type { RaceEngine } from '../race-attempt'
 import type { RaceResultRecord } from './records'
 import type { SaveState } from './state'
 
@@ -33,6 +34,11 @@ export interface OperationEnv {
   readonly contentVersion: string
   /** True only on an API started with `DEV_OPERATIONS=true`: `dev-grant` runs nowhere else. */
   readonly dev?: boolean
+  /**
+   * The race engine (`@racer/race`'s `simulateRace` at its version), which the device and the API each hand in so both
+   * run a career race and settle it alike (D383). Without it, `run-race` and `run-finale` refuse.
+   */
+  readonly race?: RaceEngine
 }
 
 /** An operation's success: the new state, its receipt, and any race results it ran (written as `raceResults` rows). */

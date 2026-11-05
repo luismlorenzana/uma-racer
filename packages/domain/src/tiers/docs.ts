@@ -1,8 +1,9 @@
-// The tier rules' live blocks (docs/game/architecture.md "The live manual"): the tier map and the caps, rendered from
-// the code so docs/game/04-tiers-and-scenarios.md can't drift. Registered in packages/domain/src/docs/render.ts.
-// Pure: no I/O.
+// The tier rules' live blocks (docs/game/architecture.md "The live manual"): the tier map, the caps and each scenario's
+// rival strength, rendered from the code so docs/game/04-tiers-and-scenarios.md can't drift. Registered in
+// packages/domain/src/docs/render.ts. Pure: no I/O.
 import { STATS } from '../types'
 import { LAST_SCENARIO_NUMBER, scenarioRow } from './map'
+import { rivalFieldStat, rivalTrainedStat } from './rivals'
 import { capBudgetAt, capProfileAt, spCapAt } from './scaling'
 
 type Cell = string | number
@@ -29,7 +30,15 @@ function tierCaps(): string {
   }))
 }
 
+function tierRivals(): string {
+  return table(['T', 'Scenario', 'Typical trained stat', 'Field stat (D191)', 'From'], ALL_T.map((T) => [
+    T, scenarioRow(T).name, num(Math.round(rivalTrainedStat(T) * 10) / 10), num(Math.round(rivalFieldStat(T) * 10) / 10),
+    T === 1 ? '`sim:careers` (D383)' : 'generation 2, frozen (D381)',
+  ]))
+}
+
 export const LIVE_BLOCKS: Readonly<Record<string, () => string>> = {
   'tier-map': tierMap,
   'tier-caps': tierCaps,
+  'tier-rivals': tierRivals,
 }

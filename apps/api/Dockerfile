@@ -1,8 +1,9 @@
 # Build from the repo root:
 #   docker build --secret id=npm_token,env=NODE_AUTH_TOKEN -f apps/api/Dockerfile -t racer-api .
 # The secret is a token with read:packages, for @luismlorenzana/* on GitHub Packages; it never lands in a layer.
-# Multi-stage, as in uma-rpg: install the workspace, build the domain package (CJS) and the API, then ship a
-# self-contained image. The API imports @racer/domain directly (rearchitecture/08 step 1.1), so there are no copies.
+# Multi-stage, as in uma-rpg: install the workspace, build the domain and race packages (CJS) and the API, then ship a
+# self-contained image. The API imports @racer/domain directly, and @racer/race to run career races as the device does
+# (D383), so there are no copies.
 
 FROM node:22-slim AS builder
 RUN corepack enable
@@ -20,9 +21,10 @@ RUN --mount=type=secret,id=npm_token NODE_AUTH_TOKEN="$(cat /run/secrets/npm_tok
     pnpm install --filter @racer/api... --frozen-lockfile
 
 COPY packages/domain packages/domain
+COPY packages/race packages/race
 COPY apps/api apps/api
-RUN pnpm --filter @racer/domain build && pnpm --filter @racer/api build
-# Standalone deploy dir: package files + pruned production node_modules (the domain package comes along built).
+RUN pnpm --filter @racer/domain build && pnpm --filter @racer/race build && pnpm --filter @racer/api build
+# Standalone deploy dir: package files + pruned production node_modules (the domain and race packages come along built).
 RUN --mount=type=secret,id=npm_token NODE_AUTH_TOKEN="$(cat /run/secrets/npm_token)" \
     pnpm --filter @racer/api --prod deploy --legacy /out
 

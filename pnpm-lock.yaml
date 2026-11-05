@@ -38,6 +38,9 @@ importers:
       '@racer/domain':
         specifier: workspace:*
         version: link:../../packages/domain
+      '@racer/race':
+        specifier: workspace:*
+        version: link:../../packages/race
       firebase-admin:
         specifier: ^13.10.0
         version: 13.10.0(@firebase/app-compat@0.5.18)(@firebase/app@0.16.2)

@@ -75,7 +75,7 @@ async function scriptedSession(repo: SaveRepository): Promise<unknown[]> {
   ])
   answers.push(await pull(repo))
   await step([op(4, 'unlock-card', { cardId: card(1) }, clock('07:04')), op(6, 'unlock-card', { cardId: card(1) }, clock('07:06'))])
-  await step([op(7, 'start-career', { umaId: uma(1) }, clock('07:07')), op(8, 'dev-grant', { umaTickets: 1, cardTickets: 1 }, clock('07:08'))], ENV)
+  await step([op(7, 'settle-stage', { careerId: 'x' }, clock('07:07')), op(8, 'dev-grant', { umaTickets: 1, cardTickets: 1 }, clock('07:08'))], ENV)
   await step([op(9, 'unlock-uma', { umaId: uma(3), extra: 1 }, clock('07:09')), op(10, 'unlock-uma', { umaId: uma(3) }, clock('07:10'))])
   await step([{ type: 'create', createdAt: clock('08:00') }])
   answers.push(await pull(repo))

@@ -4,6 +4,7 @@
 // (`apps/api/src/save/operation-content.ts`), so race seeds agree on both sides. `dev` is on only in dev builds, so
 // `dev-grant` runs nowhere else on the device.
 import { buildOperationEnv, type OperationEnv } from '@racer/domain/save'
+import { simulateRace } from '@racer/race'
 import type { LoadedContent } from '../content/view'
 
 export type OperationContent = Pick<LoadedContent, 'manifest' | 'overlay' | 'umas' | 'races' | 'courses' | 'cards' | 'skills'>
@@ -11,6 +12,9 @@ export type OperationContent = Pick<LoadedContent, 'manifest' | 'overlay' | 'uma
 /** The env's content version: the release manifest's and the racer overlay's, joined as the API joins them. */
 export const contentVersionOf = (content: Pick<OperationContent, 'manifest' | 'overlay'>): string =>
   `${content.manifest.version}:${content.overlay.version}`
+
+/** The race engine career races run on, the API's own (D383): engine v9's `simulateRace`. */
+export const RACE_ENGINE: NonNullable<OperationEnv['race']> = Object.freeze({ version: 9, simulate: simulateRace })
 
 let cached: { readonly key: string; readonly env: OperationEnv } | null = null
 
@@ -20,7 +24,7 @@ export function operationEnv(content: OperationContent, dev: boolean = import.me
   if (cached?.key === key) return cached.env
   const built = buildOperationEnv({
     umas: content.umas.items, races: content.races.items, courses: content.courses.items, cards: content.cards.items,
-    skills: content.skills.items, contentVersion,
+    skills: content.skills.items, contentVersion, race: RACE_ENGINE,
   })
   const env: OperationEnv = dev ? { ...built, dev: true } : built
   cached = { key, env }

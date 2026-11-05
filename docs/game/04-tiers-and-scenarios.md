@@ -1,8 +1,9 @@
 # 04 · Tiers and scenarios
 
-> **Status: generation 3, being built (M036, D380, D381).** The tier map and the caps are live. T154 adds careers per
-> scenario, and promotion arrives with release 4 ([the roadmap](../research/drawing-board/README.md#7-the-roadmap)).
-> Generation 2's page is [archived](../archive/g2-manual/04-tiers-and-promotion.md).
+> **Status: generation 3, being built (M036, D380, D381, D383).** The tier map, the caps, careers by scenario and the
+> rivals by scenario are live. URA Finale is the only scenario open for careers, and **promotion arrives with release 4**
+> ([the roadmap](../research/drawing-board/README.md#7-the-roadmap)). Generation 2's page is
+> [archived](../archive/g2-manual/04-tiers-and-promotion.md).
 
 ## 1. The tier map
 
@@ -70,3 +71,42 @@ scenario's caps.
 
 A card's era is the latest scenario released on or before its JP release date (`eraOf`). A career in scenario T uses
 only cards of era T or older.
+
+## 4. Careers by scenario
+
+An Uma's career is one scenario's ([03](03-careers.md)). Every scenario shares the career's shape: twelve seasons of
+Play, Upgrade and Race, then the scenario's finale. What changes with T is the scenario's caps, the cards its era
+allows, the objectives (the career generator rotates its race sets and families by T) and the rivals (§5).
+
+- **Open in this release: URA Finale (T = 1),** one career per Uma, ending in the URA Finals. A career in any other
+  scenario refuses until that scenario's release opens it, along with its session scale ([05](05-the-build.md) §4) and
+  its finale.
+- **Promotion** between tiers (an Uma moving on to the next scenario with what she has built) is **release 4**.
+
+## 5. Rivals by scenario
+
+A race's rivals are built on the **typical trained Uma** of its scenario, less the race grade's handicap
+([Racing](racing.md#rivals)). URA Finale's is measured on this generation's build: the typical career's average stat
+at its Finale (`sim:careers`, D383), and a career's fields scale with its calendar. The later scenarios keep generation
+2's frozen values until their careers open and their own sims measure them. A scenario's field is never stronger than
+a later one's (D191).
+
+<!-- live:tier-rivals -->
+| T | Scenario | Typical trained stat | Field stat (D191) | From |
+|---|---|---|---|---|
+| 1 | URA Finale | 559 | 559 | `sim:careers` (D383) |
+| 2 | Unity Cup | 664.8 | 664.8 | generation 2, frozen (D381) |
+| 3 | Trackblazer | 683.5 | 683.5 | generation 2, frozen (D381) |
+| 4 | Our Grand Concert | 707.9 | 707.9 | generation 2, frozen (D381) |
+| 5 | Grand Masters | 728.5 | 728.5 | generation 2, frozen (D381) |
+| 6 | Project L'Arc | 763.3 | 763.3 | generation 2, frozen (D381) |
+| 7 | U.A.F. Ready GO! | 777.6 | 777.6 | generation 2, frozen (D381) |
+| 8 | Great Food Festival | 815.3 | 815.3 | generation 2, frozen (D381) |
+| 9 | Run! Mecha Umamusume | 854.7 | 839.6 | generation 2, frozen (D381) |
+| 10 | The Twinkle Legends | 839.6 | 839.6 | generation 2, frozen (D381) |
+| 11 | Design Your Island | 853 | 853 | generation 2, frozen (D381) |
+| 12 | Yukoma Hot Springs | 881.1 | 881.1 | generation 2, frozen (D381) |
+| 13 | Beyond Dreams | 886 | 886 | generation 2, frozen (D381) |
+| 14 | Tracen Diner | 969.3 | 969.3 | generation 2, frozen (D381) |
+| 15 | Goshiki Shuntaisai | 969.3 | 969.3 | generation 2, frozen (D381) |
+<!-- /live -->

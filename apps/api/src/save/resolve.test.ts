@@ -185,7 +185,7 @@ describe('operations', () => {
   it('refuses a declared operation that is not built yet, and writes nothing', () => {
     const server = account(1)
     const before = new Map(server.rows)
-    const response = server.ok([op(1, 'start-career', { umaId: uma(1) }, clock('08:00'))])
+    const response = server.ok([op(1, 'settle-stage', { careerId: 'x' }, clock('08:00'))])
     expect(response.results).toEqual([
       { type: 'operation', id: opId(1), status: 'refused', refusal: expect.objectContaining({ refused: true, code: 'not-built-yet' }) },
     ])

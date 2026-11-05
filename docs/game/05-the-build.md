@@ -171,7 +171,8 @@ reads:
 - **aptitudes:** her template's grades (aptitude points arrive with Summer Camp, in a later release);
 - **skills:** the skills she bought, up to 64. Her unique is equipped on its own at the race.
 
-Winning the URA Finals freezes it on the career as her URA Finale racing build (T154).
+Winning the URA Finals freezes it on the career as her URA Finale racing build ([03](03-careers.md) §5). A race
+runs it with her chosen style, her unique at level 5, and only the highest skill of each chain ([03](03-careers.md) §4).
 
 ## 8. Skills
 

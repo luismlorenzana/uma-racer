@@ -25,18 +25,18 @@ timers, and nothing limits how much you play.
 
 | Page | What | Written by |
 |---|---|---|
-| 01 · The game loop | Careers, seasons and the loop | T154 |
+| [01 · The game loop](01-game-loop.md) | Careers, seasons and the loop | T154 |
 | 02 · Unlocks | Uma and Card Tickets, the Stable, the Card Library, eras | T157 |
-| 03 · Careers | The calendar, objectives, seasons, the finale, rewards | T154 |
-| [04 · Tiers and scenarios](04-tiers-and-scenarios.md) | The tier map, caps and card eras | T152, T154 |
+| [03 · Careers](03-careers.md) | The calendar, objectives, seasons, races, the URA Finals, rewards | T154 |
+| [04 · Tiers and scenarios](04-tiers-and-scenarios.md) | The tier map, caps, card eras, careers and rivals by scenario | T152, T154 |
 | [05 · The build](05-the-build.md) | The deck, posting, the tree, the session formula, the racing build, skills | T153 |
 | [06 · Cards and bonds](06-cards-and-bonds.md) | Owned cards at full level, their real effects, bond tracks, card power | T153 |
 | 07 · Stages | The mini-game framework: grades, pay, replays, resume | T155 |
 | 08 · Training Yard | The merge game | T155 |
 | 09 · Furlong Hand | The card race | T156 |
 | [11 · Hub and places](11-hub-and-places.md) | Every screen, route and sheet: the menu tree | T157, T158 (being rewritten) |
-| 12 · Pacing | The pay table, the targets and the sims | T154 |
-| [Racing](racing.md) | The race engine and rivals | kept; T154 updates the rivals |
+| [12 · Pacing](12-pacing.md) | The pay table, the targets and `sim:careers` | T154 |
+| [Racing](racing.md) | The race engine and rivals | kept; T154 re-tuned the rivals |
 | [Scenarios](scenarios.md) | The fifteen scenarios | kept |
 | [Architecture](architecture.md) | The code by folder, the save, the checks and the deploy | T152, T159 |
 
