@@ -31,8 +31,8 @@ timers, and nothing limits how much you play.
 | [04 · Tiers and scenarios](04-tiers-and-scenarios.md) | The tier map, caps, card eras, careers and rivals by scenario | T152, T154 |
 | [05 · The build](05-the-build.md) | The deck, posting, the tree, the session formula, the racing build, skills | T153 |
 | [06 · Cards and bonds](06-cards-and-bonds.md) | Owned cards at full level, their real effects, bond tracks, card power | T153 |
-| 07 · Stages | The mini-game framework: grades, pay, replays, resume | T155 |
-| 08 · Training Yard | The merge game | T155 |
+| [07 · Stages](07-stages.md) | The mini-game framework: the contract, grades, pay, settling, replays, resume, `sim:stages` | T155 |
+| [08 · Training Yard](08-training-yard.md) | The merge game: its rules, pay, bots and screen | T155 |
 | 09 · Furlong Hand | The card race | T156 |
 | [11 · Hub and places](11-hub-and-places.md) | Every screen, route and sheet: the menu tree | T157, T158 (being rewritten) |
 | [12 · Pacing](12-pacing.md) | The pay table, the targets and `sim:careers` | T154 |

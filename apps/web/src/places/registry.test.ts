@@ -6,16 +6,19 @@ import { describe, expect, it } from 'vitest'
 import { isFullScreen, matchSubPage, PLACE_UI, type PlaceUi } from './registry'
 
 describe('the place registry', () => {
-  it('fills Account alone, and only with a Page: it is hidden, so it has no Peek', () => {
-    expect(Object.keys(PLACE_UI)).toEqual(['account'])
+  it('fills Account and Training Yard, each only with a Page: Account is hidden, so it has no Peek', () => {
+    expect(Object.keys(PLACE_UI)).toEqual(['account', 'training-yard'])
     expect(PLACE_UI.account?.Page).toBeDefined()
     expect(PLACE_UI.account?.Peek).toBeUndefined()
+    expect(PLACE_UI['training-yard']?.Page).toBeDefined()
     expect(PLACES.find((place) => place.id === 'account')?.hidden).toBe(true)
-    for (const id of PLACE_IDS.filter((each) => each !== 'account')) expect(PLACE_UI[id], id).toBeUndefined()
+    for (const id of PLACE_IDS.filter((each) => each !== 'account' && each !== 'training-yard')) expect(PLACE_UI[id], id).toBeUndefined()
   })
 
-  it('hides the bars on no place yet', () => {
-    for (const place of PLACES) for (const rest of ['', 'run', 'outfit/invented-uma-01']) expect(isFullScreen(place, rest)).toBe(false)
+  it('hides the bars on Training Yard alone: the game is full screen (T155)', () => {
+    for (const place of PLACES) {
+      for (const rest of ['', 'run', 'outfit/invented-uma-01']) expect(isFullScreen(place, rest)).toBe(place.id === 'training-yard')
+    }
     expect(isFullScreen(undefined, 'run')).toBe(false)
   })
 

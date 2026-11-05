@@ -103,11 +103,18 @@ describe('the two pages', () => {
     expect(screen.getByText('Coming soon')).toBeTruthy()
   })
 
-  it.each(['careers', 'training-yard', 'furlong-hand'] as const)('opens %s on the Career page as not ready', async (id) => {
+  it.each(['careers', 'furlong-hand'] as const)('opens %s on the Career page as not ready', async (id) => {
     const place = placesOn('career').find((each) => each.id === id)!
     renderRacer(`/career/${id}`, memoryGame())
     expect(await screen.findByRole('heading', { level: 1, name: place.name })).toBeTruthy()
     expect(screen.getByText('Coming soon')).toBeTruthy()
+  })
+
+  it('opens training-yard on the Career page as the game, full screen (T155)', async () => {
+    renderRacer('/career/training-yard', memoryGame())
+    expect(await screen.findByRole('heading', { level: 1, name: 'Training Yard' })).toBeTruthy()
+    expect(document.querySelector('[data-racer="stage-host"][data-stage="training-yard"]')).not.toBeNull()
+    expect(screen.queryByText('Coming soon')).toBeNull()
   })
 })
 

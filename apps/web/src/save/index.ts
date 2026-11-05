@@ -1,6 +1,7 @@
 // The web save layer (docs/game/architecture.md "The save and sync"; T136, T152), and its adapter to the shell's
 // `RacerGame` port (`app/game.ts`), one to one:
 // - `status` is the store's `lifecycle`, with its `words` on `error`; `state` the fold; `env` the content's, once open;
+// - `journal` the device-only stage journal (T155), straight over Dexie;
 // - `sync` is the chip: `paused` while signed out, `offline`, `failing` (red) on `error`, `waiting` (amber, D157) once
 //   the oldest waiting row is over a day old, else `synced`;
 // - `receipts` and `notices` as the store keeps them; `run` is the actions' tap; `syncNow` a flush and a pull;
@@ -14,6 +15,7 @@ import { useSave, type SaveStore } from './store'
 export { createSaveApi, setSaveTokenProvider, type SaveApi, type SaveFailure } from './api'
 export { bootSave, type SaveBootOptions, type SaveSession } from './boot'
 export { SAVE_DB_NAME, SaveDb, wipeGeneration2 } from './db'
+export { dexieJournal, memoryJournal, readStoredJournal } from './journal'
 export { operationEnv } from './env'
 export { fold } from './fold'
 export { RECEIPTS_KEPT, resetSave, useSave, type SaveStore } from './store'
@@ -94,6 +96,7 @@ export function createSaveGame(options: SaveBootOptions): SaveGame {
       receipt: (id) => session.actions.receipt(id),
       operation: (id) => session.actions.operation(id),
     },
+    journal: session.journal,
     setSignedIn: (signedIn) => session.setSignedIn(signedIn),
     stop() {
       unsubscribe()

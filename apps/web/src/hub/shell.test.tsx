@@ -48,7 +48,7 @@ describe('the bars (§2.1, §2.2)', () => {
     const [, page, raised] = within(bar).getAllByRole('link')
     expect([page!.getAttribute('aria-current'), raised!.getAttribute('aria-current')]).toEqual([null, 'page'])
     cleanup()
-    renderRacer('/career/training-yard', memoryGame())
+    renderRacer('/career/furlong-hand', memoryGame())
     const again = await screen.findByRole('navigation', { name: 'Hub pages' })
     const [, tab, centre] = within(again).getAllByRole('link')
     expect([tab!.getAttribute('aria-current'), centre!.getAttribute('aria-current')]).toEqual(['page', null])

@@ -61,7 +61,7 @@ describe('the local repository', () => {
   it('writes no file for a sync that changes nothing', async () => {
     await repo.sync('u1', request([{ type: 'create', createdAt: clock('07:00') }]), async () => ENV)
     const before = await readFile(file, 'utf8')
-    await repo.sync('u1', request([op(1, 'settle-stage', { careerId: 'x' }, clock('07:01'))]), async () => ENV)
+    await repo.sync('u1', request([op(1, 'settle-stage', { careerId: 'x', kind: 'training-yard', seed: 1, version: 1, inputs: [], practice: false }, clock('07:01'))]), async () => ENV)
     await repo.sync('u1', request([{ type: 'create', createdAt: clock('08:00') }]), async () => ENV)
     expect(await readFile(file, 'utf8')).toBe(before)
   })

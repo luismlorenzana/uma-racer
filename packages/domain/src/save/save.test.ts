@@ -34,9 +34,8 @@ describe('the operation table', () => {
     ])
   })
 
-  it.each([['settle-stage']])('%s refuses until its part lands', (name) => {
-    const commit = commitOperation(fresh(), op(1, name, {}), ENV)
-    expect(commit).toMatchObject({ status: 'refused', refusal: { code: 'not-built-yet' } })
+  it('reads settle-stage strictly: a malformed play is the caller\'s bug (T155, D384)', () => {
+    expect(() => commitOperation(fresh(), op(1, 'settle-stage', {}), ENV)).toThrow(/Malformed settle-stage/)
   })
 })
 

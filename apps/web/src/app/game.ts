@@ -7,10 +7,12 @@
 //   `waiting` (amber, D157) when the oldest queued tap is over a day old, else `synced`;
 // - `run` is one tap through `commitOperation`, answered `done` or `refused` in plain words, its id riding along;
 // - `notices` are the taps the server refused or couldn't run, until a screen dismisses them; `syncNow` and `logs` are
-//   the save's too.
+//   the save's too;
+// - `journal` is the device-only stage journal (T155): a stage's moves so far, so a play resumes after the app is killed.
 // Only types come from the domain here, so this file costs the entry chunk nothing but the hooks.
 import type { HubView, hubView } from '@racer/domain/hub'
 import type { OperationEnv, OperationRecord, RaceResultRecord, SaveState } from '@racer/domain/save'
+import type { Journal } from '@racer/domain/stages'
 import { createContext, useContext, useMemo, useSyncExternalStore } from 'react'
 import type { Clock } from './clock'
 
@@ -70,6 +72,24 @@ export interface RacerGame {
   /** Account's Sign in and Sign out: the auth provider's. Absent where nobody signs in (auth off). */
   signIn?(): Promise<void>
   signOut?(): Promise<void>
+  /** The device-only stage journal; absent on a port that saves nothing (a play then can't resume). */
+  readonly journal?: RacerJournal
+}
+
+/** One open play on this device: its game and career, and its journal (D384). */
+export interface StoredJournal {
+  /** `<kind>:<careerId>`, or `<kind>:practice` outside a career: one open play each. */
+  readonly id: string
+  readonly careerId: string | null
+  readonly journal: Journal
+}
+
+/** The stage journal (Dexie's `stageJournal`): never synced, written on every move and on pause. */
+export interface RacerJournal {
+  /** The open play, or null (a row that doesn't read as one is dropped). */
+  read(id: string): Promise<StoredJournal | null>
+  write(row: StoredJournal): Promise<void>
+  clear(id: string): Promise<void>
 }
 
 /** The save's logs, read when a screen needs them: never loaded into the snapshot. */

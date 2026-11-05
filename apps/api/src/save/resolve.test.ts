@@ -182,12 +182,12 @@ describe('operations', () => {
     expect(server.account().umaTickets).toBe(18)
   })
 
-  it('refuses a declared operation that is not built yet, and writes nothing', () => {
+  it('refuses a stage settle for a career that doesn\'t exist, and writes nothing', () => {
     const server = account(1)
     const before = new Map(server.rows)
-    const response = server.ok([op(1, 'settle-stage', { careerId: 'x' }, clock('08:00'))])
+    const response = server.ok([op(1, 'settle-stage', { careerId: 'x', kind: 'training-yard', seed: 1, version: 1, inputs: [], practice: false }, clock('08:00'))])
     expect(response.results).toEqual([
-      { type: 'operation', id: opId(1), status: 'refused', refusal: expect.objectContaining({ refused: true, code: 'not-built-yet' }) },
+      { type: 'operation', id: opId(1), status: 'refused', refusal: expect.objectContaining({ refused: true, code: 'unknown-career' }) },
     ])
     expect(server.rows).toEqual(before)
   })

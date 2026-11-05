@@ -11,6 +11,7 @@
 import { LIVE_BLOCKS as BUILD_BLOCKS } from '../build/docs'
 import { LIVE_BLOCKS as CAREER_BLOCKS } from '../career/docs'
 import { LIVE_BLOCKS as HUB_BLOCKS } from '../hub/docs'
+import { LIVE_BLOCKS as STAGE_BLOCKS } from '../stages/docs'
 import { LIVE_BLOCKS as TIER_BLOCKS } from '../tiers/docs'
 import { GRADE_HANDICAP, RIVAL_REFERENCE_METERS, RIVAL_SKILL_RANGE, RIVAL_STAT_FLOOR, STYLE_COUNT_RANGE } from '../opponents'
 import { RACE_GRADES } from '../types'
@@ -29,7 +30,7 @@ export function joinBlocks(...tables: readonly LiveBlocks[]): LiveBlocks {
 }
 
 /** Every area's live blocks, joined. */
-export const AREA_BLOCKS: LiveBlocks = joinBlocks(TIER_BLOCKS, HUB_BLOCKS, BUILD_BLOCKS, CAREER_BLOCKS)
+export const AREA_BLOCKS: LiveBlocks = joinBlocks(TIER_BLOCKS, HUB_BLOCKS, BUILD_BLOCKS, CAREER_BLOCKS, STAGE_BLOCKS)
 
 type Cell = string | number
 /** A Markdown table; pipes in cells are escaped. */

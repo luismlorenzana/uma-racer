@@ -1,7 +1,7 @@
 // What each place shows (docs/game/11-hub-and-places.md §1, §6; uma-rpg's `places/registry.tsx`): a Peek (the quick look
 // over its page), a Page (its full screen) with sub-page slots, and an optional full-screen rule. Every body is a lazy
 // chunk. Generation 3 starts with Account alone (T152); every other place opens the not-ready state (`Unfilled.tsx`)
-// until its part of M036 fills its slot (T157 the Town Hall and Career places, T158 the race).
+// until its part of M036 fills its slot (T155 Training Yard, T157 the Town Hall and Career places, T158 the race).
 import type { Place, PlaceId } from '@racer/domain/hub'
 import { lazy, type ComponentType, type LazyExoticComponent } from 'react'
 import { matchPath } from 'react-router'
@@ -38,6 +38,8 @@ export interface PlaceUi {
 
 export const PLACE_UI: Readonly<Partial<Record<PlaceId, PlaceUi>>> = {
   account: { Page: lazy(() => import('./account/Page')) },
+  // The stage host, full screen: practice until the career screens (T158) open it for a season.
+  'training-yard': { Page: lazy(() => import('./training-yard/Page')), fullScreen: () => true },
 }
 
 /** The sub-page `rest` names, if any, with its params. */

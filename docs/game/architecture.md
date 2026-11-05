@@ -92,6 +92,7 @@ globals. Time comes in as `now`, integer milliseconds; randomness from the race 
 | `@racer/domain/master` | The only master-to-racer adapter, flair/card-focus interpretation and overlay envelopes | `src/master/index.ts` |
 | `@racer/domain/builds` | The committed balance reports of `sim:builds` and `sim:careers` | `src/builds/index.ts` |
 | `@racer/domain/hub` | The place registry (`PLACES`) and the Hub view the shell draws | `src/hub/index.ts` |
+| `@racer/domain/stages` | The stage framework and its games ([07](07-stages.md), [08](08-training-yard.md)): the contract, grades and pay, replay and settle, the registry, `settle-stage` and `sim:stages` | `src/stages/index.ts` |
 
 Every entry has a `require` condition (`dist/cjs/<area>/…`) beside `default` (the TypeScript source). The API resolves
 with Node16 rules, so it takes `require` and reads the built CommonJS; everything else reads the source. Turbo builds the
@@ -160,6 +161,7 @@ built `dist`, so run `pnpm --filter @racer/domain build` first in a fresh checko
 | `pnpm sim:turns` | Engine v9's targets on generated G1 fields (`ENGINE=7` or `8` compares a frozen engine) | — (a report) |
 | `pnpm sim:builds` | The stamina ladder and the G1 grid on full-layer builds at every T = 1–14 against the tier rules' fields, and each buff's typical value | A hard ladder check fails, other than the three accepted at a tier's first scenario (`LADDER_ACCEPTED_MISSES`, D350) |
 | `pnpm sim:careers` | Every Uma's URA Finale career played once at grade A by a fixed bot, with a median and a strong deck, its objectives and URA Finals rounds raced on the engine ([12](12-pacing.md) §3); the private pack when present (`MASTER_DIR`, `CONTENT_DIR`), invented content otherwise (`--synthetic`), which `pnpm test` and `test:ci` run | A first-try rate or a pacing band misses its target |
+| `pnpm sim:stages` | Every built mini-game's novice, competent and expert bots over 500 seeds on a typical career's configs ([07](07-stages.md) §6); the private pack when present (`MASTER_DIR`), invented content otherwise (`--synthetic`), which `pnpm test` and `test:ci` run | The competent median isn't A, the novice's isn't C or B, the expert's S share leaves 35–65%, or a play leaves 3–7 minutes |
 | `pnpm sim:loop` | The whole economy from a fresh account over three tiers, and [12](../archive/g2-manual/12-economy-and-pacing.md) §12's pacing checks; `--variant=`, `--matrix`, `--json` | A check fails |
 
 Flags: races per cell as a bare number, `--tiers=` (the game's scenarios T), `--ladder-only` and `--rates-only` for the
@@ -181,6 +183,7 @@ loop itself runs on the domain's source, and its test runs the checks in CI.
 | `hub/` | The racer's adapters to uma-kit's shell and Hub ([11](11-hub-and-places.md) §2, [below](#uma-kit)): `RacerShell.tsx` (the kit's frame, account bar and bottom bar with the racer's chips, Sync chip and tabs), `HubPage.tsx` (the kit's map with each page's places, pips, counters and plaza, and the floating pill), `racerHub.ts` (each page's tile page and palette, `tilePageFor`, and the pips' room colours), `PlacePeek.tsx` (the kit's side panel with the registry's Peek), the global sheets with the ☰ menu (`GlobalSheets.tsx` on the kit's sheet and place menu, `SheetHost.tsx`), the global sheets' names and navigation state (`nav.ts`) and counters (`counts.ts`) |
 | `places/` | Every place's Peek, Page, sub-pages and sheets, filled through `places/registry.tsx` (`PLACE_UI`, `SHEET_UI`, `TOWN_PLAZA`, `FLOW_UI`, `PROFILE_UI`; each a lazy chunk): `stable`, `reveal`, `warehouse`, `exchange`, `card-library`, `account`, `training`, `farm`, `racing` (its slots in `racing/ui.ts`), `check-in`, `needs`; `PlacePageHeader.tsx` is the kit's place header with a place's words, and `Unfilled.tsx` the fallback for a slot with nothing in it (none today). Each screen draws a pure view model (`model.ts`) over the rules' state |
 | `save/` | The device's generation-2 save and its one sync lane ([below](#the-save-and-sync)) |
+| `stages/` | The stage host (`StageHost.tsx`: the rule card, the journal, resume, settle and the result), the games' lazy views and rule cards (`views.ts`), and each game's view (`yard/`) ([07](07-stages.md) §5) |
 | `ui/` | `ui/work/` injects Racer's operation port, vocabulary, check-in sizing and recovery suggestions into `uma-kit/work`; the kit draws rows, queues, speed-up, recall, upgrades, targets and the Farm job sheet. `ItemIcon`, `TreeGraph`, `BuildingSprite`, original type/focus icons and labels, `devicePrefs.ts`; `racerAlbum.tsx` projects game rows and callbacks into the kit's album and picker. `useContentArt.ts` is the card/reveal's private-art hook; the kit's art port is `app/albumArt.tsx`. No local album or work-component fork remains |
 | `scenes/race/` | The race scene: PixiJS 8, lazy, the only PixiJS in the repo until phase 8 ([below](#the-race)) |
 | `content/` | Game-only projection (`adapt.ts`), view shapes, status/words; no local loader or byte/URL cache |
@@ -335,9 +338,11 @@ lane. The record shapes, kinds, bounds and wire format are `packages/domain/src/
     inside its operation on the engine the caller hands in, `OperationEnv.race` (`{ version, simulate }`, `@racer/race`'s
     `simulateRace`): the domain never imports the engine, and the device and the API each run the same seeded race.
     Without one, the races refuse.
-  - Declared, refusing "not built yet" until its part lands: `stages` (T155).
+  - `stages` has `settle-stage` ([07](07-stages.md) §3, D384): a play's seed and moves, replayed on the device and the
+    API through the game's rules, graded and paid into the career's wallet.
 - **On the device** (`apps/web/src/save/`):
-  - Dexie `uma-racer-g3`: one table per kind, the outbox, and a device-only `stageJournal`;
+  - Dexie `uma-racer-g3`: one table per kind, the outbox, and a device-only `stageJournal` (an open stage's moves,
+    written on every move and on pause, so it resumes by replay: [07](07-stages.md) §4);
   - on first boot it deletes generation 2's `uma-racer-g2` database and its `uma-racer:g2:*` keys: the owner's full
     wipe (D380).
 - **On the server** (`apps/api/src/save/`): `g3/{uid}/{kind}/{id}` in Firestore; one sync is one transaction with
