@@ -21,7 +21,7 @@ This folder holds **only work that is planned or in progress**. A task spec is a
 | Release | Milestone | State |
 |---|---|---|
 | 1 | M036 — URA Finale, the new game (T152–T159; spec at `git show 1f4b481:docs/tasks/M036-ura-finale-slice.md`): generation 3 with a full wipe, Training Yard and Furlong Hand, the tree, deck, bonds and skills, URA Finale careers | **Released 2026-11-05 (D388).** Built on `restart/g3` (D381–D387), shipped to production in one release with generation 2's wipe; [the manual](../game/README.md) describes it |
-| 1.1 | [M037 — Careers v2](M037-careers-v2.md) (T160–T163): swappable stages with Furlong Hand first, cards by scenario, careers by distance group on full race calendars, distance presets, training up front, crowns paying Card Tickets | **Packets ready (D390).** T160 and T161 can start now, in parallel; T162 after T160; T163 after T162 |
+| 1.1 | [M037 — Careers v2](M037-careers-v2.md) (T160–T164): swappable stages with Furlong Hand first, cards by scenario, ground, weather and season in the race engine, careers by distance group on full race calendars with the URA Finals on an announced course, distance presets, training up front, crowns paying Card Tickets | **Packets ready (D390, D395).** T160, T161 and T164 can start now, side by side; T162 after T160 and T164; T163 after T162 |
 | 2 | Team Showdown: Shards, Umas earned in play; Unity Cup's careers | Planned |
 | 3 | Fan Festival: Scout points, cards earned in play, the refit; Trackblazer's and Our Grand Concert's careers | Planned |
 | 4 | Summer Camp: aptitude points; Grand Masters' careers; promotion to tier 2 | Planned |
@@ -45,7 +45,7 @@ open pull request or `feat/t16x-…` branch already (`gh pr list`, `git ls-remot
 its Context in order, build it in your own worktree, meet every Done-when box, and deliver as its Deliver says,
 deleting the packet in the same pull request. [AGENTS.md](../../AGENTS.md) has the workflow.
 
-**Next free numbers: M038, T164 and D395** (D391–D394 are reserved for T160–T163). Numbers are never reused, so a decision that mentions T014 always means
+**Next free numbers: M038, T165 and D397** (D391–D394 and D396 are reserved for T160–T164). Numbers are never reused, so a decision that mentions T014 always means
 the same work. T057 was consumed by the per-scenario limit-break branch and is not reused.
 
 ## Completed and removed

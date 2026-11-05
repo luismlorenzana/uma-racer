@@ -1,6 +1,6 @@
 # T163 — Distance presets: a deck, posts and style per distance
 
-> **M037, part 4.** Domain and web. Branch from `main` once T162 has merged (it uses T162's `presets` shape).
+> **M037, part 5.** Domain and web. Branch from `main` once T162 has merged (it uses T162's `presets` shape).
 > Decision **D394**. No save shape change, so no protocol bump.
 
 ## Why
@@ -49,7 +49,8 @@ Read first:
    - each pip preview also shows the other preset's gain, faintly;
    - the race sheet shows the preset's badge;
    - her profile and the completion screen show both racing builds;
-   - a single-distance Uma has one preset and no switch.
+   - a single-distance Uma has one preset and no switch;
+   - the preset of the Finals' distance is marked "Finals".
 6. **Sims:**
    - `pickDecks` gains §4.4's distance lean;
    - `sim:careers` builds a median and a strong deck per preset and races each objective on its distance's preset;

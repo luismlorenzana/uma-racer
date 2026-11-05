@@ -3,7 +3,8 @@
 > **Status: proposal (2026-11-05),** from the owner's first playtest of generation 3. Not built. Its defaults are the
 > ones §8 recommends; the coordinator logs them as D390. Two parts are already written up:
 > - the stages: [swappable stages](swappable-stages.md), packet [T160](../../tasks/T160-swappable-stages.md);
-> - the card gating: packet [T161](../../tasks/T161-cards-by-scenario.md).
+> - the card gating: packet [T161](../../tasks/T161-cards-by-scenario.md);
+> - the URA Finals as an announced course and its conditions, after the owner's follow-up: [finale events](finale-events.md), packet [T164](../../tasks/T164-race-conditions.md) (D395).
 >
 > The visual summary is [previews/careers.html](previews/careers.html). Every number here comes from a rule in the code,
 > a sim already recorded in a decision, or an aggregate count over the private pack (§9). No race ids or private
@@ -277,7 +278,8 @@ the Mile Championship in both Classic and Senior. 2 crowns.
   becomes `season:race`, and its seed names the season, so the second Arima isn't the first one's draw.
 - **The fields** are as today: `rollRivalFieldAt` by scenario, grade and the race's season, on the new season shares
   (§4.2).
-- **The URA Finals** run at one of her group's two distances, on her surface. She picks the distance at the Finale,
+- **The URA Finals** run on one announced course with its conditions, picked at career start from her calendar's
+  board ([the URA Finals as an announced course](finale-events.md), D395). *Superseded:* she picks the distance at the Finale,
   before its prep heat; the default is her better aptitude, ties to the longer distance. The course rule is today's
   (the pair's highest grade).
 
@@ -547,7 +549,7 @@ from is always on screen.
 | `career/season.ts` | `seasonPlan(career)`: its planned plays, objectives and optional races. `canAdvance` ignores optional races. T160's `CAREER_GAMES` order holds; racing seasons mark their play optional |
 | `career/races.ts` | Objectives keyed `season:race`; `objectiveSpec`'s seed key names the season; a race prepares on the preset of its distance |
 | `career/rewards.ts` | The per-objective Card Ticket goes; `crownCompleted(career, objectiveId)` pays 1 Card Ticket; SP by grade unchanged; the Finals unchanged |
-| `career/finale.ts` | `finalePair` limited to her group's distances and surface; `set-finals-distance` |
+| `career/finale.ts`, **`career/finale-events.ts`** (new) | The Finals run on the career's announced event ([the URA Finals as an announced course](finale-events.md) §6); `finalePair` and `set-finals-distance` retire |
 | `career/pay.ts` | The bundle (T160), retuned (§4.1) |
 | `build/deck.ts`, `build/ops.ts` | `set-deck`, `post-card` and the new `set-style` take a `distance` |
 | `build/derive.ts`, `build/racing-build.ts`, `build/skills.ts` | `readDeck`, `careerStats` and `deriveRacingBuild` read a preset; SP earned is the better preset's |
@@ -561,11 +563,10 @@ from is always on screen.
 
 | Operation | v2 input |
 |---|---|
-| `start-career` | `umaId`, `T`, `group`, `surface` |
+| `start-career` | `umaId`, `T`, `group`, `surface`, `finaleEvent` (defaulting to the board's next in turn) |
 | `set-deck` · `post-card` · `set-style` | `careerId`, `distance`, then as today; `strategy` for `set-style` |
 | `pour-bond` | As today; any card of either preset's deck |
 | `run-race` | `careerId`, `objectiveId`, `attempt`, `strategy`? (defaults to the preset's) |
-| `set-finals-distance` | `careerId`, `distance`; at the Finale, before round 0 |
 | `run-finale` | As today, at the chosen distance |
 | `restart-careers` | One time (§8, point 7) |
 
@@ -594,10 +595,11 @@ from is always on screen.
     - in racing seasons: Upgrade → Race, with the objectives, then the optional races, then an optional prep heat;
   - **Upgrade:** the preset switch;
   - **the race sheet:** the preset's badge, and the crown and ticket line;
-  - **the Finale:** the distance pick;
+  - **the Finals' course:** the event cards on the Start career sheet, the header chip and the race sheet's
+    conditions ([the URA Finals as an announced course](finale-events.md) §5);
   - **the completion:** two racing builds, and the crowns won.
 - **`places/card-library/`:** T161.
-- **Tests at 390×844** in light and dark: the group sheet, a racing season, the preset switch and the Finals pick.
+- **Tests at 390×844** in light and dark: the group sheet with its event cards, a racing season and the preset switch.
 
 ### The docs
 
@@ -640,7 +642,9 @@ Each has a recommended default. None blocks the packets.
 7. **The career in progress.** Default: **restart it under v2.** Its bond tracks and every ticket and unlock stay; its
    tree, wallet and skills go. The alternative, finishing it on the old calendar, keeps two career shapes in the code
    for one career.
-8. **The URA Finals' distance.** Default: **you pick it at the Finale** from her group's two, preselected to her
+8. **The URA Finals' course** (D395 supersedes this point): an announced course and conditions from her calendar's
+   board, the next in turn preselected at career start, any eligible one pickable ([the URA Finals as an announced course](finale-events.md)). *Superseded
+   default:* you pick the distance at the Finale from her group's two, preselected to her
    better aptitude, ties to the longer.
 
 ## 9. Data notes

@@ -16,8 +16,8 @@ share (T147, D367).
   hand-allocated trees on the real card numbers. Its first release, M036 (URA Finale), shipped straight to production
   with a full wipe (D388); the manual describes it.
 - `docs/tasks/README.md` is the current plan: M036 released (D388); **M037, careers v2, planned with packets
-  T160–T163** (D390; [the proposal](docs/research/careers-v2/README.md)); releases 2–5 on the roadmap; and the next
-  free numbers (M038, T164, D395). A task spec is deleted once its work merges (D104), so that folder only holds work still
+  T160–T164** (D390, D395; [the proposal](docs/research/careers-v2/README.md)); releases 2–5 on the roadmap; and the next
+  free numbers (M038, T165, D397). A task spec is deleted once its work merges (D104), so that folder only holds work still
   ahead.
 - **The docs are the source of truth:** [the manual](docs/game/README.md) (`docs/game/`) describes the game as it runs.
   Every screen, route and sheet is [11's menu tree](docs/game/11-hub-and-places.md#the-menu-tree-at-a-glance); the code

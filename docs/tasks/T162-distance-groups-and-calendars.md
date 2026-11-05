@@ -1,7 +1,7 @@
 # T162 — Distance groups and their calendars
 
-> **M037, part 3.** Domain, API, web and docs. Branch from `main` once T160 has merged (it retunes T160's bundle).
-> Decision **D393**. It changes the save's shape: sync protocol 3 → 4, and the career in progress restarts.
+> **M037, part 4.** Domain, API, web and docs. Branch from `main` once T160 (it retunes T160's bundle) and T164 (the
+> race conditions its URA Finals run under) have merged. Decision **D393**. It changes the save's shape: sync protocol 3 → 4, and the career in progress restarts.
 
 ## Why
 
@@ -24,7 +24,9 @@ Read first:
   - §4, the pacing;
   - §5, the tickets;
   - §7, the code map;
-  - §8's defaults (D390).
+  - §8's defaults (D390);
+  - with [the URA Finals as an announced course](../research/careers-v2/finale-events.md) (D395) in place of §2.3's
+    Finals rule and §8's point 8.
 - **T160** (merged): `CAREER_GAMES` and the one pay bundle.
 - **The career code:**
   - `scenario-goals.ts`, `career-shapes.ts` and `career-stages.ts` (the generator, which retires);
@@ -66,8 +68,13 @@ Read first:
    - Classic and Senior Summer are camps, one play each;
    - `canAdvance` ignores optional races;
    - optional races pay their SP on a first win and never block.
-4. **The URA Finals:** at one of her group's two distances on her surface, picked at the Finale
-   (`set-finals-distance`, defaulting to her better aptitude, ties to the longer).
+4. **The URA Finals as an announced course** ([finale events](../research/careers-v2/finale-events.md) §1–§3, §6):
+   - `career/finale-events.ts` holds the four boards, `eligibleEvents`, `defaultEvent` (the next in turn, derived
+     from the careers started in that calendar) and `eventRace`;
+   - `start-career` takes `finaleEvent` and refuses an ineligible one in words;
+   - the qualifier, semifinal, final and the Finale's prep heat run on its course, under its conditions (T164's
+     `RaceInput.conditions`);
+   - `finalePair` retires; there is no `set-finals-distance`.
 5. **Pacing** (§4):
    - retune T160's bundle on the new calendar, starting from **110 drills, 15 Bond and 0 SP**;
    - set `RIVAL_SEASON_SHARE` to §4.2's curve, then re-set it from the sim's print as D383 did;
@@ -79,7 +86,8 @@ Read first:
    - the calendar strip and the race sheet show a crown's ticket on its last leg.
 7. **The save** (§7):
    - `CareerRecord` gains `group`, `surface`, `objectives` with `optional`, the `finale` with its `distance`, and
-     **`presets`** (one per distance, each `{ deck, posts, strategy }`) in place of `deck` and `posts`;
+     **`presets`** (one per distance, each `{ deck, posts, strategy }`) in place of `deck` and `posts`, and
+     `finale.event`;
    - both presets start as the same deck, and T163 builds the per-distance editing on this shape, so the save
      changes once;
    - `racingBuilds` per distance;
@@ -90,7 +98,8 @@ Read first:
    - the Start career group sheet (§1.6);
    - the calendar strip (G1 solid, G2 grey, G3 outlined, optional dashed, crown legs, the block's plays as pips);
    - the season card: Play n of 3 in the block, Upgrade → Race in racing seasons;
-   - the Finals' distance pick;
+   - the Finals' course: the event cards on the Start career sheet, a chip in the career header and on the Finale,
+     Upgrade → Skills' For the Finals filter, and the race sheet's conditions;
    - the completion screen with the crowns won;
    - the Stable album's group filter.
 9. **Sims:** `sim:careers` per §4.4: every Uma in each group she qualifies for, the bands per calendar, printing the
@@ -100,7 +109,8 @@ Read first:
     - rewrite [01](../game/01-game-loop.md), [02](../game/02-unlocks.md) §1, [03](../game/03-careers.md) whole,
       [04](../game/04-tiers-and-scenarios.md) §4, [11](../game/11-hub-and-places.md) §3 and §8,
       [12](../game/12-pacing.md), [Racing](../game/racing.md) and [the architecture](../game/architecture.md)'s save;
-    - add live blocks for the four calendars, the groups rule, the plays per season and the crowns' tickets;
+    - add live blocks for the four calendars, the groups rule, the plays per season, the crowns' tickets and the
+      Finals' boards;
     - rewrite the career guide;
     - add **D393** with the sim's results as shares.
 
@@ -112,11 +122,13 @@ Read first:
   - [ ] repeated races carry distinct keys and seeds;
   - [ ] optional races never block;
   - [ ] a crown pays once;
-  - [ ] the Finals at the picked distance;
+  - [ ] the default event walks the board in turn, an ineligible event is refused, and every round runs on the
+        event's course and conditions;
   - [ ] `restart-careers` keeps tickets, unlocks and bonds, and drops old careers;
   - [ ] the strict v4 parser refuses the v3 career shape.
 - [ ] API tests: protocol 4, the new operations replay alike.
-- [ ] Web tests at 390×844 in light and dark: the group sheet, a block season, a racing season, the Finals pick.
+- [ ] Web tests at 390×844 in light and dark: the group sheet with its event cards, a block season, a racing season, the Finale's
+      conditions.
 - [ ] `pnpm sim:careers` meets §4.4's bands for every calendar on the private pack (aggregates only in the PR and
       D393), and the synthetic bands in CI.
 - [ ] `pnpm lint && pnpm test:ci && pnpm build` pass; the startup chunk stays ≤ 180 KB gzip.

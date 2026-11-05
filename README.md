@@ -12,7 +12,7 @@ raced on the race engine, then the scenario's finale. Nothing runs on timers, an
 > URA Finals, and the Hub's two pages, Town Hall and Career. It shipped with a full wipe of generation 2, on the
 > server and the phone. **Next is M037, careers v2** ([the plan](docs/tasks/M037-careers-v2.md), D390): every
 > mini-game paying the same with Furlong Hand first, cards by scenario, careers by distance group on full race
-> calendars, and distance presets. [The task plan](docs/tasks/README.md) and
+> calendars with the URA Finals on an announced course, and distance presets. [The task plan](docs/tasks/README.md) and
 > [v3's roadmap](docs/research/drawing-board/README.md#7-the-roadmap) hold what follows; [the manual](docs/game/README.md)
 > describes the code as it runs.
 
