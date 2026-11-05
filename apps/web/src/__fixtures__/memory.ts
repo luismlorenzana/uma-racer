@@ -1,6 +1,9 @@
 // An in-memory `RacerGame` for the shell's tests (T152): a generation-3 account held in memory, moved by the domain's own
-// `commitOperation`, with no database and no network. Its clock is held where the test puts it.
-import { commitOperation, initialSave, type OperationEnv, type OperationRecord, type SaveState } from '@racer/domain/save'
+// `commitOperation`, with no database and no network. Its clock is held where the test puts it. The race results each
+// commit logs are kept, in order, so a career's race screens (T158) read them as the device's logs give them.
+import {
+  commitOperation, initialSave, type OperationEnv, type OperationRecord, type RaceResultRecord, type SaveState,
+} from '@racer/domain/save'
 import type { RacerAnswer, RacerGame, RacerJournal, RacerSnapshot, RacerSync } from '../app/game'
 import { memoryJournal } from '../save/journal'
 import { syntheticEnv } from './content'
@@ -28,6 +31,7 @@ export function memoryGame(options: MemoryOptions = {}): MemoryGame {
   const listeners = new Set<() => void>()
   const applied: string[] = []
   const operations = new Map<string, OperationRecord>()
+  const races = new Map<string, RaceResultRecord>()
   let made = 0
   let snapshot: RacerSnapshot = Object.freeze({
     status: 'ready', state: options.state ?? initialSave(now()).state, env, sync: options.sync ?? 'synced', receipts: {},
@@ -52,11 +56,15 @@ export function memoryGame(options: MemoryOptions = {}): MemoryGame {
       if (commit.status === 'refused') return { kind: 'refused', id, code: commit.refusal.code, text: commit.refusal.reason }
       applied.push(name)
       operations.set(id, { name, at, receipt: commit.receipt })
+      if (commit.status === 'applied') {
+        for (const row of commit.logs) if (row.kind === 'raceResults') races.set(row.id, row.data as RaceResultRecord)
+      }
       publish({ state: commit.state, receipts: { ...snapshot.receipts, [id]: { local: commit.receipt } } })
       return { kind: 'done', id, state: commit.state, receipt: commit.receipt as R, repeated: commit.status === 'repeated' }
     },
     logs: {
-      raceResults: async () => [],
+      raceResults: async (umaId) => [...races.values()].filter((row) => row.umaId === umaId),
+      raceResult: async (id) => races.get(id) ?? null,
       receipt: async (id) => operations.get(id)?.receipt ?? null,
       operation: async (id) => operations.get(id) ?? null,
     },

@@ -138,7 +138,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       setBooted(result)
       const snapshot = await opened(result.game)
       if (snapshot.status === 'error' || snapshot.state === null || snapshot.env === null) throw new SaveFailure(snapshot.words ?? '')
-      start.current = startPath()
+      const careers = snapshot.state.careers
+      start.current = startPath(undefined, undefined, (id) => careers[id]?.completedAt === null)
       return { firstLaunch: false }
     } catch (error) {
       const next = failureOf(error)

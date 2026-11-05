@@ -1,5 +1,5 @@
-// The Hub's Training Yard place (docs/game/11-hub-and-places.md, docs/game/08-training-yard.md; T155): until the career
-// screens (T158) open the Yard for a career's season, the place opens it full screen as practice, which pays nothing.
+// The Hub's Training Yard place (docs/game/11-hub-and-places.md, docs/game/08-training-yard.md; T155, D387): the Yard's
+// free practice, full screen, which pays nothing; a career's own plays open from its page (Play, or Play again).
 // Practice borrows her running career's deck when she has one (the most recently started), else an Uma alone.
 import { useLeave } from '@luismlorenzana/uma-kit/shell'
 import { careerId as careerIdOf } from '@racer/domain/save'

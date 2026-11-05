@@ -4,7 +4,8 @@
 // play closed or killed mid-way resumes by replay. On the last move it settles: a career play commits `settle-stage`
 // (the device and the server replay the same moves and pay the grade), and practice is graded here by the same
 // function and pays nothing. The result shows the grade, the pay and Play again. The screen stays on while playing,
-// and reduced motion keeps the moves and drops the flourishes. T158 opens it for a career's season.
+// and reduced motion keeps the moves and drops the flourishes. The career screens (T158) open it for a season's Play
+// and the header's Play again, and hear each settled career play through `onSettled`.
 import { Button, CloseIcon, IconButton, Panel, useReducedMotionSetting } from '@luismlorenzana/uma-kit/ui'
 import { STATS } from '@racer/domain'
 import { STAGE_PAY_AT_A } from '@racer/domain/career'
@@ -28,6 +29,8 @@ export interface StageHostProps {
   readonly mode: StageMode
   /** Leaves the stage; an unfinished play stays open and resumes next time. */
   readonly onExit: () => void
+  /** A career play settled (not practice): its receipt, so the career screens can mark the season's Play (T158). */
+  readonly onSettled?: (receipt: SettleStageReceipt) => void
 }
 
 type Play = { readonly journal: Journal; readonly state: unknown }
@@ -65,7 +68,7 @@ function PayRows({ result }: { result: StageResult }) {
   )
 }
 
-export function StageHost({ kind, careerId, mode, onExit }: StageHostProps) {
+export function StageHost({ kind, careerId, mode, onExit, onSettled }: StageHostProps) {
   const { game } = useRuntime()
   const snapshot = useSnapshot()
   const reducedMotion = useReducedMotionSetting()
@@ -79,6 +82,8 @@ export function StageHost({ kind, careerId, mode, onExit }: StageHostProps) {
   const writes = useRef<Promise<void>>(Promise.resolve())
   const snapshotRef = useRef(snapshot)
   snapshotRef.current = snapshot
+  const settledRef = useRef(onSettled)
+  settledRef.current = onSettled
 
   const persist = useCallback((journal: Journal) => {
     const row: StoredJournal = { id, careerId: mode === 'career' ? careerId : null, journal }
@@ -107,6 +112,7 @@ export function StageHost({ kind, careerId, mode, onExit }: StageHostProps) {
     const prior = careerId === null ? null : settledBefore(snapshotRef.current.receipts, careerId, kind, config.seed)
     if (prior !== null) {
       await forget()
+      settledRef.current?.(prior)
       setPhase({ name: 'result', result: resultOf(prior), ...play })
       return
     }
@@ -115,6 +121,7 @@ export function StageHost({ kind, careerId, mode, onExit }: StageHostProps) {
         careerId, kind, seed: config.seed, version: play.journal.version, inputs, practice: false,
       }, `settle-stage:${id}`)
       await forget()
+      if (answer.kind === 'done') settledRef.current?.(answer.receipt)
       setPhase(answer.kind === 'done' ? { name: 'result', result: resultOf(answer.receipt), ...play } : { name: 'stuck', words: answer.text, retry: false, ...play })
     } catch {
       live.current = play

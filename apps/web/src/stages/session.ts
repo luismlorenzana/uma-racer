@@ -7,12 +7,7 @@ import {
 } from '@racer/domain/stages'
 import type { RacerReceipt } from '../app/game'
 
-/** How a host was opened: a career's plays (Play pays, Practice doesn't), or practice only. */
-export type StageMode = 'career' | 'practice'
-
-/** One open play per game and career, and one practice per game outside a career. */
-export const journalId = (kind: StageKind, careerId: string | null, mode: StageMode): string =>
-  `${kind}:${mode === 'career' && careerId !== null ? careerId : 'practice'}`
+export { journalId, type StageMode } from './ids'
 
 /** A play's seed: 32 random bits from the phone (the rules roll everything from it). */
 export function newSeed(): number {

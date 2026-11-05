@@ -1,7 +1,8 @@
 # 05 · The build
 
-> **Status: generation 3, the rules built (T153, D382).** The screens that show them (Tree · Deck · Bonds · Skills) are
-> T158's, and the stages and races that fill the wallet are T154's and T155's. The model is
+> **Status: generation 3, built (T153, T158; D382, D387).** The rules are T153's; the screens that show them are a
+> career's Upgrade, Tree · Deck · Bonds · Skills ([11](11-hub-and-places.md#83-upgrade-careeridupgradetab) §8.3, T158);
+> the stages and races that fill the wallet are T154's and T155's. The model is
 > [05 · card mechanics](../research/drawing-board/05-card-mechanics.md) §3–§4. Cards and their bond tracks are
 > [06](06-cards-and-bonds.md).
 
@@ -148,7 +149,9 @@ What the bought pips pay is never stored. It's recomputed from the current deck,
 - swapping a card, moving one, or a card reaching bond 80 changes every bought and open pip at once;
 - **purchase order never matters**: the same pips with the same deck pay the same.
 - **Every pip previews** its level, its cost, its gain (stats and SP) and the part of the gain her caps would throw
-  away, before it's bought. Buying it pays exactly the preview. A Camp previews the same way.
+  away, before it's bought. Buying it pays exactly the preview. A Camp previews the same way, and so does a level's row
+  bought at once (`previewPips`, Upgrade's Buy row). Upgrade's Tree shows them
+  ([11](11-hub-and-places.md#83-upgrade-careeridupgradetab) §8.3).
 
 A few unique effects read the whole tree (the combined facility level, sessions in a branch): buying a pip can then
 raise other pips too, and the preview counts that.

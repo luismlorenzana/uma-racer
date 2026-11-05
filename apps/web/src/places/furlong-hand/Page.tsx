@@ -1,5 +1,5 @@
-// The Hub's Furlong Hand place (docs/game/11-hub-and-places.md, docs/game/09-furlong-hand.md; T156): until the career
-// screens (T158) open the race for a career's season, the place opens it full screen as practice, which pays nothing.
+// The Hub's Furlong Hand place (docs/game/11-hub-and-places.md, docs/game/09-furlong-hand.md; T156, D387): the race's
+// free practice, full screen, which pays nothing; a career's own plays open from its page (Play, or Play again).
 // Practice borrows her running career (the most recently started): its deck, her racing build and her next race, else
 // an Uma alone on her best course.
 import { useLeave } from '@luismlorenzana/uma-kit/shell'

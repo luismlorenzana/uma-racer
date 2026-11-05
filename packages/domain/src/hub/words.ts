@@ -51,7 +51,7 @@ export const HUB_WORDS = Object.freeze({
   'peek-owned-of': '{n} of {total}',
   'peek-latest-umas': 'Latest unlocks',
   'peek-careers': 'In progress',
-  'peek-no-careers': "No career running. Start one from an Uma's profile in the Stable.",
+  'peek-no-careers': "No career running. Start one in Careers, or from an Uma's profile in the Stable.",
   'next-objective': 'Next: {race}',
   'next-finale': 'Next: the URA Finals',
   'open-career': '{uma}: open her career',
