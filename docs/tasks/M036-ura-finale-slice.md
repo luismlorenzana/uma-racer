@@ -245,14 +245,18 @@ until T159.
 
 | Part | What | After | Decision |
 |---|---|---|---|
-| **T152** | **The clean slate.** Delete §"Deleted at the switch"; the generation-3 save skeleton (kinds, operations, stamps, the API path, Dexie g3 with the g2 wipe); the master adapter's real card effects (private) with synthetic test cards; tickets and unlocks | — | D381 |
-| **T153** | **The build.** Deck, posting, the tree and the session formula, bond tracks, skills, the racing build; card power (05's reference session, for the later refit); `sim:decks` | T152 | D382 |
-| **T154** | **The career.** Calendar placement, the season machine, objectives on the engine, the URA Finals, rewards; the rivals' re-tune with T153's sim | T152, T153's types | D383 |
-| **T155** | **The stage framework and Training Yard:** contract, host, journal, settle, `sim:stages`; the Yard's rules, bots and view | T152 | D384 |
-| **T156** | **Furlong Hand:** rules, rival scripts, bots and view, on T155's contract | T155's contract | D385 |
-| **T157** | **The shell:** the Hub's two pages, Stable, Card Library, Account, the device save and sync on g3 | T152 | D386 |
-| **T158** | **The career screens:** calendar, season flow, Tree · Deck · Bonds · Skills, the race hand-off and the finale | T153, T154, T157 | D387 |
-| **T159** | **The release:** the manual rewritten as built, CLAUDE.md's new rules, then the release steps below | All | D388 |
+| [**T152**](T152-clean-slate.md) | **The clean slate.** Delete §"Deleted at the switch" and cut the kept modules loose; generation 3's records, stamps, operation registry (every slice operation declared), API path and Dexie g3 with the g2 wipe; the master adapter's real card effects; tickets and unlocks; a green app that signs in to Town Hall → Account | — | D381 |
+| [**T153**](T153-the-build.md) | **The build.** Deck, posting, the tree and the session formula, bond tracks, skills, the racing build; card power (05's reference session, for the later refit); `sim:decks` | T152 | D382 |
+| [**T154**](T154-the-career.md) | **The career.** Calendar placement, the season machine, objectives on the engine, the URA Finals, rewards; the rivals' re-tune with T153's sim | T152, T153's types | D383 |
+| [**T155**](T155-stages-and-training-yard.md) | **The stage framework and Training Yard:** contract, host, journal, settle, `sim:stages`; the Yard's rules, bots and view | T152 | D384 |
+| [**T156**](T156-furlong-hand.md) | **Furlong Hand:** rules, rival scripts, bots and view, on T155's contract | T155's contract | D385 |
+| [**T157**](T157-the-shell.md) | **The shell:** the Hub's two pages, Stable, Card Library and Account on the generation-3 save | T152 | D386 |
+| [**T158**](T158-career-screens.md) | **The career screens:** calendar, season flow, Tree · Deck · Bonds · Skills, the race hand-off and the finale | T153, T154, T157 (T155, T156) | D387 |
+| [**T159**](T159-release.md) | **The release:** the manual rewritten as built, the new rules in CLAUDE.md and AGENTS.md, then the release steps below | All | D388 |
+
+**The packets** are self-contained for any agent (Claude, ChatGPT or Codex): each has Why, Context, Do, Done when and
+Deliver. A part's branch is `feat/t15x-…` from `restart/g3`, with a PR into `restart/g3`, and Claude merges. After
+T152, the parts run in parallel: T153, T154, T155 and T157 at once, then T156 on T155's contract, then T158.
 
 ## The release (T159)
 
