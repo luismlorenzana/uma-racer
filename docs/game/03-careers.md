@@ -3,7 +3,7 @@
 > **Status: generation 3, built (T154, T158; D383, D387).** The rules are T154's; the career screens (the calendar
 > strip, the season card's three steps, the race sheet and run, the URA Finals and the completion) are T158's,
 > [11 · Hub and places](11-hub-and-places.md#8-the-career-screens) §8; the two stages' games are T155's and T156's. The
-> design is [M036](../tasks/M036-ura-finale-slice.md) "The career" and
+> design is M036's "The career" (released, D388) and
 > [v3 §2](../research/drawing-board/README.md#2-the-shape-of-the-game).
 
 A career is one Uma's run through one scenario: twelve seasons, then the scenario's finale. Each season she plays a
@@ -177,6 +177,5 @@ then three races, each retried until won:
 
 ## Not built yet
 
-- **The stages' pay** comes from `settle-stage` ([07](07-stages.md) §3) on [12](12-pacing.md)'s table.
 - **A second career** with the same Uma in the same scenario, and careers in later scenarios
   ([04](04-tiers-and-scenarios.md) §4).

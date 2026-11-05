@@ -1,9 +1,9 @@
 # 08 · Training Yard
 
-> **Status: generation 3, built (T155, D384).** The rules, bots and view are T155's; the career screens (T158) open it
-> for a season without objectives, and the Hub's Training Yard place opens it as practice until then. The design is
-> [M036](../tasks/M036-ura-finale-slice.md) "Training Yard" and [04](../research/drawing-board/04-mini-game-evaluation.md)
-> §1.2. The framework it runs on is [07](07-stages.md).
+> **Status: as released (M036, D388; T155, D384).** The rules, bots and view are T155's; the career screens (T158)
+> open it for a season without objectives, and the Hub's Training Yard place opens it as practice. The design is
+> M036's "Training Yard" and [04](../research/drawing-board/04-mini-game-evaluation.md) §1.2. The framework it runs on
+> is [07](07-stages.md).
 
 **Merge.** A Triple Town–like yard of Uma face tiles: set each piece down, and three touching pieces of one colour and
 frame merge one frame up. It pays the **drills** her tree spends ([05](05-the-build.md) §3), in the colours she merged,

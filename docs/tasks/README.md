@@ -11,7 +11,7 @@ This folder holds **only work that is planned or in progress**. A task spec is a
 
 ## Current plan
 
-**The restart (D380, 2026-11-04).** The game as built is retired. Uma Racer is redesigned as a clock-free game:
+**The restart (D380, 2026-11-04).** Generation 2's game is retired. Uma Racer is redesigned as a clock-free game:
 - careers of mini-game seasons;
 - resources spent by hand in trees priced with the real support cards;
 - the race engine kept.
@@ -20,7 +20,7 @@ This folder holds **only work that is planned or in progress**. A task spec is a
 
 | Release | Milestone | State |
 |---|---|---|
-| 1 | [M036 — URA Finale, the new game](M036-ura-finale-slice.md) (T152–T159): generation 3 with a full wipe, Training Yard and Furlong Hand, the tree, deck, bonds and skills, URA Finale careers | **Specified 2026-11-04.** Built on `restart/g3`; ships to production in one release |
+| 1 | [M036 — URA Finale, the new game](M036-ura-finale-slice.md) (T152–T159): generation 3 with a full wipe, Training Yard and Furlong Hand, the tree, deck, bonds and skills, URA Finale careers | **Released 2026-11-05 (D388).** Built on `restart/g3` (D381–D387), shipped to production in one release with generation 2's wipe; [the manual](../game/README.md) describes it |
 | 2 | Team Showdown: Shards, Umas earned in play; Unity Cup's careers | Planned |
 | 3 | Fan Festival: Scout points, cards earned in play, the refit; Trackblazer's and Our Grand Concert's careers | Planned |
 | 4 | Summer Camp: aptitude points; Grand Masters' careers; promotion to tier 2 | Planned |
@@ -33,12 +33,14 @@ This folder holds **only work that is planned or in progress**. A task spec is a
 
 The rework phases that shipped (1–3, 5 and 6) are in the history, with their records below.
 
-The `pre-split` tag marks the generation-1 game. Generation 2's last state on `main` is `c592ccd`; the restart deletes
-it.
+The `pre-split` tag marks the generation-1 game. Generation 2's last state on `main` is `c592ccd`; M036's release
+replaced it, with no rollback path (D380).
 
-**Next free numbers: M037, T160 and D389** (D381–D388 are reserved for M036's parts). Numbers are never reused, so a
-decision that mentions T014 always means the same work. T057 was consumed by the per-scenario limit-break branch and is
-not reused.
+Later releases are planned here as a milestone spec with one packet per part; each part branches `feat/t16x-…` from
+`main` and merges by pull request, CI required. `restart/g3` is retired.
+
+**Next free numbers: M037, T160 and D389.** Numbers are never reused, so a decision that mentions T014 always means
+the same work. T057 was consumed by the per-scenario limit-break branch and is not reused.
 
 ## Completed and removed
 
@@ -56,7 +58,7 @@ are named by their old path (`design/uma-rpg.md` …); read them with `git show 
 | T146 — the compact Farm: durations instead of clock end times, Free Umas only in a one-screen job sheet with everything preselected, icon-first 48–56 pt rows with Collect, Repeat, Speed Tickets and ⋯, and a side panel that acts (2 taps to collect or restart, 3 to start a job); Training shares the rows | 2026-10-16 | [game/07](../archive/g2-manual/07-farm.md) §10, [game/02](../archive/g2-manual/02-check-ins-and-notifications.md) §3, [game/11](../game/11-hub-and-places.md) §2.6, D366 | none (built from the owner's feedback in chat) |
 | A01–A02 (ChatGPT handoff packets) — the racer's four buildings, the Racing page's tiles, the currency marks, tier crests and Speed Ticket icon, published as uma-art 2.6.0 and 2.7.0 | 2026-10-15 | [game/11](../game/11-hub-and-places.md) §10.3, D364 | `d25d4e9` (`docs/handoff/tasks/`) |
 | T145 — uma-rpg's Hub on the Home screen: the Phaser town, the side-panel quick look, stand-ins for the four buildings awaiting art | 2026-10-15 | [game/11](../game/11-hub-and-places.md), D363 | none (built from the owner's scope call in chat) |
-| T143 — The switch (M034): generation 2 becomes the app, the retired systems are deleted, the docs are rewritten as built | 2026-10-15 | [The manual](../game/README.md), [its architecture's "Decided at the switch"](../game/architecture.md#decided-at-the-switch-t143), [rework/13](../rework/13-removals-and-plan-changes.md) §8, D361 | `1a39f95` |
+| T143 — The switch (M034): generation 2 becomes the app, the retired systems are deleted, the docs are rewritten as built | 2026-10-15 | [The manual](../game/README.md), its architecture's "Decided at the switch" (`git show c592ccd:docs/game/architecture.md`), [rework/13](../rework/13-removals-and-plan-changes.md) §8, D361 | `1a39f95` |
 | M033 / T125–T133 — The rework's rules, `sim:loop` and the builds against the field | 2026-10-14 | [The manual](../game/README.md) (live blocks), `packages/domain/src/<area>/` (moved there by T143), D340–D350 | M033: `adb10ed`; each T spec: the commit before its merge |
 | M032 — Re-architecture phase 1: a sound base | 2026-10-14 | [rearchitecture/08](../rearchitecture/08-phases.md) phase 1, D337, [the manual](../game/README.md) | No spec file: the phase table was the spec |
 | M024 / T081, M010 / T035, M011 / T036–T039 — **retired unbuilt** (D339) | 2026-10-14 | — | `afe4696` |

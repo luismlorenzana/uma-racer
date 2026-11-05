@@ -1,7 +1,7 @@
 # 01 · The game loop
 
-> **Status: generation 3, being built (M036, D380).** The career's rules are built (T154, D383), on the build's
-> (T153, D382). The stages are T155's and T156's, the shell T157's and the career screens T158's. The design is
+> **Status: as released (M036, D388).** The career's rules are T154's (D383), on the build's (T153, D382). The stages
+> are T155's and T156's, the shell T157's and the career screens T158's. The design is
 > [the drawing board v3](../research/drawing-board/README.md).
 
 The game has no clock. Nothing runs on timers, nothing refills overnight, and nothing limits how much you play: the

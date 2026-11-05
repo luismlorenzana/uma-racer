@@ -1,7 +1,8 @@
 # 12 · Pacing
 
-> **Status: generation 3, the numbers set (T154, D383).** The stages that pay them are T155's ([07](07-stages.md) and
-> [08](08-training-yard.md), D384) and T156's (Furlong Hand). The targets are [M036](../tasks/M036-ura-finale-slice.md)'s.
+> **Status: as released (M036, D388); the numbers are T154's (D383).** The stages that pay them are T155's
+> ([07](07-stages.md) and [08](08-training-yard.md), D384) and T156's ([09](09-furlong-hand.md), D385). The targets
+> are M036's.
 
 How much a career earns, and how fast. There is no clock: pacing is what each play pays, against what the tree, the
 bonds and the skills cost, and how strong the rivals are at each point of the calendar.

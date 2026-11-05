@@ -1,5 +1,10 @@
 # Skills & Lineage
 
+> **Archived by the restart (D380, 2026-11-04).** This was generation 2's design: lineage, Inspiration and SP derived
+> from her build all left with it. Generation 3's skills (her own and her cards' hints, bought with SP under the
+> scenario's cap) are [05 · The build](../game/05-the-build.md) §8 and [06](../game/06-cards-and-bonds.md); the
+> design is [the drawing board v3](../research/drawing-board/README.md). This page is kept as history only.
+
 > **Status: built (generation 2).** Skill data is seeded from the original game through the private pack
 > ([data backlog](../research/data-backlog.md)). The SP caps and shares are tuning values, pinned in tests.
 

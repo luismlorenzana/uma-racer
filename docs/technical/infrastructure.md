@@ -23,7 +23,7 @@ Goal: **the same keyless GitHub Actions → GCP pipeline as uma-planner, at a co
 | GitHub Actions | CI/CD (private repo) | 2,000 minutes per month | $0 |
 | Cloud Billing budget | **Alerts at $1 and $5** | — | — |
 
-Sizing check: a sync that runs operations reads the whole operation set, about 200 reads at 25 Umas, so even 100 syncs
+Sizing check, as measured on generation 2: a sync that runs operations reads the whole operation set, about 200 reads at 25 Umas, so even 100 syncs
 a day stay under the 50k free reads; a heavy day of check-ins and 40 races is a few hundred Firestore writes
 ([rework/13](../rework/13-removals-and-plan-changes.md) §8).
 Content packs plus atlases are an estimated 15–30 MB, downloaded once per content version.
@@ -81,7 +81,7 @@ runs the first deploy.
 | Saves | `PERSISTENCE=local` → `apps/api/.data/save-g3.json` (`LOCAL_SAVE_FILE`) | `PERSISTENCE=firestore` → `g3/{uid}` (D381) |
 | Dev operations | `DEV_OPERATIONS=true`, set by `pnpm dev` and `pnpm api` (the API's own `dev` and `start:dev` scripts), so `dev-grant` runs | Never set: no deploy, Dockerfile or Cloud Run setting sets it, so production refuses `dev-grant` |
 | Content | `CONTENT_SOURCE=local`: sibling platform release (`MASTER_DIR`) + Racer overlay (`CONTENT_DIR`) | `CONTENT_SOURCE=gcs`: `uma-platform-master-data` read-only + `uma-racer-content` overlay |
-| Synthetic accounts | `/dev/seeds/*?seed=…` in dev builds ([architecture](../game/architecture.md#dev-seeds)) | None: production answers `/dev/seeds` as an unknown path |
+| Synthetic accounts | None since D381: no dev seeds. A local account starts empty, and Account's dev section grants tickets (`dev-grant`) ([architecture](../game/architecture.md#dev-builds)) | None: production answers `/dev/seeds` as an unknown path |
 | Phone checks | Local browser at phone width, no Simulator (P60) | Owner's Home Screen web app |
 
 `apps/api/.env` comes from `apps/api/.env.example` (auth off, local saves and content). A fresh git worktree has
@@ -231,8 +231,8 @@ git push origin HEAD:main
 Then steps 1, 2 and 4 for the revert. Content rolls back by publishing the older checkout's content again; the old
 hashed objects are still in the bucket, and the manifest goes up last.
 
-**The `pre-split` tag** marks the old game on `main` before the generation-2 switch, and never moves. It is the
-porting reference for anything of the old app, and its docs are read with `git show pre-split:docs/<path>`. Reverting
-generation 2 itself restores code only: the old app would find `players/` empty and start a fresh old-format account,
-because the old save is gone for good (D323), and the content would have to be published again from a `pre-split`
-checkout. `saves/{uid}` and the phone's `uma-racer-g2` would survive, so rolling forward again reuses them.
+**There is no rollback path for the old game (D380).** The `pre-split` tag (generation 1) and `c592ccd` (generation
+2's last state on `main`) never move, and stay as history and porting references only: their docs are read with
+`git show <ref>:docs/<path>`. Generation 2's saves are gone: M036's release deleted Firestore's `saves/` with no
+backup, and each phone deletes its `uma-racer-g2` database on its first generation-3 boot. A revert reverts a
+generation-3 release, never back across the restart.

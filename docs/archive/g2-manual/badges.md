@@ -231,7 +231,7 @@ Each `raceResults` row carries versioned `accomplishmentFacts`. Version 1 snapsh
   inherited unique activated.
 
 These facts are derived from the authoritative template, the race input and the deterministic timeline when the race
-is prepared ([Racing](../../design/racing.md#accomplishment-facts)). They do not change simulation or replay versions. Parsers reject
+is prepared (generation 2's design/racing.md, "Accomplishment facts": `git show c592ccd:docs/design/racing.md`). They do not change simulation or replay versions. Parsers reject
 invented UI-supplied facts, unknown fact versions, duplicate tags, unsafe ids, invalid ranges, or facts inconsistent with
 the stored player result.
 

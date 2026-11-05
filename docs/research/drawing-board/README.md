@@ -5,8 +5,8 @@
 > [01 · the original career and its 15 scenarios](01-uma-career-and-scenarios.md),
 > [02 · mini-games: design and tech](02-mini-games.md), [03 · uma-racer today](03-racer-today.md),
 > [04 · the mini-game evaluation](04-mini-game-evaluation.md) and [05 · card mechanics](05-card-mechanics.md).
-> The restart is D380. The first release is [M036, the URA Finale slice](../../tasks/M036-ura-finale-slice.md). The
-> rework's pages ([docs/rework](../../rework/README.md)) are archived when the slice ships.
+> The restart is D380. The first release is M036, the URA Finale slice, released on 2026-11-05 (D388; [the task
+> plan](../../tasks/README.md)). The rework's pages ([docs/rework](../../rework/README.md)) are archived.
 
 ## 1. The owner's direction
 
@@ -227,7 +227,7 @@ These are CLAUDE.md updates, made with the slice:
 
 | Release | What it adds | Why then |
 |---|---|---|
-| **1. URA Finale, the slice** ([M036](../../tasks/M036-ura-finale-slice.md)) | Careers for URA Finale end to end. **Furlong Hand** and **Training Yard**; the tree, deck, bonds and skills; Uma and Card Tickets; the full wipe | The smallest complete game |
+| **1. URA Finale, the slice** (M036, released, D388) | Careers for URA Finale end to end. **Furlong Hand** and **Training Yard**; the tree, deck, bonds and skills; Uma and Card Tickets; the full wipe | The smallest complete game |
 | 2 | **Team Showdown**: Shards and Umas earned in play; Unity Cup's careers | Umas beyond the starting tickets |
 | 3 | **Fan Festival**: Scout points, cards earned in play and **the refit**; Trackblazer's and Our Grand Concert's careers | Cards beyond the starting tickets; refits before tier 2's eras |
 | 4 | **Summer Camp**: aptitude points; Grand Masters' careers; **promotion** to tier 2 | Tier 1 complete |

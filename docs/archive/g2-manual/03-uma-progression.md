@@ -130,7 +130,7 @@ Racing Levels **10(*s* − 1) + 1 … 10*s*** of the tier. The full map, with th
 | **Rivals** | The typical Uma of T | §9 |
 
 She can't train ahead: scenario *s* + 1's layer opens only when she advances into it. The next tree doesn't exist for
-her yet, and its unlocks need the next scenario's grades ([README](../../game/README.md#grades-follow-scenarios)).
+her yet, and its unlocks need the next scenario's grades (generation 2's manual README, "Grades follow scenarios": `git show c592ccd:docs/game/README.md`).
 
 ## 4. Her career in each scenario
 

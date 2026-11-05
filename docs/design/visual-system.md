@@ -9,9 +9,9 @@ modern HoYoverse menu. The research and the diagnosis of what is wrong today liv
 
 **Two layers, as built (T145, D364).** Paddock is the DOM's skin: the bars, sheets, Pages, panels and words. Under it,
 each Hub page's map is uma-rpg's pixel-art town on a Phaser canvas, drawn from uma-art, and a few uma-art pixel marks
-sit in the DOM: the currency marks, the tier crests, item icons and a building on the Expedition Map's page
-([Pixel art](#pixel-art)).
-Whether Paddock itself moves to a pixel-art look is the owner's open call ([open questions](../open-questions.md)).
+sit in the DOM: the ticket marks and a place's building ([Pixel art](#pixel-art)). The two games' boards are DOM in
+Paddock's skin, drawn in Uma art: faces, busts and the cards' own art.
+Whether Paddock itself moves to a pixel-art look was archived as a question (D370, [open questions](../open-questions.md)).
 
 **Shared with uma-rpg (T147, D367).** Paddock's tokens, base styles, utilities, primitives and icon set are uma-kit's
 (`@luismlorenzana/uma-kit`, uma-platform P48), the same in both games: `theme.css` holds the tokens and `/ui` the
@@ -50,12 +50,12 @@ Three levels is the whole system. A panel inside a panel drops to a hairline div
 | Turf | `--turf` | `#2F7A4F` |
 | Dirt | `--dirt` | `#8A6A4B` |
 | Speed · Stamina · Power · Guts · Wit | `--stat-*` | `#0980E6` · `#DD4433` · `#E66E00` · `#F1368B` · `#05A371`: the original's own, the rims of its type icons (D183) |
-| Tier metals | `--tier-*` | bronze `#B07A46` · silver `#9AA6B5` · gold `#D9A62B` · platinum `#6FB7D9` · rainbow gradient (flair) |
+| Tier metals | `--tier-*` | bronze `#B07A46` · silver `#9AA6B5` · gold `#D9A62B` · platinum `#6FB7D9` · rainbow gradient |
 | Semantic | `--success` / `--danger` / `--warning` / `--info` / `--locked` | `#2F7A4F` / `#C23B33` / `#D08A0E` / `#2F6FE0` / `#8A94A3` |
 
 Stat colours are the original's (D183), and they appear as **meters, dots, 2 px accents and the type icons** — never as
-a filled pill behind text. The `--tier-*` tokens belong to flair only; an Uma's tier crest is uma-art's own pixel
-mark, bronze, silver or gold in its palette. Text contrast stays at 4.5:1 or better, and state is never carried by
+a filled pill behind text. The `--tier-*` tokens draw metal: Training Yard's piece frames, the trophy and the Finale's
+gold. Text contrast stays at 4.5:1 or better, and state is never carried by
 colour alone.
 
 ## Type
@@ -97,19 +97,20 @@ Two faces, both OFL and self-hosted, latin subset only:
 | Panel | Panel surface, `--r-md`, hairline, 16 px padding, optional `micro` section label above |
 | Row | 56 pt, art or icon left, primary 15 / secondary 13, value right in display numerals |
 | Meter | Sunken track, 6 pt tall, stat colour fill, soft cap marked by a 1 px tick at 1200 |
-| Bottom bar | A floating translucent panel with blur and a hairline border: four page tabs and the ☰ Menu. The active tab is two-tone with a chamfered accent underline; Race is raised as a flat accent disc with a hairline ring, not a candy dome |
-| Account bar | Translucent panel with blur and a hairline under it. The trainer's initial on an accent disc, then the currencies as uma-art pixel mark + display numeral chips, each a 44 pt link |
+| Bottom bar | A docked translucent panel with blur and a hairline border: the two page tabs, the raised Career and the ☰ Menu. The active tab is two-tone with an accent marker; Career is raised as a flat accent disc with a hairline ring, not a candy dome |
+| Account bar | Translucent panel with blur and a hairline under it. The trainer's initial on an accent disc, then the two tickets as pixel mark + display numeral chips, each a 44 pt link |
 | Bottom sheet | Raised surface, `--r-lg` top corners, grab handle, drag from the handle only (unchanged) |
-| Uma tile | **Art first:** her bust (her icon until it arrives) fills the square tile, name and level under it, her pixel tier crest and NEW top-left, Ready dot and planner crosshair top-right; locked = art dimmed to 45% at half saturation behind a lock, never a grey box ([UX](ux.md#icon-overlays)) |
-| Card tile | Card icon fills the tile; distance top-left, running style top-right, type bottom-left, bond pill bottom-right (D238); a card past her scenario is dimmed the same way behind a lock |
+| Uma tile | **Art first:** her face (her icon until it arrives) fills the square tile, her name under it; a race mark top-right while she is in a career, a trophy bottom-right once one is complete; locked = art dimmed behind the kit's lock, never a grey box ([UX](ux.md#icon-overlays)) |
+| Card tile | Card icon fills the tile, its name under it; type bottom-left; a locked card carries a lock in its corner |
 
 ## Iconography
 
 - One original set: 24 px grid, 1.75 px strokes, **curve-led silhouettes** (the Umamusume rule), rounded joins, optical
   alignment over mathematical.
-- Line by default, solid for active states, and **illustrated two-tone versions for the four page tabs** — the ones
-  that carry personality. The three currencies are uma-art's pixel marks wherever a balance or price shows (the account
-  bar, the Exchange, the race result, the profile; D364); only the Warehouse's sell sheet still draws the two-tone coin.
+- Line by default, solid for active states, and **illustrated two-tone versions for the page tabs** — the ones
+  that carry personality. The two tickets are uma-art's pixel marks wherever a balance or price shows (the account
+  bar, the Peeks, the unlock sheet, a card's page, Account, the completion); the Card Ticket falls back to the kit's
+  cards icon until uma-art draws its mark.
 - Every icon ships with an accessible name. **No emoji in the product** once the set lands.
 - **Stats and card types have one icon each** (D183), `ui/TypeIcon`: our own drawings in the original's style, a
   rounded tile with a darker rim, a top-to-bottom gradient and a white glyph (boot, heart, flexed arm, flame,
@@ -133,27 +134,25 @@ Two faces, both OFL and self-hosted, latin subset only:
 
 - Portraits are cover-cropped and **top-anchored** so faces never get cut, over `--surface-scrim`, with a 1 px inner
   light border.
-- **Four art tiers** (see [UX](ux.md#art-tiers)): 128 px atlased icons for card grids, 256 px
-  head-and-shoulders busts for every list of Umas, 512 px transparent portraits for Umas, and 450×600 illustrations for
-  cards. Busts sit on a panel-to-sunken gradient, since the portrait's transparency carries through. Everything but
-  the icon is a per-entry file fetched on demand, so a list never waits on it and a screen shows the icon until the
-  art arrives.
-- Full-body Uma art is not available from any documented source; the 512 px portrait is the ceiling.
+- **Art tiers** (see [UX](ux.md#art-tiers)): 128 px atlased icons for card grids, faces for small Umas (grids, the
+  picker, the field, the games' tiles), 256 px head-and-shoulders busts for large ones, chibis only in the plaza, and
+  the full illustrations for cards. Busts sit on a panel-to-sunken gradient, since the art's transparency carries
+  through. Everything but the icon is a per-entry file fetched on demand, so a list never waits on it and a screen
+  shows the icon until the art arrives.
+- Full-body Uma art is not available from any documented source.
 - Reveals and results put art at full width; the panel is a frame, not a container.
 - Missing or retired content shows a labelled placeholder with the same silhouette, never a broken-image grey box.
 
 ## Pixel art
 
 The Hub's maps and a few marks are uma-art's pixel art (uma-rpg's house style: a 3/4 overworld view, light from the
-top left, a 1 px selective outline, six-tone ramps), drawn from code in uma-platform and pinned here (2.7.0, D364):
+top left, a 1 px selective outline, six-tone ramps), drawn from code in uma-platform and pinned here (2.10.0, D378):
 
 | Where | What | Size |
 |---|---|---|
-| Each Hub page's map | 16 px tiles per page (town, learning, racing, farmlands), props, 48×48 buildings, clouds, chimney smoke and glows, on a Phaser canvas ([11](../game/11-hub-and-places.md) §10, §12) | 1.5 CSS px per art pixel on 2× screens |
-| The Expedition Map's page, and the side panel of a place with no Peek of its own (none today) | The place's building (`ui/BuildingSprite`) | 96 pt (2×) |
-| The account bar, the Exchange, the race result, the profile | The currency marks (uma-kit's `UiMark`) | 16 pt |
-| Uma tiles, the featured Uma, her profile | Her tier crest (`TierCrest`), read as "Tier N" | 24 pt (2×) |
-| Item rows, job cards, prices | Items, dishes and the Speed Ticket (`ui/ItemIcon`) | 32 px frames |
+| Each Hub page's map | 16 px tiles per page (`town` for Town Hall, `learning` for Career), props, 48×48 buildings, clouds and glows, on a Phaser canvas ([11](../game/11-hub-and-places.md) §10, §12) | 1.5 CSS px per art pixel on 2× screens |
+| The side panel of a place with no Peek of its own (Training Yard, Furlong Hand) | The place's building (`ui/BuildingSprite`) | 96 pt (2×) |
+| The account bar, the Peeks, the unlock sheet, a card's page, Account, the completion | The ticket marks (uma-kit's `UiMark`) | 16 pt |
 
 - **Whole-number scales only,** with `image-rendering: pixelated` in the DOM and nearest filtering on the canvas: a
   pixel mark is never smoothed or drawn at a fractional scale.
@@ -183,7 +182,7 @@ The same in both: `stage` and `stage-soft` (the immersive surfaces), `scrim`, `a
 colours, the tier metals, turf and dirt.
 
 - **Who chooses:** the phone's setting by default; Account's **Appearance** (System, Light or Dark) overrides it on this
-  phone only (`uma-racer:g2:appearance`), applied as `<html data-theme>` before the first paint, with the browser's theme
+  phone only (`uma-racer:g3:appearance`), applied as `<html data-theme>` before the first paint, with the browser's theme
   colour following the page colour. `data-theme="dark"` on any element keeps that subtree dark.
 - **The rules a screen follows so it reads in both:**
   - text on the gold accent is `text-accent-ink`, never `text-ink` (which turns light);
@@ -201,20 +200,19 @@ colours, the tier metals, turf and dirt.
 - Lists stagger at 24 ms per item, capped at 8 items.
 - **Second layer:** on a major transition, one small element (a dot row, a rule, a chip) follows the main shape ~80 ms
   later. This is most of why HoYoverse menus feel expensive.
-- Springs are reserved for reward moments: the placement stamp, level-ups, goal ribbons and a new Uma's reveal. (Sheets
-  and the art viewer also open on a spring, and a meter fills on one unless it tracks a live value.)
+- Springs are reserved for reward moments: a new Uma's reveal, a card's unlock, the race result and the URA Finals'
+  completion. (The art viewer also opens on a spring, and a meter fills on one unless it tracks a live value.)
 - Reduced motion keeps every state change, drops movement, and never changes timing of a commit.
 
 ## Density
 
-Albums carry a **view switch** rather than a density toggle: Icons (3-up tiles), Cards (2-up, larger art) and List
-(full-width rows). The choice is remembered per album on the device ([UX](ux.md#view-modes)). Everything else stays
-comfortable.
+Albums are dense grids with no density toggle: the Stable five faces to a row, the Card Library four cards
+([UX](ux.md#view-modes)). Everything else stays comfortable.
 
 ## Working rules
 
-- Tokens live in uma-kit's `theme.css`, imported by `apps/web/src/index.css`, which adds only this game's fonts, the
-  Dojo's Friend room colour and the race feed's keyframes; components read tokens, never raw hex.
+- Tokens live in uma-kit's `theme.css`, imported by `apps/web/src/index.css`, which adds only this game's fonts and
+  the race feed's keyframes; components read tokens, never raw hex.
 - Tailwind utilities are fine; one-off colours are not.
 - Animate transform and opacity only in the DOM; keep Phaser, PixiJS, Firebase and fonts lazy; startup JS stays at or
   below 180 KB gzip. The two font families ship as latin-only woff2 with `font-display: swap`, precached, at no more than

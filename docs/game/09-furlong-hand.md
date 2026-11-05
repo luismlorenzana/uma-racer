@@ -1,9 +1,9 @@
 # 09 · Furlong Hand
 
-> **Status: generation 3, built (T156, D385).** The rules, bots and view are T156's; the career screens (T158) open it
-> for a season with an objective and for the Finale, and the Hub's Furlong Hand place opens it as practice until then.
-> The design is [M036](../tasks/M036-ura-finale-slice.md) "Furlong Hand" and
-> [04](../research/drawing-board/04-mini-game-evaluation.md) §2.2. The framework it runs on is [07](07-stages.md).
+> **Status: as released (M036, D388; T156, D385).** The rules, bots and view are T156's; the career screens (T158) open
+> it for a season with an objective and for the Finale, and the Hub's Furlong Hand place opens it as practice. The
+> design is M036's "Furlong Hand" and [04](../research/drawing-board/04-mini-game-evaluation.md) §2.2. The framework it
+> runs on is [07](07-stages.md).
 > **Our rules are original:** none of Pocket Card Jockey's rules, names or art.
 
 **Race.** A card race on her next objective's real course: chain cards by colour or one step up, run them for ground
@@ -240,4 +240,3 @@ and under six lengths.
 
 - **Hint drops:** 04's table has a Partner in a chain of four drop a hint for one of its skills. The slice pays Bond,
   whose tracks give the hints ([06](06-cards-and-bonds.md)), so the race drops none.
-- **The career screens** (T158) open it for a season and for the Finale.

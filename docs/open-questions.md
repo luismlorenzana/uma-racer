@@ -1,12 +1,13 @@
 # Open Questions
 
-No item currently waits on the owner. The game rework is built and shipped: its rules in phase 2
-(D340–D351), the new game on generation 2 in phase 3 (D352–D361, released by T144 on 2026-10-15), and the canvas Hub
-with its own art (T145, D363, D364). New questions land here with a recommendation, get resolved in the same session
-where possible, and then move to the [decisions log](decisions.md). The state of the plan is [tasks](tasks/README.md).
+No item currently waits on the owner. The restart (D380) is built and shipped: generation 3's first release, M036's
+URA Finale (D381–D388), with generation 2 wiped. The calls in [the drawing board v3](research/drawing-board/README.md)
+§8 are settled by default. New questions land here with a recommendation, get resolved in the same session where
+possible, and then move to the [decisions log](decisions.md). The state of the plan is [tasks](tasks/README.md).
 
 The game's numbers are pinned in domain tests, and [the manual](game/README.md)'s live blocks render them from the
-code. `pnpm sim:loop` measures the pacing ([the rework modules](game/architecture.md#the-rework-modules)).
+code. `pnpm sim:careers`, `sim:decks` and `sim:stages` measure the pacing and the bands
+([the balance sims](game/architecture.md#the-balance-sims)).
 
 ## Needs you
 

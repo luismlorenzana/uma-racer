@@ -1,10 +1,9 @@
 # 07 · Stages
 
-> **Status: generation 3, the framework built (T155, D384).** Its games are Training Yard ([08](08-training-yard.md),
-> T155) and Furlong Hand ([09](09-furlong-hand.md), T156, D385). The career screens that open a season's stage are
-> T158's.
-> The design is [02 · mini-games](../research/drawing-board/02-mini-games.md) §2, §4 and §5, and
-> [M036](../tasks/M036-ura-finale-slice.md) "Stages".
+> **Status: as released (M036, D388); the framework is T155's (D384).** Its games are Training Yard
+> ([08](08-training-yard.md), T155) and Furlong Hand ([09](09-furlong-hand.md), T156, D385). The career screens that
+> open a season's stage are T158's (D387).
+> The design is [02 · mini-games](../research/drawing-board/02-mini-games.md) §2, §4 and §5, and M036's "Stages".
 
 A **stage** is one play of a mini-game: 3–7 minutes, graded D to S, paying a career's wallet. Every game shares one
 framework: pure seeded rules in the domain with three bots and a balance sim, a lazy view on the device, a journal that
@@ -94,7 +93,7 @@ The view never grades. On a play's last move the device commits **`settle-stage`
   (the Yard with the season's focus); the tree and the caps are the ceiling, not the plays. Playing never moves the
   calendar ([03](03-careers.md) §3).
 - **Practice** is graded and pays nothing. A career's rule card offers it before the first play; outside a career
-  (the Hub's two game places, until T158) every play is practice. The device grades practice itself with the same
+  (the Hub's two game places) every play is practice. The device grades practice itself with the same
   `settle` and commits nothing; `settle-stage` with `practice: true` answers the grade and pays nothing, leaving the
   career as it was.
 - **A finished career** keeps its stages for practice only.
@@ -147,4 +146,5 @@ Each game's results are on its page ([08](08-training-yard.md) §7, [09](09-furl
 
 ## Not built yet
 
-- **The career screens** (T158) open the host for a career's season, and show replays from her career.
+- **The other four games** on this framework: Team Showdown, Fan Festival, Summer Camp and Festival Kitchen, one a
+  release ([v3's roadmap](../research/drawing-board/README.md#7-the-roadmap)).

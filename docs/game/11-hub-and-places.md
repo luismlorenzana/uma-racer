@@ -1,9 +1,9 @@
 # 11 · Hub and places
 
-> **Status: generation 3 (M036; T152, T157, T158, D381, D386, D387).** T152 cut the Hub to two pages, Town Hall and
-> Career; T157 built the shell, the Stable, the Card Library, the Careers place's shell and Account on them; T158 built
-> the career screens (§8): the season flow, Upgrade, the races and the URA Finals. Generation 2's four pages, their
-> places and their decisions left with it (D380); git history holds them.
+> **Status: as released (M036, D388; T152, T157, T158, D381, D386, D387).** T152 cut the Hub to two pages, Town Hall
+> and Career; T157 built the shell, the Stable, the Card Library, the Careers place's shell and Account on them; T158
+> built the career screens (§8): the season flow, Upgrade, the races and the URA Finals. The old game's pages and
+> places were retired by the restart (D380); git history holds them.
 
 The Hub keeps the re-architecture's pattern whole ([rearchitecture/04](../rearchitecture/04-hub.md) §3–§6): a place
 registry, pixel-art pages on a Phaser canvas with a DOM hit layer, a Peek, a Page and a Counter per place, and routes
@@ -49,7 +49,7 @@ the routes are §7.1. On a page's map, a place's link opens its quick look in th
 On every shell route   ?sheet=menu (☰, §2.5)
 In a Page's state      the Stable's unlock sheet and its reveal; the career's start, race and post sheets: a
                        reload closes them
-Anything else          generation 2's paths and unknown paths go to / (§7.2)
+Anything else          retired and unknown paths go to / (§7.2)
 ```
 
 ## 1. The pattern
@@ -74,7 +74,7 @@ Rules carried over from uma-rpg:
 - **Swipe between pages** on the map (not inside sheets or the side panel), in the bottom bar's order, without
   wrapping: a mostly sideways drag of more than 60 pt, with the scene's camera fade. The bottom bar's tabs do the same.
 - **No scroll or zoom on the map** (uma-rpg D113): each page is one screen.
-- **Tap once for the Peek, then Enter for the Page** (uma-rpg D43). No place is `direct` in generation 3.
+- **Tap once for the Peek, then Enter for the Page** (uma-rpg D43). No place is `direct`.
 
 ## 2. The shell
 
@@ -100,7 +100,7 @@ Left to right (uma-kit's `AccountBar`, with uma-racer's chips from `hub/RacerShe
 
 | Item | Shows | Tap opens | Hidden when |
 |---|---|---|---|
-| Trainer button | "T", the trainer's initial on a gold disc (generation 3 keeps no trainer name) | Account (`/town/account`) | Never |
+| Trainer button | "T", the trainer's initial on a gold disc (the game keeps no trainer name) | Account (`/town/account`) | Never |
 | **Uma Tickets** | Count, with uma-art's `currency/uma-ticket` mark | The Stable's Locked tab (`/town/stable?tab=locked`) | Never (shows 0) |
 | **Card Tickets** | Count, with `currency/card-ticket`; uma-art draws none yet, so the kit's cards icon stands in (§10.3) | The Card Library's Locked tab (`/town/card-library?tab=locked`) | Never (shows 0) |
 | **Sync** | Offline, Sync paused (signed out), or **Sync** in amber (waiting over a day) or red (failing) (D157) | Account, at the sync row (`/town/account?row=sync`) | Synced |
@@ -123,7 +123,7 @@ the chips show blank pills where the numbers go.
 
 ### 2.3 The floating pill
 
-Gone with generation 2's check-ins (D380): nothing runs on a clock, so nothing waits to be collected.
+There is none (D380): nothing runs on a clock, so nothing waits to be collected.
 
 ### 2.4 Getting in, and where the app opens
 
@@ -268,8 +268,8 @@ sends a sub-route it doesn't know back to its root. The paths into the places ar
 
 ### 7.2 Retired routes
 
-Generation 2's paths (`/farm`, `/training`, `/racing`, `/town/warehouse`, `/town/exchange`, `/collection/reveal/…`, the
-dev seeds' `/dev/seeds/*` and the rest) go to `/`, which applies the start rule, as any unknown path does. Saved data
+The old game's paths (`/farm`, `/training`, `/racing`, `/town/warehouse`, `/town/exchange`, `/collection/reveal/…`, the
+retired dev seeds' `/dev/seeds/*` and the rest) go to `/`, which applies the start rule, as any unknown path does. Saved data
 holds no route paths, so nothing needs migrating.
 
 ## 8. The career screens
@@ -427,7 +427,7 @@ All 48×48 with a ground line, from `@luismlorenzana/uma-art`'s `buildings` atla
 | Page | Tiles | Notes |
 |---|---|---|
 | Town Hall | `town/*` | Ground, plaza paths, barrels, crates, flower pots, benches, lamps, trees |
-| Career | `learning/*` | Generation 2's Training ground: hedges, benches, flower beds, lamps, banners |
+| Career | `learning/*` | uma-art's training ground: hedges, benches, flower beds, lamps, banners |
 
 ### 10.3 Marks (uma-art 2.10.0)
 
@@ -487,12 +487,12 @@ missing card or Uma image falls back to its atlas icon, then a labelled placehol
 
 | Choice | Why |
 |---|---|
-| Two pages, `town` and `career`; Town Hall holds the Stable, the Card Library and the hidden Account, Career holds Careers and the two games (D381, D386) | M036's places; the Farm, Training and Racing pages left with generation 2 |
+| Two pages, `town` and `career`; Town Hall holds the Stable, the Card Library and the hidden Account, Career holds Careers and the two games (D381, D386) | M036's places; the old Farm, Training and Racing pages were retired (D380) |
 | The bottom bar is Town Hall · Career · raised Career · Menu; the raised Career opens the career in progress started last, else every career (D386) | "Career: her current season": one tap back to where she is |
 | The top bar's two chips are the tickets, each opening the Locked tab of the place that spends it (D386) | Tickets are spent only on Locked; no coins or Speed Tickets exist |
 | The Stable and the Library open on Owned once anything is owned, else Locked (D386) | A new account's first move is to spend its tickets |
 | The Stable's grid is uma-kit's `VirtualGrid` of `FaceTile`s under its album chrome, not `AlbumGrid` (D386) | `AlbumGrid` prints a level under each face, and generation 3 has none; the kit's primitives are composed, not forked |
-| The unlock sheet is one screen with her bust, aptitudes, growth and the tickets; the reveal plays in the same sheet with Her profile preselected (D386) | The owner's one-screen sheets with the obvious choice preselected; generation 2's reveal route left with T152 |
+| The unlock sheet is one screen with her bust, aptitudes, growth and the tickets; the reveal plays in the same sheet with Her profile preselected (D386) | The owner's one-screen sheets with the obvious choice preselected; the old reveal route left with T152 |
 | A card's page is its own confirm: Unlock · 1 Card Ticket commits at once (D386) | You read the card before you spend; one more sheet would be one more tap |
 | The Library's filters are icons in the URL; the Stable's are the kit's album chrome kept on the phone (D386) | Types and foci have icons; Back from a card keeps the view; Umas need the search and sort over every outfit |
 | A card's effects are named in `@racer/domain/hub`'s `EFFECT_WORDS` and rendered into [02](02-unlocks.md) (D386) | The names are the code's own and can't drift; the values stay in the private pack |

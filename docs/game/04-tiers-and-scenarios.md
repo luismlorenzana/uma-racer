@@ -1,8 +1,8 @@
 # 04 · Tiers and scenarios
 
-> **Status: generation 3, being built (M036, D380, D381, D383).** The tier map, the caps, careers by scenario and the
-> rivals by scenario are live. URA Finale is the only scenario open for careers, and **promotion arrives with release 4**
-> ([the roadmap](../research/drawing-board/README.md#7-the-roadmap)). Generation 2's page is
+> **Status: as released (M036, D388; D380, D381, D383).** The tier map, the caps, careers by scenario and the rivals
+> by scenario are live. URA Finale is the only scenario open for careers, and **promotion arrives with release 4**
+> ([the roadmap](../research/drawing-board/README.md#7-the-roadmap)). The old game's page is
 > [archived](../archive/g2-manual/04-tiers-and-promotion.md).
 
 ## 1. The tier map
