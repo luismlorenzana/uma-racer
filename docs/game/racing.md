@@ -9,11 +9,11 @@ as they were). What the rework added around them lives on its own pages:
 
 | Topic | Page |
 |---|---|
-| Racing Level 1–50 per tier, its curve, the holds, the gate and the advance | [03](03-uma-progression.md) §2–§5 |
-| Careers and goals in each scenario | [03](03-uma-progression.md) §4 |
-| Prize Money, the Daily Purse, featured races, the result and the race's commit | [09](09-racing-rewards-and-exchange.md) |
-| Rival strength by tier on the re-authored trees, and Expedition difficulty | [04](04-tiers-and-promotion.md) §7 |
-| The Racecourse, race select and the run on screen | [11](11-hub-and-places.md) §3.3, [09](09-racing-rewards-and-exchange.md) §3.5, §4 and §7 |
+| Racing Level 1–50 per tier, its curve, the holds, the gate and the advance | [03](../archive/g2-manual/03-uma-progression.md) §2–§5 |
+| Careers and goals in each scenario | [03](../archive/g2-manual/03-uma-progression.md) §4 |
+| Prize Money, the Daily Purse, featured races, the result and the race's commit | [09](../archive/g2-manual/09-racing-rewards-and-exchange.md) |
+| Rival strength by tier on the re-authored trees, and Expedition difficulty | [04](../archive/g2-manual/04-tiers-and-promotion.md) §7 |
+| The Racecourse, race select and the run on screen | [11](11-hub-and-places.md) §3.3, [09](../archive/g2-manual/09-racing-rewards-and-exchange.md) §3.5, §4 and §7 |
 | The engine, determinism and the race scene | [Architecture](architecture.md#the-race) |
 
 ## Race presentation
@@ -23,23 +23,22 @@ feed, result hero and finishing order. The scene loads only verified `bust` imag
 playing and falls back to gate numbers if unavailable. Small Uma-selection controls and the shared picker use faces;
 only the Town Hall plaza uses chibis. No result, reward, seed, playback timing or race rule changes.
 
-## What a finish pays
+## Rival handicaps
 
-A win pays the grade's EXP × (1 + Σ Race Bonus) over the cards in the race's preset, every card at its full Race Bonus
-(D329); 2nd and 3rd pay a quarter of the win, and 4th or worse nothing ([03](03-uma-progression.md) §2). A grade's
-rivals race weaker than a fully trained Uma by its handicap, a share of every stat, so a grade is equally soft at every
-tier (D152, D155). G1 is the real test.
+A race's rivals race weaker than a fully trained Uma by their grade's handicap, a share of every stat, so a grade is
+equally soft at every tier (D152, D155). G1 is the real test. What a race pays in a career is T154's
+(03 · Careers); generation 2's Racing EXP is [archived](../archive/g2-manual/03-uma-progression.md).
 
-<!-- live:race-rewards -->
-| Grade | Win EXP | 2nd or 3rd | Rival handicap |
-|---|---|---|---|
-| Debut | 40 | 10 | 35% |
-| Maiden | 40 | 10 | 35% |
-| Pre-OP | 60 | 15 | 30% |
-| OP | 60 | 15 | 30% |
-| G3 | 80 | 20 | 25% |
-| G2 | 110 | 28 | 15% |
-| G1 | 150 | 38 | 5% |
+<!-- live:rival-handicaps -->
+| Grade | Rival handicap |
+|---|---|
+| Debut | 35% |
+| Maiden | 35% |
+| Pre-OP | 30% |
+| OP | 30% |
+| G3 | 25% |
+| G2 | 15% |
+| G1 | 5% |
 <!-- /live -->
 
 ## Rivals
@@ -47,7 +46,7 @@ tier (D152, D155). G1 is the real test.
 Rivals are generated per race (D153, D159). Each style gets a preset built on a realistic set of cards. Stamina is set
 first, from what the race's distance needs. Then each stat is rolled within a range of the preset. The tier rules give
 the generator the scenario's typical trained Uma on the re-authored trees, with its Extra Stats and its buff's typical
-value (`rivalTrainedStat`, [04](04-tiers-and-promotion.md) §7–§8).
+value (`rivalTrainedStat`, [04](../archive/g2-manual/04-tiers-and-promotion.md) §7–§8).
 
 <!-- live:rivals -->
 | Rule | Value |

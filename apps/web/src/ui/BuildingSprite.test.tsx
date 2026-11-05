@@ -19,18 +19,18 @@ describe('BuildingSprite', () => {
     expect(sprite.style.backgroundPosition).toMatch(/^-\d+px -\d+px$/)
   })
 
-  it.each([['card-library'], ['gym'], ['racecourse'], ['trophy-hall']])('draws %s from the atlas since uma-art 2.6.0 (A01)', (frame) => {
-    const place = placeById(frame)!
+  it.each([['stable'], ['card-library'], ['careers'], ['training-yard'], ['furlong-hand']])('draws %s from the atlas', (id) => {
+    const place = placeById(id)!
     const { container } = render(<BuildingSprite frame={place.frame} page={place.page} />)
-    expect(container.querySelector(`[data-sprite="${frame}"]`)).not.toBeNull()
+    expect(container.querySelector(`[data-sprite="${place.frame}"]`)).not.toBeNull()
     expect(container.querySelector('svg[data-sprite="placeholder"]')).toBeNull()
   })
 
   it('never draws an empty box: an unknown frame or none is a house in the palette', () => {
     for (const frame of ['nowhere', null]) {
-      const { container } = render(<BuildingSprite frame={frame} page="farm" />)
+      const { container } = render(<BuildingSprite frame={frame} page="career" />)
       const fills = [...container.querySelectorAll('svg [fill]')].map((shape) => shape.getAttribute('fill'))
-      expect(fills).toContain(hex(PALETTES['farmlands']!.building.wall))
+      expect(fills).toContain(hex(PALETTES['learning']!.building.wall))
       cleanup()
     }
   })

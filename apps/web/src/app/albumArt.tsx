@@ -6,7 +6,7 @@ import type { ArtKind, ContentAsset, LoadedContent } from '../content/view'
 import { AtlasSprite } from '../ui/AtlasSprite'
 import { initialOf, useUmaName } from '../ui/uma'
 import { useArtCandidates } from '../ui/useContentArt'
-import { useG2Content } from './content'
+import { useLoadedContent } from './content'
 
 export function albumArtCandidates(content: LoadedContent, kind: UmaArtKind, outfitId: string): readonly { kind: ArtKind; id: string }[] {
   if (kind === 'face') return content.umas.byId.has(outfitId) ? [{ kind: 'face', id: outfitId }] : []
@@ -53,7 +53,7 @@ function iconUrl(content: LoadedContent, outfitId: string): Promise<string | nul
 }
 
 function useUrl(kind: UmaArtKind, outfitId: string): string | null {
-  const content = useG2Content()
+  const content = useLoadedContent()
   const shared = useArtCandidates(content, content === null ? [] : albumArtCandidates(content, kind, outfitId))
   const [loaded, setLoaded] = useState<{ content: LoadedContent; kind: UmaArtKind; id: string; url: string } | null>(null)
   useEffect(() => {
@@ -70,7 +70,7 @@ function useUrl(kind: UmaArtKind, outfitId: string): string | null {
 }
 
 function Fallback({ outfitId, size }: { outfitId: string; size: number }) {
-  const content = useG2Content()
+  const content = useLoadedContent()
   const name = useUmaName(outfitId)
   const asset = content === null ? null : outfitIcon(content, outfitId)
   return asset !== null ? <AtlasSprite asset={asset} decorative className="size-full" /> : (

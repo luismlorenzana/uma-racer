@@ -1,5 +1,8 @@
 # 01 · Target architecture
 
+> **Archived by the restart (D380, 2026-11-04).** This plan's phases 1–3, 5 and 6 shipped; 4 and 7–9 are retired. The
+> new game is [the drawing board v3](../research/drawing-board/README.md); this page is kept as history only.
+
 What uma-racer looks like after the rebuild (D321), and what happens to every part of it today. The layer choices
 are uma-platform's baseline (architecture §4) as uma-rpg runs it: React 19, Vite, Tailwind 4, Motion, Zustand +
 Dexie, NestJS on Cloud Run, Firebase Hosting and Auth, PWA, pnpm 10, Node 22, Turbo, strict TypeScript, Vitest.

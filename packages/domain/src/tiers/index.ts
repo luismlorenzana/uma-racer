@@ -1,14 +1,4 @@
-// `@racer/domain/tiers`: the rules that move one Uma through her tier, and the account's Uma Tickets
-// (docs/game/03-uma-progression.md, docs/game/04-tiers-and-promotion.md). The shared state shapes and the time
-// factor are `@racer/domain/state`'s.
+// `@racer/domain/tiers`: the tier map, the caps and the rivals (docs/game/04-tiers-and-scenarios.md).
 export * from './map'
 export * from './scaling'
-export * from './refusals'
-export * from './ledger'
-export * from './career'
-export * from './racing'
 export * from './rivals'
-export * from './roster'
-export * from './advance'
-export * from './promotion'
-export * from './expedition'

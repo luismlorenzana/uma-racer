@@ -56,7 +56,7 @@ Hub and primitives are uma-kit's, the app both Uma games share.
 | `packages/race` | Deterministic race engine (seeded, 15 Hz ticks, timeline + playback sampling). Vitest |
 | `apps/api` | NestJS 11: uma-server's `AuthGuard` on every route (`@luismlorenzana/uma-server/auth`: Firebase token + `ALLOWED_EMAIL`, 401 or 403), `/api/save`, `/api/sync` (generation 2, protocol 2), `/api/content/*`, `/api/health` |
 | `apps/web` | React 19 + Vite 7 + Tailwind 4 + Motion (`m.*` under `LazyMotion strict`) + PWA on uma-kit 0.9.1 (theme, shell, Hub map on Phaser 4, primitives, places and auth frames, and since SB6 the shared album/picker): `src/app` (routes, session, the `G2Game` port, kit setup and art providers), `hub` (racer shell/map adapters), `places`, `save` (Dexie `uma-racer-g2`, one sync lane), `ui` (racer-only pieces), `content`; PixiJS 8 only for `scenes/race`; dev-only seeds at `/dev/seeds/*` (`src/dev`) |
-| `scripts/sim` | Headless balance runs (`pnpm sim:balance`, `sim:turns`, `sim:builds`, `sim:careers`, `sim:loop`) |
+| `scripts/sim` | Headless balance runs (`pnpm sim:balance`; M036 adds `sim:decks`, `sim:stages` and `sim:careers`) |
 | `scripts/overlays` | Racer-only private overlays; master data/art comes from uma-platform (SE1) |
 | `docs/handoff` | Packets for ChatGPT sessions and the master prompt |
 
@@ -64,13 +64,13 @@ Hub and primitives are uma-kit's, the app both Uma games share.
 
 ```bash
 NODE_AUTH_TOKEN=$(gh auth token) pnpm install   # @luismlorenzana/* (uma-art, uma-kit) come from GitHub Packages
-pnpm dev            # web :5173 (proxies /api) + api :8080, auth disabled, save apps/api/.data/save-g2.json, DEV_OPERATIONS=true
+pnpm dev            # web :5173 (proxies /api) + api :8080, auth disabled, save apps/api/.data/save-g3.json, DEV_OPERATIONS=true
 pnpm lint           # type-check every package
 pnpm test           # domain + race + api + web tests
 pnpm test:ci        # the same, one package at a time, as CI runs them
 pnpm build          # production builds (web includes the PWA service worker and the 180 KB startup check)
 pnpm docs:update    # regenerate the live blocks in docs/game/ (the manual generated from code)
-pnpm sim:balance    # race balance table; sim:builds, sim:careers and sim:loop check the rework's builds and pacing
+pnpm sim:balance    # race balance table (M036 adds sim:decks, sim:stages and sim:careers)
 pnpm overlays:import   # validate and build private Racer-authored overlays
 pnpm overlays:publish -- --dry-run # verify before publishing overlays
 pnpm master:parity     # private migration proof, aggregates only in git
@@ -91,23 +91,9 @@ pnpm master:parity     # private migration proof, aggregates only in git
   preview, and never kill another agent's server.
 - **Private content in a worktree:** link the primary checkout's `content/overrides` before `pnpm overlays:import`.
   Master defaults to sibling `uma-platform/content/release` (`MASTER_DIR` overrides it). Never commit links.
-- **Verify UI changes at 390×844** in the browser preview, on the synthetic seeds:
-  `/dev/seeds/<route>?seed=busy | fresh | quiet | gate | promote | tired | spent | stopped`, `&at=HH:MM` for the clock,
-  `&canvas` so a screenshot captures the Hub (WebGL doesn't), `?save=device` for the device save. Dev builds expose
-  `window.__hub` (the Hub's scene: `scene`, `game`, `paused`) and `window.__raceScene` (`seek`, `skipToEnd`), since the
-  preview pane throttles animation frames. Check light and dark (the pane's color scheme, or Account's Appearance).
-  Console 500s right after start are Vite's proxy racing the API's boot.
-
-## Production operations
-
-| Thing | Value |
-|---|---|
-| Site | https://uma-racer.web.app (Firebase Hosting, classic, not App Hosting) |
-| API | Cloud Run `racer-api` (us-central1), `https://racer-api-tmzkhylhfq-uc.a.run.app`; `/api/health` (not `/healthz`, which Cloud Run's front end reserves) |
-| GCP project | `uma-racer` (number 1026964321499), plus a private bucket `uma-racer-content` |
-| Deploy | `.github/workflows/deploy.yml`, keyless WIF. Repo variables: GCP_PROJECT_ID, WIF_PROVIDER, CONTENT_BUCKET, ALLOWED_EMAIL, DEPLOY_ENABLED |
-| Live on 2026-10-21 | `bdeb4fc` as racer-api-00204-qvd (T144, D362), [deployment green](https://github.com/luismlorenzana/uma-racer/actions/runs/39705734143); exact image digest, live build/tonic chunk, health 200, save/master/overlay 401 without auth, retired purge route 404 and Hosting no-cache verified. uma-kit 0.9.1; uma-art 2.10.0; startup 156.80 KB gzip. SE1 retired 2,076 generated bucket objects, preserving both active overlay objects (D379). Current saves and inert audit markers are unchanged |
-
+- **No dev preview, ever (the owner, D380).** Slices ship straight to production and the owner tests live. Before a
+  push, verify with tests (component tests at 390×844 in light and dark), lint, the build and the sims; the dev seeds
+  are gone (D381).
 - **Local gcloud has two accounts, and the active one is the owner's work account. Never change it.** Scope every uma-racer
   command with environment variables only:
 
@@ -142,8 +128,8 @@ pnpm master:parity     # private migration proof, aggregates only in git
 
   Never delete active source files or use cache/save deletion as recovery. SE1's exact retired-master cleanup completed after deployed-source verification on 2026-10-21 (D379); see the release runbook. Never rerun a new inventory to delete unrelated objects.
 - **Reading production data is read-only and keeps no copy:** the scoped `gcloud auth print-access-token` against
-  Firestore's REST API. Generation 2's save is `saves/{uid}/{kind}/{id}`; `players/` is empty since the purge
-  (`saves/{uid}/meta/purge`: 30 collections, 3,676 documents). Sync health is `gcloud logging read` on `racer-api`.
+  Firestore's REST API. Generation 3's save is `g3/{uid}/{kind}/{id}` (D381); generation 2's `saves/` is deleted at
+  M036's release (T159). Sync health is `gcloud logging read` on `racer-api`.
 - **T144's follow-up is complete (D362):** the owner authorized it in chat on 2026-10-21. The temporary purge
   endpoint, deletion code and boot/reconnect calls are removed; historical audit markers and every current save stay.
   The retired route answers 404, and M034/T144's specs are deleted. [Acceptance](docs/research/t144-closeout/README.md).

@@ -34,7 +34,7 @@ export async function prepareRacerContent(client: ContentClient, manifest: Relea
   }
   const [umas, cards, scenarios, skills] = await Promise.all([atlas('uma-icons'), atlas('card-icons'), atlas('scenario-icons'), atlas('skill-icons')])
   const path = (kind: ArtKind, id: string) => imagePath(art, ART[kind], id)
-  return { manifest, origin: 'network',
+  return { manifest, overlay: { version: overlay.version }, origin: 'network',
     umas: registry(adapted.content.umas), cards: registry(adapted.content.cards), skills: registry(adapted.content.skills),
     races: registry(adapted.content.races), courses: registry(adapted.content.courses),
     atlases: { 'uma-icons': umas, 'card-icons': cards, 'scenario-icons': scenarios, 'skill-icons': skills },

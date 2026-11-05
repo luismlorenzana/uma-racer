@@ -1,24 +1,21 @@
-// The route bodies (docs/game/11-hub-and-places.md §2.4, §7.1): the start rule, a page, a place, and a full-screen
-// flow. Each is a thin check over a lazy body, so the entry chunk holds the route rules and none of the screens.
-import { AppFrame } from '@luismlorenzana/uma-kit/shell'
+// The route bodies (docs/game/11-hub-and-places.md §2.4, §7.1): the start rule, a page and a place. Each is a thin check
+// over a lazy body, so the entry chunk holds the route rules and none of the screens.
 import { isHubPage, placeOnPage } from '@racer/domain/hub'
 import { lazy, Suspense, useRef } from 'react'
 import { Navigate, useParams } from 'react-router'
-import { FLOW_UI, matchSubPage, PLACE_UI } from '../places/registry'
-import { useGame, useHub } from './game'
+import { matchSubPage, PLACE_UI } from '../places/registry'
+import { useGame } from './game'
 import { usePlaceScroll } from './scroll'
 import { startPath } from './start'
 
 const HubPage = lazy(() => import('../hub/HubPage'))
 const UnfilledPage = lazy(() => import('../places/Unfilled').then((mod) => ({ default: mod.UnfilledPage })))
-const UnfilledReveal = lazy(() => import('../places/Unfilled').then((mod) => ({ default: mod.UnfilledReveal })))
 
 /** `/`: waits for the first snapshot, then replaces itself (§2.4). */
 export function StartRoute() {
   const ready = useGame((snapshot) => snapshot.status === 'ready')
-  const view = useHub()
-  if (!ready || view === null) return null
-  return <Navigate to={startPath(view)} replace />
+  if (!ready) return null
+  return <Navigate to={startPath()} replace />
 }
 
 /** `/:page`, its map, with `?peek=:place`; a page that isn't one goes to `/`. */
@@ -44,23 +41,10 @@ export function PlaceRoute() {
   const sub = matchSubPage(ui, rest)
   const Page = ui?.Page ?? UnfilledPage
   return (
-    <div ref={scroller} className="absolute inset-0 overflow-x-hidden overflow-y-auto overscroll-contain" data-g2="place" data-place-route={place.id}>
+    <div ref={scroller} className="absolute inset-0 overflow-x-hidden overflow-y-auto overscroll-contain" data-racer="place" data-place-route={place.id}>
       <Suspense fallback={null}>
         {sub !== null ? <sub.Page key={place.id} place={place} rest={rest} params={sub.params} /> : <Page key={place.id} place={place} rest={rest} />}
       </Suspense>
     </div>
-  )
-}
-
-/** `/collection/reveal/uma/:umaId`: the reveal, full screen outside the shell (§6), in uma-kit's frame without its bars. */
-export function RevealRoute() {
-  const params = useParams()
-  const Reveal = FLOW_UI.reveal ?? UnfilledReveal
-  return (
-    <AppFrame fullScreen>
-      <Suspense fallback={null}>
-        <Reveal params={params} />
-      </Suspense>
-    </AppFrame>
   )
 }

@@ -1,16 +1,8 @@
 // Authored card-focus corrections onto master cards, and the private review report (docs/game/06-cards-and-bonds.md §5,
 // D201). The override lives in the gitignored content/overrides/card-focus.json; nothing here is checked-in content.
 
-import {
-  cardFocus,
-  cardSkills,
-  derivedCardFocus,
-  parseCardFocusOverride,
-  skillRestrictions,
-  type CardFocus,
-  type SkillTemplate,
-  type SupportCardTemplate,
-} from '../index'
+import { cardFocus, cardSkills, derivedCardFocus, parseCardFocusOverride, skillRestrictions, type CardFocus } from '../card-focus'
+import type { SkillTemplate, SupportCardTemplate } from '../content'
 
 export interface CardFocusResult {
   items: SupportCardTemplate[]

@@ -2,6 +2,8 @@ node_modules
 dist
 dist-ssr
 build
+# The domain's build area (the deck, tree and bonds, D381) is source, not output.
+!packages/domain/src/build/
 *.local
 .DS_Store
 .vite

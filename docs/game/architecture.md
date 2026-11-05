@@ -1,10 +1,10 @@
 # Architecture
 
-How the code that runs fits together: generation 2, since the phase-3 cutover (M034, D361), with phase 6's canvas Hub
-(T145, D363), uma-art 2.10.0 (A04, D378), shared uma-kit 0.9.1 and uma-work 0.1.0 (SC5, D377; content, SE4, D376; the album, SB6, D373). The infrastructure values and the release runbook are
-[technical/infrastructure.md](../technical/infrastructure.md); what is done and what comes next is
-[the task plan](../tasks/README.md), and the phases still ahead are [docs/rearchitecture/08](../rearchitecture/08-phases.md)
-with [rework/13](../rework/13-removals-and-plan-changes.md) §4.
+> **Generation 3, being built (M036, D380, D381).** T152 replaced the save, cut the game layer to its clean slate and
+> rewrote the save, the API and the domain's exports below. The rest of this page still describes generation 2's
+> layout and is rewritten as the parts land; T159 makes it whole. The infrastructure values and the release runbook
+> are [technical/infrastructure.md](../technical/infrastructure.md); what's done and what comes next is
+> [the task plan](../tasks/README.md).
 
 Uma Racer reuses the **uma-planner** architecture (`../uma-planner`): a TypeScript pnpm/Turbo monorepo, a React SPA on
 Firebase Hosting, a NestJS API on Cloud Run, Firebase Auth with an owner email allowlist, and Firestore. What a game
@@ -45,7 +45,7 @@ flowchart LR
         Hub[uma-kit Phaser Hub map<br/>uma-art tiles and buildings]
         Scene[PixiJS race scene]
         Store[useSave · Zustand]
-        IDB[(Dexie uma-racer-g2<br/>kind tables + outbox)]
+        IDB[(Dexie uma-racer-g3<br/>kind tables + outbox)]
         Rules[@racer/domain + @racer/race<br/>run on device]
         UI <--> Store
         Scene --> UI
@@ -158,8 +158,8 @@ built `dist`, so run `pnpm --filter @racer/domain build` first in a fresh checko
 | `pnpm sim:balance` | The engine's strategy balance on synthetic fields (`--final` for the full matrix) | — (a report) |
 | `pnpm sim:turns` | Engine v9's targets on generated G1 fields (`ENGINE=7` or `8` compares a frozen engine) | — (a report) |
 | `pnpm sim:builds` | The stamina ladder and the G1 grid on full-layer builds at every T = 1–14 against the tier rules' fields, and each buff's typical value | A hard ladder check fails, other than the three accepted at a tier's first scenario (`LADDER_ACCEPTED_MISSES`, D350) |
-| `pnpm sim:careers` | Every career of the private pack frozen by the rework's rule, and each stage's best case on full-layer builds at every T, against [03](03-uma-progression.md) §12's targets | A career can't be frozen, or a cell falls under 25% |
-| `pnpm sim:loop` | The whole economy from a fresh account over three tiers, and [12](12-economy-and-pacing.md) §12's pacing checks; `--variant=`, `--matrix`, `--json` | A check fails |
+| `pnpm sim:careers` | Every career of the private pack frozen by the rework's rule, and each stage's best case on full-layer builds at every T, against [03](../archive/g2-manual/03-uma-progression.md) §12's targets | A career can't be frozen, or a cell falls under 25% |
+| `pnpm sim:loop` | The whole economy from a fresh account over three tiers, and [12](../archive/g2-manual/12-economy-and-pacing.md) §12's pacing checks; `--variant=`, `--matrix`, `--json` | A check fails |
 
 Flags: races per cell as a bare number, `--tiers=` (the game's scenarios T), `--ladder-only` and `--rates-only` for the
 builds, `--coverage-only` and `--content=<dir>` for the careers. `sim:builds` and `sim:careers` also take
@@ -307,39 +307,36 @@ loads private packs or owner data, and is absent from production. The ordinary s
 port, booted by the app or `?save=device`). `?canvas` on any page forces Phaser's Canvas renderer, so a preview
 screenshot captures the map (WebGL doesn't show in one). The preview pane throttles animation frames, so drive the race
 with `__raceScene` rather than waiting. `pnpm dev` serves web on 5173, proxying `/api` to the API on 8080
-(`API_PROXY_TARGET` points it elsewhere), and the API keeps its save in `apps/api/.data/save-g2.json` with
+(`API_PROXY_TARGET` points it elsewhere), and the API keeps its save in `apps/api/.data/save-g3.json` with
 `DEV_OPERATIONS=true`.
 
 ## The save and sync
 
-Generation 2 is one save in one shape, with no migrations: entities, logs and operations in one sync lane. The kinds,
-rows, bounds and wire format are [rework/13](../rework/13-removals-and-plan-changes.md) §6 ("The save as built", "The
-API as built", "The web save as built"); this is the outline.
+Generation 3 is one save in one shape, with no migrations (D381): five entities, two logs and operations in one sync
+lane. The record shapes, kinds, bounds and wire format are `packages/domain/src/save/` (`records.ts`, `kinds.ts`,
+`wire.ts`).
 
+- **The kinds:**
+  - entities `account/main`, `umas/{outfitId}`, `cards/{cardId}`, `careers/{umaId}:{T}` and
+    `bonds/{umaId}:{tier}:{cardId}`;
+  - logs `raceResults/{opId}` and `operations/{opId}`.
+
+  The device writes no rows of its own: every row changes by an operation, or by the create that makes a new account
+  (20 Uma Tickets, 24 Card Tickets).
 - **Every change is an operation** with an id chosen before the tap is written. The device applies it at once with
   `commitOperation` and queues it; the API re-runs the same function on its own rows and commits, or refuses with the
-  same plain words. A retried id returns its first receipt and is never applied twice. Only badges and flair events are
-  written as rows by the device; a new account's rows are built by the server from a create that carries only
-  `createdAt`.
-- **On the device** (`apps/web/src/save/`): Dexie `uma-racer-g2`, schema version 1, one table per kind plus the
-  `outbox`. The store is a fold of the queued operations over what the server confirmed, so a reload and the server's
-  answer fold to the same account, and a refused answer rolls a tap back with a notice. It publishes only after Dexie
-  commits.
-- **One lane** (`save/sync.ts`): the outbox flushes in order, 100 rows a request, 1.5 s after the last write, at once
-  when the app is hidden, and with a pull when it is visible or back online. Failures retry after 5 s, 30 s and
-  2 minutes, then every 5 minutes while visible. A 426 stops the lane until the app restarts; a 409 drops the device's
-  save and boots it as a new device. The Sync chip says offline, paused (signed out), amber (waiting over a day, D157)
-  or red.
-- **The boot** (`save/boot.ts`): open, local first, without any cutover request or write. An empty device pulls
-  every page; one that can't reach the save creates its own and adopts the server's on a later `exists`.
-- **No device wipe.** SE1 retires the first-boot wipe and the old redirects at their D365 boundary. Existing saves,
-  preferences and caches are not deleted. The old `&wipe` dev switch is ignored.
-- **The completed cutover (T144, D362):** the temporary purge endpoint, repository deletion code, wire parsers and
-  boot/reconnect calls are removed. Normal boot only requests save/sync. The historical `saves/{uid}/meta/purge`
-  document and any inert device/local-file markers stay untouched; no migration, wipe, reset or cache deletion runs.
-- **On the server** (`apps/api/src/save/`): `saves/{uid}/{kind}/{id}` in Firestore, one small document per row through
-  the Firestore codec (a row whose data nests arrays is stored as JSON text, D151); a sync is one transaction with every
-  read before the first write. Local dev keeps one file, `apps/api/.data/save-g2.json`.
+  same plain words. A retried id returns its first receipt and is never applied twice.
+- **The operation registry** (`save/registry.ts`, `save/operations.ts`): each area defines its operations in its own
+  `ops.ts`, as a parser and an `apply`.
+  - Built: `account` has `unlock-uma`, `unlock-card` and `dev-grant`.
+  - Declared, refusing "not built yet" until their part lands: `career` (T154), `build` (T153) and `stages` (T155).
+- **On the device** (`apps/web/src/save/`):
+  - Dexie `uma-racer-g3`: one table per kind, the outbox, and a device-only `stageJournal`;
+  - on first boot it deletes generation 2's `uma-racer-g2` database and its `uma-racer:g2:*` keys: the owner's full
+    wipe (D380).
+- **On the server** (`apps/api/src/save/`): `g3/{uid}/{kind}/{id}` in Firestore; one sync is one transaction with
+  every read before the first write. Local dev keeps one file, `apps/api/.data/save-g3.json`.
+- **Generation 2's server rows** (`saves/{uid}/…`) are deleted at the release (T159), with no backup.
 
 ## The API
 
@@ -355,7 +352,7 @@ API as built", "The web save as built"); this is the outline.
   games' (SD4): a Firebase ID token whose email matches `ALLOWED_EMAIL`. No token or an invalid one is 401, a valid token
   for anyone else 403, and Firebase Admin failing to start 500. In development, `AUTH_MODE=disabled` lets every request
   in as `local-dev`.
-- **Stamps.** The save's two routes run the guard, then the stamp: anything but `protocol: 2` and `generation: 2` is
+- **Stamps.** The save's two routes run the guard, then the stamp: anything but `protocol: 3` and `generation: 3` is
   426 with nothing read or written, so a stale app can't write. Bodies are checked by the domain's parsers (400).
 - **Operations run on the same adapter as the browser:** `MasterContent` verifies the release and required private
   overlay, then `buildOperationEnv` constructs the rule inputs. Cache identity includes both release versions; mutable
@@ -367,8 +364,8 @@ API as built", "The web save as built"); this is the outline.
   the guard on every route, its options read from `AUTH_MODE` and `ALLOWED_EMAIL`), `SaveModule` and uma-server's
   `ReleaseProxyModule`/`PrivatePackModule`,
   and serves `HealthController`. `SaveModule` (`save/`) holds `SaveController`, the repository `PERSISTENCE` picks
-  (`FirestoreSaveRepository` at `saves/{uid}`, or `LocalSaveRepository` at `LOCAL_SAVE_FILE`, default
-  `.data/save-g2.json` under the API's folder) and `OperationContent`. `master/master.module.ts` configures the published
+  (`FirestoreSaveRepository` at `g3/{uid}`, or `LocalSaveRepository` at `LOCAL_SAVE_FILE`, default
+  `.data/save-g3.json` under the API's folder) and `OperationContent`. `master/master.module.ts` configures the published
   shared sources/proxies after dotenv loads. `main.ts` puts every route under `/api`, takes JSON bodies up to 5 MB and
   allows CORS from `ALLOWED_ORIGIN`.
 
@@ -379,7 +376,7 @@ API as built", "The web save as built"); this is the outline.
   stable string ids, five-star stats, Global mechanics, SSRs, Race Bonus, regular venues, career families and overlays.
   New facts/entries follow the release without changing saves or game rules.
 - **Overlays** Claude keeps in the gitignored `content/overrides/`: `flair.json` (race-series legs and the ten main
-  venues, D107) and `card-focus.json` ([06](06-cards-and-bonds.md) §5). Overlay validation resolves every private
+  venues, D107) and `card-focus.json` ([06](../archive/g2-manual/06-cards-and-bonds.md) §5). Overlay validation resolves every private
   reference; git holds only semantic tags, aggregate coverage and synthetic fixtures.
 - **Art identity:** faces are platform `outfit-faces` by outfit id, exactly as RPG, not per-character crops. Busts use
   `outfit-busts`, plaza chibis `outfit-chibis` (standing suffix `-a`), portraits `outfit-portraits`, cards
@@ -450,7 +447,7 @@ a minor release, and Claude pins it here and updates [11](11-hub-and-places.md) 
 
 - **Simulation, then playback.** `simulateRace(input)` (`@racer/race`, engine v9) runs the whole race up front as
   one-second turns and returns a timeline at 15 samples a second. A race commits as the `finish-race` operation at
-  Start race, before playback ([09](09-racing-rewards-and-exchange.md) §8–§9), so closing the app mid-race changes
+  Start race, before playback ([09](../archive/g2-manual/09-racing-rewards-and-exchange.md) §8–§9), so closing the app mid-race changes
   nothing.
 - **Determinism.** Randomness comes only from a seeded RNG in the input. A result stores its seed, its course and every
   runner's compiled skills, so it replays exactly. `packages/race` keeps every engine version; the web replays v9 only,
@@ -578,7 +575,6 @@ How generation 2 became the app (D361). The plan-level choices (the tag, the del
 | @racer/web | @luismlorenzana/uma-art | 2.10.0 | runtime |
 | @racer/web | @luismlorenzana/uma-data | 1.1.0 | runtime |
 | @racer/web | @luismlorenzana/uma-kit | 0.9.1 | runtime |
-| @racer/web | @luismlorenzana/uma-work | 0.1.0 | runtime |
 | @racer/web | @racer/domain | workspace:* | runtime |
 | @racer/web | @racer/race | workspace:* | runtime |
 | @racer/web | @tanstack/react-query | ^5.102.8 | runtime |
@@ -624,7 +620,6 @@ How generation 2 became the app (D361). The plan-level choices (the tag, the del
 | @racer/api | typescript | ~5.9.3 | dev |
 | @racer/api | vitest | ^3.2.7 | dev |
 | @racer/domain | @luismlorenzana/uma-data | 1.1.0 | runtime |
-| @racer/domain | @luismlorenzana/uma-work | 0.1.0 | runtime |
 | @racer/domain | @luismlorenzana/uma-art | 2.10.0 | dev |
 | @racer/domain | typescript | ~5.9.3 | dev |
 | @racer/domain | vitest | ^3.2.7 | dev |

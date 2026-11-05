@@ -1,19 +1,17 @@
-// Generation 2's routes (docs/rearchitecture/01-target-architecture.md §6; docs/rearchitecture/07-data-reset.md §3–§4;
-// docs/rework/13-removals-and-plan-changes.md §6, §8; T135, T144): `GET /api/save` and `POST /api/sync`,
-// both behind `AuthGuard`. Each runs the guard, then the stamp (anything but protocol 2 and
-// generation 2 is 426, with nothing read or written), then T134's parser. Error bodies are developer text; the web turns
-// every status into plain words (T136).
+// Generation 3's routes (docs/game/architecture.md "The save and sync"; D381; T152): `GET /api/save` and `POST /api/sync`,
+// both behind `AuthGuard`. Each runs the guard, then the stamp (anything but protocol 3 and generation 3 is 426, with
+// nothing read or written), then the domain's parser (400). Error bodies are developer text; the web turns every status
+// into plain words.
 import { BadRequestException, Body, Controller, Get, HttpCode, HttpException, Inject, Post, Query, UseGuards } from '@nestjs/common'
 import {
-  isCurrentStamp, parseSnapshotQuery, parseSyncRequestV2, SAVE_GENERATION, SAVE_PROTOCOL,
-  type SaveSnapshotV2, type SyncResponseV2,
+  isCurrentStamp, parseSnapshotQuery, parseSyncRequest, SAVE_GENERATION, SAVE_PROTOCOL, type SaveSnapshot, type SyncResponse,
 } from '@racer/domain/save'
 import { AuthGuard, CurrentUid } from '@luismlorenzana/uma-server/auth'
 import { ContentUnavailable, OperationContent } from './operation-content'
 import { NO_SAVE, parseCursor } from './resolve'
 import { SAVE_REPOSITORY, type SaveRepository } from './save.repository'
 
-/** 426: an old installed app, or anything not on generation 2 (07 §4). */
+/** 426: an old installed app, or anything not on generation 3. */
 export const upgradeRequired = (): HttpException =>
   new HttpException({ code: 'upgrade-required', protocol: SAVE_PROTOCOL, generation: SAVE_GENERATION }, 426)
 
@@ -27,7 +25,7 @@ export class SaveController {
 
   /** A page of the rows saved after `since`; the stamp rides in the query, since a GET has no body. */
   @Get('save')
-  snapshot(@CurrentUid() uid: string, @Query() query: Record<string, unknown>): Promise<SaveSnapshotV2> {
+  snapshot(@CurrentUid() uid: string, @Query() query: Record<string, unknown>): Promise<SaveSnapshot> {
     const parsed = parseSnapshotQuery(query)
     if (parsed === undefined) throw upgradeRequired()
     if (typeof parsed === 'string') throw new BadRequestException(parsed)
@@ -38,9 +36,9 @@ export class SaveController {
   /** The outbox, in order: 409 with no save and no create, 503 when an operation's content can't load; otherwise 200. */
   @Post('sync')
   @HttpCode(200)
-  async sync(@CurrentUid() uid: string, @Body() body: unknown): Promise<SyncResponseV2> {
+  async sync(@CurrentUid() uid: string, @Body() body: unknown): Promise<SyncResponse> {
     if (!isCurrentStamp(body)) throw upgradeRequired()
-    const request = parseSyncRequestV2(body)
+    const request = parseSyncRequest(body)
     if (typeof request === 'string') throw new BadRequestException(request)
     let result: Awaited<ReturnType<SaveRepository['sync']>>
     try {

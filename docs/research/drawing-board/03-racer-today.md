@@ -11,7 +11,7 @@ files at its root (cards, constellation, scenarios, progression, race catalogue,
 are roughly 7.3k LOC.
 
 The generation-2 loop is Farm gather -> Pantry craft -> Kitchen cook -> Training Hub session -> unlock (node, bond,
-Inspiration slot, Extra Stats) -> race ([docs/game/01-game-loop.md](../../game/01-game-loop.md)). Every arrow except the
+Inspiration slot, Extra Stats) -> race ([docs/game/01-game-loop.md](../../archive/g2-manual/01-game-loop.md)). Every arrow except the
 last is a timer (`TIME_FACTOR = 1.8`, `packages/domain/src/state/time.ts`). **The stat pipeline is built on timers**:
 an Uma's stats are derived from unlocks that only timed sessions can pay for. Removing time therefore removes the way
 stats are earned, not just a convenience layer.

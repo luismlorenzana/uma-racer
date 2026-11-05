@@ -6,25 +6,25 @@ lost.**
 
 > **Status: built (generation 2, T141, D359).** Races run on engine v9 (`packages/race`) at the Racecourse,
 > `/racing/racecourse` ([11](../game/11-hub-and-places.md) §3.3). What a race pays, the Daily Purse and the featured
-> races are [09](../game/09-racing-rewards-and-exchange.md)'s; Racing Level, holds and the gate are
-> [03](../game/03-uma-progression.md)'s. This page owns the race itself: the catalogue, the rivals and the engine.
+> races are [09](../archive/g2-manual/09-racing-rewards-and-exchange.md)'s; Racing Level, holds and the gate are
+> [03](../archive/g2-manual/03-uma-progression.md)'s. This page owns the race itself: the catalogue, the rivals and the engine.
 
 ## Race loop (player's view)
 
 Racing is never blocked and costs nothing (D328): no ticket, no lock, and no training needed first.
 
 1. **Pick the Uma and the race** at the Racecourse: the Uma strip, the Daily Purse bar, **Today's featured**, **Next
-   up** and every race ([09](../game/09-racing-rewards-and-exchange.md) §3.5, §4). A race card shows grade, venue,
+   up** and every race ([09](../archive/g2-manual/09-racing-rewards-and-exchange.md) §3.5, §4). A race card shows grade, venue,
    surface and distance, and marks a career goal, a set leg or a first G1 win.
 2. **The pre-race sheet.** She races as her current scenario, on **the preset of the race's distance** (D254): its
-   stats, aptitudes and skill loadout ([03](../game/03-uma-progression.md) §6). The running style starts at her saved
+   stats, aptitudes and skill loadout ([03](../archive/g2-manual/03-uma-progression.md) §6). The running style starts at her saved
    default (or the recommended style until she sets one) and can be changed for this race. The sheet shows her
    surface, distance and style aptitudes, the goals at stake and the skills she carries.
 3. **Start race commits the race** before it plays
    ([the race on `finish-race`](#generation-2-the-race-on-finish-race-t141-d359)).
 4. **Watch the race** turn by turn on its own course ([engine v9](#engine-v9-a-speed-skill-always-speeds-her-up)): 1×
    plays two one-second turns a second, and Slow, 2×, pause, step one turn and Skip are always at hand.
-5. **The result** ([09](../game/09-racing-rewards-and-exchange.md) §7): finishing order and margins, Racing EXP and
+5. **The result** ([09](../archive/g2-manual/09-racing-rewards-and-exchange.md) §7): finishing order and margins, Racing EXP and
    level-ups, Prize Money, goal ribbons, and new badges or titles with fanfare.
 
 ## Race catalog
@@ -64,9 +64,9 @@ fields are stronger (the grade handicap below), not because they are locked.
 build for the distance decide (D152, D159, D336).
 
 Your Uma races with **the stats of the preset of the race's distance**, derived from her build
-([03](../game/03-uma-progression.md) §8). Nothing is added or multiplied at the gate. Rivals are built as **a typical
+([03](../archive/g2-manual/03-uma-progression.md) §8). Nothing is added or multiplied at the gate. Rivals are built as **a typical
 trained Uma of her scenario** (D159), then handicapped by the race's grade. The scenario is always her current one:
-trained units are retired ([03](../game/03-uma-progression.md) §6).
+trained units are retired ([03](../archive/g2-manual/03-uma-progression.md) §6).
 
 | Grade | Handicap | Rivals race at |
 |---|---|---|
@@ -133,7 +133,7 @@ handicap    = Debut/Maiden 0.35 · Pre-OP/OP 0.30 · G3 0.25 · G2 0.15 · G1 0.
 ```
 
 **`trainedStat`** is a realistic build on the scenario's tree rather than a perfect one (D336): its *N* card nodes
-(12–28) at the scenario's node value ([04](../game/04-tiers-and-promotion.md) §7), with six current-era cards at **84%
+(12–28) at the scenario's node value ([04](../archive/g2-manual/04-tiers-and-promotion.md) §7), with six current-era cards at **84%
 of a node** (`TYPICAL_CARD_STARS = 2`, kept as the rivals' build, not a star), one of them a **Friend card** whose fair
 share `ceil(N / 6)` pays skill points instead of stats; plus the scenario's full active Extra Stats *E*; on the median
 base stat; with the scenario buff's typical value (D165, re-measured in D349). It runs 642 in scenario 1 and 969 in
@@ -263,15 +263,15 @@ per-strategy stat bonus; the G1 player targets below remain the player-facing ac
 ### Difficulty target
 
 An Uma short of her unlocks, or racing off-aptitude, loses to the field. A **fully trained** Uma, her scenario's whole
-layer open ([05](../game/05-training-hub.md)), wins the grades below G1, and G1 is a real contest she is favoured in
+layer open ([05](../archive/g2-manual/05-training-hub.md)), wins the grades below G1, and G1 is a real contest she is favoured in
 (D152, D159, D336). The game is tuned for that Uma, not for a timetable: the owner trains first and then races
-([03](../game/03-uma-progression.md) §9).
+([03](../archive/g2-manual/03-uma-progression.md) §9).
 
 `pnpm sim:careers` measures it on engine v9: every career stage at every scenario T = 1–14, raced by full-layer builds
 (every card node open on current-era cards at 100%, Extra Stats at capacity, the open Inspiration slots filled) against
 generated 12-runner fields, best case of the distance's sets and the four running styles. Its targets are every Maiden
 G3 won, the Trials G2s at 90% or more and the Main G1s at 60–100%; the measured rates are
-[03](../game/03-uma-progression.md) §9's live table, and every T meets them. `pnpm sim:builds` races the stamina
+[03](../archive/g2-manual/03-uma-progression.md) §9's live table, and every T meets them. `pnpm sim:builds` races the stamina
 ladder's sets in G1s at every T (the same section's second table).
 
 The grade handicaps are the owner's to set (D159, D336): a harder G1 is a one-line change to its handicap.
@@ -292,7 +292,7 @@ stamina cards a use past the requirement. Races recorded under engine v3 replay 
 ## Rewards
 
 A race pays **Racing EXP** to the Uma who ran and **Prize Money** to the account. Prize Money, the Daily Purse and the
-featured bonus are [09](../game/09-racing-rewards-and-exchange.md) §2–§4's. Racing EXP is `raceExp`
+featured bonus are [09](../archive/g2-manual/09-racing-rewards-and-exchange.md) §2–§4's. Racing EXP is `raceExp`
 (`progression.ts`), unchanged by the rework:
 
 | Outcome | Racing EXP |
@@ -301,8 +301,8 @@ featured bonus are [09](../game/09-racing-rewards-and-exchange.md) §2–§4's. 
 | 2nd–3rd | 25% of that, rounded |
 | Other | 0 |
 
-Every card pays its full Race Bonus (D329, [06](../game/06-cards-and-bonds.md) §4). `winExp`, the level curve, the
-holds and the gate's bank are [03](../game/03-uma-progression.md) §2's. Every result is a row in the append-only
+Every card pays its full Race Bonus (D329, [06](../archive/g2-manual/06-cards-and-bonds.md) §4). `winExp`, the level curve, the
+holds and the gate's bank are [03](../archive/g2-manual/03-uma-progression.md) §2's. Every result is a row in the append-only
 `raceResults` log, which the goal, badge and achievement rules read.
 
 ### Accomplishment facts
@@ -313,13 +313,13 @@ first-final-spurt placement, strict section-checkpoint lead, and inherited-uniqu
 metadata, not renderer state, and never change the simulation or its replay.
 
 The race's flair is evaluated after its EXP, goals and prize are settled, and rides in the same commit
-([Badges](badges.md#award-and-event-semantics)). The first finish on a course establishes its baseline; only a strictly
+([Badges](../archive/g2-manual/badges.md#award-and-event-semantics)). The first finish on a course establishes its baseline; only a strictly
 lower later time earns Course Record, so ties and slower finishes do not. A retried commit returns its first receipt
 without re-evaluating or replaying fanfare.
 
 ## Generation 2: the race on `finish-race` (T141, D359)
 
-The game races with engine v9 and its scene, on generation 2's rules ([09](../game/09-racing-rewards-and-exchange.md)
+The game races with engine v9 and its scene, on generation 2's rules ([09](../archive/g2-manual/09-racing-rewards-and-exchange.md)
 §7–§9):
 
 - **Prepare.** Her session's finished unlocks are collected on a copy first, so she races with every unlock she has
@@ -376,10 +376,10 @@ The game races with engine v9 and its scene, on generation 2's rules ([09](../ga
 - **Finish:** Nose/Head margins (runner-up gap greater than zero and below 0.15 lengths) slow the final 0.8 timeline seconds
   to 0.4× and hold the finish frame for 0.65 seconds. Skip and reduced motion go directly to the same computed result.
 - The result shows the full field, what she earned, her goals and her flair
-  ([09](../game/09-racing-rewards-and-exchange.md) §7). The race is committed before it plays, so there is no save to
+  ([09](../archive/g2-manual/09-racing-rewards-and-exchange.md) §7). The race is committed before it plays, so there is no save to
   retry afterwards. Its actions are **Races**, **Race again** and **Next Uma**, with **Advance** first at a gate with her
   career complete. Race again stays enabled at a gate: waiting there is allowed and keeps paying Prize Money
-  ([03](../game/03-uma-progression.md) §10).
+  ([03](../archive/g2-manual/03-uma-progression.md) §10).
 - Presentation state is never saved and never changes a simulation result. Replay derives it again from the immutable
   timeline; legacy results without skills, lanes, or layout retain readable fallbacks.
 

@@ -4,7 +4,7 @@
 > no cap that also shorten growth time (12h → 8h), a scenario row every ten levels, and plots without end in Sections of
 > six, each costing more Farm Level than the last. The six-plot cap, the Lv20 cap, the Farm Level crop gate and the
 > "no speed multiplier" rejection below are superseded. The Stable Farm itself was deleted with the cutover (T143); the
-> game's Farm is now [07 · Farm](../game/07-farm.md). The rest of the research (offline clock, outfit identity, global
+> game's Farm is now [07 · Farm](../archive/g2-manual/07-farm.md). The rest of the research (offline clock, outfit identity, global
 > inventory) still stands.
 
 Research for the planned Stable Farm (`design/farm.md`, deleted with the cutover): a global, asynchronous account activity where owned Uma

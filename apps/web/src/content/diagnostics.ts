@@ -1,6 +1,6 @@
 // User-facing content failure classification for release and offline recovery. Every title, message and button here
 // can reach the session panel, so each is in plain words: none of 02 §9's banned words (`hasBannedWord`), and no
-// plumbing such as the manifest or the bucket (docs/game/02-check-ins-and-notifications.md §9).
+// plumbing such as the manifest or the bucket (docs/design/ux.md "Principles").
 
 import { contentProblem, ContentFallbackError } from '@luismlorenzana/uma-kit/content'
 import type { LoadedContent } from './view'

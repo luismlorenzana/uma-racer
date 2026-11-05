@@ -1,6 +1,6 @@
-// The global sheets' host (docs/game/11-hub-and-places.md §2.2–§2.3, §5): `?sheet=menu | featured | check-in` on any
-// shell route opens today's modal BottomSheet, so Back closes it. The sheets load in their own chunk the first time one
-// opens, and stay mounted after, so a closing sheet can slide away.
+// The global sheets' host (docs/game/11-hub-and-places.md §2.2): `?sheet=menu` on any shell route opens the kit's modal
+// BottomSheet, so Back closes it. The sheet loads in its own chunk the first time it opens, and stays mounted after, so
+// a closing sheet can slide away.
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router'
 import { isGlobalSheet } from './nav'

@@ -4,7 +4,7 @@
 > ([data backlog](../research/data-backlog.md)). The SP caps and shares are tuning values, pinned in tests.
 
 Skills and aptitudes both come from her **build**: one of her four distance presets, with its card nodes and lineage,
-plus her own kit ([03](../game/03-uma-progression.md) §6, §8). Nothing here is rolled, and nothing is frozen into a
+plus her own kit ([03](../archive/g2-manual/03-uma-progression.md) §6, §8). Nothing here is rolled, and nothing is frozen into a
 snapshot: the library and the aptitudes are derived each time they're read.
 
 ## Skill kinds
@@ -65,12 +65,12 @@ SP is not spent and not earned per turn. It is a **capacity**, capped by the gam
 
 Grounded where the original game is measured — Unity Cup careers finish around 2,000–2,500 SP and Trackblazer
 around 2,800 (Game8) — and a draft elsewhere (D133); the 15th continues the +200 ladder
-([04](../game/04-tiers-and-promotion.md) §1). A typical gold with its white prerequisite costs about 340 SP in our
+([04](../archive/g2-manual/04-tiers-and-promotion.md) §1). A typical gold with its white prerequisite costs about 340 SP in our
 content, so the first scenario buys five or six.
 
 **The Observatory pays the baseline:** 40% of the cap in proportion to her open card nodes,
 `round(0.40 × spCap(T) × open nodes ÷ N)`. **Friend and Group cards pay the rest**, about 60% of the cap on their fair
-share of the nodes, and the total is clamped to `spCap(T)` ([03](../game/03-uma-progression.md) §8). In URA Finale, 12
+share of the nodes, and the total is clamped to `spCap(T)` ([03](../archive/g2-manual/03-uma-progression.md) §8). In URA Finale, 12
 open nodes give 800 SP, and a Friend card on two nodes adds 1,200, reaching the 2,000 cap.
 
 The equipped **loadout** must cost ≤ current SP. Swapping is free and instant outside races. If a change takes SP away
@@ -113,9 +113,9 @@ Names are the official Global names wherever the skill has shipped there (`name_
 JP name is only a fallback, and descriptions use Global terms for the running styles.
 
 The library follows her build. It carries through the advance with her unlocks, and at promotion her unlocks and
-presets are cleared, so only her own kit stays ([03](../game/03-uma-progression.md) §5–§6,
-[04](../game/04-tiers-and-promotion.md) §4). Her selected preset's library, read at each race, advance and promotion
-and when the Trophy Hall opens, feeds the skill badges ([Badges](badges.md#7-training-skills-goals-and-lineage)).
+presets are cleared, so only her own kit stays ([03](../archive/g2-manual/03-uma-progression.md) §5–§6,
+[04](../archive/g2-manual/04-tiers-and-promotion.md) §4). Her selected preset's library, read at each race, advance and promotion
+and when the Trophy Hall opens, feeds the skill badges ([Badges](../archive/g2-manual/badges.md#7-training-skills-goals-and-lineage)).
 
 ---
 
@@ -123,20 +123,20 @@ and when the Trophy Hall opens, feeds the skill badges ([Badges](badges.md#7-tra
 
 Six slots — **2 parents, 4 grandparents** — each opened by a **Lineage Hall** session, with each slot's inherited
 unique and its two natural-gold positions as unlocks of their own: 24 unlocks a tier, layered across its five scenarios
-([05](../game/05-training-hub.md) §3, §5). Each parent slot is linked to exactly two grandparent slots and is detached
+([05](../archive/g2-manual/05-training-hub.md) §3, §5). Each parent slot is linked to exactly two grandparent slots and is detached
 from the card tree.
 
 A slot holds a **reference to an Uma template the account owns**; an owned Uma stays owned, so that is any Uma it has
 ever owned, in any tier (D327). Not a snapshot, not a trained instance: templates never change, so nothing needs
 freezing and nothing can go stale (D123). In The Twinkle Legends, the first parent slot may hold any Uma in the game
-([04](../game/04-tiers-and-promotion.md) §8). Owning more Umas is still exactly what makes lineage good.
+([04](../archive/g2-manual/04-tiers-and-promotion.md) §8). Owning more Umas is still exactly what makes lineage good.
 
 - Her own character, in any outfit, is never eligible.
 - The two parents must be different characters. A grandparent cannot be either parent or repeat a character on its
   own side. The **same exact grandparent outfit** may occur once on each opposite side, in either position; a
   different outfit of that character is not an eligible mirror.
 - Slots are editable whenever they are open: who fills them is free and instant outside a race, and each preset keeps
-  its own picks ([03](../game/03-uma-progression.md) §6).
+  its own picks ([03](../archive/g2-manual/03-uma-progression.md) §6).
 
 ### What lineage pays
 
@@ -159,7 +159,7 @@ gold is normal price. Skills UI, budget validation and racing all use this same 
 grandparents count as two filled aptitude slots but never duplicate a library or equipped skill.
 
 `umas/{outfitId}` holds what is opened, `inspiration: { slots, uniques, golds }`, once for the whole tier and shared by
-her four presets; each preset holds its own picks. Promotion clears both ([03](../game/03-uma-progression.md) §7).
+her four presets; each preset holds its own picks. Promotion clears both ([03](../archive/g2-manual/03-uma-progression.md) §7).
 
 ### Aptitude upgrades
 

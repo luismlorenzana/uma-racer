@@ -1,5 +1,8 @@
 # 08 · Phases and pull requests
 
+> **Archived by the restart (D380, 2026-11-04).** This plan's phases 1–3, 5 and 6 shipped; 4 and 7–9 are retired. The
+> new game is [the drawing board v3](../research/drawing-board/README.md); this page is kept as history only.
+
 The order of work. Each phase ends with a deployable `main` and an exit check. Each step is a pull request
 (delegated agents) or a commit series on `main` (Claude), per AGENTS.md. Shared changes happen in a uma-platform
 session first, and the racer then pins the released version.
@@ -14,7 +17,7 @@ session first, and the racer then pins the released version.
 | Phase | Goal | Status | Sections below |
 |---|---|---|---|
 | **1** | A sound base: the API on the workspace domain, the startup budget enforced, GitHub Packages, the live manual | **Done, 2026-10-14 (D337)** | Phase 1 |
-| **2** | **The rework's rules in the domain**, pure and tested, and `pnpm sim:loop` passing [game/12](../game/12-economy-and-pacing.md) §12. No UI and no save change | **Done, 2026-10-14 (D340–D351)** | — (new) |
+| **2** | **The rework's rules in the domain**, pure and tested, and `pnpm sim:loop` passing [game/12](../archive/g2-manual/12-economy-and-pacing.md) §12. No UI and no save change | **Done, 2026-10-14 (D340–D351)** | — (new) |
 | **3** | **Clean slate and the new game:** generation-2 save in the rework's shape, the wipe and purge, every deletion (RPG, Spark, Puzzles, Friendship, CL, stars, tokens, today's Farm), the new game on plain DOM screens. **The owner starts playing here** | **Completed 2026-10-21** (T134–T144, D352–D362): released 2026-10-15 as `ec5b1bd`, racer-api-00188, content `9ba4cdd37cca`. The temporary purge endpoint/call is retired; [release record](../research/t144-closeout/README.md) | Phase 2 |
 | 4 | **Optional:** push notifications, a port of uma-rpg's, only if the owner asks | **Archived 2026-10-16** (D370); parked as sibling SE5 | — (new) |
 | 5 | Platform master data and the first shared packages | **Done, 2026-10-21** (M035, T148–T151, D374, D379); deployed platform source and exact retired-content cleanup verified in the [acceptance note](../research/se1-master-data/README.md) | Phase 3 |

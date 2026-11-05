@@ -4,7 +4,7 @@
 import type { ReactNode } from 'react'
 import { getContentAsset } from '../content/view'
 import { ArtTile } from './ArtTile'
-import { useG2Content } from '../app/content'
+import { useLoadedContent } from '../app/content'
 
 interface Corners {
   readonly dimmed?: boolean
@@ -19,6 +19,6 @@ interface Corners {
 
 /** The card's icon, its four corners as D238 lays them out. */
 export function CardSquare({ cardId, name, ...corners }: Corners & { cardId: string; name: string }) {
-  const content = useG2Content()
+  const content = useLoadedContent()
   return <ArtTile asset={content === null ? null : getContentAsset(content, 'card-icons', cardId)} alt={name} {...corners} />
 }

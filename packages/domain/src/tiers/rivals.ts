@@ -1,39 +1,30 @@
-// Rival strength on the re-authored trees (docs/game/04-tiers-and-promotion.md §7, docs/game/03-uma-progression.md
-// §9, D336): today's typical trained Uma and today's handicaps, unchanged, reading the new tree sizes, node values and
-// the scenario's full Extra Stats. Rivals keep today's 84% card factor; it's the rivals' build, not a star.
-// D191's rule holds: a scenario's field is never stronger than a later one's in the catalogue.
-import { starNodePct } from '../constellation'
+// Rival strength (docs/game/racing.md, D152, D191). Generation 2 built rivals on a typical trained Uma of its timed
+// trees; the restart (D380) retires those trees, so T152 (D381) freezes that Uma's average stat per scenario as a
+// table and T154 re-tunes it against the new build (`sim:decks`, `sim:careers`). D191's rule holds: a scenario's
+// field is never stronger than a later one's in the catalogue.
 import {
   GRADE_HANDICAP, NPC_PROFILE, RIVAL_REFERENCE_METERS, RIVAL_STAMINA_ROLL, RIVAL_STAMINA_SHARE_MAX, SPREAD_STATS,
-  STYLE_PROFILE, TYPICAL_BASE_STAT, TYPICAL_CARD_STARS, fullSpurtStamina, rollRivalStats, rollStyleCounts,
+  STYLE_PROFILE, fullSpurtStamina, rollRivalStats, rollStyleCounts,
   type RivalRng, type RivalSlot, type SpreadStat,
 } from '../opponents'
 import { STATS, STRATEGIES, type DistanceCategory, type RaceGrade, type Stats, type Strategy } from '../types'
-import { fairShare, treeCardNodesAt } from '../training/trees/sizes'
 import { TODAY_CATALOGUE, type ScenarioCatalogue } from './map'
-import { capBudgetAt, capProfileAt, extraBudgetAt, nodeValue } from './scaling'
+import { capBudgetAt, capProfileAt } from './scaling'
 
 /**
- * What each scenario's buff adds to the typical trained Uma, T = 1–14, as a share of her tree (04 §8): rivals carry it
- * (D165). Re-measured on the rework's typical build by `pnpm sim:builds` (T133, D349): the ladder's four
- * distance sets at full layer, every card current-era at 100%, Extra Stats at capacity, her open Inspiration slots
- * filled and two career goals won. A value the measurement moved by more than half a point is re-pinned to it; the
- * rest keep today's (`SCENARIO_BUFFS[*].typical`). The 15th has none until it ships (04 §2).
+ * The typical trained Uma's average stat at scenario T, frozen from generation 2 (`rivalTrainedStat` on c592ccd, its
+ * typical buffs included). The 15th repeats the 14th's until T154 measures it.
  */
-export const REWORK_BUFF_TYPICAL: readonly number[] = Object.freeze([
-  0.033, 0.037, 0.037, 0, 0, 0.046, 0.039, 0.067, 0.047, 0, 0.015, 0.028, 0.009, 0.042,
+export const RIVAL_TRAINED_STAT: readonly number[] = Object.freeze([
+  642.4495, 664.8033, 683.4859, 707.92, 728.456, 763.2898, 777.6115, 815.3297, 854.7102, 839.6, 852.98, 881.0987,
+  885.9775, 969.2749, 969.2749,
 ])
 
-/**
- * The typical trained Uma's average stat at scenario T: today's `trainedStat` on the new trees. Her base, plus a fifth
- * of her stat cards' nodes at 84% and the scenario's full active Extra Stats, with the buff's typical value.
- */
+/** The typical trained Uma's average stat at scenario T (the frozen table). */
 export function rivalTrainedStat(T: number): number {
-  const typical = Number.isInteger(T) && T >= 1 ? REWORK_BUFF_TYPICAL[T - 1] : undefined
-  if (typical === undefined) throw new RangeError(`Scenario ${T} has no typical buff value yet`)
-  const N = treeCardNodesAt(T)
-  const tree = ((N - fairShare(N)) * nodeValue(T) * starNodePct(TYPICAL_CARD_STARS)) / 100 + extraBudgetAt(T)
-  return TYPICAL_BASE_STAT + (tree * (1 + typical)) / STATS.length
+  const value = Number.isInteger(T) && T >= 1 ? RIVAL_TRAINED_STAT[T - 1] : undefined
+  if (value === undefined) throw new RangeError(`Scenario ${T} has no rival strength`)
+  return value
 }
 
 /** D191 over the catalogue: the lowest typical build from T to the catalogue's last scenario. */

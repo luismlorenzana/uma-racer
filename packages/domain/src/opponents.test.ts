@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 import {
-  CAP_PROFILES,
   DISTANCE_CATEGORIES,
   RACE_GRADES,
   RIVAL_SKILL_RANGE,
@@ -10,23 +9,19 @@ import {
   STATS,
   STRATEGIES,
   STYLE_PROFILE,
-  capProfile,
   castRivals,
   fullSpurtStamina,
-  rivalPreset,
   parseRaceCondition,
-  rollRivalField,
   rollRivalSkills,
   rollRivalStats,
   rollStyleCounts,
-  fieldTrainedStat,
-  trainedStat,
   type Aptitudes,
   type CompiledRaceSkill,
   type Stats,
   type Strategy,
   type UmaTemplate,
 } from './index'
+import { rivalPresetAt, rollRivalFieldAt } from './tiers/rivals'
 
 // A small seeded generator (mulberry32), so the tests exercise the rolls the way a race's RNG does.
 const rng = (seed: number) => {
@@ -41,54 +36,6 @@ const rng = (seed: number) => {
   }
 }
 const mean = (stats: Stats) => STATS.reduce((sum, stat) => sum + stats[stat], 0) / STATS.length
-
-describe('rival presets (D153, D159)', () => {
-  it('average the handicapped trained Uma where no cap bites', () => {
-    // D244: Tier 1's even caps leave its 650.0096 field × (1 − 0.05) on average for a G1.
-    for (const strategy of STRATEGIES) expect(mean(rivalPreset(1, 'g1', 'medium', strategy, 2000))).toBeCloseTo(617.50912)
-    expect(mean(rivalPreset(1, 'g3', 'sprint', 'end'))).toBeCloseTo(fieldTrainedStat(1) * 0.75)
-    expect(fieldTrainedStat(1)).toBe(trainedStat(1))
-  })
-
-  it('carry the Stamina a full spurt at the race distance needs, from a 90% roll up', () => {
-    for (const strategy of STRATEGIES) {
-      for (const meters of [1200, 1600, 2000, 2400]) {
-        const preset = rivalPreset(1, 'g1', 'medium', strategy, meters)
-        expect(preset.stamina * RIVAL_STAMINA_ROLL).toBeCloseTo(fullSpurtStamina(meters, strategy, preset.speed, preset.guts), 0)
-      }
-    }
-    const stamina = (meters: number) => rivalPreset(1, 'g1', 'medium', 'pace', meters).stamina
-    expect(stamina(2400)).toBeGreaterThan(stamina(2000) + 250)
-    // A marathon cannot take more than 40% of the target build OR pass the scenario cap (D244).
-    const marathon = rivalPreset(1, 'g1', 'long', 'pace', 3600)
-    expect(marathon.stamina).toBe(Math.min(capProfile(1).stamina, 0.4 * 5 * fieldTrainedStat(1) * 0.95))
-  })
-
-  it('shape each running style after what it needs', () => {
-    const front = rivalPreset(1, 'g1', 'mile', 'front')
-    const end = rivalPreset(1, 'g1', 'mile', 'end')
-    expect(end.power).toBeGreaterThan(front.power)
-    expect(front.wit).toBeGreaterThan(end.wit)
-    const spreadMean = (row: Record<string, number>) => Object.values(row).reduce((sum, weight) => sum + weight, 0) / SPREAD_STATS.length
-    for (const row of Object.values(STYLE_PROFILE)) expect(spreadMean(row)).toBeCloseTo(1)
-  })
-
-  it('lean the way the scenario caps lean, and never pass a cap', () => {
-    // D244 grows Speed faster than Wit; relative spread follows the cap lean independently of Stamina.
-    const lean = (tier: number) => {
-      const preset = rivalPreset(tier, 'g1', 'medium', 'pace', 2000)
-      return preset.speed / preset.wit
-    }
-    expect(lean(3)).toBeGreaterThan(lean(1))
-    expect(lean(5)).toBeGreaterThan(lean(1))
-    for (let tier = 1; tier <= CAP_PROFILES.length; tier += 1) {
-      for (const grade of RACE_GRADES) for (const distance of DISTANCE_CATEGORIES) for (const strategy of STRATEGIES) {
-        const preset = rivalPreset(tier, grade, distance, strategy)
-        for (const stat of STATS) expect(preset[stat]).toBeLessThanOrEqual(capProfile(tier)[stat])
-      }
-    }
-  })
-})
 
 describe('rival skills (D163)', () => {
   const white = (id: string, condition: string): CompiledRaceSkill => ({
@@ -127,7 +74,7 @@ describe('rival skills (D163)', () => {
 
 describe('rival rolls (D153)', () => {
   it('rolls every stat between 80% and 100% of the preset', () => {
-    const preset = rivalPreset(7, 'g2', 'long', 'late')
+    const preset = rivalPresetAt({ T: 7, grade: 'g2', distance: 'long', strategy: 'late' })
     let lowest = 1
     let highest = 0
     for (let seed = 1; seed <= 300; seed += 1) {
@@ -164,7 +111,7 @@ describe('rival rolls (D153)', () => {
   })
 
   it('rolls a whole field deterministically from the race seed', () => {
-    const field = (seed: number) => rollRivalField({ tier: 1, grade: 'g1', distance: 'medium', count: 11, rng: rng(seed) })
+    const field = (seed: number) => rollRivalFieldAt({ T: 1, grade: 'g1', distance: 'medium', count: 11, rng: rng(seed) })
     expect(field(42)).toEqual(field(42))
     expect(field(42)).not.toEqual(field(43))
     expect(field(42)).toHaveLength(11)

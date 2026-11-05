@@ -1,39 +1,31 @@
-// What an unfilled slot shows until its task lands (T137): a Page is its header (back, name, (i) with the blurb) over
-// the place's building; the reveal is a full-screen frame with her art, her name and the way to her profile. No
-// placeholder text: the (i) holds the explanation (uma-rpg D95).
+// A place whose screen hasn't landed yet (T137, T152): its Page is the kit's place header (back, name, (i) with the
+// blurb) over the place's building and the not-ready line, "Coming soon" (`hubWords('not-ready')`). M036's parts fill the
+// places one by one (`registry.tsx`).
+import { Panel } from '@luismlorenzana/uma-kit/ui'
 import { hubWords } from '@racer/domain/hub'
-import { Link } from 'react-router'
 import { BuildingSprite } from '../ui/BuildingSprite'
 import { PlacePageHeader } from './PlacePageHeader'
-import { UmaBust } from '@luismlorenzana/uma-kit/album'
-import { useUmaName } from '../ui/uma'
-import type { FlowProps, PageProps } from './registry'
+import type { PageProps } from './registry'
 
-export function UnfilledPage({ place, rest }: PageProps) {
+/** The not-ready line, in the kit's panel. */
+export function NotReady() {
   return (
-    <div data-g2="unfilled-page" data-place-page={place.id}>
-      <PlacePageHeader place={place} rest={rest} />
-      <div className="flex justify-center py-10">
-        <BuildingSprite frame={place.frame} page={place.page} />
-      </div>
-    </div>
+    <Panel className="p-3 text-center" data-racer="not-ready">
+      <p className="font-display text-[15px] font-semibold text-ink-soft">{hubWords('not-ready')}</p>
+    </Panel>
   )
 }
 
-export function UnfilledReveal({ params }: FlowProps) {
-  const umaId = params['umaId'] ?? ''
-  const name = useUmaName(umaId)
+export function UnfilledPage({ place, rest }: PageProps) {
   return (
-    <div data-g2="unfilled-reveal" className="pt-safe pb-safe flex h-full flex-col items-center justify-center gap-4 bg-stage px-6 text-ink-on-dark">
-      <UmaBust outfitId={umaId} label="" size={160} className="size-40 overflow-hidden rounded-sm" />
-      <h1 className="font-display text-2xl font-bold">{name}</h1>
-      <Link
-        to={`/town/stable/outfit/${encodeURIComponent(umaId)}`}
-        replace
-        className="font-display flex min-h-12 items-center rounded-sm bg-accent px-6 font-bold text-accent-ink shadow-1"
-      >
-        {hubWords('profile')}
-      </Link>
+    <div data-racer="unfilled-page" data-place-page={place.id}>
+      <PlacePageHeader place={place} rest={rest} />
+      <div className="space-y-4 px-4 py-10">
+        <div className="flex justify-center">
+          <BuildingSprite frame={place.frame} page={place.page} />
+        </div>
+        <NotReady />
+      </div>
     </div>
   )
 }

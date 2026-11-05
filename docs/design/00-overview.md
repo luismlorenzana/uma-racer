@@ -38,24 +38,24 @@ Farm sites ──▶ Pantry ──▶ Kitchen ──▶ Training Hub session ─
 ```
 
 - **Farm.** Any free Uma gathers at one of eight family sites, crafts at the Pantry or cooks at the Kitchen. Farm work
-  raises her **Farm Level**, 1–50 per tier, which opens higher grades ([07](../game/07-farm.md)).
+  raises her **Farm Level**, 1–50 per tier, which opens higher grades ([07](../archive/g2-manual/07-farm.md)).
 - **Train.** A dish is the price of one unlock in a **Training Hub session**, and only the Uma it's for can sit it
-  ([05](../game/05-training-hub.md); bonds in [06](../game/06-cards-and-bonds.md)).
+  ([05](../archive/g2-manual/05-training-hub.md); bonds in [06](../archive/g2-manual/06-cards-and-bonds.md)).
 - **Race.** Races pay **Racing EXP** toward her **Racing Level**, 1–50 per tier, and **Prize Money**. The **Exchange**
   turns Prize Money into **Speed Tickets**, each 30 minutes off a running job or session, and raw ingredients. So a free
-  evening of racing speeds up everything passive ([09](../game/09-racing-rewards-and-exchange.md)).
+  evening of racing speeds up everything passive ([09](../archive/g2-manual/09-racing-rewards-and-exchange.md)).
 - **Advance.** Winning a scenario's career goals (a G3, two G2s, then three G1s) lets her advance to the next scenario,
-  whose layer asks for higher-grade dishes ([03](../game/03-uma-progression.md)).
+  whose layer asks for higher-grade dishes ([03](../archive/g2-manual/03-uma-progression.md)).
 - **Promote.** A tier ends in a **World Expedition**: eight distinct wins abroad. Completing it promotes her to the next
   tier, where everything on her starts over while the account's Warehouse, Prize Money, titles and buildings carry
-  ([04](../game/04-tiers-and-promotion.md)). **Expeditions are phase 9 and not built yet**
+  ([04](../archive/g2-manual/04-tiers-and-promotion.md)). **Expeditions are phase 9 and not built yet**
   ([10](../rework/10-expeditions.md)). Until then the Expedition Map shows each Uma's distance to entry.
 - **New Umas** cost an **Uma Ticket**. A new account starts with 20; after that every scenario gate an Uma reaches pays
-  an Uma Shard, and five Shards make a ticket ([04](../game/04-tiers-and-promotion.md) §6).
+  an Uma Shard, and five Shards make a ticket ([04](../archive/g2-manual/04-tiers-and-promotion.md) §6).
 
-The loop step by step, the activity rule and a week of play are [01](../game/01-game-loop.md). Check-ins and the
-planner are [02](../game/02-check-ins-and-notifications.md), and pacing (a roster of 25, about four weeks a scenario) is
-[12](../game/12-economy-and-pacing.md). It all happens on the Hub's four pages: Town Hall, Training, Racing and Farm,
+The loop step by step, the activity rule and a week of play are [01](../archive/g2-manual/01-game-loop.md). Check-ins and the
+planner are [02](../archive/g2-manual/02-check-ins-and-notifications.md), and pacing (a roster of 25, about four weeks a scenario) is
+[12](../archive/g2-manual/12-economy-and-pacing.md). It all happens on the Hub's four pages: Town Hall, Training, Racing and Farm,
 each a pixel-art town map (uma-rpg's Hub, on uma-art) with the game's own DOM skin over it
 ([11](../game/11-hub-and-places.md), [UX](ux.md), [Visual System](visual-system.md)).
 
@@ -66,7 +66,7 @@ each a pixel-art town map (uma-rpg's Hub, on uma-art) with the game's own DOM sk
 | A career run makes a one-off trained Uma | Each Uma is permanent and climbs **tiers of five scenarios**, with a **Racing Level** and a **Farm Level** of 1–50 in each tier |
 | Training is limited by career turns, with heavy RNG | Training is **timed Training Hub sessions paid with cooked dishes**. Each unlocks one known piece of the build, and her stats, aptitudes and SP are derived from those pieces |
 | Scenarios are separate career modes | Scenarios are **steps inside a tier**, in release order. A tier ends in a World Expedition and a promotion |
-| Daily energy meters limit play | **Nothing limits racing.** The Daily Purse tapers a long day's Prize Money instead ([09](../game/09-racing-rewards-and-exchange.md) §3) |
+| Daily energy meters limit play | **Nothing limits racing.** The Daily Purse tapers a long day's Prize Money instead ([09](../archive/g2-manual/09-racing-rewards-and-exchange.md) §3) |
 | R, SR and SSR support cards, limit-broken by duplicates | **SSR cards only, every one open at full value** (D329). A card is **bonded** to one Uma at the Dojo before it joins her set |
 | Gacha for Umas and cards | **No gacha.** Umas cost Uma Tickets earned by progress (D336); a card costs only its bond |
 | Skill points are spent during a career | **SP is derived** from her build, and she fine-tunes a skill loadout within it |
@@ -74,4 +74,4 @@ each a pixel-art town map (uma-rpg's Hub, on uma-art) with the game's own DOM sk
 | Career goals are mandatory, and failing ends the run | **A career per scenario** holds her Racing Level until each stage is won. A lost goal race costs only the race: goals are retried, never failed |
 | Mostly flat difficulty inside a career | **The grade handicap:** rivals are a trained Uma made weaker by the race's grade, most at G3 and least at G1, so a G1 is the real test |
 | No idle play | **A passive Farm** and timed sessions run while the app is closed. Check-ins collect and restart them |
-| Epithets and titles are a side feature | **Badges, titles, trophies and collection are core** ([Badges](badges.md)) |
+| Epithets and titles are a side feature | **Badges, titles, trophies and collection are core** ([Badges](../archive/g2-manual/badges.md)) |

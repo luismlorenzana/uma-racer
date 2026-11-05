@@ -1,4 +1,4 @@
-// The save's fetch (T136; T135's routes as built, rework/13 §6): the stamp on every call, the token, T134's parsers on
+// The save's fetch (T136, T152; T135's routes as built): generation 3's stamp on every call, the token, the parsers on
 // every answer, and each failure as one of seven kinds. After a 426 it asks nothing more.
 import { STAMP } from '@racer/domain/save'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -18,16 +18,16 @@ describe('the save api', () => {
         : { ...STAMP, serverTime: 5, results: [], entities: [], logs: [] }), { status: 200 }))
     const api = createSaveApi({ fetch: fetch as unknown as typeof globalThis.fetch, base: 'https://api.test', token: async () => 'abc' })
     expect(await api.snapshot(0, null)).toEqual(snapshot)
-    await api.snapshot(1_000, 'umas~5~sim-uma-01')
+    await api.snapshot(1_000, 'umas~5~invented-uma-01')
     await api.sync([])
     const calls = fetch.mock.calls as unknown as [string, RequestInit][]
     expect(calls.map(([url]) => url)).toEqual([
-      'https://api.test/api/save?protocol=2&generation=2&since=0',
-      'https://api.test/api/save?protocol=2&generation=2&since=1000&cursor=umas%7E5%7Esim-uma-01',
+      'https://api.test/api/save?protocol=3&generation=3&since=0',
+      'https://api.test/api/save?protocol=3&generation=3&since=1000&cursor=umas%7E5%7Einvented-uma-01',
       'https://api.test/api/sync',
     ])
     expect(calls.map(([, init]) => init.method)).toEqual(['GET', 'GET', 'POST'])
-    expect(JSON.parse(calls[2]![1].body as string)).toEqual({ protocol: 2, generation: 2, changes: [] })
+    expect(JSON.parse(calls[2]![1].body as string)).toEqual({ protocol: 3, generation: 3, changes: [] })
     expect(calls.every(([, init]) => (init.headers as Record<string, string>).Authorization === 'Bearer abc')).toBe(true)
   })
 

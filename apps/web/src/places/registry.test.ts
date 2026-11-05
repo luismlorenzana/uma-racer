@@ -1,57 +1,29 @@
-// The slot registry (docs/game/11-hub-and-places.md §1, §6): every place has a Page and, unless it is `direct` or
-// `hidden`, a Peek, except the `PENDING` slots each place task empties as it lands (T143 requires none). Full-screen
-// flows and sub-page patterns resolve as T137 sets them.
+// The place registry (docs/game/11-hub-and-places.md §1, §6; T152): generation 3 starts with Account alone; every other
+// place falls back to the not-ready Page until its part fills its slot. Sub-page patterns and full-screen flows resolve
+// as T137 set them.
 import { PLACE_IDS, PLACES } from '@racer/domain/hub'
 import { describe, expect, it } from 'vitest'
-import { FLOW_UI, isFullScreen, matchSubPage, PENDING, PLACE_UI, SHEET_UI, TOWN_PLAZA, type PlaceUi, type SlotId } from './registry'
+import { isFullScreen, matchSubPage, PLACE_UI, type PlaceUi } from './registry'
 
-const filled = (slot: SlotId): boolean => {
-  switch (slot) {
-    case 'sheet:check-in': return SHEET_UI['check-in'] !== undefined
-    case 'sheet:featured': return SHEET_UI.featured !== undefined
-    case 'plaza': return TOWN_PLAZA.Figure !== undefined
-    case 'flow:reveal': return FLOW_UI.reveal !== undefined
-    default: {
-      const place = PLACES.find((entry) => entry.id === slot)!
-      const ui = PLACE_UI[place.id]
-      return ui?.Page !== undefined && (place.direct || place.hidden || ui.Peek !== undefined)
-    }
-  }
-}
-
-describe('the slot registry', () => {
-  it('fills every place, sheet, the plaza and the reveal, except what is still pending', () => {
-    const slots: SlotId[] = [...PLACE_IDS, 'sheet:check-in', 'sheet:featured', 'plaza', 'flow:reveal']
-    for (const slot of slots) expect(filled(slot) || PENDING.includes(slot), `${slot} has no slot and isn't pending`).toBe(true)
+describe('the place registry', () => {
+  it('fills Account alone, and only with a Page: it is hidden, so it has no Peek', () => {
+    expect(Object.keys(PLACE_UI)).toEqual(['account'])
+    expect(PLACE_UI.account?.Page).toBeDefined()
+    expect(PLACE_UI.account?.Peek).toBeUndefined()
+    expect(PLACES.find((place) => place.id === 'account')?.hidden).toBe(true)
+    for (const id of PLACE_IDS.filter((each) => each !== 'account')) expect(PLACE_UI[id], id).toBeUndefined()
   })
 
-  it('lists only real slots as pending, once each, and none already filled: a task empties its own as it lands', () => {
-    expect(new Set(PENDING).size).toBe(PENDING.length)
-    for (const slot of PENDING) {
-      expect([...PLACE_IDS, 'sheet:check-in', 'sheet:featured', 'plaza', 'flow:reveal']).toContain(slot)
-      expect(filled(slot), `${slot} is filled: take it off PENDING`).toBe(false)
-    }
-  })
-
-  it("hides both bars on §6's flows inside place routes, and nowhere else", () => {
-    const place = (id: string) => PLACES.find((entry) => entry.id === id)
-    expect(isFullScreen(place('racecourse'), 'run')).toBe(true)
-    expect(isFullScreen(place('racecourse'), 'run/result')).toBe(true)
-    expect(isFullScreen(place('racecourse'), '')).toBe(false)
-    expect(isFullScreen(place('observatory'), 'sim-uma-01')).toBe(true)
-    expect(isFullScreen(place('gym'), 'sim-uma-01')).toBe(true)
-    expect(isFullScreen(place('gym'), '')).toBe(false)
-    expect(isFullScreen(place('dojo'), 'sim-uma-01')).toBe(false)
-    expect(isFullScreen(place('stable'), 'outfit/sim-uma-01')).toBe(false)
+  it('hides the bars on no place yet', () => {
+    for (const place of PLACES) for (const rest of ['', 'run', 'outfit/invented-uma-01']) expect(isFullScreen(place, rest)).toBe(false)
     expect(isFullScreen(undefined, 'run')).toBe(false)
   })
 
-  it("matches a sub-page pattern against the place's rest, so one task can own another's sub-route", () => {
-    const Needs = (() => null) as unknown as NonNullable<PlaceUi['subPages']>[string]
-    const ui: PlaceUi = { subPages: { needs: Needs, 'outfit/:umaId/needs': Needs } }
-    expect(matchSubPage(ui, 'needs')).toEqual({ Page: Needs, params: {} })
-    expect(matchSubPage(ui, 'outfit/sim-uma-01/needs')).toEqual({ Page: Needs, params: { umaId: 'sim-uma-01' } })
-    expect(matchSubPage(ui, 'outfit/sim-uma-01')).toBeNull()
-    expect(matchSubPage(undefined, 'needs')).toBeNull()
+  it("matches a sub-page pattern against the place's rest, so one part can own another's sub-route", () => {
+    const Profile = (() => null) as unknown as NonNullable<PlaceUi['subPages']>[string]
+    const ui: PlaceUi = { subPages: { 'outfit/:umaId': Profile }, fullScreen: (rest) => rest === 'play' }
+    expect(matchSubPage(ui, 'outfit/invented-uma-01')).toEqual({ Page: Profile, params: { umaId: 'invented-uma-01' } })
+    expect(matchSubPage(ui, 'outfit/invented-uma-01/skills')).toBeNull()
+    expect(matchSubPage(undefined, 'outfit/x')).toBeNull()
   })
 })

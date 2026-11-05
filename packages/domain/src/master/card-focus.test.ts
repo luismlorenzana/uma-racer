@@ -12,7 +12,7 @@ const skills = [skill('late-1', 'running_style==3'), skill('late-2', 'running_st
 const card = (id: string): SupportCardTemplate => ({
   id, charaId: `chara-${id}`, charName: `Synthetic ${id}`, title: 'Synthetic', type: 'speed', jpRelease: '2021-02-24', era: 1,
   obtain: 'gacha', starter: false, hintSkillIds: ['late-1', 'late-2', 'any'], eventSkillIds: [],
-  effectProfile: {} as SupportCardTemplate['effectProfile'], uniqueEffect: null,
+  hintOthers: [], effects: {}, uniqueEffect: null,
 })
 
 describe('card focus override', () => {

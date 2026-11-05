@@ -1,21 +1,20 @@
-// Creates the game port lazily (T137, T136, T143). Everything it loads, the port and the rules alike, stays out of the
-// entry chunk.
+// Creates the game port lazily (T137, T136, T143, T152). Everything it loads, the port and the rules alike, stays out
+// of the entry chunk.
 // - `bootSaveGame` is the app's boot, called by the session once the private content is ready: the device save (`save/`)
-//   local first, its requests on the signed-in owner's token, and Account's Sign in and
-//   Sign out from the auth provider. No boot deletes device data (SE1).
-// - `bootDevice` is the device save under any options: the seeds' mount (`dev/boot.ts`) opens it on the seeds' content.
+//   local first, its requests on the signed-in owner's token, and Account's Sign in and Sign out from the auth provider.
+// - `bootDevice` is the device save under any options.
 // A page holds one device save: one database connection and one sync lane. A second boot (StrictMode runs the
 // provider's effect twice in development) gets the first one's port. Every tap holds the update prompt's restart until
-// it has committed (uma-kit's `criticalAction`), as today's actions did.
-import type { G2Game, G2Rules } from './game'
+// it has committed (uma-kit's `criticalAction`).
+import type { RacerGame, RacerRules } from './game'
 import type { SaveGame } from '../save'
 import type { SaveBootOptions } from '../save/boot'
 import type { OperationContent } from '../save/env'
 import { criticalAction } from '@luismlorenzana/uma-kit/places'
 
-export interface G2Boot {
-  readonly game: G2Game
-  readonly rules: G2Rules
+export interface RacerBoot {
+  readonly game: RacerGame
+  readonly rules: RacerRules
   /** The device save behind `game`, when it is one: the session follows the auth provider through it. */
   readonly save?: SaveGame
 }
@@ -31,19 +30,17 @@ export interface SaveAuth {
   readonly signOut?: () => Promise<void>
 }
 
-let device: Promise<G2Boot> | null = null
+let device: Promise<RacerBoot> | null = null
 
-export function bootDevice(options: () => Promise<SaveBootOptions>, account: Pick<SaveAuth, 'signIn' | 'signOut'> = {}): Promise<G2Boot> {
+export function bootDevice(options: () => Promise<SaveBootOptions>, account: Pick<SaveAuth, 'signIn' | 'signOut'> = {}): Promise<RacerBoot> {
   device ??= (async () => {
     const [{ createSaveGame }, { RULES }, made] = await Promise.all([import('../save'), import('./rules'), options()])
     const save = createSaveGame(made)
     // Dev builds expose the port, as they expose `__raceScene`: taps and the Sync chip's states from the console.
-    if (import.meta.env.DEV) (globalThis as { __g2Save?: typeof save }).__g2Save = save
-    const { writeDevice } = save
-    const game: G2Game = {
+    if (import.meta.env.DEV) (globalThis as { __racerSave?: typeof save }).__racerSave = save
+    const game: RacerGame = {
       ...save,
-      run: (name, input, busyKey, options) => criticalAction(() => save.run(name, input, busyKey, options)),
-      ...(writeDevice === undefined ? {} : { writeDevice: (rows) => criticalAction(() => writeDevice(rows)) }),
+      run: <R,>(name: string, input: unknown, busyKey?: string) => criticalAction(() => save.run<R>(name, input, busyKey)),
       ...(account.signIn === undefined ? {} : { signIn: account.signIn }),
       ...(account.signOut === undefined ? {} : { signOut: account.signOut }),
     }
@@ -52,7 +49,7 @@ export function bootDevice(options: () => Promise<SaveBootOptions>, account: Pic
   return device
 }
 
-export function bootSaveGame(content: OperationContent, auth: SaveAuth): Promise<G2Boot> {
+export function bootSaveGame(content: OperationContent, auth: SaveAuth): Promise<RacerBoot> {
   return bootDevice(async () => {
     const { operationEnv, setSaveTokenProvider } = await import('../save')
     setSaveTokenProvider(auth.token)

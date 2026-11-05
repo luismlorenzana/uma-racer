@@ -3,18 +3,12 @@
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { beforeAll, describe, expect, it } from 'vitest'
-import { loopReport } from '../sim/report'
+import { describe, expect, it } from 'vitest'
 import { renderBlock, type PackageJson } from './render'
 
-// The loop simulation's blocks read one run per worker (T132); make it before the tests, not inside one's timeout.
-beforeAll(() => { loopReport() }, 120_000)
-
 const ROOT = fileURLToPath(new URL('../../../../', import.meta.url))
-// The manual: its own pages and the rework pages moved into it as built (T143).
+// The manual's pages (docs/game). The rework's pages are archived (D381) and hold no live blocks.
 const DOCS = join(ROOT, 'docs', 'game')
-// What stays of the rework's folder: Expeditions (phase 9) and the plan, whose §6 lists the operations live.
-const REWORK = join(ROOT, 'docs', 'rework')
 const BLOCK = /<!-- live:([a-z0-9-]+) -->\n[\s\S]*?<!-- \/live -->/g
 const PACKAGES = ['package.json', 'apps/web/package.json', 'apps/api/package.json', 'packages/domain/package.json', 'packages/race/package.json']
 const packages = PACKAGES.map((path) => ({ path, json: JSON.parse(readFileSync(join(ROOT, path), 'utf8')) as PackageJson }))
@@ -30,9 +24,9 @@ function refresh(text: string, unknown: string[]): string {
 
 describe('live manual (D337)', () => {
   const pages = (dir: string) => readdirSync(dir).filter((f) => f.endsWith('.md')).map((f) => join(dir, f))
-  const files = [...pages(DOCS), ...pages(REWORK)]
+  const files = pages(DOCS)
 
-  it.each([['docs/game', DOCS], ['docs/rework', REWORK]])('%s has pages with live blocks', (_, dir) => {
+  it.each([['docs/game', DOCS]])('%s has pages with live blocks', (_, dir) => {
     expect(pages(dir).length).toBeGreaterThan(2)
     expect(pages(dir).some((f) => readFileSync(f, 'utf8').includes('<!-- live:'))).toBe(true)
   })

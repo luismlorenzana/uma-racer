@@ -8,7 +8,7 @@ import { BootGates } from '@luismlorenzana/uma-kit/places'
 import { Outlet } from 'react-router'
 import { useSessionGates } from './session'
 
-export const GATE_WORDS = { name: 'Uma Racer', tagline: 'Race, Farm, Train.' } as const
+export const GATE_WORDS = { name: 'Uma Racer', tagline: 'Careers, cards and races.' } as const
 
 export function LiveGates() {
   const auth = useAuth()

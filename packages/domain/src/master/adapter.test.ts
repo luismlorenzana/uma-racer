@@ -32,7 +32,13 @@ describe('the racer master adapter', () => {
     data.supportCards[0]!.obtain = 'story_event'
     data.supportCards[0]!.globalEventSkillIds = [990010]
     const card = adaptMaster(data).content.cards[0]!
-    expect(card).toMatchObject({ starter: true, obtain: 'event', eventSkillIds: ['990010'], effectProfile: { friendshipBonus: 1 } })
+    expect(card).toMatchObject({ starter: true, obtain: 'event', eventSkillIds: ['990010'] })
+    // D381: each effect's real value at the card's top level, the last the source gives.
+    const top = Object.fromEntries(data.supportCards[0]!.effects
+      .map((row) => [row.type, row.values.filter((value) => value !== null && value !== -1).at(-1)] as const)
+      .filter(([, value]) => value !== undefined))
+    expect(card.effects).toEqual(top)
+    expect(Object.keys(card.effects).length).toBeGreaterThan(0)
     expect(adaptMaster(data).content.cards).toHaveLength(1)
     data.outfits[0]!.characterId = 9999
     data.races[0]!.trackId = 88888

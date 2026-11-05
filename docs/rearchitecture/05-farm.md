@@ -1,6 +1,9 @@
 # 05 · Farm mechanics
 
-> **Superseded by the manual's [07 · Farm](../game/07-farm.md) and [08 · Item catalogue and recipes](../game/08-item-catalogue-and-recipes.md)
+> **Archived by the restart (D380, 2026-11-04).** This plan's phases 1–3, 5 and 6 shipped; 4 and 7–9 are retired. The
+> new game is [the drawing board v3](../research/drawing-board/README.md); this page is kept as history only.
+
+> **Superseded by the manual's [07 · Farm](../archive/g2-manual/07-farm.md) and [08 · Item catalogue and recipes](../archive/g2-manual/08-item-catalogue-and-recipes.md)
 > (D330; 13 §7).** The old Farm (M031) was deleted in phase 3 (T143) rather than carried through the rebuild. This page
 > describes it as it was, as the plan's history.
 
