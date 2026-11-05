@@ -29,8 +29,8 @@ timers, and nothing limits how much you play.
 | 02 · Unlocks | Uma and Card Tickets, the Stable, the Card Library, eras | T157 |
 | 03 · Careers | The calendar, objectives, seasons, the finale, rewards | T154 |
 | [04 · Tiers and scenarios](04-tiers-and-scenarios.md) | The tier map, caps and card eras | T152, T154 |
-| 05 · The build | The deck, posting, the tree, the session formula, the racing build, skills | T153 |
-| 06 · Cards and bonds | Owned cards at full level, their real effects, bond tracks | T153 |
+| [05 · The build](05-the-build.md) | The deck, posting, the tree, the session formula, the racing build, skills | T153 |
+| [06 · Cards and bonds](06-cards-and-bonds.md) | Owned cards at full level, their real effects, bond tracks, card power | T153 |
 | 07 · Stages | The mini-game framework: grades, pay, replays, resume | T155 |
 | 08 · Training Yard | The merge game | T155 |
 | 09 · Furlong Hand | The card race | T156 |

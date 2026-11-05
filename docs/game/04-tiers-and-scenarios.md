@@ -38,7 +38,7 @@ these things:
 
 - **The 15th is Goshiki Shuntaisai,** released in Japan on 2026-10-26 (D381). It fills the slot that waited for
   "Japan's next".
-- **The SP cap** is what a career can spend on skills (05 · The build, T153).
+- **The SP cap** is what a career can spend on skills ([05](05-the-build.md) §8).
 
 ## 2. Caps
 

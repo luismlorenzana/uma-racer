@@ -156,6 +156,7 @@ built `dist`, so run `pnpm --filter @racer/domain build` first in a fresh checko
 | Script | Checks | Exits 1 when |
 |---|---|---|
 | `pnpm sim:balance` | The engine's strategy balance on synthetic fields (`--final` for the full matrix) | — (a report) |
+| `pnpm sim:decks` | Every pip bought with an empty, a median bonded and a strong bonded deck, as shares of the cap budget ([05](05-the-build.md) §10); the private pack when present (`MASTER_DIR`), invented cards otherwise (`--synthetic`), which the domain's tests also run in CI | A band drifts, or a deck caps all five stats |
 | `pnpm sim:turns` | Engine v9's targets on generated G1 fields (`ENGINE=7` or `8` compares a frozen engine) | — (a report) |
 | `pnpm sim:builds` | The stamina ladder and the G1 grid on full-layer builds at every T = 1–14 against the tier rules' fields, and each buff's typical value | A hard ladder check fails, other than the three accepted at a tier's first scenario (`LADDER_ACCEPTED_MISSES`, D350) |
 | `pnpm sim:careers` | Every career of the private pack frozen by the rework's rule, and each stage's best case on full-layer builds at every T, against [03](../archive/g2-manual/03-uma-progression.md) §12's targets | A career can't be frozen, or a cell falls under 25% |
@@ -328,8 +329,9 @@ lane. The record shapes, kinds, bounds and wire format are `packages/domain/src/
   same plain words. A retried id returns its first receipt and is never applied twice.
 - **The operation registry** (`save/registry.ts`, `save/operations.ts`): each area defines its operations in its own
   `ops.ts`, as a parser and an `apply`.
-  - Built: `account` has `unlock-uma`, `unlock-card` and `dev-grant`.
-  - Declared, refusing "not built yet" until their part lands: `career` (T154), `build` (T153) and `stages` (T155).
+  - Built: `account` has `unlock-uma`, `unlock-card` and `dev-grant`; `build` has `set-deck`, `post-card`, `buy-pips`,
+    `pour-bond` and `buy-skill` ([05](05-the-build.md) §9, D382).
+  - Declared, refusing "not built yet" until their part lands: `career` (T154) and `stages` (T155).
 - **On the device** (`apps/web/src/save/`):
   - Dexie `uma-racer-g3`: one table per kind, the outbox, and a device-only `stageJournal`;
   - on first boot it deletes generation 2's `uma-racer-g2` database and its `uma-racer:g2:*` keys: the owner's full

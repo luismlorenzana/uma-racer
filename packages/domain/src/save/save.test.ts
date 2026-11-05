@@ -34,8 +34,7 @@ describe('the operation table', () => {
     ])
   })
 
-  it.each([['start-career'], ['run-race'], ['next-season'], ['run-finale'], ['set-deck'], ['post-card'], ['buy-pips'], ['pour-bond'],
-    ['buy-skill'], ['settle-stage']])('%s refuses until its part lands', (name) => {
+  it.each([['start-career'], ['run-race'], ['next-season'], ['run-finale'], ['settle-stage']])('%s refuses until its part lands', (name) => {
     const commit = commitOperation(fresh(), op(1, name, {}), ENV)
     expect(commit).toMatchObject({ status: 'refused', refusal: { code: 'not-built-yet' } })
   })

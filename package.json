@@ -18,6 +18,7 @@
     "overlays:publish": "pnpm --filter @racer/overlays run publish",
     "master:parity": "pnpm --filter @racer/overlays run parity",
     "sim:balance": "pnpm dlx tsx scripts/sim/strategy-balance.ts",
+    "sim:decks": "pnpm dlx tsx scripts/sim/decks.ts",
     "docs:update": "pnpm --filter @racer/domain run docs:update",
     "test:ci": "node --test scripts/check-size.test.mjs && turbo run test --concurrency=1"
   },
