@@ -1,8 +1,10 @@
 # 03 · Careers
 
-> **Status: generation 3, the rules built (T154, D383).** The career screens (the calendar strip, the season's three
-> steps, the race hand-off and the finale) are T158's, and the two stages' games are T155's and T156's. The design is
-> [M036](../tasks/M036-ura-finale-slice.md) "The career" and [v3 §2](../research/drawing-board/README.md#2-the-shape-of-the-game).
+> **Status: generation 3, built (T154, T158; D383, D387).** The rules are T154's; the career screens (the calendar
+> strip, the season card's three steps, the race sheet and run, the URA Finals and the completion) are T158's,
+> [11 · Hub and places](11-hub-and-places.md#8-the-career-screens) §8; the two stages' games are T155's and T156's. The
+> design is [M036](../tasks/M036-ura-finale-slice.md) "The career" and
+> [v3 §2](../research/drawing-board/README.md#2-the-shape-of-the-game).
 
 A career is one Uma's run through one scenario: twelve seasons, then the scenario's finale. Each season she plays a
 stage for resources, the owner spends them on her build ([05](05-the-build.md)), and she races the season's
@@ -95,7 +97,8 @@ A season is three steps: **Play**, **Upgrade** and **Race**.
 - **Next season** opens once every objective in the season is won. A season without objectives can end at once.
 - **Playing again never moves the calendar:** stages can be replayed at any time and pay every time
   ([07](07-stages.md) §4), and lost races are retried for free.
-- The rules don't enforce the steps' order: the screens lead it (T158).
+- The rules don't enforce the steps' order: the screens lead it. The season card lights the next step and badges
+  Upgrade with what she can buy ([11](11-hub-and-places.md#81-a-careers-page-careercareerscareerid) §8.1).
 - After Senior Winter, Next season opens the **Finale** (§5).
 
 ## 4. Races
@@ -109,6 +112,10 @@ An objective races on the race engine and its run screen, with her **racing buil
   season**, so a Junior race's rivals are as green as she is and a Senior G1's are trained ([Racing](racing.md));
 - **the seed:** `raceAttemptSeed` of the career's start, the content release, her, the race, her style and the
   attempt. The same attempt is the same race on every device; a retry is the next attempt and a new race.
+
+**On the screens** ([11](11-hub-and-places.md#84-the-race-sheet) §8.4–§8.5): the race sheet shows her racing build,
+her best style preselected and the field the seeded draw meets; **Race** commits `run-race` with the next attempt's
+number; the run replays the stored result in the race scene; a loss offers **Retry** at once.
 
 **Settling:** a first place wins the objective; anything else changes nothing but the record of the run, and she can
 race again at once. Each run is a `raceResults` row under its operation's id, replayable.
@@ -170,7 +177,6 @@ then three races, each retried until won:
 
 ## Not built yet
 
-- **The screens** (T158): the calendar strip, the season card, the race hand-off and the finale.
 - **The stages' pay** comes from `settle-stage` ([07](07-stages.md) §3) on [12](12-pacing.md)'s table.
 - **A second career** with the same Uma in the same scenario, and careers in later scenarios
   ([04](04-tiers-and-scenarios.md) §4).

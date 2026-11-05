@@ -31,6 +31,8 @@ export interface SaveActions {
   dismissNotice(id: string): void
   /** One Uma's race results, by time, the queued ones included. */
   raceResults(umaId: string): Promise<RaceResultRecord[]>
+  /** One race result by its operation's id: the queued tap's own, else the confirmed one in Dexie; null when neither. */
+  raceResult(id: string): Promise<RaceResultRecord | null>
   /** An operation's receipt: the store's latest, else the server's in Dexie (the store keeps 100). */
   receipt(id: string): Promise<unknown>
   /** An operation's log row: the queued tap's pending one, else the confirmed one in Dexie; null when neither. */
@@ -118,6 +120,13 @@ export function createActions(ctx: ActionContext): SaveActions {
     dismissNotice,
     raceResults: async (umaId) =>
       merged('raceResults', await db.raceResults.where('data.umaId').equals(umaId).toArray(), (draft) => (draft.data as RaceResultRecord).umaId === umaId),
+    raceResult: async (id): Promise<RaceResultRecord | null> => {
+      const pending = useSave.getState().pendingLogs.find((draft) => draft.kind === 'raceResults' && draft.id === id)
+      if (pending !== undefined) return pending.data as RaceResultRecord
+      const row = await db.raceResults.get(id)
+      const parsed = row === undefined ? null : parseLogRow(row)
+      return parsed?.kind === 'raceResults' ? parsed.data : null
+    },
     receipt: async (id) => {
       const kept = useSave.getState().receipts[id]
       if (kept !== undefined) return kept.server ?? kept.local

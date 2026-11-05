@@ -6,7 +6,7 @@ import { BRANCHES, PIPS_PER_BRANCH, type Branch, type CareerRecord } from '../sa
 import { capProfileAt } from '../tiers/scaling'
 import { STATS, type Stats } from '../types'
 import { BRANCH_NAMES } from './deck'
-import { branchLevel, pipLevel } from './facilities'
+import { branchLevel, pipLevel, PIPS_PER_LEVEL } from './facilities'
 import { branchCost, CAMP_LEVEL, CAMP_OPENS_AT_LEVEL, CAMP_SESSIONS, gainDelta, readDeck, statParts, treeGain, type BuildView } from './derive'
 import type { Gain } from './session'
 
@@ -47,6 +47,24 @@ export function previewPip(career: CareerRecord, view: BuildView, branch: Branch
   const after = { ...career, pips: { ...career.pips, [branch]: pips + 1 } }
   return preview(career, after, view, branch, level, branchCost(career, view, branch, level))
 }
+
+/**
+ * A branch's next `count` pips bought at once (the career screens' Buy row, T158): their summed cost, gain and overflow,
+ * exactly what `buyPips` with that count spends and pays. Its `level` is the first pip's. Null when the branch hasn't
+ * that many pips left, or `count` isn't a whole number from 1.
+ */
+export function previewPips(career: CareerRecord, view: BuildView, branch: Branch, count: number): TreePreview | null {
+  const pips = career.pips[branch]
+  if (!Number.isInteger(count) || count < 1 || pips + count > PIPS_PER_BRANCH) return null
+  const read = readDeck(career, view)
+  let cost = 0
+  for (let index = pips; index < pips + count; index++) cost += branchCost(career, view, branch, pipLevel(index), read)
+  const after = { ...career, pips: { ...career.pips, [branch]: pips + count } }
+  return preview(career, after, view, branch, pipLevel(pips), cost)
+}
+
+/** The pips left in a branch's open level: what Buy row buys (0 once the branch is full). */
+export const rowLeft = (pips: number): number => (pips >= PIPS_PER_BRANCH ? 0 : PIPS_PER_LEVEL - (pips % PIPS_PER_LEVEL))
 
 /** A Camp node in a branch: four level-5 sessions; null while camps are closed or both are bought. */
 export function previewCamp(career: CareerRecord, view: BuildView, branch: Branch): TreePreview | null {

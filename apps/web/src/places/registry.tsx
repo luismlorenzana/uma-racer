@@ -1,8 +1,8 @@
 // What each place shows (docs/game/11-hub-and-places.md §1, §6; uma-rpg's `places/registry.tsx`): a Peek (the quick look
 // over its page), a Page (its full screen) with sub-page slots, and an optional full-screen rule. Every body is a lazy
 // chunk. T157 (D386) fills the Stable, the Card Library and the Careers shell beside Account; the two games open their
-// stage hosts (T155, T156); a place without a Page opens the not-ready state (`Unfilled.tsx`). T158 builds the career
-// screens into the Careers place.
+// stage hosts (T155, T156) as practice; a place without a Page opens the not-ready state (`Unfilled.tsx`). T158 (D387)
+// built the career screens into the Careers place, whose plays and race runs are full screen.
 import type { Place, PlaceId } from '@racer/domain/hub'
 import { lazy, type ComponentType, type LazyExoticComponent } from 'react'
 import { matchPath } from 'react-router'
@@ -41,11 +41,14 @@ export const PLACE_UI: Readonly<Partial<Record<PlaceId, PlaceUi>>> = {
   stable: { Peek: lazy(() => import('./stable/Peek')), Page: lazy(() => import('./stable/Page')) },
   'card-library': { Peek: lazy(() => import('./card-library/Peek')), Page: lazy(() => import('./card-library/Page')) },
   account: { Page: lazy(() => import('./account/Page')) },
-  careers: { Peek: lazy(() => import('./career/Peek')), Page: lazy(() => import('./career/Page')) },
-  // The stage hosts, full screen: practice until the career screens (T158) open them for a season.
+  careers: { Peek: lazy(() => import('./career/Peek')), Page: lazy(() => import('./career/Page')), fullScreen: (rest) => careerFullScreen(rest) },
+  // The stage hosts, full screen, as practice: a career's own plays open from its page (D387).
   'training-yard': { Page: lazy(() => import('./training-yard/Page')), fullScreen: () => true },
   'furlong-hand': { Page: lazy(() => import('./furlong-hand/Page')), fullScreen: () => true },
 }
+
+/** A career's play (`:careerId/play/:kind`) and race run (`:careerId/race/:id`) hide both bars (§6). */
+export const careerFullScreen = (rest: string): boolean => /^[^/]+\/(?:play|race)\/[^/]+$/.test(rest)
 
 /** The sub-page `rest` names, if any, with its params. */
 export function matchSubPage(ui: PlaceUi | undefined, rest: string): { readonly Page: Lazy<SubPageProps>; readonly params: RouteParams } | null {

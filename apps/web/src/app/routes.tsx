@@ -11,11 +11,12 @@ import { startPath } from './start'
 const HubPage = lazy(() => import('../hub/HubPage'))
 const UnfilledPage = lazy(() => import('../places/Unfilled').then((mod) => ({ default: mod.UnfilledPage })))
 
-/** `/`: waits for the first snapshot, then replaces itself (§2.4). */
+/** `/`: waits for the first snapshot, then replaces itself (§2.4): her career page while it runs, else the last page. */
 export function StartRoute() {
   const ready = useGame((snapshot) => snapshot.status === 'ready')
+  const careers = useGame((snapshot) => snapshot.state?.careers ?? null)
   if (!ready) return null
-  return <Navigate to={startPath()} replace />
+  return <Navigate to={startPath(undefined, undefined, (id) => careers?.[id]?.completedAt === null)} replace />
 }
 
 /** `/:page`, its map, with `?peek=:place`; a page that isn't one goes to `/`. */

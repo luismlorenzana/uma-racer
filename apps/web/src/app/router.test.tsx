@@ -7,7 +7,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { memoryGame } from '../__fixtures__/memory'
 import { renderRacer, stubStorage } from '../__fixtures__/testing'
 import { BOOTING_GAME } from './game'
-import { LAST_PAGE_KEY, startPath } from './start'
+import { careerPath } from '../hub/nav'
+import { CAREER, careerGame, startedState } from '../places/career/__fixtures__/career'
+import { LAST_CAREER_KEY, LAST_PAGE_KEY, startPath } from './start'
 
 afterEach(() => {
   cleanup()
@@ -69,6 +71,30 @@ describe('the start rule (§2.4)', () => {
     expect(where()).toBe('/career')
     localStorage.setItem(LAST_PAGE_KEY, 'farm')
     expect(startPath()).toBe('/town')
+  })
+
+  it('reopens her career page while it runs (T158), remembering the career on screen and forgetting it elsewhere', async () => {
+    const opened = async (state = startedState()) => {
+      const { where } = renderRacer('/', careerGame(state))
+      await waitFor(() => expect(where()).not.toBe('/'))
+      const at = where()
+      cleanup()
+      return at
+    }
+    const shown = renderRacer(`${careerPath(CAREER)}/upgrade?tab=tree`, careerGame())
+    await waitFor(() => expect(localStorage.getItem(LAST_CAREER_KEY)).toBe(CAREER))
+    expect(localStorage.getItem(LAST_PAGE_KEY)).toBe('career')
+    shown.unmount()
+    expect(await opened()).toBe(careerPath(CAREER))
+    // A completed career, or one not in the save, opens the last page instead.
+    const started = startedState()
+    expect(await opened({ ...started, careers: { [CAREER]: { ...started.careers[CAREER]!, completedAt: 1 } } })).toBe('/career')
+    expect(await opened({ ...started, careers: {} })).toBe('/career')
+    // Any other screen forgets it.
+    renderRacer('/town', careerGame())
+    await waitFor(() => expect(localStorage.getItem(LAST_CAREER_KEY)).toBeNull())
+    expect(startPath('town', CAREER, () => true)).toBe(careerPath(CAREER))
+    expect(startPath('town', null, () => true)).toBe('/town')
   })
 
   it('waits on `/` while the game opens', async () => {

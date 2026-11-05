@@ -8,7 +8,7 @@ import { pourBond } from './bond'
 import { BRANCH_SEATS, deckRefusal, postCard, withDeck } from './deck'
 import { readDeck, statParts, treeGain, type BuildView } from './derive'
 import { careerStats, deriveRacingBuild } from './racing-build'
-import { buyCamp, buyPips, campsOpen, previewCamp, previewPip } from './tree'
+import { buyCamp, buyPips, campsOpen, previewCamp, previewPip, previewPips, rowLeft } from './tree'
 
 const ok = <T extends object>(value: T | Refusal): T => {
   if (isRefusal(value)) throw new Error(`${value.code}: ${value.reason}`)
@@ -81,6 +81,24 @@ describe('the tree', () => {
       expect(after.stats.speed - before.stats.speed).toBe(preview.gain.stats.speed)
       expect(after.sp - before.sp).toBe(preview.gain.sp)
     }
+  })
+
+  it('previews a row of pips bought at once exactly as buying them spends and pays (T158\'s Buy row)', () => {
+    const three = ok(buyPips(career(), view(), 'speed', 3)).career
+    expect(rowLeft(three.pips.speed)).toBe(1)
+    expect(rowLeft(0)).toBe(4)
+    expect(rowLeft(20)).toBe(0)
+    const row = previewPips(three, view(), 'speed', 5)!
+    const bought = ok(buyPips(three, view(), 'speed', 5))
+    expect(row).toMatchObject({ level: 1, cost: bought.spent })
+    expect(row.cost).toBe(20 + 4 * 22)
+    const gained = treeGain(bought.career, view())
+    const before = treeGain(three, view())
+    expect(row.gain.stats.speed).toBe(gained.stats.speed - before.stats.speed)
+    expect(row.gain.sp).toBe(gained.sp - before.sp)
+    expect(previewPips(three, view(), 'speed', 1)).toEqual(previewPip(three, view(), 'speed'))
+    expect(previewPips(three, view(), 'speed', 18)).toBeNull()
+    expect(previewPips(three, view(), 'speed', 0)).toBeNull()
   })
 
   it('shows the gain its caps throw away', () => {

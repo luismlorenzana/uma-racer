@@ -96,6 +96,8 @@ export interface RacerJournal {
 export interface RacerLogs {
   /** One Uma's race results, by time. */
   raceResults(umaId: string): Promise<RaceResultRecord[]>
+  /** One race result by its operation's id (a race's run screen, T158); null while neither queued nor confirmed. */
+  raceResult(id: string): Promise<RaceResultRecord | null>
   /** An operation's receipt: the snapshot's latest, else the server's from the operations log. */
   receipt(id: string): Promise<unknown>
   /** An operation's log row (its name, time and receipt): a queued tap's own, else the confirmed one; null when neither. */

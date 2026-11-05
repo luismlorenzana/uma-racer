@@ -93,6 +93,7 @@ export function createSaveGame(options: SaveBootOptions): SaveGame {
     syncNow: () => session.lane.request({ pull: true }),
     logs: {
       raceResults: (umaId) => session.actions.raceResults(umaId),
+      raceResult: (id) => session.actions.raceResult(id),
       receipt: (id) => session.actions.receipt(id),
       operation: (id) => session.actions.operation(id),
     },

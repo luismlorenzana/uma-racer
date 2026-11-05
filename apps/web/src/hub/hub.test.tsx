@@ -115,7 +115,7 @@ describe('the two pages', () => {
   it('opens Careers on the Career page: its Peek says how to start one, its Page lists none running (T157)', async () => {
     const { where } = renderRacer('/career?peek=careers', memoryGame())
     const panel = await screen.findByRole('dialog', { name: 'Careers' })
-    expect(await within(panel).findByText("No career running. Start one from an Uma's profile in the Stable.")).toBeTruthy()
+    expect(await within(panel).findByText("No career running. Start one in Careers, or from an Uma's profile in the Stable.")).toBeTruthy()
     fireEvent.click(within(panel).getByRole('link', { name: 'Enter Careers' }))
     await waitFor(() => expect(where()).toBe('/career/careers'))
     expect(await screen.findByRole('heading', { level: 1, name: 'Careers' })).toBeTruthy()
