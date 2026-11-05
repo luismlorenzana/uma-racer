@@ -228,7 +228,7 @@ function parseRunner(value: unknown, fieldSize: number): RaceResultRunner | null
 }
 
 /** The engine versions that record skills and a course (v1, the skillless engine, records neither). */
-type SkilledEngineVersion = 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
+export type SkilledEngineVersion = 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
 const SKILLED_ENGINE_VERSIONS: readonly SkilledEngineVersion[] = [2, 3, 4, 5, 6, 7, 8, 9]
 
 /**
@@ -292,6 +292,97 @@ export interface RaceRun {
 }
 
 const RACE_RUN_KEYS = ['engineVersion', 'course', 'contentVersion', 'seed', 'strategy', 'field'] as const
+
+// --- The engine, as the rules call it (T154, D383) ----------------------------------------------------------------
+// The domain never imports `@racer/race` (the engine imports the domain). A career race is prepared here, run by the
+// engine the caller hands the operation (`OperationEnv.race`: the device's and the API's own `simulateRace`), and
+// settled here from its result. These shapes are the engine's input and result, restated: `RaceSetup` is assignable to
+// `@racer/race`'s `RaceInput`, and its `RaceTimeline` to `RaceFinish`.
+
+/** One runner as the engine takes it. */
+export interface RaceSetupRunner {
+  readonly id: string
+  readonly label: string
+  readonly stats: Stats
+  readonly strategy: Strategy
+  readonly aptitude: RaceResultAptitude
+  /** 0-based gate. */
+  readonly gate: number
+  readonly skills: readonly CompiledRaceSkill[]
+}
+
+/** The engine's input: the course, the field by gate and the seed. */
+export interface RaceSetup {
+  readonly course: Required<RaceResultCourse>
+  readonly runners: readonly RaceSetupRunner[]
+  readonly seed: number
+}
+
+/** One runner's finish, as the engine's results give it. */
+export interface RaceFinishLine {
+  /** Index into `RaceSetup.runners`. */
+  readonly runner: number
+  readonly placement: number
+  readonly finishTime: number
+  readonly marginLengths: number
+}
+
+/** What the rules read of a run: the results, in finishing order. */
+export interface RaceFinish {
+  readonly results: readonly RaceFinishLine[]
+}
+
+/** The race engine a caller hands the rules: its version, which the run records, and its simulation. */
+export interface RaceEngine {
+  readonly version: SkilledEngineVersion
+  readonly simulate: (setup: RaceSetup) => RaceFinish
+}
+
+/**
+ * The race's seeded RNG (mulberry32), step for step `@racer/race`'s `createRng`, so a field the rules roll is the field
+ * the engine's own draw would roll. Never `Math.random`.
+ */
+export function raceRng(seed: number): { next(): number } {
+  let state = seed >>> 0
+  return {
+    next() {
+      state = (state + 0x6d2b79f5) >>> 0
+      let t = state
+      t = Math.imul(t ^ (t >>> 15), t | 1)
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61)
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+    },
+  }
+}
+
+/**
+ * The run as it ran, for the result row: the setup's course, seed and field, each runner with her finish, in finishing
+ * order. `umaIds[i]` names runner i. Throws when the results don't place every runner once.
+ */
+export function raceRunOf(setup: RaceSetup, umaIds: readonly string[], playerIndex: number, strategy: Strategy, contentVersion: string,
+  engineVersion: SkilledEngineVersion, finish: RaceFinish): RaceRun {
+  const runners = setup.runners.length
+  const placed = new Set(finish.results.map((line) => line.runner))
+  if (finish.results.length !== runners || placed.size !== runners ||
+    finish.results.some((line) => !Number.isInteger(line.runner) || line.runner < 0 || line.runner >= runners)) {
+    throw new RangeError('The engine\'s results don\'t place every runner once')
+  }
+  const field: RaceResultRunner[] = [...finish.results].sort((a, b) => a.placement - b.placement).map((line) => {
+    const runner = setup.runners[line.runner]!
+    return {
+      umaId: umaIds[line.runner]!, isPlayer: line.runner === playerIndex, strategy: runner.strategy, gate: runner.gate,
+      stats: { ...runner.stats }, aptitude: { ...runner.aptitude }, placement: line.placement, finishTime: line.finishTime,
+      marginLengths: line.marginLengths, skills: [...runner.skills],
+    }
+  })
+  const course = setup.course
+  return {
+    engineVersion,
+    course: { distance: course.distance, surface: course.surface, season: course.season, layout: course.layout, trackId: course.trackId,
+      rotation: course.rotation, grade: course.grade },
+    contentVersion, seed: setup.seed, strategy, field,
+  }
+}
 
 export function parseRaceRun(value: unknown): RaceRun | null {
   if (!isRecord(value) || !hasExactKeys(value, RACE_RUN_KEYS)) return null

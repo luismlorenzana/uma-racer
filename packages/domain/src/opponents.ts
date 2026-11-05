@@ -13,18 +13,19 @@ export interface RivalRng {
 export const TYPICAL_BASE_STAT = 110
 
 /**
- * How much weaker than a trained Uma a grade's rivals race (D152, retuned for engine v6 in D155). A share rather
- * than a fixed amount, so a grade is equally soft at every tier and in every stat of a build. G1 is the real test;
- * each grade below is softer.
+ * How much weaker than the typical trained Uma a grade's rivals race (D152, D155; re-tuned by `sim:careers` against
+ * generation 3's career in D383, where the trained Uma is the typical career at the race's season). A share rather than
+ * a fixed amount, so a grade is equally soft at every tier and in every stat of a build. G1 is the real test; each
+ * grade below is softer. A career races G3s, G2s and G1s; the lower grades only keep the ladder.
  */
 export const GRADE_HANDICAP: Record<RaceGrade, number> = {
-  debut: 0.35,
-  maiden: 0.35,
-  'pre-op': 0.3,
-  op: 0.3,
-  g3: 0.25,
-  g2: 0.15,
-  g1: 0.05,
+  debut: 0.45,
+  maiden: 0.45,
+  'pre-op': 0.4,
+  op: 0.4,
+  g3: 0.38,
+  g2: 0.22,
+  g1: 0.17,
 }
 
 /** The four stats a rival spreads by weight; Stamina is set first, by what the distance needs (D159). */

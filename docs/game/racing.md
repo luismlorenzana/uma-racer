@@ -1,19 +1,18 @@
 # Racing
 
-The race itself: what a finish pays in Racing EXP, how a grade's rivals are handicapped, and how they're rolled.
-Code: `packages/race` (the engine), `packages/domain/src/progression.ts` (EXP) and `opponents.ts` (rivals), read by the
-tier rules in `tiers/racing.ts` and `tiers/rivals.ts`. Design: [racing.md](../design/racing.md).
+The race itself and its rivals: how a grade's rivals are handicapped, how strong a career's fields are at each point of
+its calendar, and how the rivals are rolled. Code: `packages/race` (the engine), `packages/domain/src/opponents.ts` (the
+rival rolls and handicaps) and `tiers/rivals.ts` (each scenario's and season's field). Design:
+[racing.md](../design/racing.md).
 
-The rules here are the ones kept from before the rework (D336: the grade handicaps and the rival formula stay exactly
-as they were). What the rework added around them lives on its own pages:
+What a race pays, and how a career's races are prepared and settled, is [03](03-careers.md) §4–§6.
 
 | Topic | Page |
 |---|---|
-| Racing Level 1–50 per tier, its curve, the holds, the gate and the advance | [03](../archive/g2-manual/03-uma-progression.md) §2–§5 |
-| Careers and goals in each scenario | [03](../archive/g2-manual/03-uma-progression.md) §4 |
-| Prize Money, the Daily Purse, featured races, the result and the race's commit | [09](../archive/g2-manual/09-racing-rewards-and-exchange.md) |
-| Rival strength by tier on the re-authored trees, and Expedition difficulty | [04](../archive/g2-manual/04-tiers-and-promotion.md) §7 |
-| The Racecourse, race select and the run on screen | [11](11-hub-and-places.md) §3.3, [09](../archive/g2-manual/09-racing-rewards-and-exchange.md) §3.5, §4 and §7 |
+| A career's objectives, the race's runner, seed and settle, the URA Finals | [03](03-careers.md) §4–§5 |
+| The racing build a race reads | [05](05-the-build.md) §7 |
+| Rival strength by scenario | [04](04-tiers-and-scenarios.md) §5 |
+| The career's targets and `sim:careers` | [12](12-pacing.md) |
 | The engine, determinism and the race scene | [Architecture](architecture.md#the-race) |
 
 ## Race presentation
@@ -25,28 +24,55 @@ only the Town Hall plaza uses chibis. No result, reward, seed, playback timing o
 
 ## Rival handicaps
 
-A race's rivals race weaker than a fully trained Uma by their grade's handicap, a share of every stat, so a grade is
-equally soft at every tier (D152, D155). G1 is the real test. What a race pays in a career is T154's
-(03 · Careers); generation 2's Racing EXP is [archived](../archive/g2-manual/03-uma-progression.md).
+A race's rivals race weaker than the typical trained Uma by their grade's handicap, a share of every stat, so a grade
+is equally soft at every tier (D152, D155). G1 is the real test, and each grade below is softer. `sim:careers`
+re-tuned them in D383 so that a career played once at grade A with a median deck wins its G3s, G2s and G1s at least
+90%, 75% and 50% of first tries ([12](12-pacing.md) §2). A career races only G3s, G2s and G1s; the lower grades keep
+the ladder. The URA Finals' final sets its own, smaller handicap ([03](03-careers.md) §5).
 
 <!-- live:rival-handicaps -->
 | Grade | Rival handicap |
 |---|---|
-| Debut | 35% |
-| Maiden | 35% |
-| Pre-OP | 30% |
-| OP | 30% |
-| G3 | 25% |
-| G2 | 15% |
-| G1 | 5% |
+| Debut | 45% |
+| Maiden | 45% |
+| Pre-OP | 40% |
+| OP | 40% |
+| G3 | 38% |
+| G2 | 22% |
+| G1 | 17% |
 <!-- /live -->
 
 ## Rivals
 
-Rivals are generated per race (D153, D159). Each style gets a preset built on a realistic set of cards. Stamina is set
-first, from what the race's distance needs. Then each stat is rolled within a range of the preset. The tier rules give
-the generator the scenario's typical trained Uma on the re-authored trees, with its Extra Stats and its buff's typical
-value (`rivalTrainedStat`, [04](../archive/g2-manual/04-tiers-and-promotion.md) §7–§8).
+**Strength.** A field is built on its scenario's **typical trained Uma** ([04](04-tiers-and-scenarios.md) §5): at URA
+Finale, the typical career's average stat at its Finale, measured by `sim:careers` (D383). In a career, the field is as
+strong as **the typical career at the race's season**: the trained stat × the season's share, then less the grade's
+handicap. So a Junior race's rivals are as green as she is, and a Senior G1's are nearly trained. The shares are the
+typical career's average stat in each season over its average at the Finale (a median deck, every stage played once
+at A); Junior Spring's is set lower, since she races there on her base stats, before any Training Yard, and the fields'
+stamina-first presets would outlast her. A race outside a career uses the full trained stat.
+
+<!-- live:rival-seasons -->
+| Season | Share | Field stat before the handicap (T = 1) |
+|---|---|---|
+| Junior Spring | 0.150 | 84 |
+| Junior Summer | 0.357 | 200 |
+| Junior Autumn | 0.440 | 246 |
+| Junior Winter | 0.496 | 277 |
+| Classic Spring | 0.536 | 300 |
+| Classic Summer | 0.621 | 347 |
+| Classic Autumn | 0.678 | 379 |
+| Classic Winter | 0.743 | 415 |
+| Senior Spring | 0.758 | 424 |
+| Senior Summer | 0.860 | 481 |
+| Senior Autumn | 0.899 | 503 |
+| Senior Winter | 0.981 | 548 |
+| Finale | 1.000 | 559 |
+<!-- /live -->
+
+**The roll** (D153, D159). Rivals are generated per race. Each running style gets a preset: Stamina first, from what
+the race's distance needs, then the rest spread by distance and style. Each stat is then rolled within a range of the
+preset, and each rival draws her skills.
 
 <!-- live:rivals -->
 | Rule | Value |
@@ -59,3 +85,7 @@ value (`rivalTrainedStat`, [04](../archive/g2-manual/04-tiers-and-promotion.md) 
 | Stamina reference, medium | 2,400 m |
 | Stamina reference, long | 3,200 m |
 <!-- /live -->
+
+- Every rival is a different real Uma, cast to the slot whose style suits her best, and races with her own unique at
+  level 5 beside her drawn skills.
+- The draw is seeded by the race: the same attempt rolls the same field on every device.

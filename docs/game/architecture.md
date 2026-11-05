@@ -159,7 +159,7 @@ built `dist`, so run `pnpm --filter @racer/domain build` first in a fresh checko
 | `pnpm sim:decks` | Every pip bought with an empty, a median bonded and a strong bonded deck, as shares of the cap budget ([05](05-the-build.md) §10); the private pack when present (`MASTER_DIR`), invented cards otherwise (`--synthetic`), which the domain's tests also run in CI | A band drifts, or a deck caps all five stats |
 | `pnpm sim:turns` | Engine v9's targets on generated G1 fields (`ENGINE=7` or `8` compares a frozen engine) | — (a report) |
 | `pnpm sim:builds` | The stamina ladder and the G1 grid on full-layer builds at every T = 1–14 against the tier rules' fields, and each buff's typical value | A hard ladder check fails, other than the three accepted at a tier's first scenario (`LADDER_ACCEPTED_MISSES`, D350) |
-| `pnpm sim:careers` | Every career of the private pack frozen by the rework's rule, and each stage's best case on full-layer builds at every T, against [03](../archive/g2-manual/03-uma-progression.md) §12's targets | A career can't be frozen, or a cell falls under 25% |
+| `pnpm sim:careers` | Every Uma's URA Finale career played once at grade A by a fixed bot, with a median and a strong deck, its objectives and URA Finals rounds raced on the engine ([12](12-pacing.md) §3); the private pack when present (`MASTER_DIR`, `CONTENT_DIR`), invented content otherwise (`--synthetic`), which `pnpm test` and `test:ci` run | A first-try rate or a pacing band misses its target |
 | `pnpm sim:loop` | The whole economy from a fresh account over three tiers, and [12](../archive/g2-manual/12-economy-and-pacing.md) §12's pacing checks; `--variant=`, `--matrix`, `--json` | A check fails |
 
 Flags: races per cell as a bare number, `--tiers=` (the game's scenarios T), `--ladder-only` and `--rates-only` for the
@@ -331,7 +331,11 @@ lane. The record shapes, kinds, bounds and wire format are `packages/domain/src/
   `ops.ts`, as a parser and an `apply`.
   - Built: `account` has `unlock-uma`, `unlock-card` and `dev-grant`; `build` has `set-deck`, `post-card`, `buy-pips`,
     `pour-bond` and `buy-skill` ([05](05-the-build.md) §9, D382).
-  - Declared, refusing "not built yet" until their part lands: `career` (T154) and `stages` (T155).
+  - `career` has `start-career`, `run-race`, `next-season` and `run-finale` ([03](03-careers.md) §7, D383). A race runs
+    inside its operation on the engine the caller hands in, `OperationEnv.race` (`{ version, simulate }`, `@racer/race`'s
+    `simulateRace`): the domain never imports the engine, and the device and the API each run the same seeded race.
+    Without one, the races refuse.
+  - Declared, refusing "not built yet" until its part lands: `stages` (T155).
 - **On the device** (`apps/web/src/save/`):
   - Dexie `uma-racer-g3`: one table per kind, the outbox, and a device-only `stageJournal`;
   - on first boot it deletes generation 2's `uma-racer-g2` database and its `uma-racer:g2:*` keys: the owner's full
@@ -605,14 +609,15 @@ How generation 2 became the app (D361). The plan-level choices (the tag, the del
 | @racer/web | vite | ^7.3.6 | dev |
 | @racer/web | vite-plugin-pwa | ^1.3.0 | dev |
 | @racer/web | vitest | ^3.2.7 | dev |
-| @racer/api | @luismlorenzana/uma-data | 1.1.0 | runtime |
 | @racer/api | @google-cloud/storage | ^7.22.0 | runtime |
+| @racer/api | @luismlorenzana/uma-data | 1.1.0 | runtime |
 | @racer/api | @luismlorenzana/uma-server | 0.2.0 | runtime |
 | @racer/api | @nestjs/common | ^11.2.4 | runtime |
 | @racer/api | @nestjs/config | ^4.0.4 | runtime |
 | @racer/api | @nestjs/core | ^11.2.4 | runtime |
 | @racer/api | @nestjs/platform-express | ^11.2.4 | runtime |
 | @racer/api | @racer/domain | workspace:* | runtime |
+| @racer/api | @racer/race | workspace:* | runtime |
 | @racer/api | firebase-admin | ^13.10.0 | runtime |
 | @racer/api | reflect-metadata | ^0.2.2 | runtime |
 | @racer/api | rxjs | ^7.8.2 | runtime |

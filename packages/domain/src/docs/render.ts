@@ -9,6 +9,7 @@
 // the race's (docs/game/racing.md) and the dependencies (docs/game/architecture.md). Generation 2's area blocks left
 // with it (D381); the restart's areas add theirs as they land (T153–T158).
 import { LIVE_BLOCKS as BUILD_BLOCKS } from '../build/docs'
+import { LIVE_BLOCKS as CAREER_BLOCKS } from '../career/docs'
 import { LIVE_BLOCKS as HUB_BLOCKS } from '../hub/docs'
 import { LIVE_BLOCKS as TIER_BLOCKS } from '../tiers/docs'
 import { GRADE_HANDICAP, RIVAL_REFERENCE_METERS, RIVAL_SKILL_RANGE, RIVAL_STAT_FLOOR, STYLE_COUNT_RANGE } from '../opponents'
@@ -28,7 +29,7 @@ export function joinBlocks(...tables: readonly LiveBlocks[]): LiveBlocks {
 }
 
 /** Every area's live blocks, joined. */
-export const AREA_BLOCKS: LiveBlocks = joinBlocks(TIER_BLOCKS, HUB_BLOCKS, BUILD_BLOCKS)
+export const AREA_BLOCKS: LiveBlocks = joinBlocks(TIER_BLOCKS, HUB_BLOCKS, BUILD_BLOCKS, CAREER_BLOCKS)
 
 type Cell = string | number
 /** A Markdown table; pipes in cells are escaped. */

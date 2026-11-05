@@ -7,7 +7,7 @@ import { codeOnly } from '../__fixtures__/code-only'
 import { createRng } from '../__fixtures__/rng'
 import { STATS } from '../types'
 import { LAST_SCENARIO_NUMBER, scenarioNumber, scenarioRow, tierAndScenario, tierOf } from './map'
-import { RIVAL_TRAINED_STAT, rivalFieldStat, rivalPresetAt, rivalTrainedStat, rollRivalFieldAt } from './rivals'
+import { RIVAL_SEASON_SHARE, RIVAL_TRAINED_STAT, rivalFieldStat, rivalPresetAt, rivalSeasonShare, rivalTrainedStat, rollRivalFieldAt } from './rivals'
 import { CAP_PROFILES, capBudgetAt, capProfileAt, spCapAt } from './scaling'
 
 const HERE = fileURLToPath(new URL('.', import.meta.url))
@@ -34,11 +34,27 @@ describe('caps', () => {
   })
 })
 
-describe('rivals (frozen until T154)', () => {
-  it('reads the frozen typical build, and never makes an earlier field stronger than a later one (D191)', () => {
+describe('rivals (D383)', () => {
+  it('reads URA Finale\'s measured build and the later frozen ones, and never makes an earlier field stronger than a later one (D191)', () => {
     expect(RIVAL_TRAINED_STAT).toHaveLength(15)
-    expect(rivalTrainedStat(1)).toBeCloseTo(642.4495, 4)
+    expect(rivalTrainedStat(1)).toBe(559)
+    expect(rivalTrainedStat(2)).toBeCloseTo(664.8033, 4)
     for (let T = 1; T < 15; T += 1) expect(rivalFieldStat(T)).toBeLessThanOrEqual(rivalFieldStat(T + 1))
+  })
+
+  it('makes a career\'s fields as strong as its season, up to a finished career\'s at the Finale', () => {
+    expect(RIVAL_SEASON_SHARE).toHaveLength(13)
+    expect(RIVAL_SEASON_SHARE.every((share, season) => share > 0 && share <= 1 && (season === 0 || share >= RIVAL_SEASON_SHARE[season - 1]!))).toBe(true)
+    expect(rivalSeasonShare(12)).toBe(1)
+    expect(rivalSeasonShare(undefined)).toBe(1)
+    expect(() => rivalSeasonShare(13)).toThrow(RangeError)
+    const total = (stats: Record<string, number>) => Object.values(stats).reduce((a, b) => a + b, 0)
+    const at = (season?: number) => total(rivalPresetAt({ T: 1, grade: 'g1', distance: 'mile', strategy: 'pace', ...(season === undefined ? {} : { season }) }))
+    expect(at(0)).toBeLessThan(at(6))
+    expect(at(6)).toBeLessThan(at(12))
+    expect(at(12)).toBeCloseTo(at(), 6)
+    const final = total(rivalPresetAt({ T: 1, grade: 'g1', distance: 'mile', strategy: 'pace', season: 12, handicap: 0.1 }))
+    expect(final).toBeGreaterThan(at(12))
   })
 
   it('builds a preset under the caps and rolls a field of styles', () => {

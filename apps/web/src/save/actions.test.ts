@@ -48,7 +48,7 @@ describe('a tap', () => {
     const state = useSave.getState().state
     expect(await run('unlock-uma', { umaId: umaId(1) })).toMatchObject({ kind: 'refused', code: 'already-unlocked', text: 'Amber Sprint is already in your Stable.' })
     expect(await run('unlock-uma', { umaId: 7 })).toMatchObject({ kind: 'refused', code: 'invalid', text: "That didn't work. Try again." })
-    expect(await run('start-career', {})).toMatchObject({ kind: 'refused', code: 'not-built-yet' })
+    expect(await run('settle-stage', {})).toMatchObject({ kind: 'refused', code: 'not-built-yet' })
     expect(await phone.db.outbox.count()).toBe(before)
     expect(useSave.getState().state).toBe(state)
     phone.session.stop()

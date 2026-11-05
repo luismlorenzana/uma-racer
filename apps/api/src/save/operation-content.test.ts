@@ -15,6 +15,9 @@ describe('operation content snapshots', () => {
     expect(source.load).toHaveBeenCalledTimes(1)
     // The env names the release and overlay it was built from, and carries every map the rules read.
     expect(values[0]!.contentVersion).toBe(`${F.release.manifest.version}:${F.index.version}`)
+    // D383: career races run on the device's own engine, v9's simulateRace.
+    expect(values[0]!.race?.version).toBe(9)
+    expect(typeof values[0]!.race?.simulate).toBe('function')
     expect(Object.keys(values[0]!.content).sort()).toEqual(['cards', 'courses', 'races', 'skills', 'umas'])
     expect(values[0]!.content.courses.size).toBe(F.adapted.courses.length)
     expect(values[0]!.dev).toBe(false)

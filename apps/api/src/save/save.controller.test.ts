@@ -130,7 +130,7 @@ describe('the routes', () => {
     const invalid = await controller.sync('u1', { ...STAMP, changes: [op(3, 'unlock-card', { umaId: card(1) }, clock('07:03'))] })
     expect(invalid.results).toEqual([{ type: 'operation', id: opId(3), status: 'invalid' }])
 
-    const unbuilt = await controller.sync('u1', { ...STAMP, changes: [op(4, 'start-career', { umaId: uma(1) }, clock('07:04'))] })
+    const unbuilt = await controller.sync('u1', { ...STAMP, changes: [op(4, 'settle-stage', { careerId: 'x' }, clock('07:04'))] })
     expect(unbuilt.results).toEqual([{ type: 'operation', id: opId(4), status: 'refused', refusal: expect.objectContaining({ code: 'not-built-yet' }) }])
     expect(fake.writes).toBe(writes)
 
