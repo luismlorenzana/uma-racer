@@ -1,0 +1,703 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Uma Racer — Careers v2</title>
+<!-- Careers v2, the proposal (docs/research/careers-v2/README.md, 2026-11-05): distance groups, the four race calendars,
+     the stat curve against the rivals, distance presets and the ticket economy. Counts are aggregates over the private
+     pack; race names are public; no ids or card values. Colours: uma-kit's tokens, light and dark by
+     prefers-color-scheme. Mobile first (390 px). No external scripts, fonts or images; the chart is inline SVG. -->
+<style>
+  :root {
+    --page: #edf1f6; --panel: #ffffff; --raised: #f3f6fa; --sunken: #e4eaf2;
+    --ink: #101a24; --ink-soft: #5a6b84; --ink-faint: #8a98ac;
+    --accent: #d39a2b; --accent-strong: #b87f18; --accent-wash: #fbf1dd; --accent-ink: #1b1406;
+    --grid: #e3e8ef; --axis: #c3cbd6; --neutral: #a9b4c2; --neutral-strong: #7d8a9b;
+    --hairline: rgb(16 26 36 / 0.08); --hairline-strong: rgb(16 26 36 / 0.16);
+    --spd: #0980e6; --sta: #dd4433; --pow: #e66e00; --gut: #f1368b; --wit: #05a371; --frd: #8a63d2;
+    --ticket: #c9961c; --turf: #2f7a4f; --dirt: #8a5a2b;
+    /* The groups' identity (validated: dataviz validate_palette, light and dark) */
+    --g-ml: #2a78d6; --g-mm: #12865d; --g-sm: #d9581c;
+    /* The chart's two series (validated) */
+    --s-her: #b87f18; --s-field: #2f6fe0;
+    color-scheme: light dark;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --page: #0f1620; --panel: #17202b; --raised: #1f2a37; --sunken: #0b1118;
+      --ink: #e9eef4; --ink-soft: #a6b3c2; --ink-faint: #6f7d8e;
+      --accent: #d6a23e; --accent-strong: #e8b65a; --accent-wash: #2b2312;
+      --grid: #243041; --axis: #34445a; --neutral: #4a586b; --neutral-strong: #6b7a8e;
+      --hairline: rgb(255 255 255 / 0.08); --hairline-strong: rgb(255 255 255 / 0.16);
+      --ticket: #f2c94c; --dirt: #b8875a;
+      --g-ml: #3987e5; --g-mm: #199e70; --g-sm: #d95926;
+      --s-her: #c98500; --s-field: #5b8def;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+  body { margin: 0; background: var(--page); color: var(--ink); font: 14px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 1240px; margin: 0 auto; padding: 32px 40px 80px; }
+  h1 { font-size: 28px; line-height: 1.15; margin: 0 0 6px; }
+  h2 { font-size: 20px; line-height: 1.25; margin: 0 0 4px; }
+  h3 { font-size: 15px; margin: 0 0 6px; }
+  p { margin: 0; }
+  p + p { margin-top: 8px; }
+  ul, ol { margin: 6px 0 0; padding-left: 20px; }
+  li + li { margin-top: 4px; }
+  a { color: inherit; }
+  .lead { color: var(--ink-soft); max-width: 880px; }
+  .sub { color: var(--ink-soft); margin-bottom: 16px; max-width: 900px; }
+  .muted { color: var(--ink-faint); }
+  .small { font-size: 12.5px; }
+  section { margin-top: 44px; scroll-margin-top: 64px; }
+  .panel { background: var(--panel); border-radius: 14px; padding: 18px 22px; box-shadow: 0 1px 0 var(--hairline-strong); min-width: 0; position: relative; }
+  .panel + .panel { margin-top: 14px; }
+
+  nav.top { position: sticky; top: 0; z-index: 5; background: color-mix(in srgb, var(--page) 92%, transparent);
+    -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+    margin: 20px -40px 0; padding: 10px 40px; display: flex; gap: 6px; flex-wrap: wrap; border-bottom: 1px solid var(--hairline); }
+  nav.top a { padding: 5px 12px; border-radius: 999px; background: var(--panel); color: var(--ink); text-decoration: none; font-size: 13px; font-weight: 600; box-shadow: 0 1px 0 var(--hairline-strong); white-space: nowrap; }
+  nav.top a:hover { background: var(--raised); }
+  nav.top a:focus-visible, summary:focus-visible, .hit:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .kpis { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin-top: 18px; }
+  .kpi { background: var(--panel); border-radius: 12px; padding: 14px 16px; box-shadow: 0 1px 0 var(--hairline-strong); }
+  .kpi .label { font-size: 12px; color: var(--ink-soft); display: flex; align-items: center; gap: 6px; }
+  .kpi .value { font-size: 22px; font-weight: 650; margin-top: 4px; line-height: 1.2; }
+  .kpi .value .was { color: var(--ink-faint); font-weight: 500; font-size: 15px; }
+  .kpi .delta { font-size: 12px; color: var(--ink-soft); margin-top: 2px; }
+  .sw { width: 9px; height: 9px; border-radius: 3px; display: inline-block; flex: none; }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .grid2 > *, .grid3 > * { min-width: 0; }
+  .grid2 .panel + .panel, .grid3 .panel + .panel { margin-top: 0; }
+
+  .tbl { overflow-x: auto; -webkit-overflow-scrolling: touch; margin-top: 8px; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  .tbl table { min-width: 520px; }
+  .tbl.narrow table { min-width: 0; }
+  th, td { padding: 7px 10px; border-bottom: 1px solid var(--hairline); text-align: left; vertical-align: top; }
+  th { color: var(--ink-soft); font-weight: 600; font-size: 12.5px; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  tr:last-child td { border-bottom: 0; }
+  tr.rec td { background: var(--accent-wash); }
+  .foot { font-size: 12px; color: var(--ink-faint); margin-top: 10px; }
+  details { margin-top: 10px; }
+  summary { cursor: pointer; color: var(--ink-soft); font-size: 12.5px; font-weight: 600; }
+
+  .tag { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 750; text-transform: uppercase; letter-spacing: .05em;
+    padding: 1px 8px; border-radius: 6px; background: var(--raised); color: var(--ink-soft); border: 1px solid var(--hairline-strong); white-space: nowrap; }
+  .tag.dirt { border-color: var(--dirt); color: var(--dirt); }
+  .tag.dec { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+  .gtag { display: inline-flex; align-items: center; font-size: 12px; font-weight: 750; padding: 2px 10px; border-radius: 999px; color: #fff; white-space: nowrap; }
+  .note { font-size: 12.5px; color: var(--ink-soft); background: var(--raised); border-radius: 10px; padding: 10px 14px; margin-top: 12px; }
+  .callout { border-left: 4px solid var(--accent); background: var(--accent-wash); padding: 12px 16px; border-radius: 10px; color: var(--ink); margin-top: 14px; }
+  .callout b:first-child { display: block; margin-bottom: 2px; }
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 12px; color: var(--ink-soft); margin: 12px 0 0; align-items: center; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+
+  /* Group cards */
+  .gc { border-top: 4px solid var(--gc); }
+  .gc .n { font-size: 11px; font-weight: 750; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-soft); }
+  .gc .big { display: flex; align-items: baseline; gap: 8px; margin: 2px 0 6px; }
+  .gc .big b { font-size: 28px; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .gc .big span { color: var(--ink-soft); font-size: 13px; }
+  .gc p { font-size: 13px; }
+  .gc ul { font-size: 13px; }
+
+  /* Count bars: one series, the group's identity colour, always labelled */
+  .bars { display: grid; gap: 6px; margin-top: 10px; }
+  .br { display: grid; grid-template-columns: 150px 1fr 44px; gap: 10px; align-items: center; font-size: 12.5px; }
+  .br .bl { color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .br .btk { height: 14px; display: block; background: var(--sunken); border-radius: 4px; }
+  .br .btk i { display: block; height: 14px; background: var(--bc, var(--neutral-strong)); border-radius: 4px; }
+  .br .bv { text-align: right; font-variant-numeric: tabular-nums; font-weight: 650; }
+
+  /* The calendars */
+  .calp { border-top: 4px solid var(--gc); }
+  .calh { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
+  .cal { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)) minmax(0, 1.25fr); gap: 6px; }
+  .cal .yr { font-size: 11px; font-weight: 750; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-soft); padding: 0 2px 4px;
+    border-bottom: 2px solid var(--hairline-strong); grid-row: 1; }
+  .cal .y1 { grid-column: 1 / 5; } .cal .y2 { grid-column: 5 / 9; } .cal .y3 { grid-column: 9 / 13; } .cal .y4 { grid-column: 13 / 14; border-bottom-color: var(--accent); }
+  .cell { grid-row: 2; background: var(--raised); border-radius: 10px; padding: 7px 6px 9px; display: flex; flex-direction: column; gap: 4px;
+    min-height: 120px; border: 1px solid var(--hairline); min-width: 0; }
+  .cell .sn { font-size: 11.5px; font-weight: 700; line-height: 1.25; }
+  .cell .g { font-size: 10.5px; color: var(--ink-soft); line-height: 1.3; }
+  .cell.blk { background: color-mix(in srgb, var(--accent-wash) 70%, var(--raised)); border-style: dashed; border-color: var(--accent); }
+  .cell.camp { background: var(--raised); }
+  .cell.obj { background: var(--panel); border: 1.5px solid var(--hairline-strong); }
+  .cell.fin { background: var(--accent-wash); border: 1.5px solid var(--accent); }
+  .pl { display: flex; align-items: center; gap: 5px; font-size: 10.5px; color: var(--ink-soft); font-weight: 650; }
+  .pl.opt span { color: var(--ink-faint); font-weight: 600; }
+  .pips { display: inline-flex; gap: 2px; }
+  .pips i { width: 8px; height: 8px; border-radius: 50%; background: var(--accent-strong); display: block; }
+  .rc { display: flex; flex-wrap: wrap; align-items: baseline; gap: 3px; font-size: 10.5px; font-weight: 650; line-height: 1.25; padding: 3px 5px; border-radius: 6px; }
+  .rc b { font-size: 9.5px; font-weight: 850; letter-spacing: .02em; }
+  .rc i { font-style: normal; font-weight: 500; opacity: .8; font-variant-numeric: tabular-nums; }
+  .rc em { font-style: normal; font-size: 9px; font-weight: 850; padding: 0 4px; border-radius: 4px; background: var(--ticket); color: var(--accent-ink); }
+  .cell .rc { align-self: flex-start; max-width: 100%; }
+  .rc.g1 { background: var(--ink); color: var(--panel); }
+  .rc.g2 { background: var(--neutral-strong); color: #fff; }
+  .rc.g3 { background: transparent; color: var(--ink); border: 1.5px solid var(--neutral-strong); }
+  .op { font-size: 10px; color: var(--ink-soft); line-height: 1.3; border-top: 1px dashed var(--hairline-strong); padding-top: 4px; margin-top: auto; }
+  .op .ol { font-weight: 750; text-transform: uppercase; letter-spacing: .05em; font-size: 9px; color: var(--ink-faint); display: block; }
+  .c1 { grid-column: 1; } .c2 { grid-column: 2; } .c3 { grid-column: 3; } .c4 { grid-column: 4; } .c5 { grid-column: 5; } .c6 { grid-column: 6; } .c7 { grid-column: 7; }
+  .c8 { grid-column: 8; } .c9 { grid-column: 9; } .c10 { grid-column: 10; } .c11 { grid-column: 11; } .c12 { grid-column: 12; } .c13 { grid-column: 13; }
+  .key { display: flex; gap: 12px; flex-wrap: wrap; font-size: 12px; color: var(--ink-soft); align-items: center; margin-top: 4px; }
+  .key .rc { display: inline-flex; }
+
+  /* The chart */
+  svg { display: block; width: 100%; height: auto; }
+  svg text { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .chartwrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  svg.chart { max-width: 860px; margin: 0 auto; }
+  .chart .band { fill: var(--accent-wash); }
+  .chart .bandt { fill: var(--ink-soft); font-size: 10px; font-weight: 750; letter-spacing: .06em; }
+  .chart .grl { stroke: var(--grid); stroke-width: 1; }
+  .chart .axl { stroke: var(--axis); stroke-width: 1; }
+  .chart .yrl { stroke: var(--axis); stroke-width: 1; }
+  .chart .ax { fill: var(--ink-soft); font-size: 11.5px; }
+  .chart .axb { fill: var(--ink); font-size: 11px; font-weight: 650; text-anchor: middle; }
+  .chart .ln-her { fill: none; stroke: var(--s-her); stroke-width: 2.5; stroke-linejoin: round; }
+  .chart .ln-field { fill: none; stroke: var(--s-field); stroke-width: 2; stroke-linejoin: round; }
+  .chart .ln-today { fill: none; stroke: var(--neutral-strong); stroke-width: 2; stroke-dasharray: 5 4; }
+  .chart .mk-her { fill: var(--s-her); stroke: var(--panel); stroke-width: 2; }
+  .chart .mk-field { fill: var(--s-field); stroke: var(--panel); stroke-width: 2; }
+  .chart .dl { font-size: 12.5px; font-weight: 700; fill: var(--ink); }
+  .chart .dl.tod { fill: var(--ink-soft); }
+  .chart .xh { stroke: var(--ink-faint); stroke-width: 1; stroke-dasharray: 2 3; }
+  .chart .hit { fill: transparent; cursor: crosshair; }
+  .tip { position: absolute; pointer-events: none; background: var(--panel); border: 1px solid var(--hairline-strong); border-radius: 10px; padding: 8px 10px;
+    font-size: 12px; box-shadow: 0 6px 18px rgb(0 0 0 / .14); min-width: 160px; display: none; z-index: 2; }
+  .tip b { display: block; margin-bottom: 3px; }
+  .tip div { display: flex; justify-content: space-between; gap: 12px; }
+  .tip span.v { font-variant-numeric: tabular-nums; font-weight: 650; }
+  .lg-line { width: 18px; height: 0; border-top: 2.5px solid var(--c); display: inline-block; }
+  .lg-line.dash { border-top-style: dashed; }
+
+  /* Presets */
+  .deck { display: grid; grid-template-columns: repeat(6, 1fr); gap: 5px; margin: 8px 0 6px; }
+  .card { aspect-ratio: 3 / 4; border-radius: 7px; display: grid; place-items: center; font-weight: 800; font-size: 11px; color: #fff; background: var(--c);
+    box-shadow: inset 0 0 0 2px rgb(255 255 255 / .25); text-align: center; line-height: 1.1; }
+  .card.shared { box-shadow: inset 0 0 0 2px rgb(255 255 255 / .25), 0 0 0 2px var(--accent); }
+  .kv { display: grid; grid-template-columns: 110px 1fr; gap: 4px 10px; font-size: 13px; margin-top: 6px; }
+  .kv dt { color: var(--ink-soft); }
+  .kv dd { margin: 0; }
+  .share li { margin-top: 6px; }
+
+  /* Tickets */
+  .meter { display: flex; height: 18px; border-radius: 6px; overflow: hidden; background: var(--sunken); margin-top: 8px; gap: 2px; }
+  .meter i { display: block; height: 100%; }
+  .meter .m1 { background: var(--accent-strong); }
+  .meter .m2 { background: var(--accent); opacity: .55; }
+  .meter .m3 { background: var(--neutral); }
+  .mlg { display: flex; flex-wrap: wrap; gap: 12px; font-size: 12px; color: var(--ink-soft); margin-top: 6px; }
+  .mlg span { display: inline-flex; gap: 6px; align-items: center; }
+  .tk { display: inline-grid; place-items: center; min-width: 22px; height: 20px; padding: 0 6px; border-radius: 5px; background: var(--ticket); color: var(--accent-ink); font-weight: 800; font-size: 11.5px; }
+
+  code { font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--raised); padding: 1px 5px; border-radius: 5px; }
+  .op-list { counter-reset: o; list-style: none; padding: 0; margin: 0; }
+  .op-list li { position: relative; padding: 10px 0 10px 40px; border-bottom: 1px solid var(--hairline); margin: 0; }
+  .op-list li:last-child { border-bottom: 0; }
+  .op-list li::before { counter-increment: o; content: counter(o); position: absolute; left: 0; top: 10px; width: 26px; height: 26px; border-radius: 50%;
+    background: var(--ink); color: var(--panel); font-weight: 800; font-size: 12px; display: grid; place-items: center; }
+  .op-list b { display: block; }
+  .op-list span { color: var(--ink-soft); font-size: 13px; }
+
+  @media (max-width: 1320px) {
+    .cal { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .cal > * { grid-column: auto !important; grid-row: auto !important; }
+    .cal .yr { grid-column: 1 / -1 !important; margin-top: 6px; }
+    .cal .cell.fin { grid-column: 1 / -1 !important; min-height: 0; flex-direction: row; flex-wrap: wrap; align-items: center; }
+    .cal .cell.fin .sn, .cal .cell.fin .g { flex-basis: 100%; }
+    .cell { min-height: 0; }
+  }
+  @media (max-width: 1100px) {
+    .kpis { grid-template-columns: repeat(3, 1fr); }
+    .grid3 { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 700px) {
+    main { padding: 20px 16px 64px; }
+    h1 { font-size: 24px; }
+    h2 { font-size: 18px; }
+    nav.top { margin: 14px -16px 0; padding: 8px 16px; gap: 5px; }
+    nav.top a { font-size: 12px; padding: 4px 10px; }
+    section { margin-top: 36px; scroll-margin-top: 112px; }
+    .panel { padding: 14px 14px; }
+    .kpis { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .kpi { padding: 12px 14px; }
+    .kpi .value { font-size: 20px; }
+    .grid2 { grid-template-columns: 1fr; }
+    .cal { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .br { grid-template-columns: 112px 1fr 38px; font-size: 12px; }
+    .kv { grid-template-columns: 96px 1fr; }
+    svg.chart { min-width: 620px; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>Careers v2: distance groups and full race calendars</h1>
+  <p class="lead">A proposal from the owner's first playtest of generation 3 (2026-11-05). Each Uma races a group of two
+    distances, through a calendar of the real G1s and their trials. She trains up front, then races near her best, with
+    a preset for each distance. Crowns pay the Card Tickets. The proposal in words is the README beside this page.</p>
+  <nav class="top" aria-label="Sections">
+    <a href="#glance">At a glance</a><a href="#groups">Groups</a><a href="#calendars">Calendars</a><a href="#pacing">Pacing</a>
+    <a href="#presets">Presets</a><a href="#tickets">Tickets</a><a href="#cards">Cards</a><a href="#open">Open points</a>
+  </nav>
+
+  <section id="glance" style="margin-top:24px">
+    <h2>At a glance</h2>
+    <p class="sub">What a URA Finale career becomes, against M036 as released.</p>
+    <div class="kpis">
+      <div class="kpi"><div class="label"><span class="sw" style="background:var(--g-ml)"></span>Distance groups</div>
+        <div class="value">3</div><div class="delta">dirt is a Mile · Medium variant</div></div>
+      <div class="kpi"><div class="label"><span class="sw" style="background:var(--ink)"></span>Races a career</div>
+        <div class="value">16–17 <span class="was">was 9</span></div><div class="delta">+ up to 16 optional</div></div>
+      <div class="kpi"><div class="label"><span class="sw" style="background:var(--accent-strong)"></span>Planned plays</div>
+        <div class="value">13 <span class="was">same</span></div><div class="delta">9 in the Junior block</div></div>
+      <div class="kpi"><div class="label"><span class="sw" style="background:var(--s-her)"></span>Stats at her first race</div>
+        <div class="value">80% <span class="was">was 50%</span></div><div class="delta">86% Classic · 93% Senior</div></div>
+      <div class="kpi"><div class="label"><span class="sw" style="background:var(--spd)"></span>Presets</div>
+        <div class="value">2</div><div class="delta">a deck, posts and a style each</div></div>
+      <div class="kpi"><div class="label"><span class="sw" style="background:var(--ticket)"></span>Card Tickets a career</div>
+        <div class="value">3–6 <span class="was">was 8</span></div><div class="delta">1 a crown, 2 at the Finals</div></div>
+    </div>
+  </section>
+
+  <section id="groups">
+    <h2>The three distance groups</h2>
+    <p class="sub">An Uma qualifies for a group with <b>A in one of its distances and B or better in the other</b>, on a
+      surface where she's A. You pick the group when her career starts. Counts are over the 272 Umas in the private pack.</p>
+    <div class="grid3">
+      <div class="panel gc" style="--gc:var(--g-ml)">
+        <div class="n">Medium · Long</div>
+        <div class="big"><b>140</b><span>Umas qualify, all on turf</span></div>
+        <p>Every long G1, the medium G1s around them, and three triple crowns.</p>
+        <ul><li><b>Crowns:</b> Triple Crown; Senior Spring and Autumn triple crowns (the "Long Triple Crown"); Grand Prix</li>
+          <li><b>Junior G1:</b> Hopeful Stakes</li></ul>
+      </div>
+      <div class="panel gc" style="--gc:var(--g-mm)">
+        <div class="n">Mile · Medium</div>
+        <div class="big"><b>127</b><span>Umas: 112 on turf, 21 on dirt</span></div>
+        <p>The fillies' classics and the Mile Crown, with Osaka Hai and the Autumn Tenno Sho. On dirt, every dirt G1 at
+          a mile or medium.</p>
+        <ul><li><b>Crowns:</b> Triple Tiara, Mile Crown; on dirt, the Dirt Crown</li>
+          <li><b>Junior G1:</b> Hanshin Juvenile Fillies; on dirt, Zen-Nippon Junior Yushun</li></ul>
+      </div>
+      <div class="panel gc" style="--gc:var(--g-sm)">
+        <div class="n">Sprint · Mile</div>
+        <div class="big"><b>47</b><span>Umas: 41 on turf, 6 on dirt</span></div>
+        <p>The sprint and mile G1s, with the Sprinters Stakes and Mile Championship in both Classic and Senior.</p>
+        <ul><li><b>Crowns:</b> Sprint Crown, Mile Crown</li>
+          <li><b>Junior G1:</b> Asahi Hai Futurity Stakes</li></ul>
+      </div>
+    </div>
+
+    <div class="grid2" style="margin-top:14px">
+      <div class="panel">
+        <h3>How many groups each Uma has</h3>
+        <p class="small muted">Under the recommended rule. Summer Camp's aptitude points (release 4) raise a distance a
+          grade: one step gives 130 Umas two groups.</p>
+        <div class="bars" role="list">
+          <div class="br" role="listitem"><span class="bl">No group</span><span class="btk"><i style="width:4.2%;--bc:var(--neutral-strong)"></i></span><span class="bv">9</span></div>
+          <div class="br" role="listitem"><span class="bl">One group</span><span class="btk"><i style="width:100%;--bc:var(--accent-strong)"></i></span><span class="bv">212</span></div>
+          <div class="br" role="listitem"><span class="bl">Two groups</span><span class="btk"><i style="width:24.1%;--bc:var(--accent-strong)"></i></span><span class="bv">51</span></div>
+          <div class="br" role="listitem"><span class="bl">Three groups</span><span class="btk"><i style="width:0%"></i></span><span class="bv">0</span></div>
+        </div>
+        <p class="foot">Of the 51 with two groups, 32 are Mile · Medium and Medium · Long, and 19 Sprint · Mile and Mile ·
+          Medium. The 9 with none (5 Medium-only, 4 Sprint-only) run a single-distance career: their group's calendar,
+          with every race below B made optional.</p>
+      </div>
+      <div class="panel">
+        <h3>Why A and B, not A in both</h3>
+        <div class="tbl narrow"><table>
+          <thead><tr><th>Rule</th><th class="num">No group</th><th class="num">2 groups</th><th class="num">M · L</th><th class="num">M · M</th><th class="num">S · M</th></tr></thead>
+          <tbody>
+            <tr class="rec"><td><b>A + B or better</b></td><td class="num">9</td><td class="num">51</td><td class="num">140</td><td class="num">127</td><td class="num">47</td></tr>
+            <tr><td>A in both</td><td class="num">90</td><td class="num">2</td><td class="num">99</td><td class="num">68</td><td class="num">17</td></tr>
+            <tr><td>B or better in both</td><td class="num">9</td><td class="num">55</td><td class="num">142</td><td class="num">129</td><td class="num">47</td></tr>
+          </tbody>
+        </table></div>
+        <p class="foot">A B distance races at 0.9 of an A's speed term in the engine; C (0.8) isn't offered. Surface: 255
+          Umas are A on turf, 23 on dirt, 6 on both. Dirt's twelve G1s hold one sprint and no long race, so dirt runs as
+          a Mile · Medium calendar.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="calendars">
+    <h2>The calendars</h2>
+    <p class="sub">The Junior year's first three seasons are the <b>training block</b>: three plays each, no races. Her
+      first race is the group's Junior G1. Classic and Senior then race in spring, autumn and winter, and train at the
+      summer camps. A season holds the months of the original's calendar: Winter is December and the January–February
+      after it.</p>
+    <div class="key">
+      <span class="pips"><i></i><i></i><i></i></span><span>planned plays</span>
+      <span class="rc g1"><b>G1</b>race <i>m</i></span><span class="rc g2"><b>G2</b>race</span><span class="rc g3"><b>G3</b>race</span>
+      <span class="rc g1"><b>G1</b>leg<em>TC</em></span><span>a crown leg (pays on the crown's last)</span>
+    </div>
+    <p class="foot" style="margin-top:6px">TC Triple Crown · SS / SA Senior Spring / Autumn Triple Crown · GP Grand Prix ·
+      TT Triple Tiara · MC Mile Crown · SC Sprint Crown · DC Dirt Crown. Objectives must be won to move on; retries are
+      free. Optional races never block, and a first win pays SP.</p>
+    <div class="panel calp" style="--gc:var(--g-ml)"><div class="calh"><span class="gtag" style="background:var(--g-ml)">Medium · Long</span><span class="tag">Turf</span><span class="muted small">14 objectives (11 G1 · 3 G2) · 14 optional · 4 crowns</span></div>
+<div class="cal" style="--gc:var(--g-ml)">
+<div class="yr y1">Junior</div>
+<div class="cell blk c1"><div class="sn">Junior Spring</div><div class="pl"><span class="pips" aria-label="3 planned plays"><i></i><i></i><i></i></span><span>Training block</span></div><div class="g">Furlong Hand on the Hopeful Stakes&#x27; course</div></div>
+<div class="cell blk c2"><div class="sn">Junior Summer</div><div class="pl"><span class="pips" aria-label="3 planned plays"><i></i><i></i><i></i></span><span>Training block</span></div><div class="g">Furlong Hand on the Hopeful Stakes&#x27; course</div></div>
+<div class="cell blk c3"><div class="sn">Junior Autumn</div><div class="pl"><span class="pips" aria-label="3 planned plays"><i></i><i></i><i></i></span><span>Training block</span></div><div class="g">Furlong Hand on the Hopeful Stakes&#x27; course</div></div>
+<div class="cell obj c4"><div class="sn">Junior Winter</div><div class="pl"><span class="pips" aria-label="1 planned play"><i></i></span><span>Prep heat</span></div><span class="rc g1"><b>G1</b>Hopeful Stakes <i>2000</i></span><div class="op"><span class="ol">Optional</span> Keisei Hai</div></div>
+<div class="yr y2">Classic</div>
+<div class="cell obj c5"><div class="sn">Classic Spring</div><div class="pl opt"><span>Prep heat optional</span></div><span class="rc g2"><b>G2</b>Yayoi Sho <i>2000</i></span><span class="rc g1"><b>G1</b>Satsuki Sho <i>2000</i><em title="Triple Crown">TC</em></span><span class="rc g1"><b>G1</b>Tokyo Yushun <i>2400</i><em title="Triple Crown">TC</em></span><div class="op"><span class="ol">Optional</span> Aoba Sho · Kyoto Shimbun Hai</div></div>
+<div class="cell camp c6"><div class="sn">Classic Summer</div><div class="pl"><span class="pips" aria-label="1 planned play"><i></i></span><span>Summer camp</span></div><div class="op"><span class="ol">Optional</span> Hakodate Kinen · Kokura Kinen</div></div>
+<div class="cell obj c7"><div class="sn">Classic Autumn</div><div class="pl opt"><span>Prep heat optional</span></div><span class="rc g2"><b>G2</b>Kobe Shimbun Hai <i>2400</i></span><span class="rc g1"><b>G1</b>Kikuka Sho <i>3000</i><em title="Triple Crown">TC</em></span><div class="op"><span class="ol">Optional</span> St. Lite Kinen · Japan Cup</div></div>
+<div class="cell obj c8"><div class="sn">Classic Winter</div><div class="pl opt"><span>Prep heat optional</span></div><span class="rc g1"><b>G1</b>Arima Kinen <i>2500</i></span><div class="op"><span class="ol">Optional</span> Nikkei Shinshun Hai · Kyoto Kinen · Diamond Stakes</div></div>
+<div class="yr y3">Senior</div>
+<div class="cell obj c9"><div class="sn">Senior Spring</div><div class="pl opt"><span>Prep heat optional</span></div><span class="rc g1"><b>G1</b>Osaka Hai <i>2000</i><em title="Senior Spring Triple Crown">SS</em></span><span class="rc g1"><b>G1</b>Tenno Sho (Spring) <i>3200</i><em title="Senior Spring Triple Crown">SS</em></span><span class="rc g1"><b>G1</b>Takarazuka Kinen <i>2200</i><em title="Senior Spring Triple Crown">SS</em><em title="Grand Prix">GP</em></span><div class="op"><span class="ol">Optional</span> Hanshin Daishoten · Meguro Kinen</div></div>
+<div class="cell camp c10"><div class="sn">Senior Summer</div><div class="pl"><span class="pips" aria-label="1 planned play"><i></i></span><span>Summer camp</span></div><div class="op"><span class="ol">Optional</span> Sapporo Kinen</div></div>
+<div class="cell obj c11"><div class="sn">Senior Autumn</div><div class="pl opt"><span>Prep heat optional</span></div><span class="rc g2"><b>G2</b>Kyoto Daishoten <i>2400</i></span><span class="rc g1"><b>G1</b>Tenno Sho (Autumn) <i>2000</i><em title="Senior Autumn Triple Crown">SA</em></span><span class="rc g1"><b>G1</b>Japan Cup <i>2400</i><em title="Senior Autumn Triple Crown">SA</em></span><div class="op"><span class="ol">Optional</span> All Comers</div></div>
+<div class="cell obj c12"><div class="sn">Senior Winter</div><div class="pl opt"><span>Prep heat optional</span></div><span class="rc g1"><b>G1</b>Arima Kinen <i>2500</i><em title="Senior Autumn Triple Crown">SA</em><em title="Grand Prix">GP</em></span></div>
+<div class="yr y4">Finale</div>
+<div class="cell fin c13"><div class="sn">Finale</div><div class="pl"><span class="pips" aria-label="1 planned play"><i></i></span><span>Prep heat</span></div><span class="rc g2"><b>G2</b>Qualifier</span><span class="rc g1"><b>G1</b>Semifinal</span><span class="rc g1"><b>G1</b>Final</span><div class="g">URA Finals at Medium or Long</div></div>
+</div></div>
+<div class="panel calp" style="--gc:var(--g-mm)"><div class="calh"><span class="gtag" style="background:var(--g-mm)">Mile · Medium</span><span class="tag">Turf</span><span class="muted small">13 objectives (9 G1 · 4 G2) · 16 optional · 2 crowns</span></div>
+<div class="cal" style="--gc:var(--g-mm)">
+<div class="yr y1">Junior</div>
+<div class="cell blk c1"><div class="sn">Junior Spring</div><div class="pl"><span class="pips" aria-label="3 planned plays"><i></i><i></i><i></i></span><span>Training block</span></div><div class="g">Furlong Hand on the Hanshin JF&#x27;s course</div></div>
+<div class="cell blk c2"><div class="sn">Junior Summer</div><div class="pl"><span class="pips" aria-label="3 planned plays"><i></i><i></i><i></i></span><span>Training block</span></div><div class="g">Furlong Hand on the Hanshin JF&#x27;s course</div></div>
+<div class="cell blk c3"><div class="sn">Junior Autumn</div><div class="pl"><span class="pips" aria-label="3 planned plays"><i></i><i></i><i></i></span><span>Training block</span></div><div class="g">Furlong Hand on the Hanshin JF&#x27;s course</div></div>
+<div class="cell obj c4"><div class="sn">Junior Winter</div><div class="pl"><span class="pips" aria-label="1 planned play"><i></i></span><span>Prep heat</span></div><span class="rc g1"><b>G1</b>Hanshin Juvenile Fillies <i>1600</i></span><div class="op"><span class="ol">Optional</span> Hopeful Stakes</div></div>
+<div class="yr y2">Classic</div>
+<div class="cell obj c5"><div class="sn">Classic Spring</div><div class="pl opt"><span>Prep heat optional</span></div><span class="rc g2"><b>G2</b>Tulip Sho <i>1600</i></span><span class="rc g1"><b>G1</b>Oka Sho <i>1600</i><em title="Triple Tiara">TT</em></span><span class="rc g1"><b>G1</b>Japanese Oaks <i>2400</i><em title="Triple Tiara">TT</em></span><div class="op"><span class="ol">Optional</span> Flora Stakes · NHK Mile Cup</div></div>
+<div class="cell camp c6"><div class="sn">Classic Summer</div><div class="pl"><span class="pips" aria-label="1 planned play"><i></i></span><span>Summer camp</span></div><div class="op"><span class="ol">Optional</span> Radio Nikkei Sho · Queen Stakes</div></div>
+<div class="cell obj c7"><div class="sn">Classic Autumn</div><div class="pl opt"><span>Prep heat optional</span></div><span class="rc g2"><b>G2</b>Rose Stakes <i>1800</i></span><span class="rc g1"><b>G1</b>Shuka Sho <i>2000</i><em title="Triple Tiara">TT</em></span><div class="op"><span class="ol">Optional</span> Queen Elizabeth II Cup · Mile Championship</div></div>
+<div class="cell obj c8"><div class="sn">Classic Winter</div><div class="pl opt"><span>Prep heat optional</span></div><span class="rc g2"><b>G2</b>Nakayama Kinen <i>1800</i></span><div class="op"><span class="ol">Optional</span> Tokyo Shimbun Hai · Kyoto Kinen</div></div>
+<div class="yr y3">Senior</div>
+<div class="cell obj c9"><div class="sn">Senior Spring</div><div class="pl opt"><span>Prep heat optional</span></div><span class="rc g1"><b>G1</b>Osaka Hai <i>2000</i></span><span class="rc g1"><b>G1</b>Victoria Mile <i>1600</i></span><span class="rc g1"><b>G1</b>Yasuda Kinen <i>1600</i><em title="Mile Crown">MC</em></span><div class="op"><span class="ol">Optional</span> Milers Cup · Takarazuka Kinen</div></div>
+<div class="cell camp c10"><div class="sn">Senior Summer</div><div class="pl"><span class="pips" aria-label="1 planned play"><i></i></span><span>Summer camp</span></div><div class="op"><span class="ol">Optional</span> Sekiya Kinen · Sapporo Kinen</div></div>
+<div class="cell obj c11"><div class="sn">Senior Autumn</div><div class="pl opt"><span>Prep heat optional</span></div><span class="rc g2"><b>G2</b>Mainichi Okan <i>1800</i></span><span class="rc g1"><b>G1</b>Tenno Sho (Autumn) <i>2000</i></span><span class="rc g1"><b>G1</b>Mile Championship <i>1600</i><em title="Mile Crown">MC</em></span><div class="op"><span class="ol">Optional</span> Fuji Stakes · Queen Elizabeth II Cup</div></div>
+<div class="cell obj c12"><div class="sn">Senior Winter</div><div class="pl opt"><span>Prep heat optional</span></div><div class="g">The run-up to the Finals</div><div class="op"><span class="ol">Optional</span> Challenge Cup</div></div>
+<div class="yr y4">Finale</div>
+<div class="cell fin c13"><div class="sn">Finale</div><div class="pl"><span class="pips" aria-label="1 planned play"><i></i></span><span>Prep heat</span></div><span class="rc g2"><b>G2</b>Qualifier</span><span class="rc g1"><b>G1</b>Semifinal</span><span class="rc g1"><b>G1</b>Final</span><div class="g">URA Finals at Mile or Medium</div></div>
+</div></div>
+<div class="panel calp" style="--gc:var(--g-sm)"><div class="calh"><span class="gtag" style="background:var(--g-sm)">Sprint · Mile</span><span class="tag">Turf</span><span class="muted small">13 objectives (8 G1 · 4 G2 · 1 G3) · 16 optional · 2 crowns</span></div>
+<div class="cal" style="--gc:var(--g-sm)">
+<div class="yr y1">Junior</div>
+<div class="cell blk c1"><div class="sn">Junior Spring</div><div class="pl"><span class="pips" aria-label="3 planned plays"><i></i><i></i><i></i></span><span>Training block</span></div><div class="g">Furlong Hand on the Asahi Hai FS&#x27; course</div></div>
+<div class="cell blk c2"><div class="sn">Junior Summer</div><div class="pl"><span class="pips" aria-label="3 planned plays"><i></i><i></i><i></i></span><span>Training block</span></div><div class="g">Furlong Hand on the Asahi Hai FS&#x27; course</div></div>
+<div class="cell blk c3"><div class="sn">Junior Autumn</div><div class="pl"><span class="pips" aria-label="3 planned plays"><i></i><i></i><i></i></span><span>Training block</span></div><div class="g">Furlong Hand on the Asahi Hai FS&#x27; course</div></div>
+<div class="cell obj c4"><div class="sn">Junior Winter</div><div class="pl"><span class="pips" aria-label="1 planned play"><i></i></span><span>Prep heat</span></div><span class="rc g1"><b>G1</b>Asahi Hai Futurity Stakes <i>1600</i></span></div>
+<div class="yr y2">Classic</div>
+<div class="cell obj c5"><div class="sn">Classic Spring</div><div class="pl opt"><span>Prep heat optional</span></div><span class="rc g3"><b>G3</b>Falcon Stakes <i>1400</i></span><span class="rc g1"><b>G1</b>NHK Mile Cup <i>1600</i></span><div class="op"><span class="ol">Optional</span> Fillies&#x27; Revue · New Zealand Trophy · Aoi Stakes</div></div>
+<div class="cell camp c6"><div class="sn">Classic Summer</div><div class="pl"><span class="pips" aria-label="1 planned play"><i></i></span><span>Summer camp</span></div><div class="op"><span class="ol">Optional</span> Ibis Summer Dash · Keeneland Cup</div></div>
+<div class="cell obj c7"><div class="sn">Classic Autumn</div><div class="pl opt"><span>Prep heat optional</span></div><span class="rc g2"><b>G2</b>Centaur Stakes <i>1200</i></span><span class="rc g1"><b>G1</b>Sprinters Stakes <i>1200</i></span><span class="rc g1"><b>G1</b>Mile Championship <i>1600</i></span><div class="op"><span class="ol">Optional</span> Swan Stakes · Fuji Stakes</div></div>
+<div class="cell obj c8"><div class="sn">Classic Winter</div><div class="pl opt"><span>Prep heat optional</span></div><div class="g">No objective</div><div class="op"><span class="ol">Optional</span> Hanshin Cup · Silk Road Stakes</div></div>
+<div class="yr y3">Senior</div>
+<div class="cell obj c9"><div class="sn">Senior Spring</div><div class="pl opt"><span>Prep heat optional</span></div><span class="rc g1"><b>G1</b>Takamatsunomiya Kinen <i>1200</i><em title="Sprint Crown">SC</em></span><span class="rc g2"><b>G2</b>Keio Hai Spring Cup <i>1400</i></span><span class="rc g1"><b>G1</b>Yasuda Kinen <i>1600</i><em title="Mile Crown">MC</em></span><div class="op"><span class="ol">Optional</span> Ocean Stakes · Milers Cup · Victoria Mile</div></div>
+<div class="cell camp c10"><div class="sn">Senior Summer</div><div class="pl"><span class="pips" aria-label="1 planned play"><i></i></span><span>Summer camp</span></div><div class="op"><span class="ol">Optional</span> CBC Sho · Sekiya Kinen</div></div>
+<div class="cell obj c11"><div class="sn">Senior Autumn</div><div class="pl opt"><span>Prep heat optional</span></div><span class="rc g1"><b>G1</b>Sprinters Stakes <i>1200</i><em title="Sprint Crown">SC</em></span><span class="rc g2"><b>G2</b>Swan Stakes <i>1400</i></span><span class="rc g1"><b>G1</b>Mile Championship <i>1600</i><em title="Mile Crown">MC</em></span><div class="op"><span class="ol">Optional</span> Centaur Stakes · Fuji Stakes</div></div>
+<div class="cell obj c12"><div class="sn">Senior Winter</div><div class="pl opt"><span>Prep heat optional</span></div><span class="rc g2"><b>G2</b>Hanshin Cup <i>1400</i></span></div>
+<div class="yr y4">Finale</div>
+<div class="cell fin c13"><div class="sn">Finale</div><div class="pl"><span class="pips" aria-label="1 planned play"><i></i></span><span>Prep heat</span></div><span class="rc g2"><b>G2</b>Qualifier</span><span class="rc g1"><b>G1</b>Semifinal</span><span class="rc g1"><b>G1</b>Final</span><div class="g">URA Finals at Sprint or Mile</div></div>
+</div></div>
+<div class="panel calp" style="--gc:var(--g-mm)"><div class="calh"><span class="gtag" style="background:var(--g-mm)">Mile · Medium</span><span class="tag dirt">Dirt</span><span class="muted small">14 objectives (11 G1 · 1 G2 · 2 G3) · 11 optional · 1 crown</span></div>
+<div class="cal" style="--gc:var(--g-mm)">
+<div class="yr y1">Junior</div>
+<div class="cell blk c1"><div class="sn">Junior Spring</div><div class="pl"><span class="pips" aria-label="3 planned plays"><i></i><i></i><i></i></span><span>Training block</span></div><div class="g">Furlong Hand on the Zen-Nippon Junior Yushun&#x27;s course</div></div>
+<div class="cell blk c2"><div class="sn">Junior Summer</div><div class="pl"><span class="pips" aria-label="3 planned plays"><i></i><i></i><i></i></span><span>Training block</span></div><div class="g">Furlong Hand on the Zen-Nippon Junior Yushun&#x27;s course</div></div>
+<div class="cell blk c3"><div class="sn">Junior Autumn</div><div class="pl"><span class="pips" aria-label="3 planned plays"><i></i><i></i><i></i></span><span>Training block</span></div><div class="g">Furlong Hand on the Zen-Nippon Junior Yushun&#x27;s course</div></div>
+<div class="cell obj c4"><div class="sn">Junior Winter</div><div class="pl"><span class="pips" aria-label="1 planned play"><i></i></span><span>Prep heat</span></div><span class="rc g1"><b>G1</b>Zen-Nippon Junior Yushun <i>1600</i></span></div>
+<div class="yr y2">Classic</div>
+<div class="cell obj c5"><div class="sn">Classic Spring</div><div class="pl opt"><span>Prep heat optional</span></div><span class="rc g3"><b>G3</b>Unicorn Stakes <i>1600</i></span></div>
+<div class="cell camp c6"><div class="sn">Classic Summer</div><div class="pl"><span class="pips" aria-label="1 planned play"><i></i></span><span>Summer camp</span></div><span class="rc g1"><b>G1</b>Japan Dirt Derby <i>2000</i></span><div class="op"><span class="ol">Optional</span> Leopard Stakes</div></div>
+<div class="cell obj c7"><div class="sn">Classic Autumn</div><div class="pl opt"><span>Prep heat optional</span></div><span class="rc g3"><b>G3</b>Sirius Stakes <i>2000</i></span><span class="rc g1"><b>G1</b>JBC Classic <i>2000</i></span><div class="op"><span class="ol">Optional</span> Mile Championship Nambu Hai · Miyako Stakes · JBC Ladies&#x27; Classic</div></div>
+<div class="cell obj c8"><div class="sn">Classic Winter</div><div class="pl opt"><span>Prep heat optional</span></div><span class="rc g1"><b>G1</b>Champions Cup <i>1800</i></span><span class="rc g2"><b>G2</b>Tokai Stakes <i>1800</i></span><span class="rc g1"><b>G1</b>February Stakes <i>1600</i><em title="Dirt Crown">DC</em></span><div class="op"><span class="ol">Optional</span> Tokyo Daishoten · Kawasaki Kinen</div></div>
+<div class="yr y3">Senior</div>
+<div class="cell obj c9"><div class="sn">Senior Spring</div><div class="pl opt"><span>Prep heat optional</span></div><span class="rc g1"><b>G1</b>Kashiwa Kinen <i>1600</i></span><span class="rc g1"><b>G1</b>Teio Sho <i>2000</i></span><div class="op"><span class="ol">Optional</span> March Stakes · Antares Stakes</div></div>
+<div class="cell camp c10"><div class="sn">Senior Summer</div><div class="pl"><span class="pips" aria-label="1 planned play"><i></i></span><span>Summer camp</span></div><div class="op"><span class="ol">Optional</span> Elm Stakes</div></div>
+<div class="cell obj c11"><div class="sn">Senior Autumn</div><div class="pl opt"><span>Prep heat optional</span></div><span class="rc g1"><b>G1</b>Mile Championship Nambu Hai <i>1600</i></span><span class="rc g1"><b>G1</b>JBC Classic <i>2000</i></span><div class="op"><span class="ol">Optional</span> Sirius Stakes · Musashino Stakes</div></div>
+<div class="cell obj c12"><div class="sn">Senior Winter</div><div class="pl opt"><span>Prep heat optional</span></div><span class="rc g1"><b>G1</b>Champions Cup <i>1800</i><em title="Dirt Crown">DC</em></span><span class="rc g1"><b>G1</b>Tokyo Daishoten <i>2000</i></span></div>
+<div class="yr y4">Finale</div>
+<div class="cell fin c13"><div class="sn">Finale</div><div class="pl"><span class="pips" aria-label="1 planned play"><i></i></span><span>Prep heat</span></div><span class="rc g2"><b>G2</b>Qualifier</span><span class="rc g1"><b>G1</b>Semifinal</span><span class="rc g1"><b>G1</b>Final</span><div class="g">URA Finals at Mile or Medium</div></div>
+</div></div>
+  </section>
+
+  <section id="pacing">
+    <h2>Pacing: train up front, then race near her best</h2>
+    <p class="sub">The same 13 plays as today, moved: 10 come before her first race. Her average stat, modelled on
+      D383's measured curve, against the G1 field that the new season shares build. The fields track her, so a Junior G1
+      is as fair as a Senior one; what changes from race to race is the grade and her skills.</p>
+    <div class="panel">
+      <div class="legend" style="margin:0 0 6px">
+        <span><span class="lg-line" style="--c:var(--s-her)"></span>Her average stat, Careers v2</span>
+        <span><span class="lg-line" style="--c:var(--s-field)"></span>G1 field, v2 (17% under)</span>
+        <span><span class="lg-line dash" style="--c:var(--neutral-strong)"></span>Today, measured (D383)</span>
+      </div>
+      <div class="chartwrap"><svg viewBox="0 0 720 330" role="img" aria-labelledby="cv-t cv-d" class="chart" id="curve">
+<title id="cv-t">Her average stat by season, against the G1 field and today's curve</title>
+<desc id="cv-d">Careers v2 front-loads training: her average stat is 445 at her first race in Junior Winter, 482 through Classic, 520 in Senior and 559 at the Finale. The G1 field races 17% under her curve. Today's measured curve rises from 164 to 559 evenly.</desc>
+<rect x="46.0" y="18" width="136.7" height="254" class="band"/>
+<text x="54.0" y="32" class="bandt">TRAINING BLOCK · 9 PLAYS</text>
+<line x1="46" x2="702" y1="272.0" y2="272.0" class="axl"/>
+<text x="40" y="275.5" class="ax" text-anchor="end">0</text>
+<line x1="46" x2="702" y1="229.7" y2="229.7" class="grl"/>
+<text x="40" y="233.2" class="ax" text-anchor="end">100</text>
+<line x1="46" x2="702" y1="187.3" y2="187.3" class="grl"/>
+<text x="40" y="190.8" class="ax" text-anchor="end">200</text>
+<line x1="46" x2="702" y1="145.0" y2="145.0" class="grl"/>
+<text x="40" y="148.5" class="ax" text-anchor="end">300</text>
+<line x1="46" x2="702" y1="102.7" y2="102.7" class="grl"/>
+<text x="40" y="106.2" class="ax" text-anchor="end">400</text>
+<line x1="46" x2="702" y1="60.3" y2="60.3" class="grl"/>
+<text x="40" y="63.8" class="ax" text-anchor="end">500</text>
+<line x1="46" x2="702" y1="18.0" y2="18.0" class="grl"/>
+<text x="40" y="21.5" class="ax" text-anchor="end">600</text>
+<text x="46.0" y="288" class="ax" text-anchor="middle">Spr</text>
+<text x="100.7" y="288" class="ax" text-anchor="middle">Sum</text>
+<text x="155.3" y="288" class="ax" text-anchor="middle">Aut</text>
+<text x="210.0" y="288" class="ax" text-anchor="middle">Win</text>
+<text x="264.7" y="288" class="ax" text-anchor="middle">Spr</text>
+<text x="319.3" y="288" class="ax" text-anchor="middle">Sum</text>
+<text x="374.0" y="288" class="ax" text-anchor="middle">Aut</text>
+<text x="428.7" y="288" class="ax" text-anchor="middle">Win</text>
+<text x="483.3" y="288" class="ax" text-anchor="middle">Spr</text>
+<text x="538.0" y="288" class="ax" text-anchor="middle">Sum</text>
+<text x="592.7" y="288" class="ax" text-anchor="middle">Aut</text>
+<text x="647.3" y="288" class="ax" text-anchor="middle">Win</text>
+<text x="702.0" y="288" class="ax" text-anchor="middle">Fin</text>
+<line x1="36.0" x2="220.0" y1="298" y2="298" class="yrl"/>
+<text x="128.0" y="313" class="axb">Junior</text>
+<line x1="254.7" x2="438.7" y1="298" y2="298" class="yrl"/>
+<text x="346.7" y="313" class="axb">Classic</text>
+<line x1="473.3" x2="657.3" y1="298" y2="298" class="yrl"/>
+<text x="565.3" y="313" class="axb">Senior</text>
+<text x="702.0" y="313" class="axb">Finale</text>
+<path d="M46.0 202.6 L100.7 187.3 L155.3 167.9 L210.0 154.7 L264.7 145.0 L319.3 125.1 L374.0 111.6 L428.7 96.3 L483.3 92.5 L538.0 68.4 L592.7 59.1 L647.3 40.0 L702.0 35.4" class="ln-today"/>
+<path d="M210.0 115.8 L264.7 115.8 L319.3 102.7 L374.0 102.7 L428.7 102.7 L483.3 102.7 L538.0 89.1 L592.7 89.1 L647.3 89.1 L702.0 75.6" class="ln-field"/>
+<path d="M46.0 186.1 L100.7 143.7 L155.3 99.3 L210.0 83.6 L264.7 83.6 L319.3 68.0 L374.0 68.0 L428.7 68.0 L483.3 68.0 L538.0 51.9 L592.7 51.9 L647.3 51.9 L702.0 35.4" class="ln-her"/>
+<circle cx="210.0" cy="83.6" r="4.5" class="mk-her"/>
+<circle cx="264.7" cy="83.6" r="4.5" class="mk-her"/>
+<circle cx="319.3" cy="68.0" r="4.5" class="mk-her"/>
+<circle cx="374.0" cy="68.0" r="4.5" class="mk-her"/>
+<circle cx="428.7" cy="68.0" r="4.5" class="mk-her"/>
+<circle cx="483.3" cy="68.0" r="4.5" class="mk-her"/>
+<circle cx="538.0" cy="51.9" r="4.5" class="mk-her"/>
+<circle cx="592.7" cy="51.9" r="4.5" class="mk-her"/>
+<circle cx="647.3" cy="51.9" r="4.5" class="mk-her"/>
+<circle cx="702.0" cy="35.4" r="4.5" class="mk-her"/>
+<circle cx="210.0" cy="115.8" r="4" class="mk-field"/>
+<circle cx="264.7" cy="115.8" r="4" class="mk-field"/>
+<circle cx="319.3" cy="102.7" r="4" class="mk-field"/>
+<circle cx="374.0" cy="102.7" r="4" class="mk-field"/>
+<circle cx="428.7" cy="102.7" r="4" class="mk-field"/>
+<circle cx="483.3" cy="102.7" r="4" class="mk-field"/>
+<circle cx="538.0" cy="89.1" r="4" class="mk-field"/>
+<circle cx="592.7" cy="89.1" r="4" class="mk-field"/>
+<circle cx="647.3" cy="89.1" r="4" class="mk-field"/>
+<circle cx="702.0" cy="75.6" r="4" class="mk-field"/>
+<text x="330.3" y="60.3" class="dl her">Her stat, v2</text>
+<text x="133.5" y="204.3" class="dl tod">Today (D383)</text>
+<text x="548.9" y="100.5" class="dl fld">G1 field, v2</text>
+<text x="202.0" y="76.4" class="dl her" text-anchor="end">80% at her first race</text>
+<line id="xh" x1="0" x2="0" y1="18" y2="272" class="xh" visibility="hidden"/>
+<rect class="hit" data-i="0" x="18.7" y="18" width="54.7" height="254" tabindex="0" aria-label="Junior Spring: her 203, today 164"/>
+<rect class="hit" data-i="1" x="73.3" y="18" width="54.7" height="254" tabindex="0" aria-label="Junior Summer: her 303, today 200"/>
+<rect class="hit" data-i="2" x="128.0" y="18" width="54.7" height="254" tabindex="0" aria-label="Junior Autumn: her 408, today 246"/>
+<rect class="hit" data-i="3" x="182.7" y="18" width="54.7" height="254" tabindex="0" aria-label="Junior Winter: her 445, today 277, G1 field 369"/>
+<rect class="hit" data-i="4" x="237.3" y="18" width="54.7" height="254" tabindex="0" aria-label="Classic Spring: her 445, today 300, G1 field 369"/>
+<rect class="hit" data-i="5" x="292.0" y="18" width="54.7" height="254" tabindex="0" aria-label="Classic Summer: her 482, today 347, G1 field 400"/>
+<rect class="hit" data-i="6" x="346.7" y="18" width="54.7" height="254" tabindex="0" aria-label="Classic Autumn: her 482, today 379, G1 field 400"/>
+<rect class="hit" data-i="7" x="401.3" y="18" width="54.7" height="254" tabindex="0" aria-label="Classic Winter: her 482, today 415, G1 field 400"/>
+<rect class="hit" data-i="8" x="456.0" y="18" width="54.7" height="254" tabindex="0" aria-label="Senior Spring: her 482, today 424, G1 field 400"/>
+<rect class="hit" data-i="9" x="510.7" y="18" width="54.7" height="254" tabindex="0" aria-label="Senior Summer: her 520, today 481, G1 field 432"/>
+<rect class="hit" data-i="10" x="565.3" y="18" width="54.7" height="254" tabindex="0" aria-label="Senior Autumn: her 520, today 503, G1 field 432"/>
+<rect class="hit" data-i="11" x="620.0" y="18" width="54.7" height="254" tabindex="0" aria-label="Senior Winter: her 520, today 548, G1 field 432"/>
+<rect class="hit" data-i="12" x="674.7" y="18" width="54.7" height="254" tabindex="0" aria-label="Finale: her 559, today 559, G1 field 464"/>
+</svg></div>
+      <div class="tip" id="tip" role="status" aria-live="polite"></div>
+      <details>
+        <summary>The numbers, as a table</summary>
+        <div class="tbl"><table>
+          <thead><tr><th>Season</th><th class="num">Plays (total)</th><th class="num">Her stat</th><th class="num">Share</th><th class="num">G1 field</th><th class="num">Today</th></tr></thead>
+          <tbody><tr><td>Junior Spring</td><td class="num">3 (3)</td><td class="num">203</td><td class="num">0.36</td><td class="num">—</td><td class="num">164</td></tr>
+<tr><td>Junior Summer</td><td class="num">3 (6)</td><td class="num">303</td><td class="num">0.54</td><td class="num">—</td><td class="num">200</td></tr>
+<tr><td>Junior Autumn</td><td class="num">3 (9)</td><td class="num">408</td><td class="num">0.73</td><td class="num">—</td><td class="num">246</td></tr>
+<tr><td>Junior Winter</td><td class="num">1 (10)</td><td class="num">445</td><td class="num">0.80</td><td class="num">369</td><td class="num">277</td></tr>
+<tr><td>Classic Spring</td><td class="num">— (10)</td><td class="num">445</td><td class="num">0.80</td><td class="num">369</td><td class="num">300</td></tr>
+<tr><td>Classic Summer</td><td class="num">1 (11)</td><td class="num">482</td><td class="num">0.86</td><td class="num">400</td><td class="num">347</td></tr>
+<tr><td>Classic Autumn</td><td class="num">— (11)</td><td class="num">482</td><td class="num">0.86</td><td class="num">400</td><td class="num">379</td></tr>
+<tr><td>Classic Winter</td><td class="num">— (11)</td><td class="num">482</td><td class="num">0.86</td><td class="num">400</td><td class="num">415</td></tr>
+<tr><td>Senior Spring</td><td class="num">— (11)</td><td class="num">482</td><td class="num">0.86</td><td class="num">400</td><td class="num">424</td></tr>
+<tr><td>Senior Summer</td><td class="num">1 (12)</td><td class="num">520</td><td class="num">0.93</td><td class="num">432</td><td class="num">481</td></tr>
+<tr><td>Senior Autumn</td><td class="num">— (12)</td><td class="num">520</td><td class="num">0.93</td><td class="num">432</td><td class="num">503</td></tr>
+<tr><td>Senior Winter</td><td class="num">— (12)</td><td class="num">520</td><td class="num">0.93</td><td class="num">432</td><td class="num">548</td></tr>
+<tr><td>Finale</td><td class="num">1 (13)</td><td class="num">559</td><td class="num">1.00</td><td class="num">464</td><td class="num">559</td></tr></tbody>
+        </table></div>
+        <p class="foot">Model: 110 + 390 × d × (1 + 0.15 d), d the share of the career's drills spent, fitted to D383's
+          measured curve (164 after one Training Yard play, 559 at the Finale); it reproduces today's within about 10
+          points. <code>sim:careers</code> measures the real curve and sets the shares.</p>
+      </details>
+    </div>
+    <div class="grid3" style="margin-top:14px">
+      <div class="panel"><h3>The bundle, a play at A</h3>
+        <p><b>110 drills · 15 Bond · 0 SP</b>, the same for every game (swappable stages). 13 plays pay 1,430 drills, as
+          today's 1,400 did for 61% of the tree, and 195 Bond for two presets' decks.</p></div>
+      <div class="panel"><h3>SP comes from racing</h3>
+        <p>13–14 objectives pay 1,080–1,280 SP before Race Bonus. With the tree's sessions, a career earns about 1,800–2,070:
+          close to URA Finale's 2,000 SP cap, about six golds with their whites.</p></div>
+      <div class="panel"><h3>What the sim holds</h3>
+        <ul class="small"><li>Median deck: G3 ≥ 90%, G2 ≥ 75%, G1 ≥ 50% first tries, and G1 40–80% in each year</li>
+          <li>≥ 75% of her Finale's stats at her first race; ≥ 90% in Senior</li>
+          <li>Tree 55–65%; each preset 2.5–3.5 cards at bond 80; SP 85–105% of the cap</li></ul></div>
+    </div>
+  </section>
+
+  <section id="presets">
+    <h2>Distance presets</h2>
+    <p class="sub">One preset per distance in her group. A race uses the preset of its distance, and so does a stage
+      preparing that race. The tree is shared, but a pip's gain is priced from the cards posted at its branch, so each
+      preset reads its own stats from the same pips.</p>
+    <div class="grid3">
+      <div class="panel">
+        <h3>Medium preset <span class="tag">Pace Chaser</span></h3>
+        <div class="deck" aria-label="An example deck">
+          <span class="card shared" style="--c:var(--spd)">SPD</span><span class="card shared" style="--c:var(--spd)">SPD</span>
+          <span class="card shared" style="--c:var(--pow)">POW</span><span class="card" style="--c:var(--spd)">SPD</span>
+          <span class="card" style="--c:var(--gut)">GUT</span><span class="card shared" style="--c:var(--wit)">WIT</span>
+        </div>
+        <dl class="kv"><dt>Deck and posts</dt><dd>Speed-led; a Guts card posted at Guts</dd><dt>Style</dt><dd>her best at Medium</dd>
+          <dt>Races</dt><dd>Satsuki Sho, Tokyo Yushun, Osaka Hai, Takarazuka Kinen…</dd></dl>
+      </div>
+      <div class="panel">
+        <h3>Long preset <span class="tag">Late Surger</span></h3>
+        <div class="deck" aria-label="An example deck">
+          <span class="card shared" style="--c:var(--spd)">SPD</span><span class="card shared" style="--c:var(--spd)">SPD</span>
+          <span class="card shared" style="--c:var(--pow)">POW</span><span class="card" style="--c:var(--sta)">STA</span>
+          <span class="card" style="--c:var(--sta)">STA</span><span class="card shared" style="--c:var(--wit)">WIT</span>
+        </div>
+        <dl class="kv"><dt>Deck and posts</dt><dd>two Stamina cards posted at Stamina</dd><dt>Style</dt><dd>her best at Long</dd>
+          <dt>Races</dt><dd>Kikuka Sho, Tenno Sho (Spring), Arima Kinen ×2</dd></dl>
+      </div>
+      <div class="panel">
+        <h3>What her presets share</h3>
+        <ul class="share small">
+          <li><b>The tree:</b> every pip and Camp, bought once with the drills</li>
+          <li><b>Bond:</b> the wallet's, and every card's one bond track (outlined cards sit in both decks)</li>
+          <li><b>Skills:</b> bought once from one SP pool; every skill races everywhere, a distance skill fires only at
+            its distance</li>
+          <li><b>SP earned:</b> the better preset's, as a deck swap already allows</li>
+          <li><b>At the URA Finals:</b> one racing build frozen per preset</li>
+        </ul>
+      </div>
+    </div>
+    <p class="foot">Example decks, no real cards. Switching is automatic by the race's distance, as the old game's
+      presets did (D254). Upgrade opens on her next race's preset, with a switch at the top.</p>
+  </section>
+
+  <section id="tickets">
+    <h2>Tickets</h2>
+    <p class="sub">Crowns and the URA Finals pay the tickets; every other win pays SP. URA Finale's era holds 52 SSRs.
+      A ticket per objective would pay 15–16 a career and empty the era in two careers.</p>
+    <div class="grid2">
+      <div class="panel">
+        <h3>Where they come from</h3>
+        <div class="tbl narrow"><table>
+          <thead><tr><th>Source</th><th>Pays</th></tr></thead>
+          <tbody>
+            <tr><td><b>A crown won:</b> every leg of a series in one career</td><td><span class="tk">1</span> Card Ticket</td></tr>
+            <tr><td><b>The URA Finals won</b></td><td><span class="tk">1</span> Uma Ticket, <span class="tk">2</span> Card Tickets</td></tr>
+            <tr><td>An objective or optional race won</td><td>SP only</td></tr>
+          </tbody>
+        </table></div>
+        <div class="tbl narrow"><table>
+          <thead><tr><th>A career, by calendar</th><th class="num">Crowns</th><th class="num">Card</th><th class="num">Uma</th></tr></thead>
+          <tbody>
+            <tr><td>Medium · Long</td><td class="num">4</td><td class="num">6</td><td class="num">1</td></tr>
+            <tr><td>Mile · Medium</td><td class="num">2</td><td class="num">4</td><td class="num">1</td></tr>
+            <tr><td>Sprint · Mile</td><td class="num">2</td><td class="num">4</td><td class="num">1</td></tr>
+            <tr><td>Mile · Medium, dirt</td><td class="num">1</td><td class="num">3</td><td class="num">1</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+      <div class="panel">
+        <h3>The pace, for a 25-Uma roster</h3>
+        <p class="small"><b>Umas:</b> 7 unlocked and 13 tickets in hand make 20; one ticket a career reaches 25 after 5
+          careers.</p>
+        <div class="meter" role="img" aria-label="Umas: 7 unlocked, 13 tickets in hand, 5 from careers, of 25">
+          <i class="m1" style="width:28%"></i><i class="m2" style="width:52%"></i><i class="m3" style="width:20%"></i></div>
+        <div class="mlg"><span><span class="sw" style="background:var(--accent-strong)"></span>unlocked 7</span>
+          <span><span class="sw" style="background:var(--accent);opacity:.55"></span>tickets in hand 13</span>
+          <span><span class="sw" style="background:var(--neutral)"></span>from 5 careers</span></div>
+        <p class="small" style="margin-top:14px"><b>Era-1 cards:</b> after T161's return, 7 owned and about 18 tickets; the
+          other 27 of the 52 come in about 6 careers at about 5 a career.</p>
+        <div class="meter" role="img" aria-label="Era-1 cards: 7 owned, about 18 tickets in hand, about 27 from careers, of 52">
+          <i class="m1" style="width:13.5%"></i><i class="m2" style="width:34.6%"></i><i class="m3" style="width:51.9%"></i></div>
+        <div class="mlg"><span><span class="sw" style="background:var(--accent-strong)"></span>owned 7</span>
+          <span><span class="sw" style="background:var(--accent);opacity:.55"></span>tickets ≈ 18</span>
+          <span><span class="sw" style="background:var(--neutral)"></span>from ≈ 6 careers</span></div>
+        <p class="foot">Later: Team Showdown's Shards (release 2) add about one Uma per two careers' plays; Fan Festival's
+          Scout points (release 3) about one card or refit a career. Tickets stay racing's reward.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="cards">
+    <h2>Cards by scenario</h2>
+    <div class="panel">
+      <p>The Card Library unlocks a card only once its era's scenario is open: URA Finale's 52 until Unity Cup opens in
+        release 2. A later card shows <span class="tag">Opens with Unity Cup</span> in place of Unlock, and the deck still
+        refuses a later era.</p>
+      <div class="callout"><b>The one-time return</b>The owner holds 6 cards from eras 2–5. A Library banner returns them
+        for 6 Card Tickets (T161's <code>return-later-cards</code>), the only exception to "unlocking is final". None is in a deck or
+        holds a bond track.</div>
+    </div>
+  </section>
+
+  <section id="open">
+    <h2>Open points, with the defaults</h2>
+    <div class="panel">
+      <ol class="op-list">
+        <li><b>Qualifying: A in one distance, B or better in the other.</b><span>A in both leaves 90 Umas with no group.</span></li>
+        <li><b>One URA Finale career per Uma, in the group you pick.</b><span>Her second group comes with "a second career in a scenario".</span></li>
+        <li><b>10 of 13 plays before her first race.</b><span>12 of 13 starts her at 92%, but Classic and Senior then never move.</span></li>
+        <li><b>Stages pay no SP; racing does.</b><span>The SP target becomes 85–105% of the scenario's cap.</span></li>
+        <li><b>Card Tickets by crown, not by objective.</b><span>3–6 a career instead of 15–16; the Finals' tickets stay.</span></li>
+        <li><b>Crowns by group, not by the real horse's sex.</b><span>The original lets any trainee enter the Oka Sho.</span></li>
+        <li><b>Restart the career in progress under v2.</b><span>Its bond tracks, tickets and unlocks stay.</span></li>
+        <li><b>You pick the URA Finals' distance at the Finale.</b><span>Preselected to her better aptitude, ties to the longer.</span></li>
+      </ol>
+    </div>
+  </section>
+</main>
+<script>
+(() => {
+  const svg = document.getElementById('curve'); const tip = document.getElementById('tip'); const xh = document.getElementById('xh');
+  if (!svg || !tip || !xh) return;
+  const seasons = ["Junior Spring","Junior Summer","Junior Autumn","Junior Winter","Classic Spring","Classic Summer","Classic Autumn","Classic Winter","Senior Spring","Senior Summer","Senior Autumn","Senior Winter","Finale"]; const her = [203,303,408,445,445,482,482,482,482,520,520,520,559]; const today = [164,200,246,277,300,347,379,415,424,481,503,548,559]; const field = [null,null,null,369,369,400,400,400,400,432,432,432,464]; const xs = [46.0,100.7,155.3,210.0,264.7,319.3,374.0,428.7,483.3,538.0,592.7,647.3,702.0];
+  const panel = svg.closest('.panel');
+  const show = (i) => {
+    xh.setAttribute('x1', xs[i]); xh.setAttribute('x2', xs[i]); xh.setAttribute('visibility', 'visible');
+    const row = (label, v) => v === null ? '' : `<div><span>${label}</span><span class="v">${v}</span></div>`;
+    tip.innerHTML = `<b>${seasons[i]}</b>${row('Her stat, v2', her[i])}${row('G1 field, v2', field[i])}${row('Today', today[i])}`;
+    tip.style.display = 'block';
+    const box = svg.getBoundingClientRect(); const pbox = panel.getBoundingClientRect();
+    const scale = box.width / svg.viewBox.baseVal.width;
+    let left = box.left - pbox.left + xs[i] * scale + 12;
+    if (left + tip.offsetWidth > pbox.width - 8) left = box.left - pbox.left + xs[i] * scale - tip.offsetWidth - 12;
+    tip.style.left = `${Math.max(8, left)}px`; tip.style.top = `${box.top - pbox.top + 24}px`;
+  };
+  const hide = () => { tip.style.display = 'none'; xh.setAttribute('visibility', 'hidden'); };
+  svg.querySelectorAll('.hit').forEach((rect) => {
+    const i = Number(rect.dataset.i);
+    rect.addEventListener('mouseenter', () => show(i)); rect.addEventListener('focus', () => show(i));
+    rect.addEventListener('touchstart', () => show(i), { passive: true });
+    rect.addEventListener('mouseleave', hide); rect.addEventListener('blur', hide);
+  });
+})();
+</script>
+</body>
+</html>
