@@ -1,13 +1,14 @@
 # 08 · Training Yard
 
-> **Status: as released (M036, D388; T155, D384).** The rules, bots and view are T155's; the career screens (T158)
-> open it for a season without objectives, and the Hub's Training Yard place opens it as practice. The design is
+> **Status: as released (M036, D388; T155, D384; T160, D391).** The rules, bots and view are T155's; the career
+> screens (T158) offer it in every season as **Another game**, under Furlong Hand, paying the same bundle (D391), and
+> the Hub's Training Yard place opens it as practice. The design is
 > M036's "Training Yard" and [04](../research/drawing-board/04-mini-game-evaluation.md) §1.2. The framework it runs on
 > is [07](07-stages.md).
 
 **Merge.** A Triple Town–like yard of Uma face tiles: set each piece down, and three touching pieces of one colour and
-frame merge one frame up. It pays the **drills** her tree spends ([05](05-the-build.md) §3), in the colours she merged,
-and a little SP.
+frame merge one frame up. It pays the one stage bundle ([12](12-pacing.md) §1), its **drills** split in the colours
+she merged.
 
 Code: `packages/domain/src/stages/yard/` (rules and bots) and `apps/web/src/stages/yard/` (the view).
 
@@ -57,7 +58,7 @@ The queue is rolled once from the play's seed: 64 pieces (60 placements, the fir
 | A Partner's weight in the queue | 25 × (100 + its Specialty Priority), on the colours' scale × 100 |
 | A Partner's lift | 1 tier; 2 at bond 80 or more |
 | Fatigue in the queue | 8%, none among the first 4 pieces |
-| Three Rests clearing | 2 SP, beyond the grade's pay |
+| Three Rests clearing | clears every Fatigue around them, and pays nothing |
 | The target (grade A) | 222 drills scored |
 | Rules version | 1 |
 <!-- /live -->
@@ -82,7 +83,8 @@ Each of her six deck cards comes into the queue as a **Partner**, drawn with the
   piece (the first in reading order on a tie), to the first empty cell that is closer: north, west, east, then south.
   Where no closer cell is empty it stays.
 - **Boxed in** (no empty cell beside it), a Fatigue becomes **Rest**.
-- **Three touching Rests clear,** with every Fatigue in the eight cells around them, and pay 2 SP.
+- **Three touching Rests clear,** with every Fatigue in the eight cells around them. A clear pays nothing (D391):
+  it frees the yard and keeps the No Fatigue task in reach.
 
 ## 6. Score, tasks, grade and pay
 
@@ -92,9 +94,9 @@ Each of her six deck cards comes into the queue as a **Partner**, drawn with the
   1. gold (or better) made in two colours;
   2. no Fatigue left at the end;
   3. every Partner set down joined a merge (at least one set down).
-- **The pay** is Training Yard's at A, 200 drills and 30 SP ([12](12-pacing.md) §1), × the grade's multiplier. The
+- **The pay** is the one bundle every game pays at A ([12](12-pacing.md) §1, D391) × the grade's multiplier. The
   drills split across the colours **in proportion to the drills scored in each**, so a yard of Stamina pays Stamina
-  drills. Rests' SP comes on top. Practice pays nothing.
+  drills. Nothing comes on top. Practice pays nothing.
 
 ## 7. The bots and the bands
 
@@ -104,12 +106,12 @@ Each of her six deck cards comes into the queue as a **Partner**, drawn with the
 - **Expert:** one ply ahead with the next piece and the hold: each placement of the hand, or of the next piece after a
   hold, worth twice what it pays now plus what the following piece can then pay.
 
-`pnpm sim:stages`, 500 seeds a bot (D384):
+`pnpm sim:stages`, 500 seeds a bot (D384; re-run at D391, once a Rest's SP no longer counted for the bots):
 
 | Content | Novice median | Competent median | Expert S | A play |
 |---|---|---|---|---|
-| Private pack | 0.644 (C) | 1.032 (A) | 53.6% | 58 moves, 3.9 minutes |
-| Invented content | 0.658 (C) | 1.045 (A) | 61.4% | 58 moves, 3.9 minutes |
+| Private pack | 0.644 (C) | 1.016 (A) | 51.2% | 57 moves, 3.8 minutes |
+| Invented content | 0.658 (C) | 1.032 (A) | 56.0% | 57 moves, 3.8 minutes |
 
 No bot completes all three tasks: the S by tasks is for a player who keeps Partners for merges.
 

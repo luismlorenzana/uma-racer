@@ -30,14 +30,15 @@ export function rivalTrainedStat(T: number): number {
 }
 
 /**
- * How strong a career's fields are at each point of its calendar, as a share of the scenario's trained stat (D383):
- * seasons 0–11, then the Finale at 12. Measured by `sim:careers` as the typical career's average stat when it races in
- * that season, over its average at the Finale. Junior Spring is set lower than measured (0.294): she races there before
- * any Training Yard, on her base stats, and the fields' stamina-first presets outlast her. A field outside a career
+ * How strong a career's fields are at each point of its calendar, as a share of the scenario's trained stat (D383,
+ * re-measured at D391): seasons 0–11, then the Finale at 12. Measured by `sim:careers` as the typical career's average
+ * stat when it races in that season, over its average at the Finale; D391's one bundle, paid every season, spreads her
+ * growth more evenly than the Training Yard seasons did. Junior Spring is set lower than measured (0.286): she races
+ * there after one play, on her base stats, and the fields' stamina-first presets outlast her. A field outside a career
  * (no season) is a finished career's: 1.
  */
 export const RIVAL_SEASON_SHARE: readonly number[] = Object.freeze([
-  0.15, 0.357, 0.44, 0.496, 0.536, 0.621, 0.678, 0.743, 0.758, 0.86, 0.899, 0.981, 1,
+  0.15, 0.33, 0.392, 0.439, 0.499, 0.548, 0.613, 0.668, 0.722, 0.827, 0.89, 0.922, 1,
 ])
 
 /** The share of the trained stat a field races at in this season of a career; 1 outside one. */

@@ -1,14 +1,16 @@
 # 09 · Furlong Hand
 
-> **Status: as released (M036, D388; T156, D385).** The rules, bots and view are T156's; the career screens (T158) open
-> it for a season with an objective and for the Finale, and the Hub's Furlong Hand place opens it as practice. The
+> **Status: as released (M036, D388; T156, D385; T160, D391).** The rules, bots and view are T156's. It's the career's
+> **main game** (D391): the career screens (T158) open it as the Play step in every season and at the Finale, and the
+> Hub's Furlong Hand place opens it as practice. The
 > design is M036's "Furlong Hand" and [04](../research/drawing-board/04-mini-game-evaluation.md) §2.2. The framework it
 > runs on is [07](07-stages.md).
 > **Our rules are original:** none of Pocket Card Jockey's rules, names or art.
 
 **Race.** A card race on her next objective's real course: chain cards by colour or one step up, run them for ground
-or bank them for Drive, end each leg in her running style's band, and win the spurt against real Umas. It pays
-**Bond** and **SP**, and it never changes the real race.
+or bank them for Drive, end each leg in her running style's band, and win the spurt against real Umas. It pays the one
+stage bundle every game pays ([12](12-pacing.md) §1), its **drills** split by the colours she ran, and it never
+changes the real race.
 
 Code: `packages/domain/src/stages/furlong/` (setup, rules and bots) and `apps/web/src/stages/furlong/` (the view).
 
@@ -16,7 +18,7 @@ Code: `packages/domain/src/stages/furlong/` (setup, rules and bots) and `apps/we
 
 A play's config carries the race (`stages/config.ts`, `stages/furlong/setup.ts`), built alike on the device and the
 API from the career and the content:
-- **The race:** her season's first objective (the season's stage, [03](03-careers.md) §3), else her next objective
+- **The race:** her season's first objective (the season's Play, [03](03-careers.md) §3), else her next objective
   after this season, else the URA Finals' course (at the Finale, or once every objective is behind her). Practice
   outside a career runs the URA Finals' course for her best surface and distance on her base stats.
 - **The legs** come from the real layout (`course-layout.ts`): the race cut into equal stretches, **Sprint 3, Mile 4,
@@ -106,7 +108,6 @@ decides.
 | Specialty Priority (19) | The chance, in percent, its Partner is dealt into the first spread |
 | Friendship (bond 80) | Its Partner is a **rainbow**: played, it lights the next two cards of its chain, which yield double when run (outside the spurt's Drive); a flip puts it out; a rainbow lights once a spread |
 | Hint Frequency (18) | A front card of the next spread shown at the line choice per 60 of the deck's, one more at Wit +1 |
-| SP Bonus (30) | SP the first time its Partner is played, on top of the grade's pay |
 | Race Bonus (15) | +1 Drive at the spurt per 10 of the deck's |
 | Initial stats (9–13) | +1 starting Breath per 40 of the deck's, at most 2 |
 | Unique effect | One ability (§7) |
@@ -131,7 +132,9 @@ decides.
 Each Partner's card maps its unique effect to one ability: the first term of the unique that maps, a plain effect by
 its id, a conditional by the effect it boosts (101 and 106 the effect in `params[0]`, 102 Training Effectiveness,
 109–117 the effect in `value`, 121 Initial Friendship), except the deck make-up conditionals (103, 105, 120), which
-are team play. A card with no unique has none.
+are team play. A card with no unique has none. A stage pays no SP of its own (D391), so a unique that boosts Skill
+Point Bonus (30) or Initial Skill Points (32), once Study's (+2 SP the first time), scouts as the hint effects do. Scout
+only shows cards, so every play replays as it did.
 
 <!-- live:furlong-abilities -->
 | Ability | What it does | From a unique that boosts |
@@ -141,9 +144,8 @@ are team play. A card with no unique has none.
 | Long stride | run, +2 points | effect 3, 4, 5, 6, 7, 41 |
 | Fresh legs | +2 Breath at the start | effect 9, 10, 11, 12, 13 |
 | Kick | played, +2 Drive | effect 15, 16 |
-| Scout | played, shows the next spread's front cards | effect 17, 18 |
+| Scout | played, shows the next spread's front cards | effect 17, 18, 30, 32 |
 | Quick start | dealt into the first spread's front row | effect 19 |
-| Study | played the first time, +2 SP | effect 30, 32 |
 | Team play | wild: plays on any lead, and any card follows it | effect 14 (and the deck make-up conditionals 103, 105, 120) |
 | Rhythm | its chain counts 2 more toward the chain's Drive | effect 8 |
 | Inside line | played, opens a blocked column | effect 26, 27 |
@@ -163,8 +165,13 @@ field runs its spurt (its pace, strength and form, its shown move twice over, gr
   length clear, under 1.2), 2nd–3rd B, 4th–5th C, 6th and on D ([07](07-stages.md) §2).
 - **Four bonus tasks** (all four with a win: S): won **2 lengths clear**, **two clean spreads**, **every Partner
   played**, **every leg in band**. The packet's "a win by 2 lengths with all three tasks" is these four together.
-- **The pay** is Furlong Hand's at A, **25 Bond and 20 SP** ([12](12-pacing.md) §1), × the grade's multiplier, and the
-  Partners' SP Bonus on top. Practice pays nothing.
+- **The pay** is the one bundle every game pays at A ([12](12-pacing.md) §1, D391) × the grade's multiplier, and
+  nothing on top: the deck's Skill Point Bonus pays through the tree's sessions ([05](05-the-build.md) §4), as in the
+  original. Practice pays nothing.
+- **The drills split by the ground she ran in each colour** (`ran`, the report's weights): each run card's ground
+  counts for its colour, a Skill card's for its own; **a wild card's (a Friend or Group stride or Partner, or a
+  team-play Partner) for the season's focus**; a banked card's for nothing. The colours she raced with are the stats she
+  trained. A play that ran nothing puts every drill on the focus.
 
 <!-- live:furlong-grades -->
 | Finish | p | Grade |
@@ -182,13 +189,13 @@ field runs its spurt (its pace, strength and form, its shown move twice over, gr
 <!-- /live -->
 
 <!-- live:furlong-pay -->
-| Grade | Bond | SP |
-|---|---|---|
-| S | 30 | 24, and each Partner's SP Bonus the first time it plays |
-| A | 25 | 20, and each Partner's SP Bonus the first time it plays |
-| B | 20 | 16, and each Partner's SP Bonus the first time it plays |
-| C | 15 | 12, and each Partner's SP Bonus the first time it plays |
-| D | 6 | 5, and each Partner's SP Bonus the first time it plays |
+| Grade | Drills | Bond | SP |
+|---|---|---|---|
+| S | 132 | 14 | 30 |
+| A | 110 | 12 | 25 |
+| B | 88 | 10 | 20 |
+| C | 66 | 7 | 15 |
+| D | 28 | 3 | 6 |
 <!-- /live -->
 
 ## 10. The bots and the bands
@@ -206,7 +213,7 @@ on the typical career's stats in her own shape, with the median deck and 0–3 c
 
 | Content | Novice median | Competent median | Expert S | A play |
 |---|---|---|---|---|
-| Private pack | 0.875 (B) | 1.010 (A), 70% wins | 52.0% | 98 moves, 4.9 minutes |
+| Private pack | 0.875 (B) | 1.010 (A), 71% wins | 52.4% | 98 moves, 4.9 minutes |
 | Invented content | 0.750 (B) | 1.000 (A), 56% wins | 47.2% | 92 moves, 4.6 minutes |
 
 By distance the competent bot's play runs 3.4–3.5 minutes on a sprint, 4.2 on a mile, 5.0 on a medium and 5.8 on a

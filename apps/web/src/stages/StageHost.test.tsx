@@ -2,7 +2,7 @@
 // The stage host at 390 × 844 (T155, T156, D384, D385) over the in-memory port: the rule card, the Yard's view loaded
 // lazily, the journal kept on every move and when the page hides, a closed play resumed by replay (and one whose setup
 // changed started again), a career play settled through `settle-stage` on its last move into her wallet, practice
-// graded on the device, paying nothing, and Furlong Hand's race settled the same way, paying Bond and SP.
+// graded on the device, paying nothing, and Furlong Hand's race settled the same way, paying the same bundle (D391).
 import { STAGE_PAY_AT_A } from '@racer/domain/career'
 import { FURLONG_MOVE } from '@racer/domain/stages'
 import { act, cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
@@ -51,7 +51,7 @@ describe('the stage host', () => {
     const game = careerGame()
     const writes = vi.spyOn(game.journal, 'write')
     renderInApp(game, <StageHost kind="training-yard" careerId={CAREER} mode="career" onExit={() => {}} />)
-    expect(await screen.findByText(/A play pays 200 drills and 30 SP at grade A/)).toBeTruthy()
+    expect(await screen.findByText(`A play pays ${STAGE_PAY_AT_A.drills} drills, ${STAGE_PAY_AT_A.bond} Bond and ${STAGE_PAY_AT_A.sp} SP at grade A, more at S: every game the same.`)).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: 'Play' }))
     fireEvent.click(await firstEmptyCell())
     await waitFor(() => expect(rowOf(game, CAREER_ROW)?.journal.inputs).toHaveLength(1))
@@ -95,7 +95,7 @@ describe('the stage host', () => {
     const grade = result.textContent as 'S' | 'A' | 'B' | 'C' | 'D'
     const wallet = game.getSnapshot().state!.careers[CAREER]!.wallet
     const drills = Object.values(wallet.drills).reduce((a, b) => a + b, 0)
-    expect(drills).toBe(Math.round(STAGE_PAY_AT_A['training-yard'].drills * { D: 0.25, C: 0.6, B: 0.8, A: 1, S: 1.2 }[grade]))
+    expect(drills).toBe(Math.round(STAGE_PAY_AT_A.drills * { D: 0.25, C: 0.6, B: 0.8, A: 1, S: 1.2 }[grade]))
     const pay = screen.getByRole('list', { name: 'Pay' })
     expect(within(pay).getByText(`+${wallet.sp}`)).toBeTruthy()
     expect(rowOf(game, CAREER_ROW)).toBeUndefined()
@@ -131,7 +131,7 @@ describe('the stage host with Furlong Hand', () => {
     renderInApp(game, <StageHost kind="furlong-hand" careerId={FURLONG_CAREER} mode="career" onExit={() => {}} />)
     const card = await screen.findByText('Race')
     expect(card.closest('[data-racer="rule-card"]')?.textContent).toMatch(/tap to run it for ground, swipe it down to bank Drive/)
-    expect(screen.getByText(/A play pays 25 Bond and 20 SP at grade A/)).toBeTruthy()
+    expect(screen.getByText(`A play pays ${STAGE_PAY_AT_A.drills} drills, ${STAGE_PAY_AT_A.bond} Bond and ${STAGE_PAY_AT_A.sp} SP at grade A, more at S: every game the same.`)).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: 'Play' }))
     expect(await screen.findByRole('list', { name: 'The field, first to last' })).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: /^Middle: / }))
@@ -150,8 +150,9 @@ describe('the stage host with Furlong Hand', () => {
     expect(game.applied).toEqual(['settle-stage'])
     const grade = result.textContent as 'S' | 'A' | 'B' | 'C' | 'D'
     const wallet = game.getSnapshot().state!.careers[FURLONG_CAREER]!.wallet
-    expect(wallet.bond).toBe(Math.round(STAGE_PAY_AT_A['furlong-hand'].bond * { D: 0.25, C: 0.6, B: 0.8, A: 1, S: 1.2 }[grade]))
-    expect(Object.values(wallet.drills).every((n) => n === 0)).toBe(true)
+    const multiplier = { D: 0.25, C: 0.6, B: 0.8, A: 1, S: 1.2 }[grade]
+    expect(wallet.bond).toBe(Math.round(STAGE_PAY_AT_A.bond * multiplier))
+    expect(Object.values(wallet.drills).reduce((a, b) => a + b, 0)).toBe(Math.round(STAGE_PAY_AT_A.drills * multiplier))
     expect(screen.getByText(/^Finished \d(st|nd|rd|th)$/)).toBeTruthy()
     expect(within(screen.getByRole('list', { name: 'Bonus tasks' })).getAllByRole('listitem')).toHaveLength(4)
     expect(within(screen.getByRole('list', { name: 'Pay' })).getByText(`+${wallet.bond}`)).toBeTruthy()

@@ -225,7 +225,7 @@ export function StageHost({ kind, careerId, mode, onExit, onSettled }: StageHost
             <p className="text-[15px]">{entry.rule}</p>
             {mode === 'career' && (
               <p className="text-[13px] text-ink-soft">
-                A play pays {STAGE_PAY_AT_A[kind].drills > 0 ? `${STAGE_PAY_AT_A[kind].drills} drills and ` : ''}{STAGE_PAY_AT_A[kind].bond > 0 ? `${STAGE_PAY_AT_A[kind].bond} Bond and ` : ''}{STAGE_PAY_AT_A[kind].sp} SP at grade A, more at S.
+                A play pays {STAGE_PAY_AT_A.drills} drills, {STAGE_PAY_AT_A.bond} Bond and {STAGE_PAY_AT_A.sp} SP at grade A, more at S: every game the same.
               </p>
             )}
             {phase.note !== undefined && <p className="text-[13px] text-ink-soft" role="status">{phase.note}</p>}

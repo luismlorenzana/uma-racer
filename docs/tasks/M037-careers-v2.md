@@ -38,7 +38,7 @@ the owner can play between them.
 
 | Part | Packet | What | Save |
 |---|---|---|---|
-| 1 | [T160](T160-swappable-stages.md) | One pay bundle; Furlong Hand's drill split; `CAREER_GAMES` (Furlong Hand first, Training Yard second) | No change |
+| 1 | T160, **built (D391)** | One pay bundle (110 drills, 12 Bond, 25 SP at A); Furlong Hand's drill split; `CAREER_GAMES` (Furlong Hand first, Training Yard second); the rivals' season shares re-measured | No change |
 | 2 | T161, **built (D392)** | The Library unlocks only open eras; `return-later-cards` gives back the 6 later-era cards' tickets | One new operation; a card row may carry `returnedAt` |
 | 3 | [T164](T164-race-conditions.md) | Ground, weather and season in the race engine: the ground's stat and HP effects, season, weather and ground skills buyable, and the course stat check if the sources confirm it | No change; the engine version goes up |
 | 4 | [T162](T162-distance-groups-and-calendars.md) | Distance groups, the four calendars, the training block, crowns paying Card Tickets, the new rival curve, the URA Finals as an announced course | **Protocol 3 → 4**; `restart-careers` restarts the career in progress (tickets, unlocks and bonds kept) |

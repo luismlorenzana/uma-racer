@@ -144,7 +144,8 @@ describe('a career\'s config', () => {
     expect(config).toMatchObject({ kind: 'furlong-hand', course: first.raceId, seed: 9 })
     expect(config.furlong!.race.id).toBe(first.raceId)
     expect(config.furlong!.rivals).toHaveLength(FURLONG_RIVALS)
-    expect(config).not.toHaveProperty('seasonFocus')
+    // Its wild cards count for the season's focus in the drill split (D391).
+    expect(config.seasonFocus).toBe(['speed', 'stamina', 'power', 'guts', 'wit'][first.season % 5])
   })
 
   it('runs her next objective in a season without one, and the URA Finals\' course at the Finale', () => {

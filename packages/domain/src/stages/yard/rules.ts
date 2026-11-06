@@ -2,9 +2,10 @@
 // on a 6×6 yard, 60 placements. Pieces are a stat colour and a tier (plain, bronze, silver, gold, rainbow); three or
 // more touching pieces of one colour and tier merge one tier up on the cell just placed, and cascades resolve. Three
 // rainbows clear for a Masterclass. Her deck's cards come as Partners (wild for Friend and Group) that lift a merge,
-// and Fatigue drifts toward her biggest piece until it is boxed in as Rest. Every piece set down pays its Sweat, and
-// every merge pays drills of its colour by the tier it makes: the score, over the target, is `p`. Integers only, the
-// queue rolled once at `init`: pure.
+// and Fatigue drifts toward her biggest piece until it is boxed in as Rest, which clears it (and pays nothing, D391).
+// Every piece set down pays its Sweat, and every merge pays drills of its colour by the tier it makes: the score, over
+// the target, is `p`, and the colours scored are how the career's drills split. Integers only, the queue rolled once at
+// `init`: pure.
 import { STATS, type StatKey } from '../../types'
 import type { StageConfig, StageInput, StageReport } from '../contract'
 import { stageRng } from '../rng'
@@ -29,8 +30,6 @@ export const GOLD = 3
 export const YARD_LADDER: readonly number[] = Object.freeze([3, 4, 12, 36, 108])
 /** Three rainbows clearing pay this, in their colour. */
 export const MASTERCLASS_DRILLS = 324
-/** Three Rests clearing pay this much SP. */
-export const REST_SP = 2
 /** The score of grade A: the competent bot's median (`sim:stages`). */
 export const YARD_TARGET = 222
 /** Pieces in the queue: 60 placements, the first in hand, one held, and two shown ahead. */
@@ -117,7 +116,7 @@ export type YardEvent =
   | { readonly kind: 'masterclass'; readonly colour: number; readonly cells: readonly number[]; readonly drills: number }
   | { readonly kind: 'move'; readonly from: number; readonly to: number }
   | { readonly kind: 'rest'; readonly cell: number }
-  | { readonly kind: 'rest-clear'; readonly cells: readonly number[]; readonly fatigue: readonly number[]; readonly sp: number }
+  | { readonly kind: 'rest-clear'; readonly cells: readonly number[]; readonly fatigue: readonly number[] }
 
 export interface YardState {
   readonly board: readonly number[]
@@ -136,8 +135,6 @@ export interface YardState {
   readonly score: number
   /** Drills scored by colour. */
   readonly drills: readonly number[]
-  /** SP from Rests. */
-  readonly sp: number
   /** Colours that made gold or better, as bits. */
   readonly golds: number
   readonly masterclasses: number
@@ -196,7 +193,7 @@ export function initYard(config: StageConfig): YardState {
   const queue = yardQueue(config)
   return {
     board: Array.from({ length: YARD_CELLS }, () => EMPTY),
-    queue, drawn: 1, hand: queue[0]!, hold: -1, held: false, placed: 0, moves: 0, score: 0, drills: [0, 0, 0, 0, 0], sp: 0, golds: 0,
+    queue, drawn: 1, hand: queue[0]!, hold: -1, held: false, placed: 0, moves: 0, score: 0, drills: [0, 0, 0, 0, 0], golds: 0,
     masterclasses: 0, partnersPlaced: 0, partnersMerged: 0, partners: yardPartners(config),
     focus: STATS.indexOf(config.seasonFocus ?? STATS[0]), weights: yardColourWeights(config), events: [],
   }
@@ -224,7 +221,6 @@ export function groupOf(board: readonly number[], cell: number): number[] {
 interface Tally {
   score: number
   drills: number[]
-  sp: number
   golds: number
   masterclasses: number
   readonly events: YardEvent[]
@@ -344,8 +340,7 @@ function fatiguePhase(board: number[], placed: number, tally: Tally): void {
         }
       }
     }
-    tally.sp += REST_SP
-    tally.events.push({ kind: 'rest-clear', cells: group, fatigue, sp: REST_SP })
+    tally.events.push({ kind: 'rest-clear', cells: group, fatigue })
   }
 }
 
@@ -371,7 +366,7 @@ function place(state: YardState, cell: number): YardState | null {
   if (state.board[cell] !== EMPTY) return null
   const board = [...state.board]
   const tally: Tally = {
-    score: state.score, drills: [...state.drills], sp: state.sp, golds: state.golds, masterclasses: state.masterclasses,
+    score: state.score, drills: [...state.drills], golds: state.golds, masterclasses: state.masterclasses,
     events: [{ kind: 'place', cell, piece: state.hand }],
   }
   const piece = state.hand
@@ -403,7 +398,7 @@ function place(state: YardState, cell: number): YardState | null {
     held: false,
     placed: state.placed + 1,
     moves: state.moves + 1,
-    score: tally.score, drills: tally.drills, sp: tally.sp, golds: tally.golds, masterclasses: tally.masterclasses,
+    score: tally.score, drills: tally.drills, golds: tally.golds, masterclasses: tally.masterclasses,
     partnersPlaced, partnersMerged,
     events: tally.events,
   }
@@ -440,7 +435,6 @@ export function reportYard(state: YardState): StageReport {
     tasks: yardTasks(state),
     score: state.score,
     drills: Object.fromEntries(STATS.map((stat, colour) => [stat, split[colour]!])) as Record<StatKey, number>,
-    bonusSp: state.sp,
   }
 }
 

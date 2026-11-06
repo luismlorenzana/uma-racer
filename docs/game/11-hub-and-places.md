@@ -289,6 +289,8 @@ a duration, and a race's playback keeps its own time.
 │ [J J J J][C C C C][S S S S][Finale]                    │  the calendar strip
 │ ┌─ Classic Spring ─────────────────── Season 5 of 12 ┐ │
 │ │ 1  Play     Furlong Hand · Sim Cup      Played · A │ │  the season card
+│ │    Another game: Training Yard · Speed focus       │ │  the other game, paying the same
+│ │    Each pays 110 drills, 12 Bond and 25 SP at A    │ │
 │ │ 2  Upgrade  3 to buy                         (3) > │ │
 │ │ 3  Race     0 / 1 won                              │ │
 │ │       G1  Sim Cup · 1,600 m · Sim Park      [Race] │ │
@@ -309,11 +311,17 @@ a duration, and a race's playback keeps its own time.
 - **The season card:** the season's name and number, then three steps, each a 44 pt row with its number (a check once
   done), its icon, a line and what's at its end. The step lit as next is in the accent wash: Play until played, then
   Race while an objective is open; in a season without one, Upgrade while something is affordable; then Next season.
-  1. **Play** opens the season's game ([03](03-careers.md) §3): Furlong Hand as the prep heat on the first objective's
-     course ("Furlong Hand · Sim Cup"), else Training Yard on the season's focus ("Training Yard · Stamina focus", with
-     its stat icon). Its end reads **Resume** while a play is open on this phone (its journal waits), **Played · A**
-     once a play of the season's game has settled this season (the best grade; this phone keeps it,
-     `uma-racer:g3:plays`), else a play icon.
+  1. **Play** offers the season's games ([03](03-careers.md) §3, `CAREER_GAMES`, D391), one component
+     (`SeasonGames`) a later card can move whole:
+     - the main game, **Furlong Hand**, as the step itself, on the course of her season's first objective, else her
+       next one's, else the URA Finals' ("Furlong Hand · Sim Cup");
+     - under it, **Another game: Training Yard** on the season's focus ("Another game: Training Yard · Stamina focus",
+       with its stat icon), a smaller 44 pt row;
+     - the line both share, "Each pays 110 drills, 12 Bond and 25 SP at grade A" (the bundle, [12](12-pacing.md) §1).
+
+     Each game's end reads **Resume** while a play is open on this phone (its journal waits), **Played · A** once a
+     play of it has settled this season (the best grade; this phone keeps it, `uma-racer:g3:plays`), else the step's
+     play icon. Either game played checks the step, since they pay the same.
   2. **Upgrade** opens §8.3 on the first tab with something to buy. Its badge counts what she can buy now: each branch
      whose next pip she can afford (and one when a Camp is), each empty deck slot her owned cards can fill, each deck
      card whose next bond stop the wallet's Bond reaches, and each skill she can buy.
@@ -322,7 +330,8 @@ a duration, and a race's playback keeps its own time.
   - **Next season** (`next-season`, naming the season it leaves) is enabled once every objective in the season is won,
     and primary once the season's steps are done; under it, "Win this season's races to move on." In Senior Winter it
     reads **On to the URA Finals**.
-- **At the Finale** the card is the URA Finals': Play (the prep heat on the Finals' course), Upgrade, and the three
+- **At the Finale** the card is the URA Finals': Play (the prep heat on the Finals' course, Furlong Hand alone, "Pays
+  110 drills, 12 Bond and 25 SP at grade A"), Upgrade, and the three
   rounds, each with its field's grade (G2, G1, G1+): the won rounds checked, the open one with **Race**, the later ones
   locked.
 - **Once the final is won** the card is the completion: the trophy, "URA Finale complete", her racing build as the

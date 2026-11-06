@@ -1,10 +1,10 @@
-// `sim:careers`' bot and pacing on the invented content (D383). The races need the engine, which the domain never
+// `sim:careers`' bot and pacing on the invented content (D383, D391). The races need the engine, which the domain never
 // imports, so they run in `pnpm sim:careers -- --synthetic` (CI's test:ci); here the careers play without them, and
 // a stand-in engine checks the sim counts every first try.
 import { describe, expect, it } from 'vitest'
 import type { RaceEngine } from '../race-attempt'
 import { syntheticCareerContent } from './synthetic'
-import { careerFailures, goldPairPrice, INVENTED_TARGETS, simulateCareers, yardDrills } from './sim'
+import { careerFailures, goldPairPrice, INVENTED_TARGETS, mainGameDrills, simulateCareers } from './sim'
 
 const content = syntheticCareerContent()
 
@@ -17,7 +17,6 @@ describe('sim:careers', () => {
     expect(median.curve).toHaveLength(13)
     expect(median.curve.every((value, season) => season === 0 || value >= median.curve[season - 1]!)).toBe(true)
     expect(median.replayTree).toBeGreaterThan(median.tree)
-    expect(median.yardSeasons).toBeGreaterThan(5)
   })
 
   it('races each objective and URA Finals round the given number of first tries', () => {
@@ -32,11 +31,11 @@ describe('sim:careers', () => {
     expect(median.rates.g1.races + median.rates.g2.races + median.rates.g3.races).toBe(2 * 2 * 6)
   })
 
-  it('splits a Yard play\'s drills by growth and focus, and prices a gold with its white', () => {
-    const drills = yardDrills(200, { speed: 0.2, stamina: 0, power: 0.1, guts: 0, wit: 0 }, 'wit')
+  it('splits a play\'s drills as Furlong Hand\'s cards run, a Friend or Group card\'s in the focus, and prices a gold with its white', () => {
+    const drills = mainGameDrills(200, [{ type: 'speed' }, { type: 'speed' }, { type: 'power' }, { type: 'friend' }], 'wit')
     expect(Object.values(drills).reduce((a, b) => a + b, 0)).toBe(200)
-    expect(drills.wit).toBeGreaterThan(drills.speed)
-    expect(drills.speed).toBeGreaterThan(drills.stamina)
+    // Weights 3 + 4 a card: Speed 11, Stamina 3, Power 7, Guts 3, Wit 7 (the Friend card's), of 31.
+    expect(drills).toEqual({ speed: 71, stamina: 20, power: 45, guts: 19, wit: 45 })
     expect(goldPairPrice(content.skills)).toBe(Math.round(180 * 0.9) + Math.round(150 * 0.9))
   })
 

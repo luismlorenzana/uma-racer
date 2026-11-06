@@ -2,8 +2,8 @@
 // replayed from its seed through its game's rules, move by move; a finished replay is reported, graded and paid. The
 // device, the API, the sims and the tests all run this one function. Pure.
 import { stagePay } from '../career/pay'
-import { STATS, zeroStats, type Stats } from '../types'
-import type { Journal, StageKind, StageReport, StageRules } from './contract'
+import { STATS, zeroStats, type StatKey, type Stats } from '../types'
+import type { Journal, StageReport, StageRules } from './contract'
 import { grade, payMultiplier, type StageGrade } from './grade'
 
 /** Why a journal can't be replayed or settled. `move` is the index of the move that failed. */
@@ -68,15 +68,16 @@ export function splitDrills(total: number, weights: Stats): Stats {
   return out
 }
 
-/** A grade's pay: the game's pay at A × the grade's multiplier, drills split by the report, plus its bonus SP. */
-export function stageAward(kind: StageKind, of: StageGrade, report: StageReport, practice: boolean): StageAward {
+/**
+ * A grade's pay: the one bundle at A × the grade's multiplier (D391), whatever the game, the drills split by the
+ * report's weights. A play whose weights are all 0 puts every drill on the season's focus (Speed outside a season).
+ */
+export function stageAward(of: StageGrade, report: StageReport, practice: boolean, focus: StatKey = STATS[0]): StageAward {
   if (practice) return NO_AWARD
-  const pay = stagePay(kind, payMultiplier(of))
-  return {
-    drills: report.drills === undefined ? zeroStats() : splitDrills(pay.drills, report.drills),
-    bond: pay.bond,
-    sp: pay.sp + Math.max(0, Math.round(report.bonusSp ?? 0)),
-  }
+  const pay = stagePay(payMultiplier(of))
+  const weighed = STATS.some((stat) => Math.round(report.drills[stat]) > 0)
+  const weights = weighed ? report.drills : { ...zeroStats(), [focus]: 1 }
+  return { drills: splitDrills(pay.drills, weights), bond: pay.bond, sp: pay.sp }
 }
 
 /** Replays a finished journal and settles it: its grade, its report and its pay (nothing in practice). */
@@ -86,5 +87,5 @@ export function settle<S>(journal: Journal, rules: StageRules<S>): Settled | Rep
   if (!rules.done(state)) return { failed: 'unfinished', move: journal.inputs.length }
   const report = rules.report(state)
   const of = grade(report.p, report.tasks)
-  return { grade: of, report, pay: stageAward(journal.config.kind, of, report, journal.config.practice) }
+  return { grade: of, report, pay: stageAward(of, report, journal.config.practice, journal.config.seasonFocus) }
 }

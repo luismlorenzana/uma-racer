@@ -1,5 +1,6 @@
-// `settle-stage` through `commitOperation` (D384, D385): a played Yard settles into the career's wallet, split by the
-// colours it merged, and a played Furlong Hand pays Bond and SP; practice is graded and pays nothing; a broken,
+// `settle-stage` through `commitOperation` (D384, D385, D391): a played Yard settles into the career's wallet, split by
+// the colours it merged, and a played Furlong Hand pays the same bundle split by the colours it ran, either game in any
+// season; practice is graded and pays nothing; a broken,
 // unfinished or foreign journal is refused in plain words; the device and the server, running the same function,
 // settle alike; and a full play's input is far under the bound.
 import { describe, expect, it } from 'vitest'
@@ -13,7 +14,7 @@ import { careerId, parseCareerRecord, type CareerRecord } from '../save/records'
 import { isRefusal } from '../save/registry'
 import type { SaveState } from '../save/state'
 import { careerStageConfig } from './config'
-import type { StageInput } from './contract'
+import type { AnyStageRules, StageInput } from './contract'
 import { grade } from './grade'
 import { parseSettleStageInput, type SettleStageReceipt } from './ops'
 import { FURLONG_RULES } from './furlong'
@@ -59,12 +60,13 @@ describe('settle-stage', () => {
     expect(wallet.drills).toEqual(receipt.pay.drills)
     expect(wallet.sp).toBe(receipt.pay.sp)
     const multiplier = { D: 0.25, C: 0.6, B: 0.8, A: 1, S: 1.2 }[receipt.grade]
-    expect(Object.values(wallet.drills).reduce((a, b) => a + b, 0)).toBe(Math.round(STAGE_PAY_AT_A['training-yard'].drills * multiplier))
+    expect(Object.values(wallet.drills).reduce((a, b) => a + b, 0)).toBe(Math.round(STAGE_PAY_AT_A.drills * multiplier))
+    expect(wallet).toMatchObject({ bond: Math.round(STAGE_PAY_AT_A.bond * multiplier), sp: Math.round(STAGE_PAY_AT_A.sp * multiplier) })
     expect(parseCareerRecord(commit.state.careers[ID])).toEqual(commit.state.careers[ID])
     expect([...commit.entities, ...commit.logs].map((row) => `${row.kind}/${row.id}`)).toEqual([`careers/${ID}`, `operations/${opId(2)}`])
   })
 
-  it('settles a Furlong Hand play on her season\'s objective: Bond and SP by the grade, and its Partners\' SP on top', () => {
+  it('settles a Furlong Hand play on her season\'s objective: the bundle by the grade, drills by the colours she ran', () => {
     const objective = career().careers[ID]!.objectives[0]!
     const state = career(objective.season)
     const config = careerStageConfig(state.careers[ID]!, state.bonds, CONTENT_ENV.content, 'furlong-hand', 52, false)
@@ -76,11 +78,29 @@ describe('settle-stage', () => {
     const receipt = commit.receipt as SettleStageReceipt
     const multiplier = { D: 0.25, C: 0.6, B: 0.8, A: 1, S: 1.2 }[receipt.grade]
     expect(receipt).toMatchObject({ kind: 'furlong-hand', seed: 52, season: objective.season })
-    expect(receipt.pay.bond).toBe(Math.round(STAGE_PAY_AT_A['furlong-hand'].bond * multiplier))
-    expect(receipt.pay.sp).toBeGreaterThanOrEqual(Math.round(STAGE_PAY_AT_A['furlong-hand'].sp * multiplier))
-    expect(Object.values(receipt.pay.drills).every((n) => n === 0)).toBe(true)
-    expect(commit.state.careers[ID]!.wallet).toMatchObject({ bond: receipt.pay.bond, sp: receipt.pay.sp })
+    expect(receipt.pay).toMatchObject({ bond: Math.round(STAGE_PAY_AT_A.bond * multiplier), sp: Math.round(STAGE_PAY_AT_A.sp * multiplier) })
+    expect(Object.values(receipt.pay.drills).reduce((a, b) => a + b, 0)).toBe(Math.round(STAGE_PAY_AT_A.drills * multiplier))
+    expect(Object.values(receipt.pay.drills).filter((n) => n > 0).length).toBeGreaterThanOrEqual(3)
+    expect(commit.state.careers[ID]!.wallet).toEqual({ drills: receipt.pay.drills, bond: receipt.pay.bond, sp: receipt.pay.sp })
     expect(jsonBytes(input)).toBeLessThan(SAVE_LIMITS.rowBytes)
+  })
+
+  it('pays either game in any season, the same bundle at the same grade (D391)', () => {
+    const objective = career().careers[ID]!.objectives[0]!
+    for (const season of [0, objective.season, objective.season + 1]) {
+      const state = career(season)
+      for (const [kind, rules] of [['training-yard', YARD_RULES as AnyStageRules], ['furlong-hand', FURLONG_RULES as AnyStageRules]] as const) {
+        const config = careerStageConfig(state.careers[ID]!, state.bonds, CONTENT_ENV.content, kind, 61, false)
+        if (isRefusal(config)) throw new Error(config.reason)
+        expect(config.seasonFocus).toBe(['speed', 'stamina', 'power', 'guts', 'wit'][season % 5])
+        const inputs = playBot(rules, config, 'competent', 61).inputs
+        const commit = applied(commitOperation(state, op(2, 'settle-stage', { careerId: ID, kind, seed: 61, version: rules.version, inputs, practice: false }), CONTENT_ENV))
+        const { pay, grade: of } = commit.receipt as SettleStageReceipt
+        const multiplier = { D: 0.25, C: 0.6, B: 0.8, A: 1, S: 1.2 }[of]
+        expect({ bond: pay.bond, sp: pay.sp }).toEqual({ bond: Math.round(STAGE_PAY_AT_A.bond * multiplier), sp: Math.round(STAGE_PAY_AT_A.sp * multiplier) })
+        expect(Object.values(pay.drills).reduce((a, b) => a + b, 0)).toBe(Math.round(STAGE_PAY_AT_A.drills * multiplier))
+      }
+    }
   })
 
   it('pays a replay like a first play, and runs the same on the device and the server', () => {

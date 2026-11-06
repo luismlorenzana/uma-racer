@@ -3,7 +3,7 @@
 import { describe, expect, it } from 'vitest'
 import { drawBoard, showBoard, yardConfig, yardWith, DECK_IDS } from '../../__fixtures__/stages'
 import {
-  cellAt, FATIGUE_FREE, FATIGUE_PIECE, initYard, MASTERCLASS_DRILLS, PARTNER_BASE, REST_SP, reportYard, stepYard, YARD_LADDER,
+  cellAt, FATIGUE_FREE, FATIGUE_PIECE, initYard, MASTERCLASS_DRILLS, PARTNER_BASE, reportYard, stepYard, YARD_LADDER,
   YARD_PLACEMENTS, YARD_QUEUE, YARD_TARGET, yardDone, yardQueue, yardTasks, type YardState,
 } from './rules'
 
@@ -112,12 +112,12 @@ describe('Fatigue and Rest', () => {
     expect(after.events).toContainEqual({ kind: 'rest', cell: 0 })
   })
 
-  it('clears three touching Rests and every Fatigue around them, for a little SP', () => {
+  it('clears three touching Rests and every Fatigue around them, and pays nothing for it (D391)', () => {
     const start = yardWith(rows('R R F t0 . .', 'g0 p0 w0 F . .'), WIT)
     const after = place(start, 5, 5)
     expect(showBoard(after.board).slice(0, 2)).toEqual(['. . . t0 . .', 'g0 p0 w0 . . .'])
-    expect(after.sp).toBe(REST_SP)
-    expect(after.events.at(-1)).toEqual({ kind: 'rest-clear', cells: [0, 1, 2], fatigue: [cellAt(3, 1)], sp: REST_SP })
+    expect(after).not.toHaveProperty('sp')
+    expect(after.events.at(-1)).toEqual({ kind: 'rest-clear', cells: [0, 1, 2], fatigue: [cellAt(3, 1)] })
   })
 })
 
@@ -168,7 +168,7 @@ describe('the tasks and the report', () => {
     const report = reportYard(after)
     expect(report.p).toBe(after.score / YARD_TARGET)
     expect(report.drills).toEqual({ speed: 0, stamina: 0, power: 0, guts: 0, wit: after.score })
-    expect(report.bonusSp).toBe(0)
+    expect(report).not.toHaveProperty('bonusSp')
     const fresh = reportYard(initYard(yardConfig({ focus: 'guts', growth: { speed: 0, stamina: 0, power: 0, guts: 0, wit: 0.2 } })))
     expect(fresh.drills).toEqual({ speed: 20000, stamina: 20000, power: 20000, guts: 30000, wit: 24000 })
   })

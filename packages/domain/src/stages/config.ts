@@ -1,9 +1,9 @@
 // A play's config (docs/game/07-stages.md §1, D384, D385): what the rules read, built alike on the device and the API
 // from the career and the content, so a journal's replay needs only its seed and inputs. Her growth rates as whole
 // percents, her deck in deck order with each card's real effects and unique, each card's bond (its track, or its
-// Initial Friendship Gauge), the season's focus stat for Training Yard, and for Furlong Hand the race it runs (her
-// season's objective, else her next one, else the URA Finals' course) with her racing build, her skills and the
-// rival field. Pure.
+// Initial Friendship Gauge), the season's focus stat (the Yard's tilt, and the colour Furlong Hand's wild cards count
+// for, D391), and for Furlong Hand the race it runs (her season's objective, else her next one, else the URA Finals'
+// course) with her racing build, her skills and the rival field. Either game builds in any season. Pure.
 import { readDeck } from '../build/derive'
 import { uniqueTerms } from '../build/effects'
 import { careerStats } from '../build/racing-build'
@@ -117,9 +117,9 @@ function furlongFor(content: StageContent, uma: UmaTemplate, at: FurlongRace, st
 }
 
 /**
- * A career's play of `kind` at its current season: her deck and bonds as they stand; for Training Yard the season's
- * focus, for Furlong Hand her race (`furlongRaceFor`), her racing stats and bought skills, and the rival field. Refuses
- * when her Uma isn't in the content, or Furlong Hand has no race.
+ * A career's play of `kind` at its current season, whichever game: her deck and bonds as they stand and the season's
+ * focus; for Furlong Hand also her race (`furlongRaceFor`), her racing stats and bought skills, and the rival field.
+ * Refuses when her Uma isn't in the content, or Furlong Hand has no race.
  */
 export function careerStageConfig(
   career: CareerRecord,
@@ -132,8 +132,8 @@ export function careerStageConfig(
   const uma = content.umas.get(career.umaId)
   if (uma === undefined) return refuse('unknown-uma', 'That Uma isn\'t in the game.')
   const posted = readDeck(career, { cards: content.cards, bonds }).posted
-  const parts = { kind, seed, T: career.T, uma, practice, deck: posted.map(({ card, bond }) => ({ card, bond })) }
-  if (kind === 'training-yard') return buildStageConfig({ ...parts, focus: seasonFocus(career.season) })
+  const parts = { kind, seed, T: career.T, uma, practice, deck: posted.map(({ card, bond }) => ({ card, bond })), focus: seasonFocus(career.season) }
+  if (kind === 'training-yard') return buildStageConfig(parts)
   if (!isStageSeed(seed)) throw new RangeError('A stage seed is an unsigned 32-bit integer')
   const at = furlongRaceFor(career, uma, content.races ?? [])
   if (at === null) return refuse('no-race', NO_RACE)
@@ -144,12 +144,12 @@ export function careerStageConfig(
 }
 
 /**
- * A practice play outside any career: her alone, no deck. Training Yard's focus is Speed; Furlong Hand runs the URA
- * Finals' course for her best surface and distance on her base stats, against that race's field as the first season's.
+ * A practice play outside any career: her alone, no deck, the focus Speed. Furlong Hand runs the URA Finals' course for
+ * her best surface and distance on her base stats, against that race's field as the first season's.
  */
 export function practiceStageConfig(uma: UmaTemplate, kind: StageKind, seed: number, content?: StageContent): StageConfig | Refusal {
-  const parts = { kind, seed, T: 1, uma, deck: [], practice: true }
-  if (kind === 'training-yard') return buildStageConfig({ ...parts, focus: STATS[0] })
+  const parts = { kind, seed, T: 1, uma, deck: [], practice: true, focus: STATS[0] }
+  if (kind === 'training-yard') return buildStageConfig(parts)
   if (!isStageSeed(seed)) throw new RangeError('A stage seed is an unsigned 32-bit integer')
   if (content === undefined) return refuse('no-race', NO_RACE)
   let race: RaceTemplate

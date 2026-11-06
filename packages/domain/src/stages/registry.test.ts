@@ -46,7 +46,7 @@ describe('configs', () => {
     expect(config.deck[0]!.effects).toEqual(cards[0]!.effects)
     expect(Object.keys(config.bonds)).toEqual(deck)
     expect(Object.values(config.bonds).every((bond) => bond > 0)).toBe(true) // their Initial Friendship Gauge
-    expect(careerStageConfig(career, {}, CONTENT_ENV.content, 'furlong-hand', 99, false)).not.toHaveProperty('seasonFocus')
+    expect(careerStageConfig(career, {}, CONTENT_ENV.content, 'furlong-hand', 99, false)).toMatchObject({ kind: 'furlong-hand', seasonFocus: 'guts' })
   })
 
   it('refuse an Uma the content doesn\'t hold, and practice outside a career has no deck', () => {
