@@ -70,7 +70,8 @@ scenario's caps.
 ## 3. Card eras
 
 A card's era is the latest scenario released on or before its JP release date (`eraOf`). A career in scenario T uses
-only cards of era T or older.
+only cards of era T or older, and a card unlocks only once a scenario of its era or later is open (`cardEraOpen`,
+D392): today, era 1. Opening a scenario opens its era's cards in the Card Library ([02](02-unlocks.md) §4).
 
 ## 4. Careers by scenario
 

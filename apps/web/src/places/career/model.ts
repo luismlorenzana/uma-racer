@@ -11,7 +11,7 @@ import {
 import { OPEN_SCENARIOS, seasonName, seasonObjectives } from '@racer/domain/career'
 import { careerSeasonLine, hubWords, nextObjective } from '@racer/domain/hub'
 import {
-  BOND_MAX, BRANCHES, careerId as careerIdOf, DECK_SIZE, FINALE_SEASON, SEASONS, bondId, isRefusal,
+  BOND_MAX, BRANCHES, careerId as careerIdOf, DECK_SIZE, FINALE_SEASON, SEASONS, bondId, isRefusal, isUnlocked,
   type CareerRecord, type OperationEnv, type RaceResultRecord, type SaveState,
 } from '@racer/domain/save'
 import { tierOf } from '@racer/domain/tiers'
@@ -311,7 +311,7 @@ export const buildView = (career: Pick<CareerRecord, 'umaId'>, state: Pick<SaveS
 export function allowedCards(state: Pick<SaveState, 'cards'>, cards: ReadonlyMap<string, SupportCardTemplate>, T: number): SupportCardTemplate[] {
   return Object.keys(state.cards).flatMap((id) => {
     const card = cards.get(id)
-    return card === undefined || card.era > T ? [] : [card]
+    return card === undefined || card.era > T || !isUnlocked(state.cards[id]) ? [] : [card]
   }).sort((a, b) => b.jpRelease.localeCompare(a.jpRelease) || a.title.localeCompare(b.title) || a.id.localeCompare(b.id))
 }
 

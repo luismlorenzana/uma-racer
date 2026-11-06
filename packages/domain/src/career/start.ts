@@ -14,6 +14,12 @@ import { placeObjectives, raceQuarter } from './calendar'
 /** The scenarios a career can start in this release: URA Finale. */
 export const OPEN_SCENARIOS: readonly number[] = Object.freeze([1])
 
+/**
+ * Whether a card of this era can be used in a career this release, and so unlocked (D392): an open scenario is its era's
+ * or a later one. Opening a scenario in a release opens its era's cards with it.
+ */
+export const cardEraOpen = (era: number): boolean => OPEN_SCENARIOS.some((T) => T >= era)
+
 /** The races a career's objectives come from: the regular catalogue, and only races with a season of the year. */
 export const calendarRaces = (races: readonly RaceTemplate[]): RaceTemplate[] =>
   careerRaceCatalog(races).filter((race) => raceQuarter(race) !== null)

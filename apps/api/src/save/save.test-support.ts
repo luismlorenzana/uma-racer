@@ -24,10 +24,13 @@ export const card = (n: number): string => `card-${n}`
 export const SYNTHETIC_COUNT = 30
 const numbers = Array.from({ length: SYNTHETIC_COUNT }, (_, i) => i + 1)
 
-function syntheticEnv(dev: boolean): OperationEnv {
+/** Every invented card is URA Finale's era but the last, which arrives with Unity Cup (era 2, not open: D392). */
+const LATE_CARD = SYNTHETIC_COUNT
+
+function syntheticEnv(dev: boolean, lateEra = 2): OperationEnv {
   const env = buildOperationEnv({
     umas: numbers.map((n) => ({ id: uma(n), name: `Test Uma ${n}` }) as unknown as UmaTemplate),
-    cards: numbers.map((n) => ({ id: card(n), title: `Test Card ${n}` }) as unknown as SupportCardTemplate),
+    cards: numbers.map((n) => ({ id: card(n), title: `Test Card ${n}`, era: n === LATE_CARD ? lateEra : 1 }) as unknown as SupportCardTemplate),
     skills: [],
     races: [],
     courses: [],
@@ -40,6 +43,10 @@ function syntheticEnv(dev: boolean): OperationEnv {
 export const ENV = syntheticEnv(false)
 /** The env with `dev: true`, where `dev-grant` runs. */
 export const DEV = syntheticEnv(true)
+/** The content as if every era were open: how a later card was unlocked before D392. */
+export const ALL_ERAS_OPEN = syntheticEnv(false, 1)
+/** The card from a later era. */
+export const LATE = card(LATE_CARD)
 
 /** One operation change, as the wire carries it. */
 export const op = (n: number, name: string, input: unknown, at: number) => ({ type: 'operation', operation: { id: opId(n), name, input, at } })

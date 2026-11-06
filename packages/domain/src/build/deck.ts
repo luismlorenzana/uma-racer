@@ -2,7 +2,7 @@
 // posted to one branch, by default its own type's (Friend and Group at Wit); a branch seats five. Pure.
 import type { SupportCardTemplate } from '../content'
 import { refuse, type Refusal } from '../save/registry'
-import { BRANCHES, DECK_SIZE, type Branch, type CareerRecord } from '../save/records'
+import { BRANCHES, DECK_SIZE, isUnlocked, type Branch, type CareerRecord, type UnlockRecord } from '../save/records'
 import { scenarioForTier } from '../scenarios'
 import { defaultBranch } from './effects'
 
@@ -28,14 +28,14 @@ export function deckRefusal(
   deck: readonly string[],
   T: number,
   cards: ReadonlyMap<string, SupportCardTemplate>,
-  owned: Readonly<Record<string, unknown>>,
+  owned: Readonly<Record<string, UnlockRecord>>,
 ): Refusal | null {
   if (deck.length > DECK_SIZE) return refuse('deck-too-big', `A deck holds ${DECK_SIZE} cards.`)
   if (new Set(deck).size !== deck.length) return refuse('duplicate-card', 'A card goes in the deck once.')
   for (const id of deck) {
     const card = cards.get(id)
     if (card === undefined) return refuse('unknown-card', 'That card isn\'t in the game.')
-    if (owned[id] === undefined) return refuse('card-locked', `${card.title} isn't in your Card Library yet.`)
+    if (!isUnlocked(owned[id])) return refuse('card-locked', `${card.title} isn't in your Card Library yet.`)
     if (card.era > T) {
       const scenario = scenarioForTier(T)?.name ?? `scenario ${T}`
       return refuse('card-era', `${card.title} arrived after ${scenario}, so it can't join this career.`, { era: card.era })

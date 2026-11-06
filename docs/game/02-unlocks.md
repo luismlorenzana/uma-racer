@@ -1,8 +1,8 @@
 # 02 · Unlocks
 
-> **Status: generation 3, built (T152, T157, D381, D386).** The tickets and the two unlock operations are T152's; the
-> Stable and the Card Library that spend them are T157's. Where each screen sits is
-> [11 · Hub and places](11-hub-and-places.md) §3.1.
+> **Status: generation 3, built (T152, T157, T161, D381, D386, D392).** The tickets and the two unlock operations are
+> T152's; the Stable and the Card Library that spend them are T157's; cards by scenario and `return-later-cards` are
+> T161's. Where each screen sits is [11 · Hub and places](11-hub-and-places.md) §3.1.
 
 You **unlock** Umas and SSR support cards with tickets, one ticket each, for good. Nothing else is bought: there are
 no coins, no shops and no gacha.
@@ -21,8 +21,14 @@ Code: `packages/domain/src/account/` (the operations), `packages/domain/src/hub/
 
 - **`unlock-uma { umaId }`** and **`unlock-card { cardId }`** spend one ticket and write the Uma's or the card's
   record (`umas/{id}`, `cards/{id}`, each with the time it was unlocked). Each refuses in plain words, and changes
-  nothing, for an id the content lacks, one already unlocked, or no ticket left.
-- **Unlocking is final.** Nothing is ever locked again, and there is no refund.
+  nothing, for an id the content lacks, one already unlocked, or no ticket left. `unlock-card` also refuses a card
+  whose era's scenario isn't open (§4, `card-era`): "*Title* arrives with Unity Cup, which isn't open yet."
+- **Unlocking is final, with one exception.** Nothing else is ever locked again, and there is no refund.
+  **`return-later-cards {}`** (D392) locks again every unlocked card whose era isn't open and gives back one Card
+  Ticket for each; its receipt names the cards and the tickets left. It never touches a card in a deck (none can be,
+  since the deck refuses later eras), and with nothing to return it changes nothing. It exists for the cards unlocked
+  before T161, when any card could be. A returned card keeps its row with `returnedAt` beside `unlockedAt` (a row is
+  never deleted), and unlocking it again, once its scenario opens, writes a fresh record.
 - **Both tickets sit in the top bar** ([11](11-hub-and-places.md) §2.1). Each chip opens the Locked tab of the place
   that spends it.
 - **`dev-grant { umaTickets, cardTickets }`** adds tickets in a dev build only, from Account's dev section; production
@@ -65,11 +71,16 @@ Every SSR in the content is in the Library, owned or locked. Cards are account-w
 same ones ([06](06-cards-and-bonds.md) §1).
 
 **The album** (`/town/card-library`):
+- **The Return banner,** while unlocked cards from later eras remain (§1): "6 cards from later scenarios: return them
+  for 6 Card Tickets", and **Return** commits `return-later-cards`. Once used, it's gone.
 - **Owned and Locked tabs,** opening as the Stable's do.
 - **A search, the seven card types and the eight focus marks** (four running styles, four distances: the card's focus
   from its skills, `card-focus.ts`, D201), each a 44 pt icon that toggles. Every filter rides in the URL, so Back from a
   card returns to the same view.
 - The cards, **newest release first,** four a row: the card's icon with its type, dimmed behind a lock while locked.
+  The Locked tab lists the cards you can unlock first, then the later eras' (§4), each still filterable and marked
+  **Opens with** *scenario* over its icon. The ticket chip opens there, so the first cards it shows are ones a ticket
+  buys.
 
 **A card's page** (`/town/card-library/card/:cardId`):
 - its art, type, name and title;
@@ -77,7 +88,8 @@ same ones ([06](06-cards-and-bonds.md) §1).
   careers take it (§4);
 - its running-style and distance focus, when it has one;
 - **Unlock · 1 Card Ticket** while it's locked, with the Card Tickets going N → N−1: one tap commits `unlock-card`,
-  the art pops, and the page says "In your Library";
+  the art pops, and the page says "In your Library". A card from a later era shows **Opens with** *scenario* in its
+  place, and no Unlock;
 - **its power:** a bar of the card's power against its type's (the bar's full width is the type's strongest card, its
   mark the type's median), with both numbers. Power is the stat gain the card adds to a reference session
   ([06](06-cards-and-bonds.md) §5, `cardPower`); Friend and Group cards compare only with their own type;
@@ -135,6 +147,9 @@ An id the table doesn't know reads "Effect *id*". What each effect does in the g
 - **A card's era** is the latest scenario released on or before its JP release (`eraOf`,
   [04](04-tiers-and-scenarios.md) §3). Its page names that scenario as the first it can be used in.
 - **A career takes only cards of its scenario's era or older.** This release runs URA Finale careers (T = 1), so only
-  era-1 cards go in a deck; the Library still holds, shows and unlocks every card, ready for later scenarios.
-- Unlocking never depends on the era. **Changing in M037** (T161, D390): a card will unlock only once its era's
-  scenario is open, and later-era cards already unlocked can be returned for their tickets.
+  era-1 cards go in a deck.
+- **A card unlocks only once its era is open** (`cardEraOpen`, D392): an open scenario (`OPEN_SCENARIOS`, `[1]` today)
+  is its era's or a later one. Opening a scenario in a release opens its era's cards with it: Unity Cup in release 2
+  opens era 2. The scenarios are open for the account, not per Uma, so promotion (release 4) doesn't change the rule.
+- The Library still holds and shows every card, so the later eras can be browsed and compared. The Card Library's Peek
+  counts only the cards this release can unlock ("*n* of *total*").

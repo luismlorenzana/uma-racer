@@ -24,13 +24,14 @@ export const uma = (n: number): string => `uma-${n}`
 export const card = (n: number): string => `card-${n}`
 
 const umaTemplate = (n: number): UmaTemplate => ({ id: uma(n), name: `Test Uma ${n}` }) as unknown as UmaTemplate
-const cardTemplate = (n: number): SupportCardTemplate => ({ id: card(n), title: `Test Card ${n}` }) as unknown as SupportCardTemplate
+/** Cards 1–3 are URA Finale's era; card 4 arrives with Unity Cup (era 2), which this release doesn't open (D392). */
+const cardTemplate = (n: number): SupportCardTemplate => ({ id: card(n), title: `Test Card ${n}`, era: n === 4 ? 2 : 1 }) as unknown as SupportCardTemplate
 
 function env(dev: boolean): OperationEnv {
   return {
     content: {
       umas: new Map([1, 2, 3].map((n) => [uma(n), umaTemplate(n)])),
-      cards: new Map([1, 2, 3].map((n) => [card(n), cardTemplate(n)])),
+      cards: new Map([1, 2, 3, 4].map((n) => [card(n), cardTemplate(n)])),
       skills: new Map<string, SkillTemplate>(),
       races: [] as RaceTemplate[],
       courses: new Map(),
