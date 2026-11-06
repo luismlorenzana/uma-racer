@@ -1,10 +1,11 @@
 // A card's page (docs/game/02-unlocks.md §3, docs/game/11-hub-and-places.md §3.1; D386),
 // `/town/card-library/card/:cardId`: its art and type, its era as the first scenario it can be used in, its running-style
 // and distance focus, **Unlock · 1 Card Ticket** while it's locked (committing `unlock-card`, then a short reveal of its
-// art), its power as a bar against its type's median, its real effects at level 50 named in plain words, its unique
+// art) or, for a card whose era's scenario isn't open, **Opens with <scenario>** in its place (D392), its power as a bar against its type's median, its real effects at level 50 named in plain words, its unique
 // effect's description, and its hint and event skills. Every number comes from the private content at runtime.
 import { Button, EraIcon, Panel, UiMark } from '@luismlorenzana/uma-kit/ui'
 import { cardFocus } from '@racer/domain'
+import { isUnlocked } from '@racer/domain/save'
 import { effectLines, uniqueEffectLines, type EffectLine, type Place } from '@racer/domain/hub'
 import { m } from 'motion/react'
 import { useMemo, useState, type ReactNode } from 'react'
@@ -66,7 +67,7 @@ function Art({ cardId, name, owned, revealed }: { cardId: string; name: string; 
 export function CardPage({ place, rest, cardId }: { place: Place; rest: string; cardId: string }) {
   const run = useRun()
   const content = useGame((snapshot) => snapshot.env?.content ?? null)
-  const owned = useGame((snapshot) => snapshot.state?.cards[cardId] !== undefined)
+  const owned = useGame((snapshot) => isUnlocked(snapshot.state?.cards[cardId]))
   const tickets = useGame((snapshot) => snapshot.state?.account.cardTickets ?? 0)
   const [busy, setBusy] = useState(false)
   const [revealed, setRevealed] = useState(false)
@@ -131,6 +132,11 @@ export function CardPage({ place, rest, cardId }: { place: Place; rest: string; 
 
         {owned ? (
           revealed && <p role="status" className="text-[14px] font-semibold text-success">{libraryWords('unlocked')}</p>
+        ) : !era.open ? (
+          <Panel className="space-y-1 p-3" data-racer="card-opens-with">
+            <p className="flex items-center gap-1.5 text-[15px] font-semibold"><EraIcon size={20} />{libraryWords('opens-with', { scenario: era.scenario })}</p>
+            <p className="text-[13px] text-ink-soft">{libraryWords('opens-later', { scenario: era.scenario })}</p>
+          </Panel>
         ) : (
           <Panel className="space-y-2 p-3" data-racer="card-unlock">
             <p className="flex items-center gap-1.5 text-[15px]" aria-label={libraryWords('tickets-move', { n: tickets, next: Math.max(0, tickets - 1) })}>

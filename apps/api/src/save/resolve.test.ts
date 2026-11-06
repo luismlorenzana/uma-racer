@@ -8,7 +8,7 @@ import {
 import {
   comparePulled, encodeCursor, NO_SAVE, parseCursor, resolveSync, selectReadSet, snapshotPage, syncReadSet, type SaveRow,
 } from './resolve'
-import { card, clock, DEV, ENV, op, opId, STAMP, uma } from './save.test-support'
+import { ALL_ERAS_OPEN, card, clock, DEV, ENV, LATE, op, opId, STAMP, uma } from './save.test-support'
 
 const HOUR = 60 * 60 * 1000
 
@@ -165,6 +165,23 @@ describe('operations', () => {
     expect(response.entities).toEqual([])
     expect(response.logs).toEqual([])
     expect(server.rows).toEqual(before)
+  })
+
+  it('re-runs cards by scenario alike: a later card refused, and one unlocked before D392 returned for its ticket, once', () => {
+    const server = account()
+    server.ok([op(1, 'unlock-card', { cardId: LATE }, clock('08:00'))], ALL_ERAS_OPEN)
+    expect(server.account().cardTickets).toBe(23)
+    const returned = server.ok([op(2, 'return-later-cards', {}, clock('08:01'))])
+    expect(returned.results).toEqual([{ type: 'operation', id: opId(2), status: 'applied', receipt: { returned: [LATE], ticketsLeft: 24 } }])
+    expect(returned.entities.map(rowKey)).toEqual(['account/main', `cards/${LATE}`])
+    expect(server.row(`cards/${LATE}`)).toMatchObject({ data: { unlockedAt: clock('08:00'), returnedAt: clock('08:01') } })
+    const again = server.ok([op(3, 'return-later-cards', {}, clock('08:02')), op(4, 'unlock-card', { cardId: LATE }, clock('08:03'))])
+    expect(again.results).toEqual([
+      { type: 'operation', id: opId(3), status: 'applied', receipt: { returned: [], ticketsLeft: 24 } },
+      { type: 'operation', id: opId(4), status: 'refused', refusal: expect.objectContaining({ code: 'card-era', reason: "Test Card 30 arrives with Unity Cup, which isn't open yet." }) },
+    ])
+    expect(again.entities).toEqual([])
+    expect(server.account().cardTickets).toBe(24)
   })
 
   it('answers a malformed input or an id reused under another name `invalid`, and the next operation still applies', () => {

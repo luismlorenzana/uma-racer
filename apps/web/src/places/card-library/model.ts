@@ -1,16 +1,18 @@
-// The Card Library's view model (docs/game/02-unlocks.md §3, docs/game/11-hub-and-places.md §3.1; D386): every SSR in
-// the content as an album row, owned or locked, with its type and its running-style and distance focus (`cardFocus`);
-// the filters as the URL carries them (`?tab=`, `type`, `style`, `distance`, `q`), run by uma-kit's album engine and
-// sorted newest release first; a card's power against its type's median (T153's `cardPower`); its era as the first
-// scenario it can be used in; and the place's words. The card values are read from the content at runtime. Pure.
+// The Card Library's view model (docs/game/02-unlocks.md §3, docs/game/11-hub-and-places.md §3.1; D386, D392): every
+// SSR in the content as an album row, owned or locked, with its type, its running-style and distance focus (`cardFocus`)
+// and the scenario it opens with when its era isn't open yet; the filters as the URL carries them (`?tab=`, `type`,
+// `style`, `distance`, `q`), run by uma-kit's album engine and sorted newest release first, the Locked tab's open-era
+// cards before the later ones; a card's power against its type's median (T153's `cardPower`); its era as the first
+// scenario it can be used in; the Peek's count of the unlockable cards; and the place's words. The card values are read
+// from the content at runtime. Pure.
 import type { AlbumQuery, AlbumRow, FacetDef } from '@luismlorenzana/uma-kit/roster'
 import { runAlbumQuery } from '@luismlorenzana/uma-kit/roster'
 import {
   cardFocus, scenarioForTier, type CardDistanceFocus, type CardStyleFocus, type SkillTemplate, type SupportCardTemplate, type SupportCardType,
 } from '@racer/domain'
 import { cardPower } from '@racer/domain/build'
-import { OPEN_SCENARIOS } from '@racer/domain/career'
-import type { UnlockRecord } from '@racer/domain/save'
+import { cardEraOpen } from '@racer/domain/career'
+import { isUnlocked, type UnlockRecord } from '@racer/domain/save'
 import { DISTANCES, STYLES } from '../../ui/labels'
 import type { OwnershipTab } from '../../hub/nav'
 import { titledCardName } from '../../ui/words'
@@ -29,6 +31,17 @@ export const LIBRARY_WORDS = Object.freeze({
   'see-locked': 'Unlock your first cards',
   'all-owned': 'Every card is in your Library.',
   'nothing-matches': 'No card matches these filters.',
+  /** A card whose era's scenario isn't open: no Unlock, only when it opens (D392). */
+  opens: 'Opens with',
+  'opens-with': 'Opens with {scenario}',
+  'opens-later': "Its scenario isn't open yet, so no career can use it. It unlocks once {scenario} opens.",
+  /** The banner while cards from later eras sit unlocked (D392). */
+  'return-one': '1 card from a later scenario: return it for 1 Card Ticket',
+  'return-many': '{n} cards from later scenarios: return them for {n} Card Tickets',
+  return: 'Return',
+  'return-note': 'Each unlocks again, for a ticket, once its scenario opens.',
+  returned: 'Returned: {n} Card Tickets back',
+  'return-failed': "Couldn't return them. Try again.",
   /** A card's page. */
   unlock: 'Unlock · 1 Card Ticket',
   'tickets-move': 'Card Tickets: {n} to {next}',
@@ -65,6 +78,8 @@ export interface CardRow extends AlbumRow {
   readonly name: string
   readonly type: SupportCardType
   readonly owned: boolean
+  /** The scenario its era opens with while that isn't open yet, else null: such a card can't be unlocked (D392). */
+  readonly opensWith: string | null
   readonly style: CardStyleFocus
   readonly distance: CardDistanceFocus
 }
@@ -91,7 +106,8 @@ export function libraryRows(cards: Iterable<SupportCardTemplate>, skills: Readon
       },
       sorts: { release: card.jpRelease, name },
       type: card.type,
-      owned: owned[card.id] !== undefined,
+      owned: isUnlocked(owned[card.id]),
+      opensWith: cardEraOpen(card.era) ? null : eraReading(card.era).scenario,
       style: focus.style,
       distance: focus.distance,
     }
@@ -128,11 +144,21 @@ export function libraryQuery(filters: LibraryFilters): AlbumQuery {
   }
 }
 
-/** The cards a tab and its filters show, newest release first. */
+/** The cards a tab and its filters show, newest release first; on Locked, the unlockable ones before the later eras'. */
 export function libraryResult(rows: readonly CardRow[], tab: OwnershipTab, filters: LibraryFilters): CardRow[] {
   const scoped = rows.filter((row) => row.owned === (tab === 'owned'))
-  return runAlbumQuery(scoped, LIBRARY_FACETS, libraryQuery(filters), [{ key: 'name', direction: 'asc' }]).rows as CardRow[]
+  const sorted = runAlbumQuery(scoped, LIBRARY_FACETS, libraryQuery(filters), [{ key: 'name', direction: 'asc' }]).rows as CardRow[]
+  return tab === 'owned' ? sorted : [...sorted.filter((row) => row.opensWith === null), ...sorted.filter((row) => row.opensWith !== null)]
 }
+
+/** The Peek's count: the cards that can be unlocked this release, and how many of them are (D392). */
+export function unlockableCount(cards: Iterable<SupportCardTemplate>, owned: Readonly<Record<string, UnlockRecord>>): { readonly n: number; readonly total: number } {
+  const open = [...cards].filter((card) => cardEraOpen(card.era))
+  return { n: open.filter((card) => isUnlocked(owned[card.id])).length, total: open.length }
+}
+
+/** The Return banner's words for this many later cards. */
+export const returnBanner = (n: number): string => (n === 1 ? libraryWords('return-one') : libraryWords('return-many', { n }))
 
 /** The tab asked for, else Owned once any card is, else Locked. */
 export function libraryTab(asked: string | null, ownedCount: number): OwnershipTab {
@@ -178,5 +204,5 @@ export const powerText = (value: number): string => (Number.isInteger(value) ? S
 
 /** The first scenario a card of this era can be used in, and whether this release's careers take it. */
 export function eraReading(era: number): { readonly scenario: string; readonly open: boolean } {
-  return { scenario: scenarioForTier(era)?.name ?? `Scenario ${era}`, open: OPEN_SCENARIOS.some((T) => T >= era) }
+  return { scenario: scenarioForTier(era)?.name ?? `Scenario ${era}`, open: cardEraOpen(era) }
 }

@@ -29,8 +29,8 @@ describe('a new account', () => {
 describe('the operation table', () => {
   it('declares every operation the slice needs, once', () => {
     expect([...OPERATION_NAMES].sort()).toEqual([
-      'buy-pips', 'buy-skill', 'dev-grant', 'next-season', 'post-card', 'pour-bond', 'run-finale', 'run-race', 'set-deck',
-      'settle-stage', 'start-career', 'unlock-card', 'unlock-uma',
+      'buy-pips', 'buy-skill', 'dev-grant', 'next-season', 'post-card', 'pour-bond', 'return-later-cards', 'run-finale', 'run-race',
+      'set-deck', 'settle-stage', 'start-career', 'unlock-card', 'unlock-uma',
     ])
   })
 
@@ -66,6 +66,14 @@ describe('unlocking', () => {
     expect(commitOperation(broke, op(3, 'unlock-card', { cardId: card(1) }), ENV)).toMatchObject({ refusal: { code: 'no-tickets', reason: 'You have no Card Tickets left.' } })
   })
 
+  it('unlocks a card only once its era\'s scenario is open, writing nothing otherwise (D392)', () => {
+    const later = commitOperation(fresh(), op(1, 'unlock-card', { cardId: card(4) }), ENV)
+    expect(later).toMatchObject({
+      status: 'refused', refusal: { code: 'card-era', reason: "Test Card 4 arrives with Unity Cup, which isn't open yet.", data: { era: 2 } },
+    })
+    expect(later).not.toHaveProperty('entities')
+  })
+
   it('applies an id once: a retry gives the first receipt and writes nothing', () => {
     const first = commitOperation(fresh(), op(1, 'unlock-uma', { umaId: uma(1) }), ENV)
     if (first.status !== 'applied') throw new Error(first.status)
@@ -76,6 +84,58 @@ describe('unlocking', () => {
 
   it('throws on a malformed input, which the caller answers invalid', () => {
     expect(() => commitOperation(fresh(), op(1, 'unlock-uma', { umaId: uma(1), extra: 1 }), ENV)).toThrow(/Malformed/)
+  })
+})
+
+describe('return-later-cards (D392)', () => {
+  /** An account from before D392: cards 1 and 4 unlocked, card 4 from Unity Cup's era. */
+  const before = () => {
+    const state = fresh()
+    return {
+      ...state,
+      account: { ...state.account, cardTickets: INITIAL_CARD_TICKETS - 2 },
+      cards: { [card(1)]: { unlockedAt: clock('07:00') }, [card(4)]: { unlockedAt: clock('07:00') } },
+    }
+  }
+
+  it('locks every later-era card again, one Card Ticket each, and never touches an open-era card', () => {
+    const commit = commitOperation(before(), op(1, 'return-later-cards', {}), ENV)
+    if (commit.status !== 'applied') throw new Error(commit.status)
+    expect(commit.receipt).toEqual({ returned: [card(4)], ticketsLeft: INITIAL_CARD_TICKETS - 1 })
+    expect(commit.state.cards[card(4)]).toEqual({ unlockedAt: clock('07:00'), returnedAt: clock('07:01') })
+    expect(commit.state.cards[card(1)]).toEqual({ unlockedAt: clock('07:00') })
+    expect(commit.entities.map((row) => `${row.kind}/${row.id}`)).toEqual(['account/main', `cards/${card(4)}`])
+  })
+
+  it('is a no-op the second time, and a returned card unlocks again once its era is open', () => {
+    const first = commitOperation(before(), op(1, 'return-later-cards', {}), ENV)
+    if (first.status !== 'applied') throw new Error(first.status)
+    const again = commitOperation(first.state, op(2, 'return-later-cards', {}), ENV)
+    if (again.status !== 'applied') throw new Error(again.status)
+    expect(again.receipt).toEqual({ returned: [], ticketsLeft: INITIAL_CARD_TICKETS - 1 })
+    expect(again.entities.map((row) => `${row.kind}/${row.id}`)).toEqual([])
+    expect(commitOperation(first.state, op(3, 'unlock-card', { cardId: card(4) }), ENV)).toMatchObject({ refusal: { code: 'card-era' } })
+  })
+
+  it('leaves a card that sits in a deck', () => {
+    const career: CareerRecord = {
+      umaId: uma(1), T: 1, startedAt: 1, season: 0, objectives: [], finale: { step: 0, won: false }, deck: [card(4)],
+      posts: { [card(4)]: 'speed' }, pips: { speed: 0, stamina: 0, power: 0, guts: 0, wit: 0 }, camps: [null, null], skills: [],
+      spSpent: 0, wallet: { drills: { speed: 0, stamina: 0, power: 0, guts: 0, wit: 0 }, bond: 0, sp: 0 }, completedAt: null,
+      racingBuild: null,
+    }
+    const commit = commitOperation({ ...before(), careers: { [careerId(uma(1), 1)]: career } }, op(1, 'return-later-cards', {}), ENV)
+    expect(commit).toMatchObject({ status: 'applied', receipt: { returned: [] } })
+  })
+
+  it('reads a returned card\'s row, and refuses a return before its unlock', () => {
+    const row = (data: object) => stampEntity({ kind: 'cards', id: card(4), generation: SAVE_GENERATION, schema: 1, data } as never, 1, 0)
+    expect(parseEntityRow(row({ unlockedAt: 1, returnedAt: 2 }))).toEqual(row({ unlockedAt: 1, returnedAt: 2 }))
+    expect(parseEntityRow(row({ unlockedAt: 2, returnedAt: 1 }))).toBeNull()
+  })
+
+  it('throws on any input but an empty one', () => {
+    expect(() => commitOperation(before(), op(1, 'return-later-cards', { all: true }), ENV)).toThrow(/Malformed/)
   })
 })
 

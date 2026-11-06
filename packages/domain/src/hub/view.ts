@@ -3,7 +3,7 @@
 // Careers quick look and the raised Career button). Pure: the state comes in, the view goes out, and no clock is read.
 import type { CareerStage } from '../career-stages'
 import { seasonName } from '../career/calendar'
-import type { CareerRecord } from '../save/records'
+import { isUnlocked, type CareerRecord } from '../save/records'
 import type { SaveState } from '../save/state'
 import { scenarioForTier } from '../scenarios'
 import type { PlaceId } from './places'
@@ -69,7 +69,7 @@ export function hubView(state: SaveState): HubView {
     wallet: { umaTickets: state.account.umaTickets, cardTickets: state.account.cardTickets },
     counts: { stable: state.account.umaTickets, 'card-library': state.account.cardTickets, careers: careers.length },
     owned,
-    ownedCards: Object.keys(state.cards).length,
+    ownedCards: Object.values(state.cards).filter(isUnlocked).length,
     careers,
   }
 }

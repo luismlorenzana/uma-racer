@@ -26,7 +26,7 @@ const career = (extra: Partial<CareerRecord> = {}): CareerRecord =>
   testCareer('uma-1', { deck: ['s'], posts: { s: 'speed' }, wallet: { drills: flat(500), bond: 200, sp: 0 }, ...extra })
 
 describe('the deck', () => {
-  const owned = { a: {}, b: {}, late: {} }
+  const owned = { a: { unlockedAt: 0 }, b: { unlockedAt: 0 }, late: { unlockedAt: 0 } }
   const deckCards = mapOf(testCard('a', 'speed', {}), testCard('b', 'friend', {}), testCard('late', 'wit', {}, { era: 2 }))
 
   it('holds six owned cards whose era allows the career, in plain words', () => {
@@ -35,6 +35,8 @@ describe('the deck', () => {
     expect(deckRefusal(['a', 'b', 'c', 'd', 'e', 'f', 'g'], 1, deckCards, owned)).toMatchObject({ code: 'deck-too-big', reason: 'A deck holds 6 cards.' })
     expect(deckRefusal(['zz'], 1, deckCards, owned)).toMatchObject({ code: 'unknown-card' })
     expect(deckRefusal(['a'], 1, deckCards, {})).toMatchObject({ code: 'card-locked', reason: '[Card a] isn\'t in your Card Library yet.' })
+    // A card returned to a ticket (D392) is locked again.
+    expect(deckRefusal(['a'], 1, deckCards, { a: { unlockedAt: 0, returnedAt: 1 } })).toMatchObject({ code: 'card-locked' })
     expect(deckRefusal(['late'], 1, deckCards, owned)).toMatchObject({ code: 'card-era', reason: '[Card late] arrived after URA Finale, so it can\'t join this career.' })
     expect(deckRefusal(['late'], 2, deckCards, owned)).toBeNull()
   })
