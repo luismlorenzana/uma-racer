@@ -1,6 +1,7 @@
 // `pnpm sim:stages` (docs/game/07-stages.md §6, D384, D385): every built mini-game's three bots over 500 seeds each,
 // graded by the framework, and failing unless the bands hold: the competent bot's median at A, the novice's at C or B,
-// the expert at S on 35–65% of seeds, and a play of 3–7 minutes at a human pace (Furlong Hand 3.5–6.5).
+// the expert at S on 35–65% of seeds, a play of 3–7 minutes at a human pace (Furlong Hand 3.5–6.5), and the competent
+// bot's drills over at least three colours.
 //
 //   pnpm sim:stages                     the private pack when it is present locally, else the invented content
 //   pnpm sim:stages -- --synthetic      the invented content only
@@ -44,6 +45,8 @@ function print(source: string, report: StageSimReport, seconds: number): void {
   }
   const expert = report.lines.find((line) => line.level === 'expert')!
   console.log(`expert S on ${pct(expert.sShare).trim()} of seeds; a play runs ${report.minutes.toFixed(1)} minutes at a human pace (band ${report.band.min}–${report.band.max})`)
+  const competent = report.lines.find((line) => line.level === 'competent')!
+  console.log(`the competent bot's drills split over ${competent.medianColours} colours (a tenth or more each; at least 3)`)
   for (const group of report.groups) {
     console.log(`  competent, ${group.label.padEnd(7)} ${String(group.plays).padStart(4)} plays  median p ${group.medianP.toFixed(3)}  ${String(group.medianMoves).padStart(4)} moves, ${group.minutes.toFixed(1)} minutes`)
   }

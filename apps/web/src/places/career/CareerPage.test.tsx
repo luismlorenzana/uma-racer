@@ -1,9 +1,11 @@
 // @vitest-environment jsdom
-// A career's page (docs/game/11-hub-and-places.md §3.2; T158, D387) at 390 × 844 on the invented career content: the
-// calendar strip, the wallet, the season card's three steps with their states (Play's game and Resume or Played,
+// A career's page (docs/game/11-hub-and-places.md §3.2; T158, D387, D391) at 390 × 844 on the invented career content:
+// the calendar strip, the wallet, the season card's three steps with their states (Play's two games, Furlong Hand first
+// and Training Yard under Another game, in light and dark, and Resume or Played,
 // Upgrade's badge, Race's objectives), Next season, Play again in the header, the URA Finals' card with its rounds one
 // at a time, and a completed career's frozen build.
 import { deriveRacingBuild } from '@racer/domain/build'
+import { STAGE_PAY_AT_A } from '@racer/domain/career'
 import { FINALE_SEASON, type SaveState } from '@racer/domain/save'
 import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -43,6 +45,24 @@ function atSeason(season: number, deck: readonly string[] = []): SaveState {
   return state
 }
 
+describe.each(['light', 'dark'] as const)('the season\'s Play, %s (D391)', (theme) => {
+  beforeEach(() => document.documentElement.setAttribute('data-theme', theme))
+  afterEach(() => document.documentElement.removeAttribute('data-theme'))
+
+  it('offers both games, Furlong Hand first as Play and Training Yard under it, each paying the same at A', async () => {
+    renderRacer(careerPath(CAREER), careerGame(atSeason(2)))
+    const card = await page()
+    const games = card.querySelector<HTMLElement>('[data-racer="season-games"]')!
+    expect([...games.querySelectorAll<HTMLElement>('[data-game]')].map((row) => row.dataset.game)).toEqual(['furlong-hand', 'training-yard'])
+    expect(games.querySelector('[data-step="play"]')!.getAttribute('data-game')).toBe('furlong-hand')
+    expect(within(games).getByText(`Each pays ${STAGE_PAY_AT_A.drills} drills, ${STAGE_PAY_AT_A.bond} Bond and ${STAGE_PAY_AT_A.sp} SP at grade A`)).toBeTruthy()
+    expect(within(games).getByRole('link', { name: 'Another game: Training Yard · Power focus' }).getAttribute('href')).toBe(playPath(CAREER, 'training-yard'))
+    // Tokens only: nothing that holds in one theme alone (docs/design/visual-system.md).
+    const classes = [games, ...games.querySelectorAll('*')].flatMap((el) => [...el.classList])
+    expect(classes.filter((name) => /^(bg-white|bg-black|text-black|text-white|bg-ink)$|\[#/.test(name))).toEqual([])
+  })
+})
+
 describe('a career\'s page', () => {
   it('draws the calendar strip: the season now raised, the ones behind done, each objective marked on its season', async () => {
     const state = atSeason(4)
@@ -79,6 +99,9 @@ describe('a career\'s page', () => {
     expect(play.getAttribute('href')).toBe(playPath(CAREER, 'furlong-hand'))
     expect(play.dataset.state).toBe('next')
     expect(play.textContent).toContain(`Furlong Hand · ${race.name}`)
+    const other = card.querySelector<HTMLElement>('[data-racer="other-game"]')!
+    expect(other.getAttribute('href')).toBe(playPath(CAREER, 'training-yard'))
+    expect(other.textContent).toBe('Another game: Training Yard · Speed focus')
     // No deck yet: six slots to fill, so Upgrade opens on the Deck.
     const upgrade = step('upgrade')
     expect(upgrade.querySelector('[data-racer="upgrade-badge"]')?.textContent).toBe('6')
@@ -112,12 +135,19 @@ describe('a career\'s page', () => {
     expect(step('race').dataset.state).toBe('next')
   })
 
-  it('ends a season without a race at once: Training Yard on its focus, then Next season moves the calendar', async () => {
+  it('ends a season without a race at once: Furlong Hand on her next race\'s course or the Yard on its focus, then Next season', async () => {
     const game = careerGame(applied(atSeason(1), 'set-deck', { careerId: CAREER, deck: STRONG_DECK }))
     renderRacer(careerPath(CAREER), game)
     await page()
-    expect(step('play').getAttribute('href')).toBe(playPath(CAREER, 'training-yard'))
-    expect(step('play').textContent).toContain('Training Yard · Stamina focus')
+    const career = game.getSnapshot().state!.careers[CAREER]!
+    const ahead = [...career.objectives].filter((objective) => objective.season > 1).sort((a, b) => a.season - b.season)[0]!
+    expect(step('play').getAttribute('href')).toBe(playPath(CAREER, 'furlong-hand'))
+    expect(step('play').textContent).toContain(`Furlong Hand · ${CAREER_ENV.content.races.find((each) => each.id === ahead.raceId)!.name}`)
+    expect(document.querySelector('[data-racer="other-game"]')!.textContent).toBe('Another game: Training Yard · Stamina focus')
+    // Either game played checks the step: they pay the same.
+    recordPlay({ careerId: CAREER, kind: 'training-yard', season: 1, grade: 'B', practice: false })
+    await waitFor(() => expect(step('play').dataset.state).toBe('done'))
+    expect(document.querySelector('[data-racer="other-game"]')!.textContent).toContain('Played · B')
     expect(step('race').textContent).toContain('No race this season.')
     const next = screen.getByRole('button', { name: 'Next season' })
     expect(next.hasAttribute('disabled')).toBe(false)
@@ -134,6 +164,9 @@ describe('a career\'s page', () => {
     const card = await page()
     expect(card.dataset.racer).toBe('finale-card')
     expect(step('play').getAttribute('href')).toBe(playPath(CAREER, 'furlong-hand'))
+    // The Finale's prep heat is Furlong Hand alone.
+    expect(card.querySelector('[data-racer="other-game"]')).toBeNull()
+    expect(within(card).getByText(`Pays ${STAGE_PAY_AT_A.drills} drills, ${STAGE_PAY_AT_A.bond} Bond and ${STAGE_PAY_AT_A.sp} SP at grade A`)).toBeTruthy()
     const rounds = [...card.querySelectorAll<HTMLElement>('[data-round]')]
     expect(rounds.map((row) => [row.dataset.round, row.dataset.status])).toEqual([['0', 'won'], ['1', 'open'], ['2', 'locked']])
     expect(rounds.map((row) => row.textContent)).toEqual([

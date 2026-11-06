@@ -1,8 +1,8 @@
 # 12 · Pacing
 
-> **Status: as released (M036, D388); the numbers are T154's (D383).** The stages that pay them are T155's
-> ([07](07-stages.md) and [08](08-training-yard.md), D384) and T156's ([09](09-furlong-hand.md), D385). The targets
-> are M036's.
+> **Status: as released (M036, D388); the numbers are T154's (D383), the one stage bundle T160's (D391).** The stages
+> that pay them are T155's ([07](07-stages.md) and [08](08-training-yard.md), D384) and T156's
+> ([09](09-furlong-hand.md), D385). The targets are M036's.
 
 How much a career earns, and how fast. There is no clock: pacing is what each play pays, against what the tree, the
 bonds and the skills cost, and how strong the rivals are at each point of the calendar.
@@ -12,19 +12,22 @@ Code: `packages/domain/src/career/pay.ts` (the table), `career/rewards.ts` (the 
 
 ## 1. What a play pays
 
-Every stage pays into the career's wallet ([05](05-the-build.md) §1) on every play, its pay at grade A times its
-grade's multiplier (D 0.25, C 0.6, B 0.8, A 1.0, S 1.2: [07](07-stages.md) §2). Practice pays nothing.
+Every stage pays into the career's wallet ([05](05-the-build.md) §1) on every play: **one bundle for every game**
+(D391), at grade A times its grade's multiplier (D 0.25, C 0.6, B 0.8, A 1.0, S 1.2: [07](07-stages.md) §2), so the
+games swap for each other in a season. Practice pays nothing.
 
 <!-- live:career-pay -->
 | Game | Drills | Bond | SP |
 |---|---|---|---|
-| Training Yard | 200 | | 30 |
-| Furlong Hand | | 25 | 20 |
+| Every game | 110 | 12 | 25 |
 <!-- /live -->
 
-- **Training Yard** pays drills by colour, in proportion to the drills it scored in each (its pieces' Sweat and its
-  merges, [08](08-training-yard.md) §6), 200 in all at A, and a little SP.
-- **Furlong Hand** pays Bond, which the owner pours into the deck's tracks, and SP.
+- **A game decides only how its drills split** across the five colours, and adds nothing of its own:
+  - **Furlong Hand**, the main game, by the ground she ran in each colour, a wild card's in the season's focus
+    ([09](09-furlong-hand.md) §9);
+  - **Training Yard** by the drills it scored in each (its pieces' Sweat and its merges, [08](08-training-yard.md)
+    §6).
+- **Bond and SP** are pools the owner spends by hand: Bond into the deck's tracks, SP on skills.
 - **Races** pay on an objective's win ([03](03-careers.md) §6): a Card Ticket, and SP by grade × (1 + the deck's Race
   Bonus).
 - **The tree's sessions** pay SP of their own, by the original's formula ([05](05-the-build.md) §4).
@@ -39,7 +42,7 @@ A career played **once through, every stage at grade A, with a median deck**:
 - brings **about 3 of 6** deck cards to bond 80;
 - earns SP for **4–6 skills**, counted as golds with their whites (a gold and its white at hint level 1, at the
   content's median price): the skills a build is planned around. In whites, that's about ten;
-- and **one replay of each Training Yard season fills the tree.**
+- and **one replay of each season's play fills the tree.**
 
 Its races, first try:
 - a median deck wins **G3s at least 90%**, **G2s 75%** and **G1s 50%** of the time, and the URA Finals final **about
@@ -60,15 +63,16 @@ more reaches them sooner.
 | Tree bought | 55%–65% | 45%–75% |
 | Deck cards at bond 80 | 2.5–3.5 | 1.5–4.5 |
 | SP earned, in golds with their whites | 4–6 | 3–7 |
-| Tree bought with one replay of each Training Yard season | ≥ 95% | ≥ 90% |
+| Tree bought with one replay of each season's play | ≥ 95% | ≥ 90% |
 <!-- /live -->
 
 ## 3. The sim: `sim:careers`
 
 `pnpm sim:careers` plays every Uma's URA Finale career with a median and a strong deck (`sim:decks`' picks,
 [05](05-the-build.md) §10), every stage at grade A, by a fixed allocation bot:
-1. **Pay:** each season's stage pays at A. The sim models Training Yard's colours as its total split by (1 + her growth
-   rate in the colour), the season's focus colour × 1.5.
+1. **Pay:** each season, and the Finale, pays one play of the main game at A, the bundle. The sim models Furlong
+   Hand's drill split by the race's cards: three base strides a colour, and each deck card's three strides and Partner
+   in its type's colour, a Friend or Group card's in the season's focus.
 2. **Bond** goes into the deck card nearest to 80, stat cards first, then on to 100.
 3. **Drills** buy each branch's next pip while its colour pays; a full branch's colour buys a Camp there.
 4. **SP** buys golds first (with the white beneath), then the cheapest skill that races, while it pays.
@@ -89,12 +93,17 @@ when a target misses.
 - `--attempts=n` races each objective n times (default 3); `--umas=n` plays the first n Umas' careers (every Uma still
   races as a rival).
 
-## 4. How the numbers were set (D383)
+## 4. How the numbers were set (D383, D391)
 
-- **Training Yard: 200 drills** at A, down from M036's starting 260: a career holds about seven Training Yard seasons
-  (the rest hold objectives), and 260 bought about 70% of the tree.
-- **Furlong Hand: 25 Bond** at A, down from 60: the deck's tracks start at their cards' real Initial Friendship Gauge,
-  already well on the way to 80, so 60 a play brought five cards to 80.
-- **SP** stays as the rules give it: the stages' 30 and 20, the races' 40, 60 and 100, and the tree's own. A career
-  earns about 1,400 SP, which is five golds with their whites, or ten whites: the original's economy, kept.
-- **The rivals** are tuned against this career ([Racing](racing.md#rivals)).
+- **M036 (D383)** paid each game its own table: Training Yard 200 drills and 30 SP in the seasons without an
+  objective (about seven a career), Furlong Hand 25 Bond and 20 SP in the others. 260 drills had bought about 70% of
+  the tree, and 60 Bond brought five cards to 80, since the tracks start at their cards' real Initial Friendship
+  Gauge.
+- **The bundle (D391)** spreads that over every play: 13 a career (twelve seasons and the Finale), so **110 drills,
+  12 Bond and 25 SP** a play pay about what M036's career did (1,430 drills to its 1,438, 156 Bond to its 145, 325 SP
+  to its 332). 100 drills bought 57% of the tree but lost too many G2s; 120 bought 67% and won too many finals.
+- **SP** stays as the rules give it otherwise: the races' 40, 60 and 100, and the tree's own. A career earns about
+  1,400 SP, which is five golds with their whites, or ten whites: the original's economy, kept.
+- **The rivals** are tuned against this career ([Racing](racing.md#rivals)). Paying every season spreads her growth
+  evenly over the calendar, where M036's Training Yard seasons came early, so D391 re-measured their season shares
+  from this sim's curve.

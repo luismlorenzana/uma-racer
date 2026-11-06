@@ -14,7 +14,7 @@ const play = (level: (typeof BOT_LEVELS)[number], seed: number) => playBot(YARD_
 /** A play's fingerprint: its moves, its final yard and its score. */
 const fingerprint = (level: (typeof BOT_LEVELS)[number], seed: number): number => {
   const { inputs, state } = play(level, seed)
-  return fnv1a(JSON.stringify({ inputs, board: state.board, score: state.score, drills: state.drills, sp: state.sp }))
+  return fnv1a(JSON.stringify({ inputs, board: state.board, score: state.score, drills: state.drills }))
 }
 
 describe('the bots', () => {
@@ -51,9 +51,11 @@ describe('the bots', () => {
 
 describe('golden plays', () => {
   // Pinned: a change to the rules, the queue or the bots moves these, and must bump YARD_VERSION when the rules moved.
+  // Re-pinned at D391: the bots stopped counting a Rest's SP (Rests pay none now) and the fingerprint dropped it; the
+  // rules' moves and scores are as they were.
   const GOLDEN: Readonly<Record<string, number>> = {
-    'novice:1': 1167164027, 'competent:1': 2926734920, 'expert:1': 1370177121,
-    'novice:2': 2585117943, 'competent:2': 3900425110, 'expert:2': 3814299327,
+    'novice:1': 3038245880, 'competent:1': 2044756097, 'expert:1': 2436657058,
+    'novice:2': 1428378212, 'competent:2': 1738660150, 'expert:2': 3931043608,
   }
 
   it('rolls the same queue for a seed', () => {

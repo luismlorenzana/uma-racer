@@ -12,11 +12,8 @@ import {
   type YardState,
 } from './rules'
 
-/** SP counts as this many drills to a bot. */
-const SP_WORTH = 5
-
-/** What a move paid: its drills, and its SP at `SP_WORTH`. */
-const paid = (before: YardState, after: YardState): number => after.score - before.score + SP_WORTH * (after.sp - before.sp)
+/** What a move paid: its drills (a Rest clearing pays nothing, D391). */
+const paid = (before: YardState, after: YardState): number => after.score - before.score
 
 /** Whether the piece in hand could merge at `cell`: some neighbour shares its colour (any piece, for a wild Partner). */
 function couldMerge(state: YardState, cell: number): boolean {

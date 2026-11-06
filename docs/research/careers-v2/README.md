@@ -2,7 +2,7 @@
 
 > **Status: proposal (2026-11-05),** from the owner's first playtest of generation 3. Not built. Its defaults are the
 > ones §8 recommends; the coordinator logs them as D390. Two parts are already written up:
-> - the stages: [swappable stages](swappable-stages.md), packet [T160](../../tasks/T160-swappable-stages.md);
+> - the stages: [swappable stages](swappable-stages.md), T160, built (D391, [07](../../game/07-stages.md) §2);
 > - the card gating: packet [T161](../../tasks/T161-cards-by-scenario.md);
 > - the URA Finals as an announced course and its conditions, after the owner's follow-up: [finale events](finale-events.md), packet [T164](../../tasks/T164-race-conditions.md) (D395).
 >

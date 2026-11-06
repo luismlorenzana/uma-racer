@@ -1,34 +1,35 @@
-// A career's page (docs/game/11-hub-and-places.md §3.2; D387), `/career/careers/:careerId`: her bust and where she
-// stands, the wallet, the calendar strip, then the season card: **Play** (the season's game, Resume while a play is
-// open on this phone, checked with its grade once played), **Upgrade** (its badge counts what she can buy now) and
+// A career's page (docs/game/11-hub-and-places.md §3.2; D387, D391), `/career/careers/:careerId`: her bust and where she
+// stands, the wallet, the calendar strip, then the season card: **Play** (the season's games, `SeasonGames`: Furlong
+// Hand as Play and Training Yard under "Another game", each paying the same, Resume while a play is open on this phone,
+// checked with its grade once played), **Upgrade** (its badge counts what she can buy now) and
 // **Race** (each objective with its grade, course and Race), and **Next season** once every objective is won. At the
 // Finale the card is the URA Finals' prep heat and its three rounds, one at a time; once the final is won it is the
 // completion. The header's two game buttons are Play again: either game at any time, paying like a first play.
 import { UmaBust } from '@luismlorenzana/uma-kit/album'
 import {
-  Button, CardsIcon, CheckIcon, ChevronRightIcon, DirtIcon, LevelUpIcon, LockedIcon, Panel, PlayIcon, RaceIcon, StatsIcon, TurfIcon,
+  Button, CardsIcon, CheckIcon, ChevronRightIcon, DirtIcon, LevelUpIcon, LockedIcon, Panel, RaceIcon, StatsIcon, TurfIcon,
 } from '@luismlorenzana/uma-kit/ui'
 import type { RaceTemplate } from '@racer/domain'
 import { skillPoints } from '@racer/domain/build'
 import {
-  canAdvance, FINALE_FIELDS, FINALE_ROUND_NAMES, FINALE_ROUNDS, finaleRace, seasonName, seasonObjectives, seasonStage, type SeasonStage,
+  canAdvance, FINALE_FIELDS, FINALE_ROUND_NAMES, FINALE_ROUNDS, finaleRace, seasonName, seasonObjectives, seasonStages,
 } from '@racer/domain/career'
 import { careerSeasonLine, hubWords, nextObjective, type Place } from '@racer/domain/hub'
 import { FINALE_SEASON, SEASONS, type CareerRecord } from '@racer/domain/save'
-import { STAGE_NAMES, type StageKind } from '@racer/domain/stages'
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { furlongRaceFor, STAGE_NAMES, type StageKind } from '@racer/domain/stages'
+import { useMemo, useState } from 'react'
 import { Link } from 'react-router'
 import { useGame, useRuntime } from '../../app/game'
 import { playPath, profilePath, upgradePath, UPGRADE_TABS, type UpgradeTab } from '../../hub/nav'
-import { journalId } from '../../stages/ids'
-import { DISTANCE_LABEL, STAT_LABEL, SURFACE_LABEL } from '../../ui/labels'
-import { TypeIcon } from '../../ui/TypeIcon'
+import { DISTANCE_LABEL, SURFACE_LABEL } from '../../ui/labels'
 import { PlacePageHeader } from '../PlacePageHeader'
 import { CalendarStrip } from './CalendarStrip'
 import { Completion } from './Completion'
 import { buildView, careersWords, GRADE_LABEL, raceLabel, upgradeCounts, type UpgradeCounts } from './model'
 import { useSeasonPlays } from './plays'
 import { fieldGrade, RaceSheet, type RaceTarget } from './RaceSheet'
+import { SeasonGames } from './SeasonGames'
+import { stepFrame, StepHead, type StepState } from './steps'
 import { Wallet } from './Wallet'
 
 /** Her next open objective, or the URA Finals once every objective is won. */
@@ -53,65 +54,6 @@ function GameButtons({ careerId }: { careerId: string }) {
         )
       })}
     </div>
-  )
-}
-
-type StepState = 'next' | 'done' | 'open'
-
-/** One of the season's three steps: its number (a check once done), its icon and name, a line, and what's at its end. */
-function StepHead({ n, state, icon, title, line, end }: { n: number; state: StepState; icon: ReactNode; title: string; line?: ReactNode; end?: ReactNode }) {
-  return (
-    <span className="flex min-w-0 flex-1 items-center gap-2.5">
-      <span aria-hidden className={`flex size-7 shrink-0 items-center justify-center rounded-full text-[13px] font-bold ${state === 'done' ? 'bg-success text-ink-on-dark' : state === 'next' ? 'bg-accent text-accent-ink' : 'bg-sunken text-ink-soft'}`}>
-        {state === 'done' ? <CheckIcon size={16} /> : n}
-      </span>
-      <span aria-hidden className="shrink-0 text-ink-soft">{icon}</span>
-      <span className="min-w-0 flex-1">
-        <span className="block font-display text-[15px] font-semibold leading-tight">{title}</span>
-        {line !== undefined && <span className="block truncate text-[12px] text-ink-soft">{line}</span>}
-      </span>
-      {end}
-    </span>
-  )
-}
-
-const stepFrame = (state: StepState) =>
-  `flex min-h-14 w-full items-center gap-2 rounded-md border px-2.5 py-1.5 text-left ${state === 'next' ? 'border-accent bg-accent-wash' : 'border-hairline bg-panel'}`
-
-/** Whether a play of this game is open on this phone for the career: its journal waits to resume. */
-function usePlayOpen(careerId: string, kind: StageKind): boolean {
-  const { game } = useRuntime()
-  const [open, setOpen] = useState(false)
-  useEffect(() => {
-    let live = true
-    void (game.journal?.read(journalId(kind, careerId, 'career')) ?? Promise.resolve(null))
-      .then((row) => { if (live) setOpen(row !== null) })
-      .catch(() => {})
-    return () => {
-      live = false
-    }
-  }, [careerId, game, kind])
-  return open
-}
-
-function PlayStep({ careerId, career, stage, races, state }: { careerId: string; career: CareerRecord; stage: SeasonStage; races: readonly RaceTemplate[]; state: StepState }) {
-  const open = usePlayOpen(careerId, stage.game)
-  const grade = useSeasonPlays(careerId, career.season)[stage.game]
-  const race = stage.game === 'furlong-hand' ? races.find((each) => each.id === stage.raceId) : undefined
-  const line = stage.game === 'training-yard'
-    ? careersWords('play-yard', { stat: STAT_LABEL[stage.focus] })
-    : career.season === FINALE_SEASON ? careersWords('play-finale') : race === undefined ? careersWords('play-furlong') : `${STAGE_NAMES['furlong-hand']} · ${race.name}`
-  const done = grade !== undefined && !open
-  return (
-    <Link to={playPath(careerId, stage.game)} state={{ back: true }} className={stepFrame(done ? 'done' : state)} data-step="play"
-      data-state={done ? 'done' : state} aria-label={`${careersWords('step-play')}: ${line}${open ? `, ${careersWords('resume')}` : done ? `, ${careersWords('played', { grade })}` : ''}`}>
-      <StepHead n={1} state={done ? 'done' : state} icon={stage.game === 'training-yard' ? <TypeIcon type={stage.focus} size={24} /> : <CardsIcon size={24} />}
-        title={careersWords('step-play')} line={line}
-        end={open
-          ? <span className="rounded-full bg-accent px-2.5 py-1 text-[12px] font-bold text-accent-ink">{careersWords('resume')}</span>
-          : done ? <span className="rounded-full bg-sunken px-2.5 py-1 text-[12px] font-bold" data-grade={grade}>{careersWords('played', { grade })}</span>
-            : <PlayIcon size={20} variant="solid" className="text-accent-strong" />} />
-    </Link>
   )
 }
 
@@ -167,10 +109,11 @@ function RaceRow({ id, round, grade, name, race, won, locked, onRace }: {
 function SeasonCard({ careerId, career, counts, onRace }: { careerId: string; career: CareerRecord; counts: UpgradeCounts; onRace: (target: RaceTarget) => void }) {
   const { game } = useRuntime()
   const races = useGame((snapshot) => snapshot.env?.content.races ?? [])
-  const stage = seasonStage(career)
+  const uma = useGame((snapshot) => snapshot.env?.content.umas.get(career.umaId))
+  const stages = useMemo(() => seasonStages(career, uma === undefined ? null : furlongRaceFor(career, uma, races)?.race.id ?? null), [career, uma, races])
   const objectives = seasonObjectives(career)
   const plays = useSeasonPlays(careerId, career.season)
-  const played = plays[stage.game] !== undefined
+  const played = stages.some((stage) => plays[stage.game] !== undefined)
   const allWon = objectives.every((objective) => objective.status === 'won')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -198,7 +141,7 @@ function SeasonCard({ careerId, career, counts, onRace }: { careerId: string; ca
         {seasonName(career.season)}
         <span className="text-[12px] font-semibold text-ink-soft">{careersWords('season', { n: career.season + 1, of: SEASONS })}</span>
       </h2>
-      <PlayStep careerId={careerId} career={career} stage={stage} races={races} state={stepState('play')} />
+      <SeasonGames careerId={careerId} season={career.season} stages={stages} races={races} state={stepState('play')} />
       <UpgradeStep careerId={careerId} counts={counts} state={stepState('upgrade')} />
       <div className={`${stepFrame(stepState('race', objectives.length > 0 && allWon))} flex-col items-stretch`} data-step="race" data-state={stepState('race', objectives.length > 0 && allWon)}>
         <StepHead n={3} state={stepState('race', objectives.length > 0 && allWon)} icon={<RaceIcon size={24} />} title={careersWords('step-race')}
@@ -242,13 +185,13 @@ function FinaleCard({ careerId, career, counts, onRace }: { careerId: string; ca
   const plays = useSeasonPlays(careerId, career.season)
   const played = plays['furlong-hand'] !== undefined
   if (race === null) return null
-  const stage = seasonStage(career, race.id)
+  const stages = seasonStages(career, race.id)
   const next = !played ? 'play' : 'race'
   return (
     <Panel className="space-y-2 p-3" data-racer="finale-card">
       <h2 className="font-display text-lg font-bold">{careersWords('finale')}</h2>
       <p className="text-[12px] text-ink-soft">{careersWords('finale-line')}</p>
-      <PlayStep careerId={careerId} career={career} stage={stage} races={env?.content.races ?? []} state={next === 'play' ? 'next' : 'open'} />
+      <SeasonGames careerId={careerId} season={career.season} stages={stages} races={env?.content.races ?? []} state={next === 'play' ? 'next' : 'open'} />
       <UpgradeStep careerId={careerId} counts={counts} state="open" />
       <div className={`${stepFrame(next === 'race' ? 'next' : 'open')} flex-col items-stretch`} data-step="race">
         <StepHead n={3} state={next === 'race' ? 'next' : 'open'} icon={<RaceIcon size={24} />} title={careersWords('step-race')} line={<CourseLine race={race} />} />

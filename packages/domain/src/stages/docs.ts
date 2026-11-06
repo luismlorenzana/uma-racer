@@ -17,7 +17,7 @@ import { MAX_STAGE_INPUTS } from './ops'
 import { registeredStages, stageRules } from './registry'
 import { SECONDS_PER_MOVE, STAGE_BANDS, STAGE_MINUTES } from './sim'
 import {
-  COLOUR_WEIGHT, FATIGUE_FREE, FATIGUE_PERCENT, MASTERCLASS_DRILLS, PARTNER_BONDED_AT, PARTNER_LIFT, PARTNER_RATE, REST_SP, YARD_LADDER,
+  COLOUR_WEIGHT, FATIGUE_FREE, FATIGUE_PERCENT, MASTERCLASS_DRILLS, PARTNER_BONDED_AT, PARTNER_LIFT, PARTNER_RATE, YARD_LADDER,
   YARD_PLACEMENTS, YARD_SIDE, YARD_TARGET, YARD_TIERS, YARD_VERSION,
 } from './yard/rules'
 
@@ -35,13 +35,13 @@ function stageGrades(): string {
     if (g === 'S') return `${GRADE_FLOORS.S} or more, or A with every task`
     return `${GRADE_FLOORS[g]} or more`
   }
-  return table(['Grade', 'p', 'Pays × the game\'s pay at A'], [...STAGE_GRADES].reverse().map((g) => [g, floor(g), PAY_MULTIPLIERS[g]]))
+  return table(['Grade', 'p', 'Pays × the bundle at A'], [...STAGE_GRADES].reverse().map((g) => [g, floor(g), PAY_MULTIPLIERS[g]]))
 }
 
 function stageGames(): string {
   return table(['Game', 'Rules version', 'Pays at A', 'Built'], (Object.keys(STAGE_NAMES) as (keyof typeof STAGE_NAMES)[]).map((kind) => {
-    const pay = STAGE_PAY_AT_A[kind]
-    const parts = [pay.drills > 0 ? `${pay.drills} drills` : '', pay.bond > 0 ? `${pay.bond} Bond` : '', `${pay.sp} SP`].filter(Boolean).join(', ')
+    const pay = STAGE_PAY_AT_A
+    const parts = `${pay.drills} drills, ${pay.bond} Bond, ${pay.sp} SP`
     const rules = stageRules(kind)
     return [STAGE_NAMES[kind], rules === null ? '' : rules.version, parts, registeredStages().includes(kind) ? 'yes' : 'not yet']
   }))
@@ -73,7 +73,7 @@ function yardNumbers(): string {
     ['A Partner\'s weight in the queue', `${PARTNER_RATE} × (100 + its Specialty Priority), on the colours' scale × 100`],
     ['A Partner\'s lift', `${PARTNER_LIFT.base} tier; ${PARTNER_LIFT.bonded} at bond ${PARTNER_BONDED_AT} or more`],
     ['Fatigue in the queue', `${FATIGUE_PERCENT}%, none among the first ${FATIGUE_FREE} pieces`],
-    ['Three Rests clearing', `${REST_SP} SP, beyond the grade's pay`],
+    ['Three Rests clearing', 'clears every Fatigue around them, and pays nothing'],
     ['The target (grade A)', `${YARD_TARGET} drills scored`],
     ['Rules version', YARD_VERSION],
   ])
@@ -95,9 +95,9 @@ function furlongGrades(): string {
 }
 
 function furlongPay(): string {
-  return table(['Grade', 'Bond', 'SP'], [...STAGE_GRADES].reverse().map((g) => {
-    const pay = stagePay('furlong-hand', PAY_MULTIPLIERS[g])
-    return [g, pay.bond, `${pay.sp}, and each Partner's SP Bonus the first time it plays`]
+  return table(['Grade', 'Drills', 'Bond', 'SP'], [...STAGE_GRADES].reverse().map((g) => {
+    const pay = stagePay(PAY_MULTIPLIERS[g])
+    return [g, pay.drills, pay.bond, pay.sp]
   }))
 }
 

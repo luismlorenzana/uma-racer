@@ -4,7 +4,7 @@
 // journalled by the domain's competent bot to one move from its end, so a test plays the last move through the host.
 // Invented values only.
 import { pickDecks, syntheticCards } from '@racer/domain/build'
-import { finaleRace, seasonStage, syntheticCareerUmas, syntheticCourses, syntheticRaces, syntheticSkills } from '@racer/domain/career'
+import { finaleRace, seasonStages, syntheticCareerUmas, syntheticCourses, syntheticRaces, syntheticSkills } from '@racer/domain/career'
 import { buildOperationEnv, careerId, commitOperation, initialSave, type OperationEnv, type SaveState } from '@racer/domain/save'
 import {
   FURLONG_MOVE, FURLONG_RULES, playBot, YARD_PLACEMENTS, YARD_RULES, type Journal, type StageInput, type StageKind,
@@ -53,11 +53,11 @@ export function startedState(deck: readonly string[] = []): SaveState {
 
 export const careerGame = (state: SaveState = startedState()): MemoryGame => memoryGame({ state, env: CAREER_ENV })
 
-/** The game the season's Play opens: Furlong Hand on its first objective's course, Training Yard otherwise. */
+/** The game the season's Play step opens: the main one, Furlong Hand, in every season and at the Finale (D391). */
 export function seasonGame(state: SaveState, id = CAREER): StageKind {
   const career = state.careers[id]!
   const uma = CAREER_ENV.content.umas.get(career.umaId)!
-  return seasonStage(career, career.season === 12 ? finaleRace(uma, career, CAREER_ENV.content.races).id : null).game
+  return seasonStages(career, career.season === 12 ? finaleRace(uma, career, CAREER_ENV.content.races).id : 'any')[0]!.game
 }
 
 /**

@@ -6,7 +6,7 @@ import type { SupportCardTemplate } from '../content'
 import { buildStageConfig } from '../stages/config'
 import type { StageConfig } from '../stages/contract'
 import { initFurlong, LINE, type FurlongCard, type FurlongState } from '../stages/furlong/rules'
-import { furlongSetup, type FurlongHer, type FurlongSetup } from '../stages/furlong/setup'
+import { furlongSetup, typicalStat, type FurlongHer, type FurlongSetup } from '../stages/furlong/setup'
 import type { Stats } from '../types'
 
 export const UMAS = syntheticCareerUmas()
@@ -33,7 +33,7 @@ export interface FurlongConfigOptions {
   readonly raceId?: string
   readonly uma?: number
   readonly season?: number
-  /** Her stats; the typical career's at the season in her base stats' shape when absent. */
+  /** Her stats; the typical career's at the season, every colour alike, when absent. */
   readonly stats?: Stats
   readonly bought?: readonly string[]
   /** Overrides of the setup's parts. */
@@ -49,7 +49,9 @@ export function furlongConfig(options: FurlongConfigOptions = {}): StageConfig {
   const uma = UMAS[options.uma ?? 0]!
   const race = RACES.find((entry) => entry.id === (options.raceId ?? 'sim-turf-medium-g1-3'))!
   const season = options.season ?? 6
-  const stats = options.stats ?? { speed: 380, stamina: 380, power: 380, guts: 380, wit: 380 }
+  // The typical career's stat at the season, every colour alike: her classes are 0 whatever the rivals' curve (D391).
+  const typical = Math.round(typicalStat(1, season))
+  const stats = options.stats ?? { speed: typical, stamina: typical, power: typical, guts: typical, wit: typical }
   const setup = furlongSetup({
     seed, T: 1, season, grade: race.grade, race, course: COURSES.get(race.courseId)!, uma, stats, strategy: options.her?.strategy ?? 'pace',
     bought: options.bought ?? [], skills: SKILLS, umas: UMA_MAP,

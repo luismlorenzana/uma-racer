@@ -62,14 +62,16 @@ function keptShown(line: HTMLElement): Stats {
 
 /**
  * A play: its game's journal one move from the end, the last move tapped in the host, then Done. The season's Play
- * step opens it, or (`again`) the header's Play again.
+ * step opens the main game, Furlong Hand; `other` opens Training Yard from the step's Another game row, and `again`
+ * that game from the header's Play again.
  */
-async function play(game: MemoryGame, where: Where, seed: number, again = false): Promise<void> {
-  const kind = seasonGame(now(game))
+async function play(game: MemoryGame, where: Where, seed: number, via: 'step' | 'other' | 'again' = 'step'): Promise<void> {
+  const kind = via === 'step' ? seasonGame(now(game)) : 'training-yard'
   const { journal, move } = oneMoveLeft(kind, now(game), seed)
   await game.journal.write({ id: journalId(kind, CAREER, 'career'), careerId: CAREER, journal })
   const before = careerNow(game).wallet
-  fireEvent.click(again ? within(screen.getByRole('group', { name: 'Play again' })).getByRole('link', { name: `Play ${kind === 'training-yard' ? 'Training Yard' : 'Furlong Hand'}` }) : step('play')!)
+  fireEvent.click(via === 'again' ? within(screen.getByRole('group', { name: 'Play again' })).getByRole('link', { name: 'Play Training Yard' })
+    : via === 'other' ? document.querySelector<HTMLElement>('[data-racer="other-game"][data-game="training-yard"]')! : step('play')!)
   await waitFor(() => expect(where()).toBe(playPath(CAREER, kind)))
   if (kind === 'training-yard') {
     const cells = await screen.findAllByRole('button', { name: /^Row \d, column \d/ })
@@ -79,9 +81,10 @@ async function play(game: MemoryGame, where: Where, seed: number, again = false)
     fireEvent.click(spread.querySelector<HTMLElement>(`[data-front="${move.x}"]`)!)
   }
   expect(await screen.findByLabelText(/^Grade [SABCD]$/)).toBeTruthy()
+  // Every game pays the same bundle (D391): drills, Bond and SP.
   const after = careerNow(game).wallet
-  if (kind === 'training-yard') expect(Object.values(after.drills).reduce((a, b) => a + b, 0)).toBeGreaterThan(Object.values(before.drills).reduce((a, b) => a + b, 0))
-  else expect(after.bond).toBeGreaterThan(before.bond)
+  expect(Object.values(after.drills).reduce((a, b) => a + b, 0)).toBeGreaterThan(Object.values(before.drills).reduce((a, b) => a + b, 0))
+  expect(after.bond).toBeGreaterThan(before.bond)
   fireEvent.click(screen.getByRole('button', { name: 'Done' }))
   await onCareerPage(where)
   expect(step('play')!.dataset.state).toBe('done')
@@ -196,9 +199,12 @@ describe('a whole URA Finale career on the screens', () => {
       // Seeds far apart: the host shows a play already settled with the same seed instead of paying it twice.
       await play(game, where, 1_000 * (season + 1))
       totals.plays += 1
-      // A Training Yard season is played twice: Play again pays like a first play.
-      if (seasonGame(now(game)) === 'training-yard') {
-        await play(game, where, 1_000 * (season + 1) + 500, true)
+      // Then the other game, Training Yard, from the step's Another game row, and in a season without a race once more
+      // from the header's Play again: each pays like a first play.
+      await play(game, where, 1_000 * (season + 1) + 300, 'other')
+      totals.plays += 1
+      if (seasonObjectives(careerNow(game)).length === 0) {
+        await play(game, where, 1_000 * (season + 1) + 600, 'again')
         totals.plays += 1
       }
       const spent = await upgrade(game, where, season)

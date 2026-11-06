@@ -273,8 +273,29 @@ describe('the report', () => {
     expect(furlongTasks({ ...all, partners: [] })[2]).toBe(false)
   })
 
-  it('reports the Partners\' SP on top, and pays nothing in drills', () => {
-    expect(reportFurlong(finished(3, 0, { bonusSp: 4 }))).toEqual({ p: 0.75, tasks: [false, false, false, false], score: 3, bonusSp: 4 })
+  it('reports the ground she ran in each colour as the drill split, and no SP (D391)', () => {
+    expect(reportFurlong(finished(3, 0, { ran: [50, 0, 20, 0, 5] }))).toEqual({
+      p: 0.75, tasks: [false, false, false, false], score: 3, drills: { speed: 50, stamina: 0, power: 20, guts: 0, wit: 5 },
+    })
+  })
+
+  it('counts a run card for its colour, a wild card for the season\'s focus, and a banked card for nothing', () => {
+    const state = furlongAt({ columns: ['s4 *2', 's3', 'g6', 'g6'], lead: 's2', pile: PILE_OF }, { focus: 3 })
+    expect(state.ran).toEqual([0, 0, 0, 0, 0])
+    const speed = must(run(state, 1))
+    const wild = must(run(speed, 0))
+    const banked = must(bank(wild, 0))
+    const ground = (next: FurlongState) => next.events.find((event) => event.kind === 'run')!
+    const [s, w] = [ground(speed), ground(wild)].map((event) => (event.kind === 'run' ? event.ground : 0))
+    expect(s).toBeGreaterThan(0)
+    expect(w).toBeGreaterThan(0)
+    expect(banked.ran).toEqual([s, 0, 0, w, 0])
+    expect(reportFurlong({ ...banked, phase: 'finished', finish: { place: 1, margin: 0 } }).drills).toEqual({ speed: s, stamina: 0, power: 0, guts: w, wit: 0 })
+  })
+
+  it('reads the season\'s focus from the config, Speed without one', () => {
+    expect(initFurlong({ ...furlongConfig(), seasonFocus: 'wit' }).focus).toBe(4)
+    expect(initFurlong(furlongConfig()).focus).toBe(0)
   })
 })
 

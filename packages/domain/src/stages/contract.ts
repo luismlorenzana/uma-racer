@@ -1,7 +1,8 @@
 // The stage contract (docs/game/07-stages.md, D384; 02 §5): what every mini-game implements and what the framework,
 // the sims and the views read. A game is pure seeded rules: `init` from a config, `step` one move at a time, `done`,
-// `report` (its score over its target, and its bonus tasks), and three bots. The framework grades the report, pays
-// the grade, and settles a play by replaying its journal from the seed. Types only.
+// `report` (its score over its target, its bonus tasks, and how its drills split across the colours), and three bots.
+// The framework grades the report, pays the grade (one bundle for every game, D391), and settles a play by replaying
+// its journal from the seed. Types only.
 import type { SupportCardType } from '../content'
 import type { CareerGame } from '../career/season'
 import type { StatKey, Stats } from '../types'
@@ -52,7 +53,7 @@ export interface StageConfig {
   readonly deck: readonly StageCard[]
   /** Each deck card's bond with her, 0–100, by card id. */
   readonly bonds: Readonly<Record<string, number>>
-  /** The season's focus stat (Training Yard). */
+  /** The season's focus stat: it tilts Training Yard's colours, and Furlong Hand's wild cards count for it (D391). */
   readonly seasonFocus?: StatKey
   /** The race whose course the stage runs (Furlong Hand, T156). */
   readonly course?: string
@@ -79,12 +80,13 @@ export interface StageReport {
   readonly p: number
   /** The bonus tasks, done or not: every one done lifts an A to S. */
   readonly tasks: readonly boolean[]
-  /** The score `p` is read from, in the game's own unit (the Yard's drills). */
+  /** The score `p` is read from, in the game's own unit (the Yard's drills, Furlong Hand's place). */
   readonly score: number
-  /** How a drill pay splits across the colours (relative weights); absent for a game that pays no drills. */
-  readonly drills?: Stats
-  /** SP earned in play beyond the grade's pay (the Yard's Rests); not scaled by the grade. */
-  readonly bonusSp?: number
+  /**
+   * How the bundle's drills split across the colours, as relative weights: the Yard's merges, the ground Furlong Hand
+   * ran in each colour (D391). A game adds no pay of its own; with every weight 0, the season's focus takes them all.
+   */
+  readonly drills: Stats
 }
 
 export type BotLevel = 'novice' | 'competent' | 'expert'

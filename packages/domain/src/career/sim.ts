@@ -1,13 +1,15 @@
-// `sim:careers` (docs/game/12-pacing.md, D383): every Uma's URA Finale career, played once at grade A by a fixed
-// allocation bot, with a median and a strong bonded deck (`pickDecks`). Each season pays its stage at A, the bot spends
+// `sim:careers` (docs/game/12-pacing.md, D383, D391): every Uma's URA Finale career, played once at grade A by a fixed
+// allocation bot, with a median and a strong bonded deck (`pickDecks`). Each season pays one play of its main game
+// (`CAREER_GAMES`' first, Furlong Hand) at A, the one bundle every game pays, and the bot spends
 // everything, and each objective is raced on the real engine, which the caller hands in (the domain never imports
 // it). It reports first-try win rates by grade and URA Finals round, the pacing (tree, bonds, skills, SP), and the
 // typical career's average stat at each season, which the rivals' season shares are set from. Reports aggregates only:
 // no Uma, card, skill or race id. Pure.
 //
 // The bot, every season after its stage pays:
-// - Training Yard's drills split across the colours in proportion to (1 + her growth rate), the season's focus colour
-//   × 1.5 (the sim's model of the Yard's queue);
+// - the drills split as Furlong Hand's do, by the colours she runs: the sim's model is the race's cards, three base
+//   strides a colour and each deck card's three strides and Partner in its type's colour, Friend and Group cards' in
+//   the season's focus;
 // - Bond: into the deck card nearest to 80, stat cards first, then on to 100;
 // - pips: each branch buys its next pip while its colour pays for it; a full branch's colour buys a Camp there;
 // - skills: golds first (with the white beneath), then the cheapest, while SP pays;
@@ -51,7 +53,7 @@ export interface CareerTargets {
   readonly bonded: Band
   /** SP earned, counted in golds with their whites at the content's median price. */
   readonly goldSkills: Band
-  /** The tree's share with one replay of each Training Yard season, at least. */
+  /** The tree's share with one replay of each season's play, at least. */
   readonly replayTree: number
 }
 
@@ -78,8 +80,9 @@ export const INVENTED_TARGETS: CareerTargets = Object.freeze({
   replayTree: 0.9,
 })
 
-/** The Yard's focus colour weighs this much more in the sim's model of its queue. */
-export const SIM_FOCUS_WEIGHT = 1.5
+/** The sim's model of Furlong Hand's cards: three base strides a colour, and each deck card's three strides and Partner. */
+export const SIM_BASE_CARDS = 3
+export const SIM_CARD_CARDS = 4
 /** A tree's sessions: five branches of 20 pips and two Camps of four. */
 export const TREE_SESSIONS = BRANCHES.length * PIPS_PER_BRANCH + 2 * CAMP_SESSIONS
 
@@ -98,7 +101,7 @@ export interface CareerSimOptions {
   readonly attempts: number
   /** Without an engine, only the pacing runs. */
   readonly race?: RaceEngine
-  /** Also plays the median deck's careers with one replay of each Training Yard season (no races), for the tree. */
+  /** Also plays the median deck's careers with one replay of each season's play (no races), for the tree. */
   readonly replay?: boolean
   /** Plays only the first n Umas' careers (every Uma still races as a rival). */
   readonly sample?: number
@@ -148,10 +151,8 @@ export interface DeckCareers {
   readonly goldSkills: number
   /** The career's average stat when it races, by season 0–12 (the Finale), averaged over careers. */
   readonly curve: readonly number[]
-  /** The tree's share with one replay of each Training Yard season, when run. */
+  /** The tree's share with one replay of each season's play, when run. */
   readonly replayTree: number | null
-  /** Training Yard seasons a career, on average. */
-  readonly yardSeasons: number
 }
 
 export interface CareerSimReport {
@@ -169,9 +170,13 @@ export const tallyRate = rate
 const mean = (values: readonly number[]): number => values.reduce((sum, value) => sum + value, 0) / Math.max(1, values.length)
 const meanStat = (stats: Stats): number => STATS.reduce((sum, stat) => sum + stats[stat], 0) / STATS.length
 
-/** The sim's model of a Yard play's drills: `total` split by (1 + growth) and the focus weight, largest remainders. */
-export function yardDrills(total: number, growth: Stats, focus: StatKey): Stats {
-  const weights = STATS.map((stat) => (1 + growth[stat]) * (stat === focus ? SIM_FOCUS_WEIGHT : 1))
+/**
+ * The sim's model of a Furlong Hand play's drills: `total` split by the race's cards in each colour (`SIM_BASE_CARDS`,
+ * and `SIM_CARD_CARDS` a deck card in its type's colour, a Friend or Group card's in the focus), largest remainders.
+ */
+export function mainGameDrills(total: number, deck: readonly Pick<SupportCardTemplate, 'type'>[], focus: StatKey): Stats {
+  const colourOf = (type: string): StatKey => ((STATS as readonly string[]).includes(type) ? type as StatKey : focus)
+  const weights = STATS.map((stat) => SIM_BASE_CARDS + SIM_CARD_CARDS * deck.filter((card) => colourOf(card.type) === stat).length)
   const sum = weights.reduce((a, b) => a + b, 0)
   const exact = weights.map((weight) => (total * weight) / sum)
   const floors = exact.map(Math.floor)
@@ -208,19 +213,18 @@ interface Bot {
   bonds: Record<string, BondRecord>
 }
 
-/** The season's stage pays at grade A: Training Yard `yardPlays` times over. */
-function pay(bot: Bot, uma: UmaTemplate, yardPlays: number): void {
-  const yard = bot.career.season !== FINALE_SEASON && seasonObjectives(bot.career).length === 0
-  const at = STAGE_PAY_AT_A[yard ? 'training-yard' : 'furlong-hand']
-  const times = yard ? yardPlays : 1
+/** The season's play pays the bundle at grade A, `plays` times over, its drills split by the deck's colours. */
+function pay(bot: Bot, cards: ReadonlyMap<string, SupportCardTemplate>, plays: number): void {
+  const at = STAGE_PAY_AT_A
   const wallet = bot.career.wallet
-  const drills = yard ? yardDrills(at.drills * times, uma.growthRates, seasonFocus(bot.career.season)) : null
+  const deck = bot.career.deck.flatMap((id) => cards.get(id) ?? [])
+  const drills = mainGameDrills(at.drills * plays, deck, seasonFocus(bot.career.season))
   bot.career = {
     ...bot.career,
     wallet: {
-      drills: drills === null ? wallet.drills : (Object.fromEntries(STATS.map((stat) => [stat, wallet.drills[stat] + drills[stat]])) as unknown as Stats),
-      bond: wallet.bond + at.bond * times,
-      sp: wallet.sp + at.sp * times,
+      drills: Object.fromEntries(STATS.map((stat) => [stat, wallet.drills[stat] + drills[stat]])) as unknown as Stats,
+      bond: wallet.bond + at.bond * plays,
+      sp: wallet.sp + at.sp * plays,
     },
   }
 }
@@ -309,17 +313,15 @@ interface OneCareer {
   readonly spEarned: number
   readonly spParts: SpParts
   readonly curve: readonly number[]
-  readonly yardSeasons: number
 }
 
 type SimContent = RaceContent & { readonly races: readonly RaceTemplate[] }
 
 /** One Uma's career with a deck: the bot's choices, and the races when an engine is given. */
 function playCareer(uma: UmaTemplate, deck: { readonly label: 'median' | 'strong'; readonly cards: readonly SupportCardTemplate[] }, content: SimContent,
-  contentVersion: string, options: CareerSimOptions, tallies: Record<TallyKey, Tally>, yardPlays = 1): OneCareer {
+  contentVersion: string, options: CareerSimOptions, tallies: Record<TallyKey, Tally>, plays = 1): OneCareer {
   const bot: Bot = { career: withDeck(newCareer(uma, options.T ?? 1, content.races, 0), deck.cards.map((card) => card.id), content.cards), bonds: {} }
   const curve: number[] = []
-  let yardSeasons = 0
   const statsNow = () => meanStat(careerStats(bot.career, { uma, cards: content.cards, bonds: bot.bonds }))
   const race = (key: TallyKey, spec: RaceSpec) => {
     for (let attempt = 0; options.race !== undefined && attempt < options.attempts; attempt++) {
@@ -331,8 +333,7 @@ function playCareer(uma: UmaTemplate, deck: { readonly label: 'median' | 'strong
     }
   }
   for (let season = 0; season < SEASONS; season++) {
-    if (seasonObjectives(bot.career).length === 0) yardSeasons++
-    pay(bot, uma, yardPlays)
+    pay(bot, content.cards, plays)
     spend(bot, uma, content)
     curve.push(statsNow())
     for (const objective of seasonObjectives(bot.career)) {
@@ -348,7 +349,7 @@ function playCareer(uma: UmaTemplate, deck: { readonly label: 'median' | 'strong
     bot.career = { ...bot.career, season: season + 1 }
   }
   // The Finale: its prep heat, then the three rounds.
-  pay(bot, uma, 1)
+  pay(bot, content.cards, 1)
   spend(bot, uma, content)
   curve.push(statsNow())
   const finale = finaleRace(uma, bot.career, content.races)
@@ -367,7 +368,6 @@ function playCareer(uma: UmaTemplate, deck: { readonly label: 'median' | 'strong
       hints: hintRewards(bot.career, view).sp,
     },
     curve,
-    yardSeasons,
   }
 }
 
@@ -405,7 +405,6 @@ export function simulateCareers(content: CareerSimContent, options: CareerSimOpt
       goldSkills: spEarned / pairPrice,
       curve: Array.from({ length: FINALE_SEASON + 1 }, (_, season) => mean(runs.map((run) => run.curve[season]!))),
       replayTree: replay === null ? null : mean(replay.map((run) => run.tree)),
-      yardSeasons: mean(runs.map((run) => run.yardSeasons)),
     }
   })
   const raced = options.race !== undefined && options.attempts > 0
@@ -450,6 +449,6 @@ export function careerFailures(decks: readonly DeckCareers[], t: CareerTargets, 
   if (medianDeck.goldSkills < t.goldSkills.min || medianDeck.goldSkills > t.goldSkills.max) {
     failures.push(`It earns SP for ${medianDeck.goldSkills.toFixed(1)} golds with their whites, outside ${t.goldSkills.min}–${t.goldSkills.max}`)
   }
-  if (medianDeck.replayTree !== null && medianDeck.replayTree < t.replayTree) failures.push(`One replay of each Training Yard season buys ${pct(medianDeck.replayTree)} of the tree, under ${pct(t.replayTree)}`)
+  if (medianDeck.replayTree !== null && medianDeck.replayTree < t.replayTree) failures.push(`One replay of each season's play buys ${pct(medianDeck.replayTree)} of the tree, under ${pct(t.replayTree)}`)
   return failures
 }

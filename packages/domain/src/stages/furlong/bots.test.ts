@@ -80,9 +80,10 @@ describe('the bots', () => {
 
 describe('golden plays', () => {
   // Pinned: a change to the rules, the deals, the scripts or the bots moves these, and must bump FURLONG_VERSION when
-  // the rules moved.
+  // the rules moved. D391's rule change left all six as they were; seed 1's then moved with the rivals' season curve
+  // (its field's strength), its moves and report unchanged.
   const GOLDEN: Readonly<Record<string, number>> = {
-    'novice:1': 860867204, 'competent:1': 533812496, 'expert:1': 1186989229,
+    'novice:1': 3042792966, 'competent:1': 3074537747, 'expert:1': 1369249322,
     'novice:2': 3897258636, 'competent:2': 2138820939, 'expert:2': 75657069,
   }
 
@@ -94,6 +95,19 @@ describe('golden plays', () => {
   it.each(Object.keys(GOLDEN))('%s replays to its pinned hash', (key) => {
     const [level, seed] = key.split(':') as [BotLevel, string]
     expect(fingerprint(level, Number(seed))).toBe(GOLDEN[key])
+  })
+
+  // The same plays' reports, pinned apart from the moves: D391 changed the report (the drills by colour, no SP) and
+  // left the moves' hashes above as they were.
+  const GOLDEN_REPORTS: Readonly<Record<string, number>> = {
+    'novice:1': 2403015024, 'competent:1': 508336663, 'expert:1': 56015651,
+    'novice:2': 1668968983, 'competent:2': 4071766748, 'expert:2': 808502454,
+  }
+
+  it.each(Object.keys(GOLDEN_REPORTS))('%s reports to its pinned hash', (key) => {
+    const [level, seed] = key.split(':') as [BotLevel, string]
+    const { state } = play(level, furlongConfig({ seed: Number(seed) }), Number(seed) ^ 0x5eed5eed)
+    expect(fnv1a(JSON.stringify(FURLONG_RULES.report(state)))).toBe(GOLDEN_REPORTS[key])
   })
 })
 
@@ -119,7 +133,7 @@ describe('fairness', () => {
         expect(moves.some((next) => next !== null) || stepFurlong(state, { tick: state.moves, code: FURLONG_MOVE.flip }) !== null).toBe(true)
       }
     }
-    const lost = stageAward('furlong-hand', 'D', { p: 0, tasks: [false, false, false, false], score: 9 }, false)
+    const lost = stageAward('D', { p: 0, tasks: [false, false, false, false], score: 9, drills: { speed: 0, stamina: 0, power: 0, guts: 0, wit: 0 } }, false)
     expect(lost.bond).toBeGreaterThan(0)
     expect(lost.sp).toBeGreaterThan(0)
   })

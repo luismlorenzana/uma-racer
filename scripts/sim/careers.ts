@@ -40,11 +40,11 @@ async function privatePack(): Promise<CareerSimContent | null> {
 function print(source: string, report: CareerSimReport, seconds: number): void {
   const pct = (n: number) => `${(n * 100).toFixed(1)}%`.padStart(6)
   console.log(`\nT${report.T} · ${source}: ${report.umas} Umas, ${ATTEMPTS} first tries a race, ${seconds.toFixed(0)} s`)
-  console.log('deck      G3     G2     G1   qual   semi  final   tree  bond80  skills  golds  Yard seasons')
+  console.log('deck      G3     G2     G1   qual   semi  final   tree  bond80  skills  golds')
   for (const deck of report.decks) {
     const r = deck.rates
     const cells = [r.g3, r.g2, r.g1, r.qualifier, r.semifinal, r.final].map((tally) => pct(tallyRate(tally))).join(' ')
-    console.log(`${deck.label.padEnd(7)} ${cells} ${pct(deck.tree)}  ${deck.bonded.toFixed(2).padStart(5)}  ${deck.skills.toFixed(2).padStart(6)}  ${deck.goldSkills.toFixed(2).padStart(5)}  ${deck.yardSeasons.toFixed(2).padStart(6)}`)
+    console.log(`${deck.label.padEnd(7)} ${cells} ${pct(deck.tree)}  ${deck.bonded.toFixed(2).padStart(5)}  ${deck.skills.toFixed(2).padStart(6)}  ${deck.goldSkills.toFixed(2).padStart(5)}`)
   }
   console.log(`(skills: racing skills the bot bought; golds: SP earned ÷ a gold with its white, ${report.goldPairPrice} SP)`)
   for (const deck of report.decks) {
@@ -52,7 +52,7 @@ function print(source: string, report: CareerSimReport, seconds: number): void {
     console.log(`${deck.label} SP ${deck.spEarned.toFixed(0)}: stages and races ${sp.wallet.toFixed(0)}, tree ${sp.tree.toFixed(0)}, deck ${sp.deck.toFixed(0)}, hints ${sp.hints.toFixed(0)}`)
   }
   const median = report.decks.find((deck) => deck.label === 'median')
-  if (median?.replayTree != null) console.log(`one replay of each Training Yard season: ${pct(median.replayTree)} of the tree`)
+  if (median?.replayTree != null) console.log(`one replay of each season's play: ${pct(median.replayTree)} of the tree`)
   for (const deck of report.decks) {
     const end = deck.curve[deck.curve.length - 1]!
     console.log(`${deck.label} average stat by season: ${deck.curve.map((value) => value.toFixed(0)).join(' ')}`)

@@ -49,24 +49,24 @@ Finale, the typical career's average stat at its Finale, measured by `sim:career
 strong as **the typical career at the race's season**: the trained stat × the season's share, then less the grade's
 handicap. So a Junior race's rivals are as green as she is, and a Senior G1's are nearly trained. The shares are the
 typical career's average stat in each season over its average at the Finale (a median deck, every stage played once
-at A); Junior Spring's is set lower, since she races there on her base stats, before any Training Yard, and the fields'
-stamina-first presets would outlast her. A race outside a career uses the full trained stat.
+at A), re-measured when D391 put one bundle on every season's play; Junior Spring's is set lower, since she races there
+after one play, near her base stats, and the fields' stamina-first presets would outlast her. A race outside a career uses the full trained stat.
 
 <!-- live:rival-seasons -->
 | Season | Share | Field stat before the handicap (T = 1) |
 |---|---|---|
 | Junior Spring | 0.150 | 84 |
-| Junior Summer | 0.357 | 200 |
-| Junior Autumn | 0.440 | 246 |
-| Junior Winter | 0.496 | 277 |
-| Classic Spring | 0.536 | 300 |
-| Classic Summer | 0.621 | 347 |
-| Classic Autumn | 0.678 | 379 |
-| Classic Winter | 0.743 | 415 |
-| Senior Spring | 0.758 | 424 |
-| Senior Summer | 0.860 | 481 |
-| Senior Autumn | 0.899 | 503 |
-| Senior Winter | 0.981 | 548 |
+| Junior Summer | 0.330 | 184 |
+| Junior Autumn | 0.392 | 219 |
+| Junior Winter | 0.439 | 245 |
+| Classic Spring | 0.499 | 279 |
+| Classic Summer | 0.548 | 306 |
+| Classic Autumn | 0.613 | 343 |
+| Classic Winter | 0.668 | 373 |
+| Senior Spring | 0.722 | 404 |
+| Senior Summer | 0.827 | 462 |
+| Senior Autumn | 0.890 | 498 |
+| Senior Winter | 0.922 | 515 |
 | Finale | 1.000 | 559 |
 <!-- /live -->
 

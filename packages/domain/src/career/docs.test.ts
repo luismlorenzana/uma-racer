@@ -3,6 +3,7 @@
 import { describe, expect, it } from 'vitest'
 import { AREA_BLOCKS } from '../docs/render'
 import { LIVE_BLOCKS } from './docs'
+import { STAGE_PAY_AT_A } from './pay'
 
 describe('live blocks', () => {
   it('render the tables this area owns, and join the registry', () => {
@@ -17,9 +18,9 @@ describe('live blocks', () => {
 
   it('names the calendar, the rounds and the pay', () => {
     expect(LIVE_BLOCKS['career-calendar']!()).toContain('| 5 (cherry blossom) | Spring |')
-    expect(LIVE_BLOCKS['career-seasons']!()).toContain('| Finale | 12 | (Furlong Hand only) |')
+    expect(LIVE_BLOCKS['career-seasons']!()).toContain('| Finale | 12 | Power (Furlong Hand only) |')
     expect(LIVE_BLOCKS['career-finale']!()).toContain('| URA Finals Final | G1 | 10% |')
-    expect(LIVE_BLOCKS['career-pay']!()).toContain('| Training Yard | 200 | | 30 |')
+    expect(LIVE_BLOCKS['career-pay']!()).toContain(`| Every game | ${STAGE_PAY_AT_A.drills} | ${STAGE_PAY_AT_A.bond} | ${STAGE_PAY_AT_A.sp} |`)
     expect(LIVE_BLOCKS['rival-seasons']!()).toContain('| Finale | 1.000 | 559 |')
   })
 })

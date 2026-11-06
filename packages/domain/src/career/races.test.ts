@@ -108,11 +108,11 @@ describe('rewards and pay', () => {
     expect(RACES.length).toBeGreaterThan(0)
   })
 
-  it('scales a stage\'s pay at A by its grade\'s multiplier', () => {
-    expect(stagePay('training-yard', 1)).toEqual(STAGE_PAY_AT_A['training-yard'])
-    expect(stagePay('furlong-hand', 0.25)).toEqual({
-      drills: 0, bond: Math.round(STAGE_PAY_AT_A['furlong-hand'].bond * 0.25), sp: Math.round(STAGE_PAY_AT_A['furlong-hand'].sp * 0.25),
-    })
-    expect(() => stagePay('training-yard', -1)).toThrow(RangeError)
+  it('scales the one stage bundle at A by a grade\'s multiplier (D391)', () => {
+    expect(STAGE_PAY_AT_A).toEqual({ drills: 110, bond: 12, sp: 25 })
+    expect(stagePay(1)).toEqual(STAGE_PAY_AT_A)
+    expect(stagePay(0.25)).toEqual({ drills: 28, bond: 3, sp: 6 })
+    expect(stagePay(1.2)).toEqual({ drills: 132, bond: 14, sp: 30 })
+    expect(() => stagePay(-1)).toThrow(RangeError)
   })
 })

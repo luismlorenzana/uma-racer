@@ -35,8 +35,8 @@ function careerCalendar(): string {
 }
 
 function careerSeasons(): string {
-  return table(['Season', 'Index', 'Training Yard focus'], Array.from({ length: SEASONS + 1 }, (_, season) =>
-    [seasonName(season), season, season === FINALE_SEASON ? '(Furlong Hand only)' : cap(seasonFocus(season))]))
+  return table(['Season', 'Index', 'Focus'], Array.from({ length: SEASONS + 1 }, (_, season) =>
+    [seasonName(season), season, cap(seasonFocus(season)) + (season === FINALE_SEASON ? ' (Furlong Hand only)' : '')]))
 }
 
 function careerFinale(): string {
@@ -53,9 +53,7 @@ function careerRewards(): string {
 }
 
 function careerPay(): string {
-  const name: Record<string, string> = { 'training-yard': 'Training Yard', 'furlong-hand': 'Furlong Hand' }
-  return table(['Game', 'Drills', 'Bond', 'SP'], Object.entries(STAGE_PAY_AT_A).map(([game, pay]) =>
-    [name[game] ?? game, pay.drills || '', pay.bond || '', pay.sp]))
+  return table(['Game', 'Drills', 'Bond', 'SP'], [['Every game', STAGE_PAY_AT_A.drills, STAGE_PAY_AT_A.bond, STAGE_PAY_AT_A.sp]])
 }
 
 function targets(t: CareerTargets): Cell[][] {
@@ -70,7 +68,7 @@ function targets(t: CareerTargets): Cell[][] {
     ['Tree bought', band(t.tree, pct)],
     ['Deck cards at bond 80', band(t.bonded, plain)],
     ['SP earned, in golds with their whites', band(t.goldSkills, plain)],
-    ['Tree bought with one replay of each Training Yard season', `≥ ${pct(t.replayTree)}`],
+    ['Tree bought with one replay of each season\'s play', `≥ ${pct(t.replayTree)}`],
   ]
 }
 

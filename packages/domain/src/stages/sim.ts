@@ -1,8 +1,9 @@
 // `sim:stages` (docs/game/07-stages.md §6, D384, D385; 02 §2 and §5): each game's three bots over many seeds, graded
 // by the framework, against the bands M036 sets: the competent bot's median at A, the novice's at C or B, the expert at
 // S on 35–65% of seeds, and a play of 3–7 minutes at a human pace (the competent bot's median moves × the game's
-// seconds a move; Furlong Hand's own packet asks 3.5–6.5). Reports aggregates only: no Uma or card id. Pure: the
-// configs come from the caller.
+// seconds a move; Furlong Hand's own packet asks 3.5–6.5), and the competent bot's drills spread over at least three
+// colours (each holding a tenth of the split, D391). Reports aggregates only: no Uma or card id. Pure: the configs come
+// from the caller.
 import { initialBond } from '../build/bond'
 import { pickDecks } from '../build/decks'
 import { finaleRace } from '../career/finale'
@@ -11,7 +12,7 @@ import { newCareer } from '../career/start'
 import type { CourseTemplate, RaceTemplate, SkillTemplate, SupportCardTemplate, UmaTemplate } from '../content'
 import { bestStrategy } from '../race-attempt'
 import { FINALE_SEASON, SEASONS, type CareerRecord } from '../save/records'
-import { STATS, type Stats } from '../types'
+import { STATS, type StatKey, type Stats } from '../types'
 import { buildStageConfig, FINALE_PREP_GRADE } from './config'
 import type { BotLevel, StageConfig, StageInput, StageKind, StageRules } from './contract'
 import { BOT_LEVELS, STAGE_NAMES } from './contract'
@@ -29,6 +30,8 @@ export interface StageBands {
   readonly expertS: { readonly min: number; readonly max: number }
   /** A play's length at a human pace, in minutes. */
   readonly minutes: { readonly min: number; readonly max: number }
+  /** The colours the competent bot's median play splits its drills over, at least (`coloursCovered`). */
+  readonly colours: number
 }
 
 /** M036's bands for every game. */
@@ -37,7 +40,17 @@ export const STAGE_BANDS: StageBands = Object.freeze({
   novice: Object.freeze(['C', 'B'] as const),
   expertS: Object.freeze({ min: 0.35, max: 0.65 }),
   minutes: Object.freeze({ min: 3, max: 7 }),
+  colours: 3,
 })
+
+/** A colour counts as covered when it holds this share of a play's drill weights. */
+export const COLOUR_SHARE = 0.1
+
+/** The colours holding at least `COLOUR_SHARE` of a report's drill weights. */
+export function coloursCovered(drills: Stats): number {
+  const total = STATS.reduce((sum, stat) => sum + Math.max(0, drills[stat]), 0)
+  return total <= 0 ? 0 : STATS.filter((stat) => drills[stat] / total >= COLOUR_SHARE).length
+}
 
 /** Each game's length band, in minutes at a human pace: M036's 3–7, and Furlong Hand's packet's 3.5–6.5 (T156). */
 export const STAGE_MINUTES: Readonly<Record<StageKind, { readonly min: number; readonly max: number }>> = Object.freeze({
@@ -78,8 +91,7 @@ export function stageSimConfig(kind: StageKind, content: StageSimContent): (n: n
     return buildStageConfig({
       kind, seed: simSeed(n), T: 1, uma, practice: false,
       deck: deck.map((card, i) => ({ card, bond: i < bonded ? Math.max(80, initialBond(card)) : initialBond(card) })),
-      ...(kind === 'training-yard' ? { focus: seasonFocus(n % SEASONS) } : {}),
-      ...(furlong === null ? {} : furlong(n, uma)),
+      ...(furlong === null ? { focus: seasonFocus(n % SEASONS) } : furlong(n, uma)),
     })
   }
 }
@@ -89,7 +101,7 @@ export function stageSimConfig(kind: StageKind, content: StageSimContent): (n: n
  * grade's field. Her stats are the typical career's at that season (`typicalStat`) in her own base stats' shape, her
  * style her best, and she has bought a skill from her deck's hints every two seasons.
  */
-function furlongSim(content: StageSimContent, deck: readonly SupportCardTemplate[]): (n: number, uma: UmaTemplate) => { course: string; furlong: FurlongSetup } {
+function furlongSim(content: StageSimContent, deck: readonly SupportCardTemplate[]): (n: number, uma: UmaTemplate) => { course: string; furlong: FurlongSetup; focus: StatKey } {
   const races = content.races ?? []
   const courses = new Map((content.courses ?? []).map((course) => [course.id, course]))
   const skills = new Map((content.skills ?? []).map((skill) => [skill.id, skill]))
@@ -114,7 +126,7 @@ function furlongSim(content: StageSimContent, deck: readonly SupportCardTemplate
       seed: simSeed(n), T: 1, season, grade: objective === undefined ? FINALE_PREP_GRADE : race.grade, race, course: courses.get(race.courseId)!, uma,
       stats, strategy: bestStrategy(uma), bought: hints.slice(0, Math.floor(season / 2)), skills, umas,
     })
-    return { course: race.id, furlong }
+    return { course: race.id, furlong, focus: seasonFocus(season) }
   }
 }
 
@@ -146,6 +158,8 @@ export interface BotLine {
   readonly allTasks: number
   readonly medianScore: number
   readonly medianMoves: number
+  /** The median play's colours covered by its drill split (`coloursCovered`). */
+  readonly medianColours: number
 }
 
 /** The competent bot's plays in one group (Furlong Hand's by distance). */
@@ -189,6 +203,7 @@ export function simulateStage<S>(rules: StageRules<S>, configOf: (n: number) => 
     const ps: number[] = []
     const scores: number[] = []
     const moves: number[] = []
+    const colours: number[] = []
     const grades = Object.fromEntries(STAGE_GRADES.map((g) => [g, 0])) as Record<StageGrade, number>
     let allTasks = 0
     for (let n = 0; n < seeds; n += 1) {
@@ -199,6 +214,7 @@ export function simulateStage<S>(rules: StageRules<S>, configOf: (n: number) => 
       ps.push(settled.report.p)
       scores.push(settled.report.score)
       moves.push(inputs.length)
+      colours.push(coloursCovered(settled.report.drills))
       const group = level === 'competent' ? groupOf(config) : null
       if (group !== null) {
         const tally = groups.get(group) ?? { ps: [], moves: [] }
@@ -212,7 +228,7 @@ export function simulateStage<S>(rules: StageRules<S>, configOf: (n: number) => 
     const medianP = median(ps)
     lines.push({
       level, plays: seeds, medianP, medianGrade: grade(medianP, []), grades, sShare: grades.S / seeds, allTasks,
-      medianScore: median(scores), medianMoves: median(moves),
+      medianScore: median(scores), medianMoves: median(moves), medianColours: median(colours),
     })
   }
   const line = (level: BotLevel) => lines.find((each) => each.level === level)!
@@ -225,6 +241,8 @@ export function simulateStage<S>(rules: StageRules<S>, configOf: (n: number) => 
   const s = line('expert').sShare
   if (s < bands.expertS.min || s > bands.expertS.max) failures.push(`The expert reaches S on ${pct(s)}, outside ${pct(bands.expertS.min)}–${pct(bands.expertS.max)}`)
   if (minutes < bands.minutes.min || minutes > bands.minutes.max) failures.push(`A play runs ${minutes.toFixed(1)} minutes, outside ${bands.minutes.min}–${bands.minutes.max}`)
+  const covered = line('competent').medianColours
+  if (covered < bands.colours) failures.push(`The competent bot's drills split over ${covered} colours, under ${bands.colours}`)
   const groupLines = [...groups.entries()].map(([label, tally]) => ({
     label, plays: tally.ps.length, medianP: median(tally.ps), medianMoves: median(tally.moves), minutes: (median(tally.moves) * pace) / 60,
   }))

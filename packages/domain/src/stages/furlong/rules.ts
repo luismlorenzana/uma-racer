@@ -4,17 +4,21 @@
 // eight; she plays front cards that match the lead's colour or are one higher (6 → 1), running each for ground or
 // banking it for Drive, and flips a draw card when stuck, for Breath. Once a spread she may redraw it free. Between
 // spreads she picks a line. The field are real Umas whose next move is always shown; the spurt's spread multiplies her
-// run cards by her Drive, and the finish order is her ground against theirs. Integers only; every deal and every
+// run cards by her Drive, and the finish order is her ground against theirs. The ground she ran in each colour is how
+// the career's drills split (a wild card's counting for the season's focus, D391). Integers only; every deal and every
 // rival's script rolled from the seed: pure.
 import { INITIAL_STAT_SOURCE_IDS, STAT_BONUS_SOURCE_IDS } from '../../cards'
-import { STATS, type Grade, type Strategy } from '../../types'
+import { STATS, type Grade, type Stats, type Strategy } from '../../types'
 import type { StageCard, StageConfig, StageInput, StageReport, StageUnique } from '../contract'
 import { stageRng } from '../rng'
 import { gradeRank, type FurlongSetup, type FurlongSkill, type FurlongTerrain, type SkillTrigger } from './setup'
 
 // --- The numbers (set by `sim:stages`, D385) ------------------------------------------------------------------------
 
-/** Bump on any rule change: a journal on another version is refused. */
+/**
+ * Bump on any rule change: a journal on another version is refused. D391 changed only the report (the drill split, no
+ * SP) and recast Study as Scout, which shows cards and moves no ground, so every journal replays to the same result.
+ */
 export const FURLONG_VERSION = 1
 export const COLUMNS = 4
 /** A leg's spread is four columns three deep; the spurt's four deep. */
@@ -139,17 +143,18 @@ export const SKILL_CARDS: readonly number[] = Object.freeze([1, 2, 3, 4])
 // --- The effect ids it reads (05 §1) --------------------------------------------------------------------------------
 
 export const EFFECT_IDS = Object.freeze({
-  friendship: 1, effectiveness: 8, raceBonus: 15, hintFrequency: 18, specialtyPriority: 19, spBonus: 30,
+  friendship: 1, effectiveness: 8, raceBonus: 15, hintFrequency: 18, specialtyPriority: 19,
 })
 
 // --- Abilities: each card's unique effect, mapped ---------------------------------------------------------------------
 
 /**
- * The ability library: each Partner's signature, from its card's unique effect (`abilityOf`). Eleven abilities; a
- * card with no unique has none.
+ * The ability library: each Partner's signature, from its card's unique effect (`abilityOf`). Ten abilities; a card
+ * with no unique has none. A stage pays no SP of its own (D391), so a unique that boosts Skill Point Bonus or Initial
+ * Skill Points scouts, as the hint effects do.
  */
 export const ABILITIES = Object.freeze([
-  'kindred', 'second-wind', 'long-stride', 'fresh-legs', 'kick', 'scout', 'quick-start', 'study', 'team-play', 'rhythm', 'inside-line',
+  'kindred', 'second-wind', 'long-stride', 'fresh-legs', 'kick', 'scout', 'quick-start', 'team-play', 'rhythm', 'inside-line',
 ] as const)
 export type Ability = (typeof ABILITIES)[number]
 
@@ -162,7 +167,6 @@ export const ABILITY_WORDS: Readonly<Record<Ability, string>> = Object.freeze({
   'kick': 'played, +2 Drive',
   'scout': 'played, shows the next spread\'s front cards',
   'quick-start': 'dealt into the first spread\'s front row',
-  'study': 'played the first time, +2 SP',
   'team-play': 'wild: plays on any lead, and any card follows it',
   'rhythm': 'its chain counts 2 more toward the chain\'s Drive',
   'inside-line': 'played, opens a blocked column',
@@ -177,10 +181,9 @@ export const ABILITY_BY_EFFECT: Readonly<Record<number, Ability>> = Object.freez
   9: 'fresh-legs', 10: 'fresh-legs', 11: 'fresh-legs', 12: 'fresh-legs', 13: 'fresh-legs',
   14: 'team-play',
   15: 'kick', 16: 'kick',
-  17: 'scout', 18: 'scout',
+  17: 'scout', 18: 'scout', 30: 'scout', 32: 'scout',
   19: 'quick-start',
   26: 'inside-line', 27: 'inside-line',
-  30: 'study', 32: 'study',
 })
 
 /** Conditionals named by what they count rather than what they boost: the deck's make-up is team play. */
@@ -228,8 +231,6 @@ export interface FurlongPartner {
   /** A rainbow: bond 80 or more (60 with the kindred ability). */
   readonly rainbow: boolean
   readonly ability: Ability | null
-  /** Its real Skill Point Bonus, paid as SP the first time it is played. */
-  readonly sp: number
   /** Its real Specialty Priority: the chance, in percent, it is dealt into the first spread. */
   readonly priority: number
 }
@@ -282,6 +283,8 @@ export interface FurlongState {
   readonly peek: number
   /** Drive the deck's Race Bonus adds at the spurt. */
   readonly spurtDrive: number
+  /** The colour a wild card's ground counts for in the drill split: the season's focus (D391). */
+  readonly focus: number
 
   // The play.
   readonly phase: FurlongPhase
@@ -323,7 +326,8 @@ export interface FurlongState {
   readonly legsInBand: number
   /** Moves made: the next move's tick. */
   readonly moves: number
-  readonly bonusSp: number
+  /** The ground run in each colour, Speed … Wit (a wild card's in the focus colour): the report's drill split. */
+  readonly ran: readonly number[]
   readonly finish: { readonly place: number; readonly margin: number } | null
   readonly events: readonly FurlongEvent[]
 }
@@ -355,7 +359,6 @@ export function furlongPartners(config: Pick<StageConfig, 'deck' | 'bonds'>): Fu
       colour: colourOf(card.type),
       rainbow: (config.bonds[card.id] ?? 0) >= (ability === 'kindred' ? KINDRED_BOND : RAINBOW_BOND),
       ability,
-      sp: effect(card, EFFECT_IDS.spBonus),
       priority: Math.min(100, effect(card, EFFECT_IDS.specialtyPriority)),
     }
   })
@@ -497,13 +500,14 @@ export function initFurlong(config: StageConfig): FurlongState {
     strategy: setup.her.strategy, band: styleBand(setup.her.strategy, setup.her.style), classes, bonus, effectiveness,
     peek: Math.min(COLUMNS, Math.floor(sum(EFFECT_IDS.hintFrequency) / HINT_PER_PEEK) + (classes[4]! >= 1 ? 1 : 0)),
     spurtDrive: Math.floor(sum(EFFECT_IDS.raceBonus) / RACE_BONUS_PER_DRIVE),
+    focus: Math.max(0, colourOf(config.seasonFocus ?? STATS[0])),
   }
   const deal = dealSpread({ ...base, played: 0 }, 0)
   return {
     ...base,
     phase: 'line', spread: 0, columns: deal.columns, pile: deal.pile, lead: -1, leadWild: false, chain: 0, chainPaid: false, rainbow: 0,
     rainbowLit: false, redrawn: false, line: LINE.middle, blocked: -1, peeked: base.peek, scouting: false, breath, drive: 0, ground, rivalGround, place: 0, played: 0,
-    cleanSpreads: 0, legsInBand: 0, moves: 0, bonusSp: 0, finish: null, events: [],
+    cleanSpreads: 0, legsInBand: 0, moves: 0, ran: [0, 0, 0, 0, 0], finish: null, events: [],
   }
 }
 
@@ -622,7 +626,6 @@ export const furlongDone = (state: FurlongState): boolean => state.phase === 'fi
 interface Tally {
   breath: number
   drive: number
-  bonusSp: number
   played: number
   events: FurlongEvent[]
 }
@@ -645,7 +648,7 @@ function endSpread(state: FurlongState, tally: Tally): FurlongState {
     tally.events.push({ kind: 'leg-end', spread: state.spread, left, clean, inBand: true, place: her }, { kind: 'finish', place: her, margin })
     return {
       ...state, phase: 'finished', rivalGround, place: her, breath, drive, cleanSpreads, finish: { place: her, margin },
-      bonusSp: tally.bonusSp, played: tally.played, events: tally.events,
+      played: tally.played, events: tally.events,
     }
   }
   const band = inBand(state, her)
@@ -665,18 +668,18 @@ function endSpread(state: FurlongState, tally: Tally): FurlongState {
     ...state, phase: 'line', spread: next, columns: deal.columns, pile: deal.pile, lead: -1, leadWild: false, chain: 0, chainPaid: false,
     rainbow: 0, rainbowLit: false, redrawn: false, blocked: -1, rivalGround, place: her, breath, drive: Math.min(DRIVE_MAX, drive), cleanSpreads,
     legsInBand: state.legsInBand + (band ? 1 : 0), peeked: state.scouting ? COLUMNS : state.peek, scouting: false,
-    bonusSp: tally.bonusSp, played: tally.played, events: tally.events,
+    played: tally.played, events: tally.events,
   }
 }
 
 /** After a play or a flip: the spread ends when it is clear, or when the pile is out and nothing plays. */
 function settleSpread(state: FurlongState, tally: Tally): FurlongState {
-  const next: FurlongState = { ...state, breath: tally.breath, drive: Math.min(DRIVE_MAX, tally.drive), bonusSp: tally.bonusSp, played: tally.played, events: tally.events }
+  const next: FurlongState = { ...state, breath: tally.breath, drive: Math.min(DRIVE_MAX, tally.drive), played: tally.played, events: tally.events }
   if (cardsLeft(next) === 0 || (next.pile.length === 0 && playableColumns(next).length === 0)) return endSpread(next, tally)
   return next
 }
 
-const tallyOf = (state: FurlongState): Tally => ({ breath: state.breath, drive: state.drive, bonusSp: state.bonusSp, played: state.played, events: [] })
+const tallyOf = (state: FurlongState): Tally => ({ breath: state.breath, drive: state.drive, played: state.played, events: [] })
 
 function takeLine(state: FurlongState, line: number): FurlongState | null {
   if (state.phase !== 'line' || !Number.isSafeInteger(line) || line < 0 || line >= LINES.length) return null
@@ -737,10 +740,13 @@ function play(state: FurlongState, column: number, run: boolean): FurlongState |
   const lit = state.rainbow > 0
   const rainbow = lights ? RAINBOW_CARDS : Math.max(0, state.rainbow - 1)
   let ground = state.ground
+  let ran = state.ran
   let blocked = state.blocked
   if (run) {
     const { ground: gain, fired } = runYield(state, card, lit)
     ground += gain
+    const counted = cardColour(state, card) === WILD ? state.focus : cardColour(state, card)
+    ran = ran.map((each, colour) => (colour === counted ? each + gain : each))
     tally.events.push({ kind: 'run', card, column, ground: gain, fired })
     if (fired && c.kind === 'skill') {
       const skill = state.skills[c.ref]!
@@ -753,13 +759,10 @@ function play(state: FurlongState, column: number, run: boolean): FurlongState |
   }
   if (partner !== null) {
     if (lights) tally.events.push({ kind: 'rainbow' })
-    const first = (tally.played & (1 << c.ref)) === 0
     tally.played |= 1 << c.ref
-    if (first) tally.bonusSp += partner.sp
     switch (partner.ability) {
       case 'second-wind': tally.breath = Math.min(BREATH_MAX, tally.breath + 1); break
       case 'kick': tally.drive += 2; break
-      case 'study': if (first) tally.bonusSp += 2; break
       case 'inside-line': if (blocked >= 0) { blocked = -1; tally.events.push({ kind: 'unblock' }) } break
       default: break
     }
@@ -779,7 +782,7 @@ function play(state: FurlongState, column: number, run: boolean): FurlongState |
   }
   const columns = state.columns.map((col, i) => (i === column ? col.slice(0, -1) : col))
   const next: FurlongState = {
-    ...state, columns, lead: card, leadWild: colour === WILD, chain, chainPaid, rainbow, rainbowLit: state.rainbowLit || lights, ground, blocked,
+    ...state, columns, lead: card, leadWild: colour === WILD, chain, chainPaid, rainbow, rainbowLit: state.rainbowLit || lights, ground, ran, blocked,
     moves: state.moves + 1,
     scouting: state.scouting || partner?.ability === 'scout',
   }
@@ -828,7 +831,7 @@ export function reportFurlong(state: FurlongState): StageReport {
     p: (PLACE_P[place - 1] ?? 0) + clear,
     tasks: furlongTasks(state),
     score: place,
-    bonusSp: state.bonusSp,
+    drills: Object.fromEntries(STATS.map((stat, colour) => [stat, state.ran[colour]!])) as unknown as Stats,
   }
 }
 

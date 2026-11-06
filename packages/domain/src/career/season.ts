@@ -1,19 +1,33 @@
-// The season machine (docs/game/03-careers.md §3, D383). A season is Play, Upgrade and Race: its stage is Furlong Hand,
-// the prep heat on its first objective's course, when it holds an objective, and Training Yard otherwise. It ends with
-// Next season once every objective in it is won. Stages, replays and lost races never move the calendar; the screens
-// lead the steps' order, and the rules don't enforce it. Pure.
+// The season machine (docs/game/03-careers.md §3, D383, D391). A season is Play, Upgrade and Race. Its Play step offers
+// every career game (`CAREER_GAMES`), the main one first: Furlong Hand on the course her season is training for, then
+// Training Yard with the season's focus. At the Finale it's Furlong Hand alone, the URA Finals' prep heat. Every game
+// pays the same bundle (`career/pay.ts`), so they stand in for each other. The season ends with Next season once every
+// objective in it is won. Stages, replays and lost races never move the calendar; the screens lead the steps' order,
+// and the rules don't enforce it. Pure.
 import { refuse, type Refusal } from '../save/registry'
 import { FINALE_SEASON, type CareerObjective, type CareerRecord } from '../save/records'
 import { STATS, type StatKey } from '../types'
 
 export type CareerGame = 'training-yard' | 'furlong-hand'
 
-/** What a season's Play step opens. */
+/**
+ * The games a career's season offers, in order: the first is the main one (D391). Reorder it to change the main game,
+ * or drop Training Yard to leave Furlong Hand alone in careers; a game left out stays playable as practice.
+ */
+export const CAREER_GAMES: readonly CareerGame[] = Object.freeze(['furlong-hand', 'training-yard'] as const)
+
+/** The games the Finale offers: the URA Finals' prep heat. */
+export const FINALE_GAMES: readonly CareerGame[] = Object.freeze(['furlong-hand'] as const)
+
+/** One game a season's Play step opens, with what it plays. */
 export type SeasonStage =
   | {
     readonly game: 'furlong-hand'
-    /** The race whose course the prep heat runs: the season's first objective, or the URA Finals' race. */
-    readonly raceId: string
+    /**
+     * The race whose course it runs (`furlongRaceFor`): her season's first objective, else her next one, else the URA
+     * Finals'. Null when the content names none.
+     */
+    readonly raceId: string | null
   }
   | {
     readonly game: 'training-yard'
@@ -28,17 +42,18 @@ export const seasonFocus = (season: number): StatKey => STATS[season % STATS.len
 export const seasonObjectives = (career: Pick<CareerRecord, 'objectives' | 'season'>, season = career.season): CareerObjective[] =>
   career.objectives.filter((objective) => objective.season === season)
 
+/** The games a season offers: `CAREER_GAMES`, or at the Finale `FINALE_GAMES`. */
+export const seasonGames = (season: number): readonly CareerGame[] => (season === FINALE_SEASON ? FINALE_GAMES : CAREER_GAMES)
+
 /**
- * The season's stage: Furlong Hand on the first objective's course when the season holds one, Training Yard with the
- * season's focus otherwise. At the Finale it's Furlong Hand on the URA Finals' course, which `finaleRaceId` names.
+ * The season's games in order, each with what it plays: Furlong Hand on `furlongRaceId` (the race `furlongRaceFor`
+ * names, which the caller reads from the content), Training Yard on the season's focus. At the Finale, Furlong Hand
+ * alone on the URA Finals' course.
  */
-export function seasonStage(career: Pick<CareerRecord, 'objectives' | 'season'>, finaleRaceId: string | null = null): SeasonStage {
-  if (career.season === FINALE_SEASON) {
-    if (finaleRaceId === null) throw new RangeError('The Finale\'s stage needs the URA Finals\' race')
-    return { game: 'furlong-hand', raceId: finaleRaceId }
-  }
-  const first = seasonObjectives(career)[0]
-  return first === undefined ? { game: 'training-yard', focus: seasonFocus(career.season) } : { game: 'furlong-hand', raceId: first.raceId }
+export function seasonStages(career: Pick<CareerRecord, 'season'>, furlongRaceId: string | null): SeasonStage[] {
+  if (career.season === FINALE_SEASON && furlongRaceId === null) throw new RangeError('The Finale\'s stage needs the URA Finals\' race')
+  return seasonGames(career.season).map((game): SeasonStage =>
+    game === 'furlong-hand' ? { game, raceId: furlongRaceId } : { game, focus: seasonFocus(career.season) })
 }
 
 /** Whether Next season is open: the career runs, isn't at the Finale, and every objective this season is won. */

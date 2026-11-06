@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest'
 import { cardOf, furlongAt, furlongConfig, FURLONG_DECK } from '../../__fixtures__/furlong'
 import {
   ABILITIES, abilityOf, BREATH_BASE, BREATH_MAX, dealSpread, deckBonuses, DISTANCE_BREATH, HINT_PER_PEEK, initFurlong, LINE, KINDRED_BOND,
-  RACE_BONUS_PER_DRIVE, RAINBOW_BOND, RAINBOW_CARDS, runYield, SKILL_CARDS, SKILL_POINTS, STAT_BONUS_PERCENT, stepFurlong, type Ability,
+  RACE_BONUS_PER_DRIVE, RAINBOW_BOND, RAINBOW_CARDS, reportFurlong, runYield, SKILL_CARDS, SKILL_POINTS, STAT_BONUS_PERCENT, stepFurlong, type Ability,
   type FurlongState,
 } from './rules'
 
@@ -88,11 +88,12 @@ describe('Hint Frequency, SP Bonus, Race Bonus and Initial stats', () => {
     expect(initFurlong(furlongConfig({ deck: ['sim-speed-0'], her: { stats: [100, 100, 100, 100, 120] } })).peek).toBe(1)
   })
 
-  it('pays each Partner\'s SP Bonus as SP the first time it is played', () => {
+  it('marks a Partner played, and pays no SP of its own: a Skill Point Bonus pays through the tree (D391)', () => {
     const state = furlongAt({ columns: ['s1 P0 s2 P0', 'g6', 'g6', 'g6'], lead: 's3', pile: PILE_OF }, {}, { cards: { 'sim-speed-2': { effects: { 30: 3 } } } })
     const once = bank(state, 0)
-    expect([once.bonusSp, once.played]).toEqual([3, 1])
-    expect(bank(bank(once, 0), 0).bonusSp).toBe(3)
+    expect(once.played).toBe(1)
+    expect(once).not.toHaveProperty('bonusSp')
+    expect(reportFurlong({ ...once, phase: 'finished', finish: { place: 1, margin: 0 } })).not.toHaveProperty('bonusSp')
   })
 
   it('adds the deck\'s Race Bonus as Drive at the spurt, one per 10', () => {
@@ -139,11 +140,11 @@ describe('Wit and her skills', () => {
 describe('abilities: each unique effect, mapped', () => {
   it('maps a unique by the first term that maps: a plain effect by its id, a conditional by what it boosts', () => {
     const one = (type: number, value = 0, params: number[] = []) => abilityOf({ effects: [{ type, value, params }] })
-    expect([one(1), one(2), one(3), one(8), one(9), one(14), one(15), one(17), one(19), one(30), one(27)]).toEqual([
-      'kindred', 'second-wind', 'long-stride', 'rhythm', 'fresh-legs', 'team-play', 'kick', 'scout', 'quick-start', 'study', 'inside-line',
+    expect([one(1), one(2), one(3), one(8), one(9), one(14), one(15), one(17), one(19), one(30), one(32), one(27)]).toEqual([
+      'kindred', 'second-wind', 'long-stride', 'rhythm', 'fresh-legs', 'team-play', 'kick', 'scout', 'quick-start', 'scout', 'scout', 'inside-line',
     ])
     expect([one(101, 80, [15, 5]), one(102, 60, [10]), one(106, 5, [1, 2]), one(110, 30, [2]), one(121, 5, [3])]).toEqual([
-      'kick', 'rhythm', 'kindred', 'study', 'team-play',
+      'kick', 'rhythm', 'kindred', 'scout', 'team-play',
     ])
     expect([one(103, 3, [5]), one(105, 1, [1]), one(120, 1, [80, 1, 2])]).toEqual(['team-play', 'team-play', 'team-play'])
     expect([one(104, 1), one(22), abilityOf(null), abilityOf({ effects: [] })]).toEqual([null, null, null, null])
@@ -156,11 +157,9 @@ describe('abilities: each unique effect, mapped', () => {
     return { ...state, partners: state.partners.map((partner, i) => (i === 0 ? { ...partner, ability, rainbow: false } : partner)) }
   }
 
-  it('second wind, kick and study: played, +1 Breath, +2 Drive, +2 SP the first time', () => {
+  it('second wind and kick: played, +1 Breath, +2 Drive', () => {
     expect(bank(withAbility('second-wind', undefined, { breath: 5 }), 0).breath).toBe(6)
     expect(bank(withAbility('kick', undefined, { drive: 0 }), 0).drive).toBe(1 + 2)
-    const studied = bank(withAbility('study', undefined, { bonusSp: 0 }), 0)
-    expect(studied.bonusSp - studied.partners[0]!.sp).toBe(2)
   })
 
   it('long stride: run, two points more', () => {

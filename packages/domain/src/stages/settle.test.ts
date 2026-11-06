@@ -1,11 +1,17 @@
-// Replay and settle (D384): a journal replays from its seed move by move, and only a finished one settles, graded and
-// paid from the career pay table. A toy game keeps the framework's own rules apart from any real game's.
+// Replay and settle (D384, D391): a journal replays from its seed move by move, and only a finished one settles, graded
+// and paid the one bundle every game pays. A toy game keeps the framework's own rules apart from any real game's; then
+// every registered game, played by its bot, pays the same at every grade, and only its drill split differs.
 import { describe, expect, it } from 'vitest'
 import { STAGE_PAY_AT_A } from '../career/pay'
+import { furlongConfig } from '../__fixtures__/furlong'
 import { yardConfig } from '../__fixtures__/stages'
-import type { Journal, StageConfig, StageInput, StageRules } from './contract'
+import { STATS, type Stats } from '../types'
+import type { Journal, StageConfig, StageInput, StageKind, StageRules } from './contract'
+import { PAY_MULTIPLIERS, STAGE_GRADES } from './grade'
+import { registeredStages, stageRules } from './registry'
 import { stageRng } from './rng'
 import { isReplayFailure, NO_AWARD, replay, settle, splitDrills, stageAward } from './settle'
+import { playBot } from './sim'
 
 /** Five moves; each adds its code (0–3) to the score. The target is 10, and the task is "no zero played". */
 interface Toy { readonly moves: number; readonly score: number; readonly zero: boolean }
@@ -16,7 +22,7 @@ const TOY: StageRules<Toy> = {
   init: () => ({ moves: 0, score: 0, zero: false }),
   step: (state, input) => (input.code > 3 ? null : { moves: state.moves + 1, score: state.score + input.code, zero: state.zero || input.code === 0 }),
   done: (state) => state.moves >= 5,
-  report: (state) => ({ p: state.score / 10, tasks: [!state.zero], score: state.score, drills: { speed: 1, stamina: 1, power: 0, guts: 0, wit: 2 }, bonusSp: 3 }),
+  report: (state) => ({ p: state.score / 10, tasks: [!state.zero], score: state.score, drills: { speed: 1, stamina: 1, power: 0, guts: 0, wit: 2 } }),
   bots: {
     novice: (state, rng) => ({ tick: state.moves, code: rng.below(4) }),
     competent: (state) => ({ tick: state.moves, code: 2 }),
@@ -45,14 +51,13 @@ describe('replay', () => {
 })
 
 describe('settle', () => {
-  it('grades a finished play and pays the game\'s pay at A × the grade, drills split by the report, plus its bonus SP', () => {
+  it('grades a finished play and pays the bundle at A × the grade, drills split by the report', () => {
     const settled = settle(journal(moves(3, 3, 2, 2, 0)), TOY)
     if (isReplayFailure(settled)) throw new Error(settled.failed)
     expect(settled.grade).toBe('A')
     expect(settled.report.p).toBe(1)
-    const yard = STAGE_PAY_AT_A['training-yard']
-    expect(settled.pay).toEqual({ drills: splitDrills(yard.drills, { speed: 1, stamina: 1, power: 0, guts: 0, wit: 2 }), bond: 0, sp: yard.sp + 3 })
-    expect(Object.values(settled.pay.drills).reduce((a, b) => a + b, 0)).toBe(yard.drills)
+    expect(settled.pay).toEqual({ drills: splitDrills(STAGE_PAY_AT_A.drills, { speed: 1, stamina: 1, power: 0, guts: 0, wit: 2 }), bond: STAGE_PAY_AT_A.bond, sp: STAGE_PAY_AT_A.sp })
+    expect(Object.values(settled.pay.drills).reduce((a, b) => a + b, 0)).toBe(STAGE_PAY_AT_A.drills)
   })
 
   it('reaches S by every task at A, and D pays a quarter', () => {
@@ -60,7 +65,7 @@ describe('settle', () => {
     const d = settle(journal(moves(0, 0, 0, 1, 1)), TOY)
     if (isReplayFailure(s) || isReplayFailure(d)) throw new Error('unsettled')
     expect([s.grade, d.grade]).toEqual(['S', 'D'])
-    expect(Object.values(d.pay.drills).reduce((a, b) => a + b, 0)).toBe(Math.round(STAGE_PAY_AT_A['training-yard'].drills * 0.25))
+    expect(Object.values(d.pay.drills).reduce((a, b) => a + b, 0)).toBe(Math.round(STAGE_PAY_AT_A.drills * 0.25))
   })
 
   it('pays nothing in practice, and refuses an unfinished play', () => {
@@ -93,8 +98,37 @@ describe('the pay', () => {
     expect(splitDrills(7, { speed: 0, stamina: 0, power: 0, guts: 0, wit: 0 })).toEqual({ speed: 0, stamina: 0, power: 0, guts: 0, wit: 0 })
   })
 
-  it('pays Furlong Hand\'s Bond and SP with no drills', () => {
-    const award = stageAward('furlong-hand', 'B', { p: 0.8, tasks: [], score: 0 }, false)
-    expect(award).toEqual({ drills: { speed: 0, stamina: 0, power: 0, guts: 0, wit: 0 }, bond: Math.round(STAGE_PAY_AT_A['furlong-hand'].bond * 0.8), sp: Math.round(STAGE_PAY_AT_A['furlong-hand'].sp * 0.8) })
+  it('puts every drill on the season\'s focus when a play weighs no colour', () => {
+    const none = { speed: 0, stamina: 0, power: 0, guts: 0, wit: 0 }
+    expect(stageAward('B', { p: 0.8, tasks: [], score: 0, drills: none }, false, 'guts')).toEqual({
+      drills: { ...none, guts: Math.round(STAGE_PAY_AT_A.drills * 0.8) }, bond: Math.round(STAGE_PAY_AT_A.bond * 0.8), sp: Math.round(STAGE_PAY_AT_A.sp * 0.8),
+    })
+    expect(stageAward('A', { p: 1, tasks: [], score: 0, drills: none }, false).drills.speed).toBe(STAGE_PAY_AT_A.drills)
+  })
+})
+
+describe('every game pays the same (D391)', () => {
+  const CONFIGS: Readonly<Record<StageKind, () => StageConfig>> = { 'training-yard': () => yardConfig({ seed: 5 }), 'furlong-hand': () => furlongConfig({ seed: 5 }) }
+  const sum = (drills: Stats) => STATS.reduce((total, stat) => total + drills[stat], 0)
+
+  it('pays every registered game\'s play the one bundle at every grade, and only the drill split differs', () => {
+    const splits = new Map<StageKind, Stats>()
+    for (const kind of registeredStages()) {
+      const rules = stageRules(kind)!
+      const config = CONFIGS[kind]()
+      const { inputs } = playBot(rules, config, 'competent', 5)
+      const settled = settle({ config, version: rules.version, inputs }, rules)
+      if (isReplayFailure(settled)) throw new Error(settled.failed)
+      for (const of of STAGE_GRADES) {
+        const award = stageAward(of, settled.report, false, config.seasonFocus)
+        const m = PAY_MULTIPLIERS[of]
+        expect({ bond: award.bond, sp: award.sp, drills: sum(award.drills) }).toEqual({
+          bond: Math.round(STAGE_PAY_AT_A.bond * m), sp: Math.round(STAGE_PAY_AT_A.sp * m), drills: Math.round(STAGE_PAY_AT_A.drills * m),
+        })
+      }
+      splits.set(kind, stageAward('A', settled.report, false).drills)
+    }
+    expect(splits.size).toBe(2)
+    expect(splits.get('training-yard')).not.toEqual(splits.get('furlong-hand'))
   })
 })

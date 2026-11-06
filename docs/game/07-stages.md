@@ -23,13 +23,14 @@ A game is a `StageRules<S>` (`stages/contract.ts`), registered once by kind (`st
 | `init(config)` | The play's first state, from its `StageConfig` |
 | `step(state, input)` | One move: the next state, or `null` when the move isn't legal. It never writes into `state` |
 | `done(state)` | Whether the play is over |
-| `report(state)` | `{ p, tasks, score, drills?, bonusSp? }`: the score over the stage's target, the bonus tasks, and how a drill pay splits across the colours |
+| `report(state)` | `{ p, tasks, score, drills }`: the score over the stage's target, the bonus tasks, and how the bundle's drills split across the colours (relative weights) |
 | `bots` | `novice`, `competent` and `expert`: each gives the next move for a state, with its own dice |
 
 - **`StageConfig`** is everything a play reads: `{ kind, seed, T, uma, deck, bonds, seasonFocus?, course?, furlong?,
   practice }`. `uma` is her outfit id and growth rates in whole percents; `deck` her career's cards in deck order, each
   with its type, its real effects by effect id and its unique effect's terms; `bonds` each deck card's bond (its track,
-  or its Initial Friendship Gauge); `seasonFocus` the season's focus stat (Training Yard); `course` the race whose
+  or its Initial Friendship Gauge); `seasonFocus` the season's focus stat (the Yard's tilt, and the colour Furlong
+  Hand's wild cards count for, D391); `course` the race whose
   course the stage runs and `furlong` that race's legs, her racing build as the race reads it, her skills and the
   rival field (Furlong Hand, [09](09-furlong-hand.md) §1). The device and the API build it alike from the career and
   the content (`stages/config.ts`), so a play's journal needs only its seed and its moves.
@@ -50,20 +51,21 @@ manual page.
 <!-- live:stage-games -->
 | Game | Rules version | Pays at A | Built |
 |---|---|---|---|
-| Training Yard | 1 | 200 drills, 30 SP | yes |
-| Furlong Hand | 1 | 25 Bond, 20 SP | yes |
+| Training Yard | 1 | 110 drills, 12 Bond, 25 SP | yes |
+| Furlong Hand | 1 | 110 drills, 12 Bond, 25 SP | yes |
 <!-- /live -->
 
 ## 2. Grades and pay
 
 The framework grades a report (`grade(p, tasks)`): D under 0.5 (not cleared), C from 0.5, B from 0.75, A from 1, and S
-from 1.2 or at A with every bonus task. **Every play pays**, D included: the game's pay at A
-([12](12-pacing.md) §1, `STAGE_PAY_AT_A`) × the grade's multiplier, each resource rounded half up. A game's own bonus
-SP (the Yard's Rests) comes on top, unscaled. Drills split across the colours by the report's weights, largest
-remainder first, ties to the earlier colour.
+from 1.2 or at A with every bonus task. **Every play pays**, D included: **one bundle for every game**
+([12](12-pacing.md) §1, `STAGE_PAY_AT_A`, D391) × the grade's multiplier, each resource rounded half up, so the games
+swap for each other in a season. A game decides only how its drills split across the colours, by its report's weights
+(largest remainder first, ties to the earlier colour; a play that weighs no colour puts them all on the season's focus),
+and adds no pay of its own. Bond and SP are pools the owner spends by hand, so they need no split.
 
 <!-- live:stage-grades -->
-| Grade | p | Pays × the game's pay at A |
+| Grade | p | Pays × the bundle at A |
 |---|---|---|
 | S | 1.2 or more, or A with every task | 1.2 |
 | A | 1 or more | 1 |
@@ -145,9 +147,6 @@ prints aggregates only, and Furlong Hand's length by distance. Furlong Hand's ow
 Each game's results are on its page ([08](08-training-yard.md) §7, [09](09-furlong-hand.md) §10).
 
 ## Not built yet
-
-- **One pay bundle for every game,** Furlong Hand first in every season (T160, D390;
-  [swappable stages](../research/careers-v2/swappable-stages.md)).
 
 - **The other four games** on this framework: Team Showdown, Fan Festival, Summer Camp and Festival Kitchen, one a
   release ([v3's roadmap](../research/drawing-board/README.md#7-the-roadmap)).

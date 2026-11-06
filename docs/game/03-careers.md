@@ -70,14 +70,20 @@ Trial), Senior Autumn and Senior Winter.
 
 A season is three steps: **Play**, **Upgrade** and **Race**.
 
-1. **Play** opens the season's stage:
-   - **Furlong Hand**, as the prep heat on the course of the season's first objective, when the season holds one;
-   - **Training Yard** ([08](08-training-yard.md)) otherwise, with the season's focus stat tilting its colours.
+1. **Play** offers every career game (`CAREER_GAMES`, D391), the main one first, and each pays the same bundle
+   ([12](12-pacing.md) §1), so either one played does the season's Play:
+   - **Furlong Hand** ([09](09-furlong-hand.md)), the main game, on the course of her season's first objective, else
+     her next objective's, else the URA Finals' (`furlongRaceFor`);
+   - **Another game: Training Yard** ([08](08-training-yard.md)), with the season's focus stat tilting its colours.
+
+   The season's focus also takes Furlong Hand's wild cards in its drill split. Reordering `CAREER_GAMES` changes the
+   main game; dropping the Yard from it leaves Furlong Hand alone in careers, and the Yard stays playable as
+   practice.
 2. **Upgrade** is the build: Tree · Deck · Bonds · Skills ([05](05-the-build.md), [06](06-cards-and-bonds.md)).
 3. **Race** runs each of the season's objectives (§4), as often as it takes to win.
 
 <!-- live:career-seasons -->
-| Season | Index | Training Yard focus |
+| Season | Index | Focus |
 |---|---|---|
 | Junior Spring | 0 | Speed |
 | Junior Summer | 1 | Stamina |
@@ -91,7 +97,7 @@ A season is three steps: **Play**, **Upgrade** and **Race**.
 | Senior Summer | 9 | Wit |
 | Senior Autumn | 10 | Speed |
 | Senior Winter | 11 | Stamina |
-| Finale | 12 | (Furlong Hand only) |
+| Finale | 12 | Power (Furlong Hand only) |
 <!-- /live -->
 
 - **Next season** opens once every objective in the season is won. A season without objectives can end at once.
@@ -127,8 +133,8 @@ run the same seeded race and reach the same result; the server's is the one stor
 
 ## 5. The URA Finals
 
-After Senior Winter the career is at the **Finale**. Its stage is a Furlong Hand prep heat on the URA Finals' course;
-then three races, each retried until won:
+After Senior Winter the career is at the **Finale**. Its stage is a Furlong Hand prep heat on the URA Finals' course,
+the one game the Finale offers (`FINALE_GAMES`); then three races, each retried until won:
 
 <!-- live:career-finale -->
 | Round | Field | Rivals' handicap |
