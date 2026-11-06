@@ -1,21 +1,24 @@
 // The Card Library's album (docs/game/11-hub-and-places.md §3.1, docs/game/02-unlocks.md §3; D386),
 // `/town/card-library?tab=owned|locked&type=&style=&distance=&q=`: the Owned and Locked tabs with their counts (Locked
 // first on a new account), a search, the seven card types as icons and the eight focus marks (four running styles,
-// four distances) as icons, each a 44 pt toggle, then the cards newest release first. Every filter rides in the URL, so
-// Back from a card's page returns to the same view. A card opens its page, where a locked one is unlocked.
+// four distances) as icons, each a 44 pt toggle, then the cards newest release first, the Locked tab's unlockable ones
+// before the later eras' (each marked "Opens with <scenario>", D392). Every filter rides in the URL, so Back from a
+// card's page returns to the same view. A card opens its page, where a locked one is unlocked. While cards from later
+// eras sit unlocked, a banner above offers them back for their Card Tickets (`return-later-cards`, D392).
 import { VirtualGrid } from '@luismlorenzana/uma-kit/album'
-import { Button, Chip, LockedIcon, SearchIcon, Tabs } from '@luismlorenzana/uma-kit/ui'
+import { Button, Chip, LockedIcon, Panel, SearchIcon, Tabs, UiMark } from '@luismlorenzana/uma-kit/ui'
+import { laterCards } from '@racer/domain/account'
 import type { Place } from '@racer/domain/hub'
-import { useMemo, type ReactNode } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import { Link, useSearchParams } from 'react-router'
-import { useGame } from '../../app/game'
+import { useGame, useRun } from '../../app/game'
 import { cardPath, type OwnershipTab } from '../../hub/nav'
 import { CardSquare } from '../../ui/ArtSquare'
 import { DistanceTypeIcon, RunningStyleIcon } from '../../ui/CardFocusIcons'
 import { DISTANCE_LABEL, DISTANCES, STYLE_LABEL, STYLES } from '../../ui/labels'
 import { TypeIcon, typeLabel } from '../../ui/TypeIcon'
 import { PlacePageHeader } from '../PlacePageHeader'
-import { CARD_TYPES, libraryResult, libraryRows, libraryTab, libraryWords, readFilters, type CardRow } from './model'
+import { CARD_TYPES, libraryResult, libraryRows, libraryTab, libraryWords, readFilters, returnBanner, type CardRow } from './model'
 
 function Toggle({ pressed, label, onClick, children }: { pressed: boolean; label: string; onClick: () => void; children: ReactNode }) {
   return (
@@ -31,20 +34,59 @@ function Toggle({ pressed, label, onClick, children }: { pressed: boolean; label
   )
 }
 
-function CardTile({ row }: { row: CardRow }) {
+/** "Opens with <scenario>" on a later era's tile: two short lines over the art, the scenario cut to fit. */
+function OpensWith({ scenario }: { scenario: string }) {
   return (
-    <Link to={cardPath(row.id)} state={{ back: true }} aria-label={row.owned ? row.name : `${row.name}, ${libraryWords('locked')}`}
-      className="block min-h-11 min-w-0 rounded-md" data-card={row.id} data-owned={row.owned}>
+    <span className="flex max-w-[4.5rem] flex-col rounded-sm bg-scrim/70 px-1 py-0.5 text-[9px] leading-tight font-semibold text-ink-on-dark" data-racer="opens-with" aria-hidden>
+      <span>{libraryWords('opens')}</span>
+      <span className="truncate">{scenario}</span>
+    </span>
+  )
+}
+
+function CardTile({ row }: { row: CardRow }) {
+  const label = [row.name, ...(row.owned ? [] : [libraryWords('locked')]), ...(row.opensWith === null ? [] : [libraryWords('opens-with', { scenario: row.opensWith })])]
+  return (
+    <Link to={cardPath(row.id)} state={{ back: true }} aria-label={label.join(', ')}
+      className="block min-h-11 min-w-0 rounded-md" data-card={row.id} data-owned={row.owned} data-opens-with={row.opensWith ?? undefined}>
       <CardSquare
         cardId={row.id}
         name={row.name}
         dimmed={!row.owned}
         tight
+        overlay={row.opensWith === null ? undefined : <OpensWith scenario={row.opensWith} />}
         bottomLeft={<TypeIcon type={row.type} size={20} />}
         corner={row.owned ? undefined : <span className="flex size-6 items-center justify-center rounded-full bg-scrim/60 text-ink-on-dark"><LockedIcon size={16} /></span>}
       />
       <span className="mt-1 block truncate text-center text-[11px] font-semibold">{row.name}</span>
     </Link>
+  )
+}
+
+/** The cards from later eras still unlocked, offered back for their Card Tickets in one tap (D392). */
+function ReturnBanner({ count }: { count: number }) {
+  const run = useRun()
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const giveBack = async () => {
+    setBusy(true)
+    setError(null)
+    try {
+      const answer = await run('return-later-cards', {}, 'return-later-cards')
+      if (answer.kind !== 'done') setError(answer.text)
+    } catch {
+      setError(libraryWords('return-failed'))
+    } finally {
+      setBusy(false)
+    }
+  }
+  return (
+    <Panel className="space-y-2 p-3" data-racer="return-later-cards">
+      <p className="flex items-start gap-1.5 text-[14px] font-semibold"><UiMark mark="currency/card-ticket" />{returnBanner(count)}</p>
+      <p className="text-[12px] text-ink-soft">{libraryWords('return-note')}</p>
+      <Button className="w-full" disabled={busy} onClick={() => void giveBack()}>{libraryWords('return')}</Button>
+      {error !== null && <p role="alert" className="text-[13px] text-danger">{error}</p>}
+    </Panel>
   )
 }
 
@@ -56,6 +98,7 @@ export function Library({ place }: { place: Place }) {
     () => (state === null || content === null ? [] : libraryRows(content.cards.values(), content.skills, state.cards)),
     [state, content],
   )
+  const later = useMemo(() => (state === null || content === null ? 0 : laterCards(state, content.cards).length), [state, content])
   const owned = rows.filter((row) => row.owned).length
   const tab = libraryTab(params.get('tab'), owned)
   const filters = readFilters(params)
@@ -83,6 +126,7 @@ export function Library({ place }: { place: Place }) {
     <div data-place-page="card-library" data-racer="card-library" data-tab={tab}>
       <PlacePageHeader place={place} lines={[libraryWords('about-tickets'), libraryWords('about-effects')]} />
       <div className="space-y-3 px-4 py-3">
+        {later > 0 && <ReturnBanner count={later} />}
         <Tabs
           label={libraryWords('tabs')}
           value={tab}

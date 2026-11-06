@@ -83,7 +83,7 @@ writes: no rule reads a clock, and nothing runs on a duration. Randomness comes 
 | Import | For | Resolves to |
 |---|---|---|
 | `@racer/domain` | The core kept through the restart: the vocabulary (`types.ts`), the fifteen scenarios and their eras (`scenarios.ts`), content contracts (`content.ts`), the race catalogue, series and attempt (`race-catalog.ts`, `race-series.ts`, `race-attempt.ts`: the seed, field size, best strategy and replayable run), race skills and their tags (`race-skills.ts`, `skill-tags.ts`), pack coefficients and course layouts (`race-pack.ts`, `course-layout.ts`), the rivals' roll and casting (`opponents.ts`), her own skills (`derived.ts`), cards' golds and Race Bonus (`cards.ts`), card focus (`card-focus.ts`), and the career generator with its shapes (`scenario-goals.ts`, `career-shapes.ts`, `career-stages.ts`) | `src/index.ts`; `dist/cjs/index.js` under `require` |
-| `@racer/domain/account` | Tickets, `unlock-uma`, `unlock-card` and `dev-grant` ([02](02-unlocks.md)) | `src/account/index.ts` |
+| `@racer/domain/account` | Tickets, `unlock-uma`, `unlock-card`, `return-later-cards` and `dev-grant` ([02](02-unlocks.md)) | `src/account/index.ts` |
 | `@racer/domain/build` | The deck and posting, the facility table and the session formula, the tree and its previews, bond tracks, skills, the racing build, card power, and `sim:decks`' core ([05](05-the-build.md), [06](06-cards-and-bonds.md)) | `src/build/index.ts` |
 | `@racer/domain/career` | The calendar and placement, the season machine, starting a career, races and the URA Finals on the engine, rewards, the stages' pay table, and `sim:careers`' core with its invented content ([03](03-careers.md), [12](12-pacing.md)) | `src/career/index.ts` |
 | `@racer/domain/stages` | The stage framework: the contract, grades and pay, the seeded dice, replay and settle, the registry, configs, `settle-stage` and `sim:stages`' core; its two games, `yard/` (Training Yard) and `furlong/` (Furlong Hand), each rules and three bots ([07](07-stages.md), [08](08-training-yard.md), [09](09-furlong-hand.md)) | `src/stages/index.ts` |
@@ -261,7 +261,7 @@ lane. The record shapes, kinds, bounds and wire format are `packages/domain/src/
   `commitOperation` and queues it; the API re-runs the same function on its own rows and commits, or refuses with the
   same plain words. A retried id returns its first receipt and is never applied twice.
 - **The operations** (`save/registry.ts`, `save/operations.ts`), each in its area's `ops.ts`:
-  - `account`: `unlock-uma`, `unlock-card` and `dev-grant` ([02](02-unlocks.md), D381);
+  - `account`: `unlock-uma`, `unlock-card`, `return-later-cards` (D392) and `dev-grant` ([02](02-unlocks.md), D381);
   - `build`: `set-deck`, `post-card`, `buy-pips`, `pour-bond` and `buy-skill` ([05](05-the-build.md) §9, D382);
   - `career`: `start-career`, `run-race`, `next-season` and `run-finale` ([03](03-careers.md) §7, D383). A race runs
     inside its operation on `OperationEnv.race`, so the device and the API each run the same seeded race; without an

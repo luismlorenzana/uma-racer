@@ -35,7 +35,15 @@ export interface AccountRecord {
 /** `umas/{outfitId}` and `cards/{cardId}`: unlocked, and when. */
 export interface UnlockRecord {
   readonly unlockedAt: number
+  /**
+   * A card only: when `return-later-cards` gave its ticket back (D392). The row stays, as every row does, but the card
+   * is locked again until it's unlocked anew.
+   */
+  readonly returnedAt?: number
 }
+
+/** Whether a row unlocks its Uma or card now: it exists and wasn't returned (D392). */
+export const isUnlocked = (record: UnlockRecord | undefined): record is UnlockRecord => record !== undefined && record.returnedAt === undefined
 
 export interface CareerObjective {
   readonly raceId: string
@@ -168,8 +176,10 @@ export function parseAccountRecord(value: unknown): AccountRecord | null {
 }
 
 export function parseUnlockRecord(value: unknown): UnlockRecord | null {
-  if (!isObject(value) || !exact(value, ['unlockedAt']) || !isTime(value.unlockedAt)) return null
-  return { unlockedAt: value.unlockedAt }
+  if (!isObject(value) || !isTime(value.unlockedAt)) return null
+  if (exact(value, ['unlockedAt'])) return { unlockedAt: value.unlockedAt }
+  if (!exact(value, ['unlockedAt', 'returnedAt']) || !isTime(value.returnedAt) || value.returnedAt < value.unlockedAt) return null
+  return { unlockedAt: value.unlockedAt, returnedAt: value.returnedAt }
 }
 
 function parseObjective(value: unknown): CareerObjective | null {
